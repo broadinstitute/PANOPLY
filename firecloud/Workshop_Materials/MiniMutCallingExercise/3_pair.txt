@@ -1,0 +1,3 @@
+entity:pair_id	control_sample_id	case_sample_id	intervals	participant_id
+HCC1143_WE_pair	HCC1143_Normal_WE	HCC1143_Tumor_WE	gs://firecloud-tcga-open-access/tutorial/reference/whole_exome_agilent_1.1_refseq_plus_3_boosters_plus_10bp_padding_minus_mito.Homo_sapiens_assembly19.targets.interval_list	HCC1143_WE
+HCC1954_100_gene_pair	HCC1954_Normal_100_gene	HCC1954_Tumor_100_gene	gs://firecloud-tcga-open-access/tutorial/reference/panel_100_genes.interval_list	HCC1954_100_gene
