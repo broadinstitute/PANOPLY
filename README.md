@@ -14,4 +14,8 @@ In order to follow the instructions in ```docs/Firecloud workflows from R code m
 clone the ```gdac-firecloud``` repository from https://github.com/broadinstitute/gdac-firecloud
 into the root ```PGDAC``` directory.
 
+The ```pipeline-common-code``` is a precursor to ```src``` where code for the pipeline is developed
+using actual projects as use-cases. This directory is maintained in order have a version of the 
+pipeline code that can be run on the commandline, without FireCloud support.
+
 Email manidr@broadinstitute.org with questions.
