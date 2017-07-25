@@ -1,9 +1,6 @@
 
-# $Id$
-print ("$Id$")
 
-
-### PGDAC PIPELINE
+### Broad Institute PGDAC PIPELINE
 ### configuration and default parameters  
 
 
@@ -148,13 +145,14 @@ qc.col <- 'QC.status'
 ndigits <- 5    
 
 
-## Missing values
+## Missing values and filtering
 nmiss.plex <- 0.25
 n.plex <- length (unique (read.csv (expt.design.file)[,'Experiment']))
 na.max <- ceiling (n.plex * length(plex.channels) * nmiss.plex)                  
                               # must be present in at least nmiss.plex fraction of the experiments (plexes)
 nmiss.factor <- 0.5           # for some situations, a more stringent condition is needed
 sd.filter.threshold <- 0.5    # SD threshold for SD filtering
+apply.SM.filter <- TRUE       # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
 
 
 ## Normalization
