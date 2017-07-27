@@ -1,5 +1,9 @@
 
-library (psych)
+## install and load libraries automatically
+# library (psych)
+if (!require("pacman")) install.packages ("pacman")
+pacman::p_load (psych)
+
 source ('generate-cna-plots.r')
 
 

@@ -5,44 +5,67 @@ source ('preamble.r')
 bsub.file <- 'correlation.bsub'
 
 
-system.x <- function (cmd, ...) {
-  # deal with idiosyncracies of UGER at Broad
-  # the environment is not inherited -- need to re-run 'use UGER' before running qsub/qstat
-  pre.cmd <- "source /broad/software/scripts/useuse; reuse -q UGER"
-  full.cmd <- sprintf ("%s; %s", pre.cmd, cmd)
-  system (full.cmd, ...)
-}
-
-
 write.bsub.file <- function (prefix, pome) {
   script <- paste (prefix, '-', bsub.file, sep='')
-  cat ("#!/bin/bash\n",
-       "#$ -o ", prefix, "-dump/corrcalc-out-$TASK_ID.txt    # std out\n",
-       "#$ -cwd                                 # run in current directory\n",
-       "#$ -V                                   # propagate enrivonment\n",
-       "#$ -j y                                 # combine stderr with stdout\n",
-       "#$ -q long                              # queue\n",
-       "#$ -tc 200                              # total concurrent jobs\n",
-       "#$ -t 1-", LSF.mut.jid.max, "           # job array\n",
-       "#$ -N ", prefix, "corr", "              # job array name\n\n",
-       "source /broad/software/scripts/useuse \n",
-       "reuse -q R-3.1 \n",
-       file=script, sep='')
-  cat ("Rscript correlation.r $SGE_TASK_ID", LSF.mut.jid.max, prefix, pome, "\n",
-       file=script, append=TRUE)  
+  switch (compute.cluster.type,
+          uger={
+            # Sun Grid Engine (SGE/UGER)
+            cat ("#!/bin/bash\n",
+                 "#$ -o ", scratch.fs, prefix, "-dump/corrcalc-out-$TASK_ID.txt    # std out\n",
+                 "#$ -cwd                                 # run in current directory\n",
+                 "#$ -V                                   # propagate enrivonment\n",
+                 "#$ -j y                                 # combine stderr with stdout\n",
+                 "#$ -q long                              # queue\n",
+                 "#$ -tc 200                              # total concurrent jobs\n",
+                 "#$ -t 1-", LSF.mut.jid.max, "           # job array\n",
+                 "#$ -N ", prefix, "corr", "              # job array name\n\n",
+                 "source /broad/software/scripts/useuse \n",
+                 "reuse -q R-3.1 \n",
+                 file=script, sep='')
+            cat ("Rscript correlation.r $SGE_TASK_ID", LSF.mut.jid.max, prefix, pome, "\n",
+                 file=script, append=TRUE)
+          },
+          slurm={
+            # SLURM (see https://srcc.stanford.edu/sge-slurm-conversion for SGE to SLURM conversion)
+            cat ("#!/bin/bash\n",
+                 "#SBATCH -o ", scratch.fs, prefix, "-dump/corrcalc-out-$TASK_ID.txt    # std out\n",
+                 "#SBATCH --export=ALL                                   # propagate enrivonment\n",
+                 "#SBATCH -n 1                                           # tasks, 1 for R\n",
+                 "#SBATCH -t 48:0:0                                      # time (2d), required on some systems",
+                 "#SBATCH -a 1-", LSF.mut.jid.max, "                     # job array\n",
+                 "#SBATCH -j ", prefix, "corr", "                        # job array name\n\n",
+                 file=script, sep='')
+            cat ("Rscript correlation.r $SLURM_ARRAY_TASK_ID", LSF.mut.jid.max, prefix, pome, "\n",
+                 file=script, append=TRUE)
+          },
+          {
+            # default -- run serially; may crash or fail
+            cat ("#!/bin/bash\n", file=script, sep='')
+            cat ("Rscript correlation.r 1 1", prefix, pome, "\n", file=script, append=TRUE)
+          }
+  )
 }
 
 
 run.bsub.file <- function (prefix) {
   # remove dump and output directories and create new ones
-  dump.dir <- paste (prefix, '-dump', sep='')
-  out.dir <- paste (prefix, '-output', sep='')
+  dump.dir <- paste (scratch.fs, prefix, '-dump', sep='')
+  out.dir <- paste (scratch.fs, prefix, '-output', sep='')
   if (file.exists (dump.dir)) unlink (dump.dir, recursive=TRUE)
   if (file.exists (out.dir)) unlink (out.dir, recursive=TRUE)
   dir.create (dump.dir)
   dir.create (out.dir)
+  if (scratch.fs != "") {
+    # create links from cwd -- will generate warning if links exist
+    file.symlink (dump.dir, ".")
+    file.symlink (out.dir, ".")
+  }
   
-  cmd <- paste ('qsub < ', prefix, '-', bsub.file, sep='')
+  cmd <- switch (compute.cluster.type,
+                 uger=paste ('qsub < ', prefix, '-', bsub.file, sep=''),
+                 slurm=paste ('sbatch ', prefix, '-', bsub.file, sep=''),
+                 paste ('sh ', prefix, '-', bsub.file, sep='')
+  )
   system.x (cmd)
 }
 
@@ -52,12 +75,17 @@ finish.corr <- function (prefix) {
   jobs.done <-FALSE
   while (! jobs.done) {
     jname <- paste (prefix, 'corr', sep='')
-    jobs.done <- as.numeric (system.x (paste ('qstat -j', jname, '| wc -l'), intern=TRUE)) <= 1
+    jobs.done <- compute.job.done (jname)
     Sys.sleep (120)
   }
   
-  cmd <- paste ('qsub -q long -o uger.out -cwd -j y -l h_vmem=16g -V runR.sh Rscript correlation.r 0 ', 
-                length (list.files (paste (prefix, '-output', sep='')))/2, ' ', prefix, ' NULL', sep='')
+  cmd <- switch (compute.cluster.type,
+                 uger={paste ('qsub -q long -o uger.out -cwd -j y -l h_vmem=16g -V runR-uger.sh Rscript correlation.r 0 ', 
+                              length (list.files (paste (prefix, '-output', sep='')))/2, ' ', prefix, ' NULL', sep='')},
+                 slurm={paste ('sbatch -o slurm.out --export=ALL runR-slurm.sh Rscript correlation.r 0 ', 
+                               length (list.files (paste (prefix, '-output', sep='')))/2, ' ', prefix, ' NULL', sep='')},
+                 {paste ('Rscript correlation.r 0 1 ', prefix, ' NULL', sep='')}
+  )
   system.x (cmd)
 }
 

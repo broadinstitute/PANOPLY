@@ -9,7 +9,9 @@ print ("$Id$")
 Rutil.path <- switch (Sys.info()[['sysname']],
                       Windows = {'//flynn-cifs/prot_proteomics/Projects/R-utilities'},
                       Darwin = {'/Volumes/prot_proteomics/Projects/R-utilities'},
-                      Linux = {'/prot/proteomics/Projects/R-utilities'})
+                      Linux = {ifelse (file.exists('/prot/proteomics/Projects/R-utilities'),
+                                       '/prot/proteomics/Projects/R-utilities',   # on Broad systems
+                                       '~/proteomics/R-utilities')})              # elsewhere
 
 Source <- function (f) {
   # adaptive source file location -- from current directory or manidr's R-utiliites
@@ -162,5 +164,39 @@ if (label.type == 'iTRAQ4') {
   unique_pep.pat <- '^unique_peptides$'
   refint.pat <- '^iTRAQ_117_total$'
 }
+
+
+## Compute Cluster 
+#  options: uger, slurm, none
+#  set one of the following for parallel i/o
+scratch.fs <- sprintf ('/scratch/users/manidr/pid-%s/', Sys.getpid())    # MIT c3ddb
+# scratch.fs <- sprintf ('/oasis/scratch/comet/manidr/temp_project/pid-%s/', Sys.getpid())    # SDSC Comet
+# scratch.fs <- ''   # Broad UGER -- use local fs; no scratch/parallel fs
+
+# system execution command -- takes into account compute.cluster.type
+system.x <- function (cmd, ...) {
+  if (compute.cluster.type == 'uger') {
+    # deal with idiosyncracies of UGER at Broad
+    # the environment is not inherited -- need to re-run 'use UGER' before running qsub/qstat
+    pre.cmd <- "source /broad/software/scripts/useuse; reuse -q UGER"
+    full.cmd <- sprintf ("%s; %s", pre.cmd, cmd)
+  } else {
+    full.cmd <- cmd
+  }
+  system (full.cmd, ...)
+}
+
+# check for job completion
+compute.job.done <- function (jname) {
+  return (switch (compute.cluster.type,
+                  uger={as.numeric (system.x (paste ('qstat -j', jname, '| wc -l'), intern=TRUE)) <= 1},
+                  slurm={as.numeric (system.x (paste ('squeue -n', jname, '| wc -l'), intern=TRUE)) <= 1},
+                  TRUE)
+  )
+}
+
+
+# compute cluster type appended by run-pipeline shell script
+# options: uger, slurm, none
 
 

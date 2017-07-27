@@ -1,6 +1,9 @@
 
+## install and load libraries automatically
+# library (psych)
+if (!require("pacman")) install.packages ("pacman")
+pacman::p_load (psych)
 
-library (psych)
 
 args <- commandArgs (TRUE)
 pvalue <- 0.05

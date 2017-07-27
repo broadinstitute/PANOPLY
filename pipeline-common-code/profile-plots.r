@@ -1,8 +1,11 @@
 
+## install and load libraries automatically
+# library (reshape)
+# library (ggplot2)
+# library (RColorBrewer)
+if (!require("pacman")) install.packages ("pacman")
+pacman::p_load (reshape, ggplot2, RColorBrewer)
 
-library (reshape)
-library (ggplot2)
-library (RColorBrewer)
 
 
 source ('preamble.r')

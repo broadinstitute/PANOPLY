@@ -1,8 +1,11 @@
 
 
+## install and load libraries automatically
+# library (reshape)
+# library (ggplot2)
+if (!require("pacman")) install.packages ("pacman")
+pacman::p_load (reshape, ggplot2)
 
-library (ggplot2)
-library (reshape)
 
 source ('preamble.r')
 Source ('misc.r')

@@ -1,5 +1,9 @@
 
-library (NMF)
+## install and load libraries automatically
+# library (NMF)
+if (!require("pacman")) install.packages ("pacman")
+pacman::p_load (NMF)
+
 nmf.options (grid.patch=TRUE)
 
 

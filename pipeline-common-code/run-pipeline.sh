@@ -15,7 +15,7 @@ function usage
 {
   echo "Usage: $0 -s <SM-output-file> -n <norm-data> "
   echo "             -r <directory> -c <common-code-dir> -d <common-data-dir>"
-  echo "             [-l <previous-pipeline-dir>] [-t <type>]  [-m <data>]  [-b]  [-v]"
+  echo "             [-l <previous-pipeline-dir>] [-t <type>]  [-m <data>]  [-u | -s]  [-v]"
   echo "       <SM-output-file> is Spectrum Mill output in ssv format"
   echo "       <norm-data> is normalized input data table"
   echo "       <type> is proteome [default] or phosphoproteome"
@@ -23,7 +23,9 @@ function usage
   echo "       <previous-pipeline-dir> is a directory where pipeline was previously run"
   echo "           if -l is specified, data-with-intensity and 2comp-normalization are"
   echo "           symlinked to previous run"
-  echo "       -b enables use of UGER (default: do not use UGER)"
+  echo "       -s enables use of SLURM (default: do not use SLURM)"
+  echo "       -u enables use of UGER (default: do not use UGER)"
+  echo "           if both -s and -u are specified, the option specified last will take precedence"
   echo "       -v enabels running cna plots (default: do not run cna)"
   echo "       Parameters in [ ... ] are optional. Rest are required."
   echo "       Use -h to print this message."
@@ -40,7 +42,7 @@ data_dir=
 prev_dir=
 prefix="proteome"
 data=
-use_bsub="FALSE"
+use_cluster="none"
 run_cna="FALSE"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -73,7 +75,9 @@ while [ "$1" != "" ]; do
 	-m )     shift
 	         data=$1
 		 ;;
-	-b )     use_bsub="TRUE"
+	-s )     use_cluster="slurm"
+		 ;;
+	-u )     use_cluster="uger"
 		 ;;
 	-v )     run_cna="TRUE"
 	         ;;
@@ -141,6 +145,7 @@ fi
 
 ## copy preamble -- this could change from run to run
 cp $code_dir/preamble.r preamble.r
+echo "compute.cluster.type <- '$use_cluster'" >> preamble.r
 for d in $sub_dirs
 do
   mkdir $d
@@ -193,18 +198,25 @@ for f in gene-location.csv; do (cd correlation; ln -s ../data/$f $f); done
 cmd_sync=""
 cmd_async=""
 jname="job$BASHPID"
-if [ $use_bsub = "TRUE" ]
+if [ $use_cluster = "uger" ]
 then
   cmd_sync="qsub -sync y -q short -o uger.out -cwd -j y -N $jname"
   cmd_async="qsub -q short -o uger.out -cwd -j y -N $jname"
   if [ $prefix = "phosphoproteome" ]
   then
-    cmd_sync="$cmd_sync -l h_vmem=12g $code_dir/runR.sh"
-    cmd_async="$cmd_async -l h_vmem=12g $code_dir/runR.sh"
+    cmd_sync="$cmd_sync -l h_vmem=12g $code_dir/runR-uger.sh"
+    cmd_async="$cmd_async -l h_vmem=12g $code_dir/runR-uger.sh"
   else
-    cmd_sync="$cmd_sync -l h_vmem=8g $code_dir/runR.sh"
-    cmd_async="$cmd_async -l h_vmem=8g $code_dir/runR.sh"
+    cmd_sync="$cmd_sync -l h_vmem=8g $code_dir/runR-uger.sh"
+    cmd_async="$cmd_async -l h_vmem=8g $code_dir/runR-uger.sh"
    fi
+fi
+
+if [ $use_cluster = "slurm" ]
+then
+  # do not specify memory requests in SLURM
+  cmd_sync="salloc -t 5:0:0 -J $jname /usr/bin/srun --preserve-env $code_dir/runR-slurm.sh"
+  cmd_async="sbatch -t 5:0:0 -o slurm.out -J $jname $code_dir/runR-slurm.sh"
 fi
 
 
