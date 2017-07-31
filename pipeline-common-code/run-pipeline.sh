@@ -15,7 +15,7 @@ function usage
 {
   echo "Usage: $0 -s <SM-output-file> -n <norm-data> "
   echo "             -r <directory> -c <common-code-dir> -d <common-data-dir>"
-  echo "             [-l <previous-pipeline-dir>] [-t <type>]  [-m <data>]  [-u | -s]  [-v]"
+  echo "             [-l <previous-pipeline-dir>] [-t <type>]  [-m <data>]  [-u | -x]  [-v]"
   echo "       <SM-output-file> is Spectrum Mill output in ssv format"
   echo "       <norm-data> is normalized input data table"
   echo "       <type> is proteome [default] or phosphoproteome"
@@ -23,7 +23,7 @@ function usage
   echo "       <previous-pipeline-dir> is a directory where pipeline was previously run"
   echo "           if -l is specified, data-with-intensity and 2comp-normalization are"
   echo "           symlinked to previous run"
-  echo "       -s enables use of SLURM (default: do not use SLURM)"
+  echo "       -x enables use of SLURM (default: do not use SLURM)"
   echo "       -u enables use of UGER (default: do not use UGER)"
   echo "           if both -s and -u are specified, the option specified last will take precedence"
   echo "       -v enabels running cna plots (default: do not run cna)"
@@ -43,6 +43,7 @@ prev_dir=
 prefix="proteome"
 data=
 use_cluster="none"
+cluster_queue=
 run_cna="FALSE"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -75,13 +76,13 @@ while [ "$1" != "" ]; do
 	-m )     shift
 	         data=$1
 		 ;;
-	-s )     use_cluster="slurm"
+	-x )     use_cluster="slurm"
 		 ;;
 	-u )     use_cluster="uger"
 		 ;;
 	-v )     run_cna="TRUE"
 	         ;;
-        -h )     usage
+  -h )     usage
 	         exit
 		 ;;
 	* )      usage
@@ -95,6 +96,11 @@ if [[ ( "$sm_file" = "" && "$norm_data" = "" ) || "$analysis_dir" = "" || "$code
 then
   usage
   exit 1
+fi
+
+if [[ "$use_cluster" = "slurm" ]]
+then
+  cluster_queue="${CLUSTER_QUEUE:?Set CLUSTER_QUEUE environment variable when using SLURM}"
 fi
 
 
@@ -146,6 +152,7 @@ fi
 ## copy preamble -- this could change from run to run
 cp $code_dir/preamble.r preamble.r
 echo "compute.cluster.type <- '$use_cluster'" >> preamble.r
+echo "cluster.queue <- '$cluster_queue'" >> preamble.r   # will be used only for SLURM
 for d in $sub_dirs
 do
   mkdir $d
@@ -176,11 +183,11 @@ fi
 
 ## link appropriate code in preparation for running pipeline components
 for f in rna-seq.r rna-seq-correlation.r; do ln -s $code_dir/$f rna-seq/$f; done
-for f in cna-analysis.r generate-cna-plots.r run-cna-analysis.r run-cna-analysis-all.r runR.sh; do ln -s $code_dir/$f cna/$f; done
+for f in cna-analysis.r generate-cna-plots.r run-cna-analysis.r run-cna-analysis-all.r runR-$use_cluster.sh; do ln -s $code_dir/$f cna/$f; done
 for f in netgestalt-input-data.r; do ln -s $code_dir/$f netgestalt/$f; done
 for f in mut-analysis.r sigmut-genes.r mutated-gene-markers.r; do ln -s $code_dir/$f mutation/$f; done
 for f in assoc-analysis.r; do ln -s $code_dir/$f association/$f; done
-for f in correlation.r run-correlation.r runR.sh; do ln -s $code_dir/$f correlation/$f; done
+for f in correlation.r run-correlation.r runR-$use_cluster.sh; do ln -s $code_dir/$f correlation/$f; done
 
 # link the following files since they are used by a LSF array job script
 # (and is easier to manage as files in the current directory)
@@ -214,9 +221,9 @@ fi
 
 if [ $use_cluster = "slurm" ]
 then
-  # do not specify memory requests in SLURM
-  cmd_sync="salloc -t 5:0:0 -J $jname /usr/bin/srun --preserve-env $code_dir/runR-slurm.sh"
-  cmd_async="sbatch -t 5:0:0 -o slurm.out -J $jname $code_dir/runR-slurm.sh"
+  # request 16G memory in all cases
+  cmd_sync="salloc -p $cluster_queue -t 5:0:0 --mem=12G -J $jname /usr/bin/srun $code_dir/runR-slurm.sh"
+  cmd_async="sbatch -p $cluster_queue -t 5:0:0 --mem=12G -o slurm.out -J $jname $code_dir/runR-slurm.sh"
 fi
 
 

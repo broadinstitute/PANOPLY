@@ -30,12 +30,14 @@ write.bsub.file <- function (prefix, mrna, cna, pome) {
           slurm={
             # SLURM (see https://srcc.stanford.edu/sge-slurm-conversion for SGE to SLURM conversion)
             cat ("#!/bin/bash\n",
-                 "#SBATCH -o ", scratch.fs, prefix, "-dump/corrcalc-out-$TASK_ID.txt    # std out\n",
+                 "#SBATCH -o ", scratch.fs, prefix, "-dump/corrcalc-out-%a.txt    # std out\n",
                  "#SBATCH --export=ALL                                   # propagate enrivonment\n",
                  "#SBATCH -n 1                                           # tasks, 1 for R\n",
-                 "#SBATCH -t 48:0:0                                      # time (2d), required on some systems",
+                 "#SBATCH -p ", cluster.queue, "                         # partition/queue to use",
+                 "#SBATCH -t 48:0:0                                      # time (2d), required on some systems\n",
+                 "#SBATCH --mem=8G                                       # memory \n",
                  "#SBATCH -a 1-", LSF.mut.jid.max, "                     # job array\n",
-                 "#SBATCH -j ", prefix, "corr", "                        # job array name\n\n",
+                 "#SBATCH -J ", prefix, "corr", "                        # job array name\n\n",
                  file=script, sep='')
             cat ("Rscript cna-analysis.r $SLURM_ARRAY_TASK_ID", LSF.mut.jid.max, prefix, mrna, cna, pome, "\n",
                  file=script, append=TRUE)  
@@ -63,8 +65,8 @@ run.bsub.file <- function (prefix, force=FALSE) {
     # remove dump and output directories and create new ones
     if (file.exists (dump.dir)) unlink (dump.dir, recursive=TRUE)
     if (file.exists (out.dir)) unlink (out.dir, recursive=TRUE)
-    dir.create (dump.dir)
-    dir.create (out.dir)
+    mkdir (dump.dir)
+    mkdir (out.dir)
     if (scratch.fs != "") {
       # create links from cwd -- will generate warning if links exist
       file.symlink (dump.dir, ".")
@@ -138,7 +140,7 @@ finish.plots <- function (groups=NULL) {
       cmd <- switch (compute.cluster.type,
                      uger={paste ('qsub -q long -o uger.out -cwd -j y -l h_vmem=16g -V runR-uger.sh Rscript cna-analysis.r 0 ', 
                                   length (list.files (paste (x, '-output', sep='')))/4, ' ', x, ' NULL NULL NULL', sep='')},
-                     slurm={paste ('sbatch -o slurm.out --export=ALL runR-slurm.sh Rscript cna-analysis.r 0 ', 
+                     slurm={paste ('sbatch -p ', cluster.queue, ' -o slurm.out --mem=16G --export=ALL runR-slurm.sh Rscript cna-analysis.r 0 ', 
                                    length (list.files (paste (x, '-output', sep='')))/4, ' ', x, ' NULL NULL NULL', sep='')},
                      {paste ('Rscript cna-analysis.r 0 1 ', x, ' NULL NULL NULL', sep='')}
       )

@@ -168,11 +168,7 @@ if (label.type == 'iTRAQ4') {
 
 ## Compute Cluster 
 #  options: uger, slurm, none
-#  set one of the following for parallel i/o
-scratch.fs <- sprintf ('/scratch/users/manidr/pid-%s/', Sys.getpid())    # MIT c3ddb
-# scratch.fs <- sprintf ('/oasis/scratch/comet/manidr/temp_project/pid-%s/', Sys.getpid())    # SDSC Comet
-# scratch.fs <- ''   # Broad UGER -- use local fs; no scratch/parallel fs
-
+# Support functions
 # system execution command -- takes into account compute.cluster.type
 system.x <- function (cmd, ...) {
   if (compute.cluster.type == 'uger') {
@@ -195,8 +191,28 @@ compute.job.done <- function (jname) {
   )
 }
 
+mkdir <- function (fp) {
+  # recursively create directory tree before attempting to create dir at leaf
+  # neede when scratch.fs is specified, since intermediate directories many not exist
+  if (!file.exists(fp)) {
+    mkdir (dirname(fp))
+    dir.create (fp)
+  }
+} 
 
-# compute cluster type appended by run-pipeline shell script
-# options: uger, slurm, none
+
+# Options
+#  set one of the following for parallel i/o
+scratch.fs <- sprintf ('/scratch/users/manidr/pid-%s/', Sys.getpid())    # MIT c3ddb
+# scratch.fs <- sprintf ('/oasis/scratch/comet/manidr/temp_project/pid-%s/', Sys.getpid())    # SDSC Comet
+# scratch.fs <- ''   # Broad UGER -- use local fs; no scratch/parallel fs
+# queue
+compute.queue <- "defq"     # MIT c3ddb
+# compute.queue <- "compute"   # SDSC Comet
+# no compute queue needed for Broad (use defaults)
+
+# compute cluster type (compute.cluster.type) and partition (cluster.queue) appended by run-pipeline shell script
+# compute.cluster.type options: uger, slurm, none
+# cluster.queue: depends on target system (defq for MIT; compute for SDSC); defined in shell env variable
 
 
