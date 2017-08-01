@@ -33,7 +33,7 @@ write.bsub.file <- function (prefix, mrna, cna, pome) {
                  "#SBATCH -o ", scratch.fs, prefix, "-dump/corrcalc-out-%a.txt    # std out\n",
                  "#SBATCH --export=ALL                                   # propagate enrivonment\n",
                  "#SBATCH -n 1                                           # tasks, 1 for R\n",
-                 "#SBATCH -p ", cluster.queue, "                         # partition/queue to use",
+                 "#SBATCH -p ", cluster.queue, "                         # partition/queue to use\n",
                  "#SBATCH -t 48:0:0                                      # time (2d), required on some systems\n",
                  "#SBATCH --mem=8G                                       # memory \n",
                  "#SBATCH -a 1-", LSF.mut.jid.max, "                     # job array\n",

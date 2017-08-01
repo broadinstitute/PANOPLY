@@ -44,6 +44,7 @@ prefix="proteome"
 data=
 use_cluster="none"
 cluster_queue=
+scratch_dir=
 run_cna="FALSE"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -101,6 +102,7 @@ fi
 if [[ "$use_cluster" = "slurm" ]]
 then
   cluster_queue="${CLUSTER_QUEUE:?Set CLUSTER_QUEUE environment variable when using SLURM}"
+  scratch_dir="${SCRATCH_DIR:?Set SCRATCH_DIR environment variable to point to scratch file system}"
 fi
 
 
@@ -153,6 +155,7 @@ fi
 cp $code_dir/preamble.r preamble.r
 echo "compute.cluster.type <- '$use_cluster'" >> preamble.r
 echo "cluster.queue <- '$cluster_queue'" >> preamble.r   # will be used only for SLURM
+echo "scratch.fs <- sprintf ('%s/pid-%s/', '$scratch_dir', Sys.getpid())" >> preamble.r   # will be used only for SLURM
 for d in $sub_dirs
 do
   mkdir $d

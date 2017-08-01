@@ -201,18 +201,18 @@ mkdir <- function (fp) {
 } 
 
 
-# Options
-#  set one of the following for parallel i/o
-scratch.fs <- sprintf ('/scratch/users/manidr/pid-%s/', Sys.getpid())    # MIT c3ddb
-# scratch.fs <- sprintf ('/oasis/scratch/comet/manidr/temp_project/pid-%s/', Sys.getpid())    # SDSC Comet
-# scratch.fs <- ''   # Broad UGER -- use local fs; no scratch/parallel fs
-# queue
-compute.queue <- "defq"     # MIT c3ddb
-# compute.queue <- "compute"   # SDSC Comet
-# no compute queue needed for Broad (use defaults)
+# Options for parallel computing and i/o
 
 # compute cluster type (compute.cluster.type) and partition (cluster.queue) appended by run-pipeline shell script
 # compute.cluster.type options: uger, slurm, none
+
+# scratch file system -- set $SCRATCH_DIR in environment
+# scratch.fs <- sprintf ('/scratch/users/manidr/pid-%s/', Sys.getpid())    # MIT c3ddb
+# scratch.fs <- sprintf ('/oasis/scratch/comet/manidr/temp_project/pid-%s/', Sys.getpid())    # SDSC Comet
+# scratch.fs <- ''   # Broad UGER -- use local fs; no scratch/parallel fs
+
+# queue -- set $CLUSTER_QUEUE in environment
 # cluster.queue: depends on target system (defq for MIT; compute for SDSC); defined in shell env variable
+# no compute queue needed for Broad (use defaults)
 
 
