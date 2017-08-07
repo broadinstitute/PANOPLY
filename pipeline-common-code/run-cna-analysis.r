@@ -1,4 +1,10 @@
 
+# check to make sure libraries needed by cna-analysis.r are already installed
+# (else, many jobs can fail before one of the jobs ends up installing the libraries)
+if (!require("pacman")) install.packages ("pacman")
+pacman::p_load (psych)
+
+
 source ('preamble.r')
 min.cna.N <- 5
 bsub.file <- 'cna-analysis.bsub'
@@ -34,7 +40,7 @@ write.bsub.file <- function (prefix, mrna, cna, pome) {
                  "#SBATCH --export=ALL                                   # propagate enrivonment\n",
                  "#SBATCH -n 1                                           # tasks, 1 for R\n",
                  "#SBATCH -p ", cluster.queue, "                         # partition/queue to use\n",
-                 "#SBATCH -t 48:0:0                                      # time (2d), required on some systems\n",
+                 "#SBATCH -t 16:0:0                                      # run time, required on some systems\n",
                  "#SBATCH --mem=8G                                       # memory \n",
                  "#SBATCH -a 1-", LSF.mut.jid.max, "                     # job array\n",
                  "#SBATCH -J ", prefix, "corr", "                        # job array name\n\n",
@@ -140,7 +146,7 @@ finish.plots <- function (groups=NULL) {
       cmd <- switch (compute.cluster.type,
                      uger={paste ('qsub -q long -o uger.out -cwd -j y -l h_vmem=16g -V runR-uger.sh Rscript cna-analysis.r 0 ', 
                                   length (list.files (paste (x, '-output', sep='')))/4, ' ', x, ' NULL NULL NULL', sep='')},
-                     slurm={paste ('sbatch -p ', cluster.queue, ' -o slurm.out --mem=16G --export=ALL runR-slurm.sh Rscript cna-analysis.r 0 ', 
+                     slurm={paste ('sbatch -t 4:0:0 -p ', cluster.queue, ' -o slurm.out --mem=16G --export=ALL runR-slurm.sh Rscript cna-analysis.r 0 ', 
                                    length (list.files (paste (x, '-output', sep='')))/4, ' ', x, ' NULL NULL NULL', sep='')},
                      {paste ('Rscript cna-analysis.r 0 1 ', x, ' NULL NULL NULL', sep='')}
       )
