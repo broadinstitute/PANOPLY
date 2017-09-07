@@ -1,44 +1,43 @@
 
 
-source ('preamble.r')
+source ('config.r')
 
 
-sd.threshold <- 1
-out.prefix <- 'rna-seq'
+sd.threshold <- rna.sd.threshold
+out.prefix <- rna.output.prefix
 
 
 
-d <- read.delim ( file.path (data.dir, 'rnaseq-data.txt'), check.names=FALSE )
-data <- d[, -1]
-id <- sapply (d[,1], function (x) s <- strsplit (toString (x), split='\\|')[[1]][1])
-samples <- colnames (data)
+d <- parse.gctx (rna.data.file)
+d@rdesc [,'Description'] <- d@rdesc [,'id']   # make id and Description identical
+samples <- d@cid
 
-tumor.info <- read.csv ( file.path (data.dir, 'exptdesign.csv'), skip=2, header=F )
-samples.order <- as.vector (t (tumor.info[,5:7]) )
+if (file.exists(expt.design.file)) {
+  # obtain sample order from experiment design file
+  tumor.info <- read.csv (expt.design.file)
+  samples.order <- tumor.info[,'Sample.ID']
+} else {
+  # obtain sample order from master data file (gct3)
+  filtered.data <- parse.gctx (master.file)
+  samples.order <- filtered.data@cdesc [, 'Sample.ID']
+}
+
 run.order <- sapply (samples.order,
                      function (x) {
                        pos <- which (samples %in% x)
                        # missing samples point to NA column add below
-                       return ( ifelse (length(pos)==0, ncol(data)+1, pos) )
+                       return ( ifelse (length(pos)==0, length(samples)+1, pos) )
                      })
-
-data <- cbind (data, na.col=rep(NA, nrow(data)))  # add NA column at the end -- use for missing samples
-data <- cbind (Name=id, Description=id, data[,run.order])
-colnames (data) <- c ("Name", "Description", samples.order)
-
-write.gct (data, paste (out.prefix, '.gct', sep=''))
-
-
-## get PAM 50 genes only
-g <- read.table ( file.path (data.dir, 'pam50_annotation.txt'), header=T ) [,1]
-pam50.genes <- unlist (lapply (g, toString))
-data.pam50 <- data [ data[,'Name'] %in% pam50.genes, ]
-write.gct (data.pam50, paste (out.prefix, '-pam50.gct', sep=''))
-
+d <- add.cols.gct (d, data.frame (na.col=rep(NA, nrow(d@mat))))   # add NA column at the end -- use for missing samples
+d <- rearrange.gct (d, run.order, new.cid=samples.order)
+write.gct (d, paste (out.prefix, '.gct', sep=''))
 
 
 ## filters
 # exclude rows with SD less than sd.threshold
-sds <- apply (data [, 3:ncol(data)], 1, sd, na.rm=TRUE)
-data.subset <- data [ sds > sd.threshold, ]
-write.gct (data.subset, paste (out.prefix, '-sdfilter.gct', sep=''))
+if ( !is.na (sd.threshold) ) {
+  sds <- apply (d@mat, 1, sd, na.rm=TRUE)
+  d.subset <- row.subset.gct (d, sds > sd.threshold)
+  write.gct (d.subset, paste (out.prefix, '-sdfilter.gct', sep=''))
+}
+

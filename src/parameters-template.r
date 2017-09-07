@@ -4,7 +4,12 @@
 ### Pipeline parameters -- uncomment as needed (or generate from code)
 
 # 
-# 
+#
+# ## Label type for MS experiment (set.label.type must be called to initialize variables)
+# label.type <- 'TMT10'   # alternatives: iTRAQ4
+# set.label.type (label.type)
+#
+#
 # ## QC
 # bimodal.cls <- NULL
 # qc.col <- 'QC.status'

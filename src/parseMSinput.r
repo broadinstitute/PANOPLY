@@ -64,7 +64,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
       header.1 <- unlist (lapply (header,
                                   function (x) {
                                       s <- strsplit (x, split=' ')[[1]]
-                                      retval <-  s [length(s)]	 #keep the string after the first space
+                                      retval <-  s [length(s)]	 # keep the string after the first space
                                       if (length (s) < 2 && grepl (header.pat, s[1]))
                                           retval <- paste (s[1], 'ignore', sep='')
                                       return (retval)
@@ -72,7 +72,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
       header.2 <- unlist (lapply (header,
                                   function (x) {
                                       s <- strsplit (x, split=' ')[[1]]
-                                      return ( s[1] ) 	 #keep the string before the first space
+                                      return ( s[1] ) 	 # keep the string before the first space
                                   }))
     }
     n <- n.channels - 1
@@ -214,7 +214,7 @@ if (type == "proteome") {
   process.dataset (dataset = input.data.file,
                    out.prefix = 'proteome', proteome=TRUE, 
                    id.col = 'accession_number', additional.cols=info.cols,
-                   expt.design=file.path (data.dir, 'exptdesign.csv'))
+                   expt.design=expt.design.file)
 } else { 
   # phosphoproteome, acetylome, or other ptm-ome
   info.cols <- c ('geneSymbol', 
@@ -238,6 +238,6 @@ if (type == "proteome") {
   process.dataset (dataset = input.data.file,
                    out.prefix = type, proteome=FALSE, additional.cols=info.cols,
                    id.col = 'accessionNumber_VMsites_numVMsitesPresent_numVMsitesLocalizedBest_earliestVMsiteAA_latestVMsiteAA',
-                   expt.design=file.path (data.dir, 'exptdesign.csv'))
+                   expt.design=expt.design.file)
 }
 

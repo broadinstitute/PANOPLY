@@ -6,8 +6,8 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
                             na.max=NULL, no.na=TRUE, separate.QC.types=TRUE, cls=NULL,
                             min.numratio=1, n.min.numratio=NULL, sd.threshold=NULL) {
   
-  write.out <- function (d, f) {
-    ds@mat <- d
+  write.out <- function (f) {
+    # write out current ds (gct) to file f
     if (separate.QC.types && length (unique (cls)) > 1)   # if there is more than one type
       for (cl in unique (cls)) {
         d.t <- subset.gct (ds, cls==cl)
@@ -23,8 +23,11 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
   
   
   ds <- parse.gctx ( paste (file.prefix, '.gct', sep='') )
-  data <- ds@mat
   input.ver <- ifelse (ds@version=="#1.3", 3, 2)
+  
+  # convert na.max to integer if a fraction 
+  if (na.max < 1) na.max <- ceiling (ncol(ds@mat) * na.max)
+  
   # cls for QC types -- input cls takes precedence
   # if input not specified, check if qc.col exisits in gct3 file
   # if none are specified, generate one with single class
@@ -44,34 +47,38 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
     d.numratios <- numratios@mat
     if ( is.null (n.min.numratio) ) min.numratio.count <- ifelse (is.null (na.max), ncol (d.numratios), na.max )
     else min.numratio.count <- n.min.numratio
-    data <- data [ unlist (apply (d.numratios, 1, 
-                                  function (x) sum (x < min.numratio, na.rm=TRUE) < min.numratio.count)), ]
+    ds <- row.subset.gct (ds, index=unlist (apply (d.numratios, 1, 
+                                                   function (x) sum (x < min.numratio, na.rm=TRUE) < min.numratio.count)))
   }
   
   if (!is.null (sd.threshold))
     # exclude rows with SD less than sd.threshold
-    data <- data [ apply (data, 1, sd, na.rm=TRUE) > sd.threshold, ]
+    ds <- row.subset.gct (ds, index=apply (ds@mat, 1, sd, na.rm=TRUE) > sd.threshold)
 
   if (! is.null (na.max)) {
     # keep rows with no more than na.max missing values
-    data <- data [ apply (data, 1, function (x) sum (!is.finite (x)) < na.max), ]
-    write.out (data, paste (out.prefix, '-NAmax', na.max, sep=''))  
+    ds <- row.subset.gct (ds, index=apply (ds@mat, 1, function (x) sum (!is.finite (x)) < na.max))
+    write.out (paste (out.prefix, '-NArm', sep=''))  
   } 
   
   if (no.na) {
     # keep only if observed in all samples: exclude any rows with missing values
     # this must occur after  if (! is.null (na.max))  ...
-    data <- data [ apply (data, 1, function (x) all (is.finite (x))), ]
-    write.out (data, paste (out.prefix, '-noNA', sep=''))
+    ds <- row.subset.gct (ds, index=apply (ds@mat, 1, function (x) all (is.finite (x))))
+    write.out (paste (out.prefix, '-noNA', sep=''))
   }
 
 }
 
 
 ## apply filtering
-nr.file <- ifelse (apply.SM.filter, 
-		   file.path (pre.dir, paste (type, '-num-ratio.gct', sep='')),
-		   NULL)
+# enable num-ratio filter only if apply.SM.filter is set and the file is present
+nr.file.path <- file.path (pre.dir, paste (type, '-num-ratio.gct', sep=''))
+if (apply.SM.filter && file.exists(nr.file.path)) {
+  nr.file <- nr.file.path
+} else {
+  nr.file <- NULL
+}
 # separate bimodal and unimodal samples (no effect here), with SD filter
 filter.dataset (paste (type, '-ratio-norm', sep=''), 
                 numratio.file=nr.file,

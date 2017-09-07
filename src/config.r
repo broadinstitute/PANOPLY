@@ -3,6 +3,10 @@
 ### Broad Institute PGDAC PIPELINE
 ### configuration and default parameters  
 
+## Many parameters here are used and/or assumed to have specific values in
+## run-pipeline.sh. If editing parameters before the "Pipeline Parameters" section,
+## cross check run-pipeline.sh to make corresponding changes
+
 
 ## Path for R-utilites (for I/O and other misc functions)
 Rutil.path <- switch (Sys.info()[['sysname']],
@@ -22,21 +26,18 @@ Source <- function (f) {
 
 
 Source ('gct-io.r')
+Source ('io.r')
 
 
 
 ## Directory structure
 # directories with raw, pre-processed and normalized data
 # also includes other analysis directories
-# directory structure is created by init option in run-pipeline.sh
+# directory structure is created by appropriate options in run-pipeline.sh
+# (changes to this will require corresponding changes in run-pipeline.sh)
 data.dir <- '../data'
 pre.dir <- '../parsed-data'
-norm.dir <- '../normalization'
-rnaseq.dir <- '../rna-seq'
-netgestalt.dir <- '../netgestalt'
-mut.dir <- '../mutation'
-cna.dir <- '../cna'
-
+norm.dir <- '../normalized-data'
 
 
 ## Command line arguments
@@ -75,43 +76,46 @@ if (type == 'proteome') {
 
 
 ## Label type for MS experiment
-label.type <- 'TMT10'   # alternatives: iTRAQ4
-
-
-## TMT-10
-if (label.type == 'TMT10') {
-  n.channels <- 10   # number of columns per experiment
-  # match the following channel names in the experiment design file to find sample names
-  plex.channels <- c('126','127N','127C','128N','128C','129N','129C','130N','130C')
-  # the above does not contain the reference channel:
-  ref.channel <- '131'
-  ## regex patterns for various matching
-  header.pat <- '.*TMT*'
-  ratio.pat <- '.*median$'
-  intensity.pat <- '^TMT_1[23][67890][NC]*_total$'
-  numratio.pat <- '.*numRatios.*_131$'
-  numspectra.pat <-'^num_?Spectra$'
-  totalint.pat <- '^totalIntensity$'
-  unique_pep.pat <- '^unique_peptides$'
-  refint.pat <- '^TMT_131_total$'
-}
-
-## iTRAQ-4
-if (label.type == 'iTRAQ4') {
-  n.channels <- 4   # number of columns per experiment
-  # match the following channel names in the experiment design file to find sample names
-  plex.channels <- c('114', '115', '116')
-  # the above does not contain the reference channel:
-  ref.channel <- '117'
-  ## regex patterns for various matching
-  header.pat <- '.*iTRAQ*'
-  ratio.pat <- '.*median$'
-  intensity.pat <- '^iTRAQ_11[456]_total$'
-  numratio.pat <- '.*numRatios.*_117$'
-  numspectra.pat <-'^num_?Spectra$'
-  totalint.pat <- '^totalIntensity$'
-  unique_pep.pat <- '^unique_peptides$'
-  refint.pat <- '^iTRAQ_117_total$'
+set.label.type <- function (label.type) {
+  ## function to set variables based on label.type
+  ## assign is used to set the value globally
+  ## options: TMT10 and iTRAQ4
+  
+  ## TMT-10
+  if (label.type == 'TMT10') {
+    assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
+    # match the following channel names in the experiment design file to find sample names
+    assign ("plex.channels",  c('126','127N','127C','128N','128C','129N','129C','130N','130C'), envir = .GlobalEnv)
+    # the above does not contain the reference channel:
+    assign ("ref.channel",  '131', envir = .GlobalEnv)
+    ## regex patterns for various matching
+    assign ("header.pat",  '.*TMT*', envir = .GlobalEnv)
+    assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("intensity.pat",  '^TMT_1[23][67890][NC]*_total$', envir = .GlobalEnv)
+    assign ("numratio.pat",  '.*numRatios.*_131$', envir = .GlobalEnv)
+    assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
+    assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
+    assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
+    assign ("refint.pat",  '^TMT_131_total$', envir = .GlobalEnv)
+  }
+  
+  ## iTRAQ-4
+  if (label.type == 'iTRAQ4') {
+    assign ("n.channels",  4, envir = .GlobalEnv)   # number of columns per experiment
+    # match the following channel names in the experiment design file to find sample names
+    assign ("plex.channels",  c('114', '115', '116'), envir = .GlobalEnv)
+    # the above does not contain the reference channel:
+    assign ("ref.channel",  '117', envir = .GlobalEnv)
+    ## regex patterns for various matching
+    assign ("header.pat",  '.*iTRAQ*', envir = .GlobalEnv)
+    assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("intensity.pat",  '^iTRAQ_11[456]_total$', envir = .GlobalEnv)
+    assign ("numratio.pat",  '.*numRatios.*_117$', envir = .GlobalEnv)
+    assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
+    assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
+    assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
+    assign ("refint.pat",  '^iTRAQ_117_total$', envir = .GlobalEnv)
+  }
 }
 
 
@@ -119,8 +123,8 @@ if (label.type == 'iTRAQ4') {
 # input files are copies to this location so that the tarball has all the data
 input.data.file <- file.path (data.dir, paste (type, '-SMout.ssv', sep=''))
 expt.design.file <- file.path (data.dir, 'exptdesign.csv')
-rnaseq.data.file <- file.path (data.dir, 'rna-seq.txt')
-cna.data.file <- file.path (data.dir, 'cna-data.txt')
+rna.data.file <- file.path (data.dir, 'rna-data.gct')
+cna.data.file <- file.path (data.dir, 'cna-data.gct')
 
 
 
@@ -129,6 +133,11 @@ cna.data.file <- file.path (data.dir, 'cna-data.txt')
 # can be overridden by redefining the appropriate variable in the
 # parameter redefinition section
 ###
+
+
+## Label type for MS experiment (set.label.type must be called to initialize variables)
+label.type <- 'TMT10'   # alternatives: iTRAQ4
+set.label.type (label.type) 
 
 
 ## QC
@@ -146,10 +155,11 @@ ndigits <- 5
 
 
 ## Missing values and filtering
-nmiss.plex <- 0.25
-n.plex <- length (unique (read.csv (expt.design.file)[,'Experiment']))
-na.max <- ceiling (n.plex * length(plex.channels) * nmiss.plex)                  
-                              # must be present in at least nmiss.plex fraction of the experiments (plexes)
+# nmiss.plex <- 0.25
+# n.plex <- length (unique (read.csv (expt.design.file)[,'Experiment']))
+# na.max <- ceiling (n.plex * length(plex.channels) * nmiss.plex)                  
+#                               # must be present in at least nmiss.plex fraction of the experiments (plexes)
+na.max <- 0.7                 # maximum allowed NA values, can be fraction or integer number of samples
 nmiss.factor <- 0.5           # for some situations, a more stringent condition is needed
 sd.filter.threshold <- 0.5    # SD threshold for SD filtering
 apply.SM.filter <- TRUE       # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
@@ -157,7 +167,7 @@ apply.SM.filter <- TRUE       # if TRUE, apply numRatio based filter (use TRUE i
 
 ## Normalization
 norm.method <- 'median'        # options: 2comp (default), median, mean
-alt.method <- '2comp'          # alt.method for comparison -- filtered datasets not generated
+alt.method <- 'median'         # alt.method for comparison -- filtered datasets not generated
 if (norm.method == alt.method) alt.method <- NULL
                                # ignored if alt.method is NULL, or is identical to norm.method
 
@@ -170,6 +180,9 @@ gene.id.col <- 'geneSymbol'
 # duplicate.gene.policy <- ifelse (type == 'phosphoproteome', 'median', 'maxvar')  
 duplicate.gene.policy <- 'maxvar'
 
+## RNA related
+rna.output.prefix <- 'rna-seq'  # output prefix for tables creates during RNA analysis
+rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
 
 ## Parallelization
 # mutation and correlation analysis -- max number of parallel jobs

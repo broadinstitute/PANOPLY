@@ -1,6 +1,6 @@
 
 
-source ('preamble.r')
+source ('config.r')
 
 
 
@@ -15,8 +15,8 @@ create.cls <- function (out.prefix, expt.design, type.cls=NULL) {
     tumor.info <- ds@cdesc
     sample.order <- ds@cid
     # create expt.design file for use downstream in the pipeline
-    expt.desn <- data.frame (Sample.ID=ds@cid, ds@cdesc)
-    write.csv (expt.desn, file.path (data.dir, 'exptdesign.csv'), row.names=FALSE, quote=FALSE)
+    expt.desn <- data.frame (ds@cdesc)
+    write.csv (expt.desn, expt.design.file, row.names=FALSE, quote=FALSE)
   } else {
     tumor.info <- read.csv (expt.design)
     rownames (tumor.info) <- tumor.info[,'Sample.ID']
@@ -50,6 +50,8 @@ create.cls <- function (out.prefix, expt.design, type.cls=NULL) {
 
 # different "type"s result in the same cls files, 
 # but different file prefix is convenient for batch scripts
+# use exptdesign file if it exists; else use the master data file (normalized+filtered)
 create.cls (type,
-            expt.design=file.path (data.dir, 'exptdesign.csv'))
+            expt.design=ifelse (file.exists (expt.design.file), expt.design.file, 
+                                paste (master.prefix, 'gct', sep='.')))
 

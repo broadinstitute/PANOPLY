@@ -4,59 +4,38 @@
 library (ggplot2)
 library (reshape)
 
-source ('preamble.r')
+source ('config.r')
 Source ('misc.r')
 Source ('map-to-genes.r')
 
 
+profile.plot.top.n <- 25
 
-explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file, pam50.cls, 
-                                  exclude=NULL, FDR=0.01, correlation.type='pearson') {
+
+explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file,  
+                                  FDR=0.05, correlation.type='pearson') {
   # explore gene (mrna) - protein correlation and sample-wise correlation between 
   # mrna expression and protein expression
-  # any samples in the exclude vector (ala cls) are removed before correlation calcs/plots
   # n.b: "pome" is used to repesent proteome or phosphoproteome
   
-  gi.gene.map <- read.delim (file.path (data.dir, protein.gene.map), sep='\t')
+  # read gct files
+  pome <- read.gct2 (pome.gct.file, check.names=FALSE)
+  mrna <- read.gct2 (mrna.gct.file, check.names=FALSE)
+  common.cols <- intersect (colnames (pome), colnames (mrna))
 
-  # read cls and account for non-BC samples
-  cls <- read.cls (pam50.cls)
-  keep <- cls == "Basal" | cls == "Her2" | cls == "LumA" | cls == "LumB"
-  cls <- cls [ keep ]
-  if (!is.null (exclude)) exclude <- exclude [ keep ]
-
-  
-  read.gct.filter.cols <- function (gct.file, col1.name) {
-    gdata <- read.gct (gct.file, check.names=FALSE)
-    gdata <- gdata [, c (TRUE, TRUE, keep)]
-    
-    if (!is.null (exclude)) gdata <- gdata [, c (TRUE, TRUE, !exclude)]
-    gdata <- gdata [, -1]
-    colnames (gdata)[1] <- col1.name
-    colnames (gdata)[-1] <- unlist (lapply (colnames (gdata)[-1],
-                                            function (x) { strsplit (x, split='\\.')[[1]][1] }))
-    colnames (gdata)[-1] <- sub ('\\.', '-', make.names (colnames (gdata)[-1], unique=TRUE) )
-    return (gdata)
+  adjust.columns.rows <- function (d) {
+    d <- d [, common.cols]
+    d <- d [, -1]
+    colnames (d)[1] <- gene.id.col
+    d <- process.duplicate.genes (d, genesym.col=1, data.cols=2:ncol(d), map.genes=FALSE,
+                                  policy='median')  # irrespective of global policy, median makes sense here
+    return (d)
   }
-
-  
-  pome <- read.gct.filter.cols (pome.gct.file, protein.id.col)
-  mrna <- read.gct.filter.cols (mrna.gct.file, gene.id.col)
+  pome <- adjust.columns.rows (pome)
+  mrna <- adjust.columns.rows (mrna)
   
   
-  # reorder by PAM-50 class (cls file is identical for pome and mrna)
-  # order (alphabetical): Basal, Her2, LumA, LumB
-  # eliminate Normal samples since these don't have mRNA profiles
-  if (!is.null (exclude)) cls <- cls [!exclude]
-  
-  new.order <- c (1, order (cls) + 1)
-  pome <- pome [, new.order]
-  mrna <- mrna [, new.order] 
-  
-  
-  data <- merge (gi.gene.map, pome, by=protein.id.col)
-  data <- merge (data, mrna, by=gene.id.col, suffixes=c ('.pome', '.mrna'))
-  data <- process.duplicate.genes (data, genesym.col=1, data.cols=7:ncol(data), map.genes=FALSE)
+  data <- merge (pome, mrna, by=gene.id.col, suffixes=c ('.pome', '.mrna'))
   
   # data extends from start.col:end.col, with proteomics samples first, 
   # followed by mrna samples
@@ -94,11 +73,9 @@ explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file, pam50.cl
   print (table (correlations > 0), quote=FALSE)
   print (paste ('Positive correlations:', round (s.pos*100, digits=2), '%'), quote=F)
   
-  pdf (paste (prefix, '-mrna-cor.pdf', sep=''), width=8, height=5)
   q <- qplot (correlations, geom='histogram', binwidth=0.01, xlab=paste (type, '- mrna correlation'))
-  print (q)
-  dev.off ()
-  
+  ggsave (paste (prefix, '-mrna-cor.pdf', sep=''), width=8, height=5)
+   
   print (table (pvalues.fdr < FDR), quote=FALSE)
   print (paste ('Significant correlations ( FDR <', FDR, '):',
                 round (sum (pvalues.fdr < FDR, na.rm=T) / length(pvalues.fdr) * 100, digits=2), '%'), quote=F)
@@ -109,18 +86,18 @@ explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file, pam50.cl
   print (table (correlations.sig > 0), quote=FALSE)
   print (paste ('Positive significant correlations:', round (s.sig.pos*100, digits=2), '%'), quote=F)
   
-  pdf (paste (prefix, '-mrna-cor-sig.pdf', sep=''), width=8, height=5)
-  q <- qplot (correlations.sig, geom='histogram', binwidth=0.01,
-              xlab=paste (type, '- mrna correlation\nFDR pvalue <', FDR))
-  print (q)
-  dev.off ()
-  
-  pdf (paste (prefix, '-mrna-cor-combined.pdf', sep=''), width=8, height=5)
-  hist (correlations, col='grey', breaks=200, xlab=paste (type, "- mrna correlation"), ylab='count')
-  hist (correlations.sig, col='red', breaks=200, add=TRUE)
-  legend (-0.5, 80, c ('all', 'significant'), fill=c('grey','red'), bty='n')
-  dev.off ()
-  
+  if (length (correlations.sig) > 0) {
+    # only if there are significant correlations
+    q <- qplot (correlations.sig, geom='histogram', binwidth=0.01,
+                xlab=paste (type, '- mrna correlation\nFDR pvalue <', FDR))
+    ggsave (paste (prefix, '-mrna-cor-sig.pdf', sep=''), width=8, height=5)
+    
+    pdf (paste (prefix, '-mrna-cor-combined.pdf', sep=''), width=8, height=5)
+    hist (correlations, col='grey', breaks=200, xlab=paste (type, "- mrna correlation"), ylab='count')
+    hist (correlations.sig, col='red', breaks=200, add=TRUE)
+    legend (-0.5, 80, c ('all', 'significant'), fill=c('grey','red'), bty='n')
+    dev.off ()
+  }
   
   ##
   ## subsets
@@ -133,7 +110,7 @@ explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file, pam50.cl
     cols.mrna <- grep ('\\.mrna', colnames (data.subset))
     d.pome <- data.subset [, cols.pome]
     d.mrna <- data.subset [, cols.mrna]
-    rownames (d.pome) <- rownames (d.mrna) <- make.names (paste ('Gene:', data.subset[,1], '  Protein:', data.subset[,2]), unique=TRUE)
+    rownames (d.pome) <- rownames (d.mrna) <- make.names (paste ('Gene:', data.subset[,1]), unique=TRUE)
     
     d.pome <- melt (t (d.pome))
     d.mrna <- melt (t (d.mrna))
@@ -163,13 +140,16 @@ explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file, pam50.cl
   }
   
   
-  # best pairs (high correlation + significant p-value)
-  # relax p-value threshold for neg correlation to include some
-  select1 <- which ( abs (correlations) > 0.7 & pvalues.fdr < FDR )
-  data.subset1 <- data [select1, ]
-  write.table (data.subset1, paste (prefix, '-mrna-cor-best.tsv', sep=''), row.names=FALSE, sep='\t')
-  plot.profiles (data.subset1, paste (prefix, '-mrna-cor-best.pdf', sep=''), 40)
-  
+  # best pairs (high correlation + significant p-value) -- plot top n if there are too many
+  if (length (correlations.sig) > 0) {
+    # only if there are significant correlations
+    select1 <- which ( abs (correlations) > 0.7 & pvalues.fdr < FDR )
+    data.subset1 <- data [select1, ]
+    data.subset1 <- data.subset1 [ order (data.subset1[,'correlation'], decreasing=TRUE), ]  # sort by correlation
+    write.table (data.subset1, paste (prefix, '-mrna-cor-best.tsv', sep=''), row.names=FALSE, sep='\t')
+    plot.profiles (data.subset1 [1:min (profile.plot.top.n, nrow(data.subset1)),], 
+                   paste (prefix, '-mrna-cor-best.pdf', sep=''), 40)
+  } 
   
   ##
   ## sample-level correlation
@@ -187,22 +167,8 @@ explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file, pam50.cl
 
 
 
-## call explore.correlations on the pome with and without bimodal samples
-pome.gct.file=file.path (norm.dir, paste (type, '-ratio-norm-nosdfilter-NAmax', na.max, '.gct', sep='')) 
-mrna.gct.file='rna-seq.gct' 
-pam50.cls=file.path (norm.dir, paste (type, '-pam50.cls', sep=''))
-bimodal.cls <- read.cls (file.path (data.dir, bimodal.cls))
-
-explore.correlations (type, pome.gct.file, mrna.gct.file, pam50.cls)
-
-if (sample.source == 'tcga') {
-  # whim samples are all unimodal, and unimodal is identical to above
-  explore.correlations (paste (type, '-unimodal', sep=''), pome.gct.file, mrna.gct.file, pam50.cls,
-                        exclude=(bimodal.cls=='bimodal'))
-  ## bimodal samples only
-  explore.correlations (paste (type, '-bimodal', sep=''), pome.gct.file, mrna.gct.file, pam50.cls,
-                        exclude=(bimodal.cls=='unimodal'))
-}
+## call explore.correlations on the pome
+explore.correlations (type, master.file, paste (rna.output.prefix, '.gct', sep=''))
 
 
 
