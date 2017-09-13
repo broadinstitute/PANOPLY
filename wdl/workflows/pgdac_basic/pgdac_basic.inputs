@@ -1,5 +1,6 @@
 {
-  "pgdac_basic.SMtable": "/Volumes/prot_proteomics/LabMembers/manidr/PGDAC/test/input/20170109-proteome-v2-frag.ssv",
-  "pgdac_basic.exptDesign": "/Volumes/prot_proteomics/LabMembers/manidr/PGDAC/test/input/files/exptdesign.csv",
-  "pgdac_basic.analysisDir": "foo"
+  "pgdac_basic.SMtable": "/Volumes/prot_proteomics/LabMembers/manidr/PGDAC/test/input/proteome-medullo-v2-SMoutput-frag.ssv",
+  "pgdac_basic.exptDesign": "/Volumes/prot_proteomics/LabMembers/manidr/PGDAC/test/input/exptdesign.csv",
+  "pgdac_basic.rnaExpr": "/Volumes/prot_proteomics/LabMembers/manidr/PGDAC/test/input/microarray-data.gct"
+  "pgdac_basic.analysisDir": "pipeline-test"
 }

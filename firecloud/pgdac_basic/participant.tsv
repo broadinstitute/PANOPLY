@@ -1,2 +1,2 @@
-entity:participant_id	SMTable	ExptDesign	AnalysisDir
-MeduloTest	gs://fc-c00276af-4f9c-4e79-9fd5-66df1976685a/20170109-proteome-v2-frag.ssv	gs://fc-c00276af-4f9c-4e79-9fd5-66df1976685a/exptdesign.csv	test
+entity:participant_id	SMTable	exptDesign	rnaExpr	analysisDir	output1	output2
+MedulloProteome	gs://fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-medullo-v2-SMout.ssv	gs://fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-medullo-exptdesign.csv	gs://fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/medullo-rna.gct	proteome-medullo	gs://fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-output1.tar	gs://fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-output2.tar

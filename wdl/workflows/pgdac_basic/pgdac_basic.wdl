@@ -1,16 +1,17 @@
-task initialize {
+task parse_sm_table {
 	File SMtable
 	File exptDesign
 	String analysisDir
 	String codeDir = "/prot/proteomics/Projects/PGDAC/src"
+	String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
 	command {
 		set -euo pipefail
-		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh init -s ${SMtable} -r ${analysisDir} -c ${codeDir} -e ${exptDesign}
+		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -r ${analysisDir} -c ${codeDir} -e ${exptDesign}
 	}
 
 	output {
-		File outputs = "init-output.tar"
+		File outputs = "inputSM-output.tar"
 	}
 
 	runtime {
@@ -26,16 +27,18 @@ task initialize {
 
 
 
-task parse_sm_table {
+task mrna_protein_corr {
 	File tarball
+	File rnaExpr
+	String codeDir = "/prot/proteomics/Projects/PGDAC/src"
 
 	command {
 		set -euo pipefail
-		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh parseSM -i ${tarball}
+		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr -i ${tarball} -c ${codeDir} -rna ${rnaExpr}
 	}
 
 	output {
-		File outputs = "parseSM-output.tar"
+		File outputs = "RNAcorr-output.tar"
 	}
 
 	runtime {
@@ -49,39 +52,15 @@ task parse_sm_table {
 
 }
 
-
-
-task normalize_data {
-	File tarball
-
-	command {
-		set -euo pipefail
-		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh norm -i ${tarball}
-	}
-
-	output {
-		File outputs = "norm-output.tar"
-	}
-
-	runtime {
-		docker : "broadcptac/pgdac_basic:1"
-	}
-
-	meta {
-		author : "D. R. Mani"
-		email : "manidr@broadinstitute.org"
-	}
-
-}
 
 
 workflow pgdac_basic {
 	File SMtable
 	File exptDesign
+	File rnaExpr
 	String analysisDir
 
-  call initialize {input:SMtable=SMtable, analysisDir=analysisDir, exptDesign=exptDesign}
-  call parse_sm_table {input: tarball=initialize.outputs}
-  call normalize_data {input: tarball=parse_sm_table.outputs}
+  call parse_sm_table {input:SMtable=SMtable, analysisDir=analysisDir, exptDesign=exptDesign}
+  call mrna_protein_corr {input: tarball=parse_sm_table.outputs, rnaExpr=rnaExpr}
 }
 

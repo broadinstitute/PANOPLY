@@ -2,9 +2,11 @@
 
 ver=1
 name=`basename $PWD`
-docker_tag=broadpgdac/$name:$ver
+docker_tag=broadcptac/$name:$ver
 
-cp -r /prot/proteomics/Projects/R-utilities .
+mkdir R-utilities
+cp -r /Volumes/prot_proteomics/LabMembers/manidr/R-utilities/*.[rR] R-utilities
+cp -r /Volumes/prot_proteomics/LabMembers/manidr/R-utilities/GSEA R-utilities
 docker build --rm -t $docker_tag .
 
 rm -r R-utilities

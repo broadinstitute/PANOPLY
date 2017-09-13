@@ -1,0 +1,2 @@
+entity:participant_id	SMTable	ExptDesign	AnalysisDir
+MeduloTest	gs://fc-c00276af-4f9c-4e79-9fd5-66df1976685a/20170109-proteome-v2-frag.ssv	gs://fc-c00276af-4f9c-4e79-9fd5-66df1976685a/exptdesign.csv	test

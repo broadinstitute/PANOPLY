@@ -116,7 +116,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
     if (!is.null (expt.design)) {
       # check if there are any sample annotations
       d <- read.csv (expt.design)
-      annot.cols <- setdiff (colnames (d), c ('Sample.ID','Experiment','Channel'))
+      annot.cols <- setdiff (colnames (d), 'Sample.ID')
       sample.annotations <- d[, c('Sample.ID', annot.cols)]
       # add sample QC info (unimodal/bimodal)
       if (! qc.col %in% sample.annotations) {
