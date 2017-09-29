@@ -12,7 +12,7 @@ COPY src src/
 WORKDIR $wd
 
 RUN apt-get update
-## 
+## required for R-pacakge 'XML'
 RUN apt-get -t unstable install -y libxml2-dev
 ## rmarkdown
 RUN apt-get -t unstable install -y pandoc

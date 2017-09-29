@@ -14,7 +14,7 @@ task parse_sm_table {
 		File outputs = "inputSM-output.tar"
 	}
 
-	runtime {
+	runtime { 
 		docker : "broadcptac/pgdac_basic:1"
 	}
 
@@ -24,7 +24,6 @@ task parse_sm_table {
 	}
 
 }
-
 
 
 task mrna_protein_corr {
@@ -53,6 +52,37 @@ task mrna_protein_corr {
 }
 
 
+task parse_sm_table_report {
+     File tarball
+     String label
+     String type = "proteome"	
+     String tmpDir = "tmp"
+
+     Int memory
+     Int disk_space
+
+     command {
+     	     set -euo pipefail
+	     Rscript /src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}	
+     }
+
+     output {
+     	    File report = "norm.html"
+     }
+
+
+     runtime {
+     	     docker : "broadcptac/pgdac_cpdb:3"
+	     memory : "${memory}GB"
+	     disks : "local-disk ${disk_space} HDD"
+     }
+
+     meta {
+		author : "Karsten Krug"
+		email : "karsten@broadinstitute.org"
+     }
+}
+
 
 workflow pgdac_basic {
 	File SMtable
@@ -60,7 +90,10 @@ workflow pgdac_basic {
 	File rnaExpr
 	String analysisDir
 
-  call parse_sm_table {input:SMtable=SMtable, analysisDir=analysisDir, exptDesign=exptDesign}
-  call mrna_protein_corr {input: tarball=parse_sm_table.outputs, rnaExpr=rnaExpr}
+  	call parse_sm_table {input:SMtable=SMtable, analysisDir=analysisDir, exptDesign=exptDesign}
+
+	call parse_sm_table_report{ input: tarball=parse_sm_table.outputs, label=analysisDir}
+
+	call mrna_protein_corr {input: tarball=parse_sm_table.outputs, rnaExpr=rnaExpr}
 }
 

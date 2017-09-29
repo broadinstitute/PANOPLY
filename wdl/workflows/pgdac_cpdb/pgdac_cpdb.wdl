@@ -1,12 +1,13 @@
 task pgdac_cpdb {
 	#Inputs defined here
 	File mut_vcf
-	File junc_bed
+	File? junc_bed
 	String id
 	File annotation_zip	
 
 	Int memory
 	Int disk_space
+	Int num_threads
 	
 	command {
 		set -euo pipefail
@@ -25,9 +26,10 @@ task pgdac_cpdb {
 	}
 
 	runtime {
-		docker : "broadcptac/pgdac_cpdb:2"
+		docker : "broadcptac/pgdac_cpdb:3"
 		memory : "${memory}GB"
 		disks : "local-disk ${disk_space} HDD"
+		cpu: "${num_threads}"
 	}
 
 	meta {
