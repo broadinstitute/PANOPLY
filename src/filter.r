@@ -24,6 +24,19 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
   
   ds <- parse.gctx ( paste (file.prefix, '.gct', sep='') )
   input.ver <- ifelse (ds@version=="#1.3", 3, 2)
+  # replace Description with gene names
+  if (input.ver == 3 && grepl ('gene[.-_]?(name|id|symbol)s?$', colnames (ds@rdesc), ignore.case=TRUE)) {
+    # gene symbol is already present as an annotation column
+    genesym.col <- grep ('gene[.-_]?(name|id|symbol)s?$', colnames (ds@rdesc), ignore.case=TRUE)
+    ds@rdesc [,'GeneSymbol'] <- as.character (ds@rdesc [,genesym.col])
+  } else {
+    # map protein id to gene symbols
+    map <- read.delim ( file.path (data.dir, protein.gene.map) )
+    id.table <- merge ( cbind (ds@rdesc, refseq_protein=sub ("(.*?)\\..?", "\\1", ds@rdesc[,'id'])), map,
+                        by='refseq_protein', all.x=TRUE, sort=FALSE )
+    ds@rdesc [,'GeneSymbol'] <- as.character (id.table [,'gene_name'])
+  }  
+  
   
   # convert na.max to integer if a fraction 
   if (na.max < 1) na.max <- ceiling (ncol(ds@mat) * na.max)

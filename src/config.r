@@ -38,6 +38,7 @@ Source ('io.r')
 data.dir <- '../data'
 pre.dir <- '../parsed-data'
 norm.dir <- '../normalized-data'
+harmonize.dir <- '../harmonized-data'
 
 
 ## Command line arguments
@@ -176,6 +177,7 @@ if (norm.method == alt.method) alt.method <- NULL
 # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
 official.genesyms <- 'gene-symbol-map.csv'
 gene.id.col <- 'geneSymbol'
+protein.gene.map <- 'RefSeq-GeneName-Map-20170701.txt'
 # policy for combining/collapsing duplicate gene names -- uncomment appropriate line to use
 # duplicate.gene.policy <- ifelse (type == 'phosphoproteome', 'median', 'maxvar')  
 duplicate.gene.policy <- 'maxvar'
@@ -184,10 +186,8 @@ duplicate.gene.policy <- 'maxvar'
 rna.output.prefix <- 'rna-seq'  # output prefix for tables creates during RNA analysis
 rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
 
-## Parallelization
-# mutation and correlation analysis -- max number of parallel jobs
-LSF.mut.jid.max <- 400
-
+## CNA/parallelism related
+pe.max.default <- 250           # default maximum processors/jobs
 
 ## Project
 # data source -- for managing some operations (esp related to sample IDs and names)

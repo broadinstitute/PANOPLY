@@ -28,6 +28,7 @@ function usage {
   echo "             -c <common-code-dir> -d <common-data-dir>"
   echo "             -p <parameters-file> -t <type>  -m <data>"
   echo "             -rna <rna-expression> -cna <copy-number-data>"
+  echo "             -g <groups> -pe <#processors>"
   echo "   OPERATION is one of inputSM, inputNorm, RNAcorr"
   echo "   <input-tarball> is a tar file with the initialized directory structure"
   echo "       if specfied, -s, -r, -c and -d are not required -- allowed only when OPERATION is not init"
@@ -40,10 +41,14 @@ function usage {
   echo "   <data> is unimodal [default] (or other subtype)"
   echo "   <rna-expression> GCT file with RNA expression data"
   echo "   <copy-number-data> GCT file with CNA data"
+  echo "   <groups> is a expt-design-like-file used for subsetting CNA analysis"
+  echo "   <pe> is the number of processors (jobs) to use for CNA/correlation analysis"
   echo "   Input Requirements:"
-  echo "     OPERATION inputSM requires (-s, -e, -r, -c)"
+  echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
   echo "     OPERATION inputNorm requires (-n, -r, -c)"
   echo "     OPERATION RNAcorr requires (-i, -c, -rna) OR (-f, -r, -c, -rna)"
+  echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
+  echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe)"
   echo "   Use -h to print this message."
 }
 
@@ -79,10 +84,15 @@ function createAnalysisDir {
 
 function initDataDir {
   # create and initialize data directory (in analysis_dir)
-  mkdir $data_dir
+  if [ ! -d $data_dir ]; then
+    mkdir $data_dir
+  fi
+  
   if [ "$common_data" != "" ]; then   # if $common_data is specified, copy contents
     for f in `ls $common_data`; do
-      cp $common_data/$f $data_dir/$f
+      if [ ! -f $data_dir/$f ]; then
+        cp $common_data/$f $data_dir/$f
+      fi
     done  
   fi
   # copy expt_file if specified
@@ -130,13 +140,34 @@ function analysisInit {
   fi
   
   case $analysis in
-    RNAcorr ) if [ "$rna_data" = "" ]; then
-                echo "RNA expression data not found ... abort"
-                exit 1
-              else
-                createSubdirs $rna_dir
-                cp $rna_data $data_dir/$rna_data_file
-              fi ;;
+    RNAcorr )   if [ "$rna_data" = "" ]; then
+                  echo "RNA expression data not found ... abort"
+                  exit 1
+                else
+                  createSubdirs $rna_dir
+                  cp $rna_data $data_dir/$rna_data_file
+                fi ;;
+    harmonize ) if [ "$rna_data" = "" -o "$cna_data" = "" ]; then
+                  echo "RNA expression or CNA data not found ... abort"
+                  exit 1
+                else
+                  createSubdirs $harmonize_dir
+                  cp $rna_data $data_dir/$rna_data_file
+                  cp $cna_data $data_dir/$cna_data_file
+                fi ;;
+    CNAsetup ) if [ ! -f $harmonize_dir/rna-matrix.csv -o ! -f $harmonize_dir/cna-matrix.csv -o ! -f $harmonize_dir/$prefix-matrix.csv ]; then
+                  echo "Harmonized data not found -- run harmonize first ... abort"
+                  exit 1
+                else
+                  createSubdirs $cna_dir
+                  # add to config.r if specified
+                  if [ "$pe" != "" ]; then
+                    echo "pe.max <- $pe" >> $cna_dir/config.r
+                  fi
+                  if [ "$groups" != "" ]; then
+                    echo "cna.subgroups <- $groups" >> $cna_dir/config.r
+                  fi
+                fi ;;
     * )
   esac
 }
@@ -157,6 +188,8 @@ param_file=
 data=
 rna_data=
 cna_data=
+groups=
+pe=
 prefix="proteome"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -167,7 +200,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|inputNorm|RNAcorr) # OK
+  inputSM|inputNorm|RNAcorr|harmonize|CNAsetup) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -180,6 +213,7 @@ while [ "$1" != "" ]; do
 	-d )     shift; common_data=`readlink -f $1` ;;
 	-e )     shift; expt_file=`readlink -f $1` ;;
 	-f )     shift; filt_data=`readlink -f $1` ;;
+	-g )     shift; groups=$1 ;;
 	-i )     shift; input_tar=`readlink -f $1` ;;
 	-m )     shift; data=$1 ;;
 	-n )     shift; norm_data=`readlink -f $1` ;;
@@ -187,6 +221,7 @@ while [ "$1" != "" ]; do
 	-r )     shift; analysis_dir=`readlink -f $1` ;;
 	-s )     shift; sm_file=`readlink -f $1` ;;
 	-t )     shift; prefix=$1 ;;
+	-pe )    shift; pe=$1 ;;
 	-rna )   shift; rna_data=`readlink -f $1` ;;
 	-cna )   shift; cna_data=`readlink -f $1` ;;
   -h )     usage; exit ;;
@@ -198,7 +233,8 @@ done
 
 ## check appropriate parameters have been provided
 case $op in 
-  inputSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = "" || "$code_dir" = "" ]]
+  inputSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = ""   \
+                    || "$code_dir" = "" || "$common_data" = "" ]]
               then
                 usage
                 exit 1
@@ -208,7 +244,19 @@ case $op in
                 usage
                 exit 1
               fi ;;
-  RNAcorr ) if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" || "$rna_data" = "" ]]
+  RNAcorr )   if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
+                    || "$code_dir" = "" || "$rna_data" = "" ]]
+              then
+                usage
+                exit 1
+              fi ;;
+  harmonize ) if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
+                    || "$code_dir" = "" || "$common_data" = "" || "$rna_data" = "" || "$cna_data" = "" ]] 
+              then
+                usage
+                exit 1
+              fi ;;
+  CNAsetup )  if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
                 usage
                 exit 1
@@ -222,7 +270,9 @@ esac
 data_dir="data"
 parse_dir="parsed-data"
 norm_dir="normalized-data"
+harmonize_dir="harmonized-data"
 rna_dir="rna"
+cna_dir="cna"
 if [ "$data" = "" ]; then
   subset_str=""
 else 
@@ -257,6 +307,8 @@ else
   tar -x -f $input_tar
   analysis_dir=`tar -t -f $input_tar | head -1 | sed -e 's/\/.*//'`
   cd $analysis_dir
+  ## data directory (in case previously not specified)
+  initDataDir
 fi
 
 
@@ -304,6 +356,23 @@ case $op in
                 (cd $rna_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" rna-seq.r;
                  R CMD BATCH --vanilla "--args $prefix $data" rna-seq-correlation.r)
+             ;;
+#   harmonize: Harmonize RNA, CNA and proteome data to create gene-centric tables with common
+#              rows (genes) and columns (samples)
+    harmonize ) analysisInit "harmonize"
+                for f in harmonize.r; do cp $code_dir/$f $harmonize_dir/$f; done
+                (cd $harmonize_dir;
+                 R CMD BATCH --vanilla "--args $prefix $data" harmonize.r)
+             ;;
+#   CNAsetup: setup directories and code for running CNA analysis
+#             input must be tar file obtained after harmonize
+    CNAsetup )  analysisInit "CNAsetup"
+                for f in cna-analysis.r cna-analysis-setup.r generate-cna-plots.r; do cp $code_dir/$f $cna_dir/$f; done
+                (cd $cna_dir;
+                 R CMD BATCH --vanilla "--args $prefix $data" cna-analysis-setup.r)
+                # copy required outputs to job wd (parent of $analysis_dir)
+                cp $cna_dir/jids.txt $cna_dir/subgroups.txt $cna_dir/file_table.tsv ../.
+                for f in `cat $cna_dir/file_table.tsv`; do cp $cna_dir/$f ../.; done
              ;;
 #   Unknown operation
     * )         echo "ERROR: Unknown OPERATION $op"; exit 1 

@@ -7,7 +7,7 @@ task parse_sm_table {
 
 	command {
 		set -euo pipefail
-		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -r ${analysisDir} -c ${codeDir} -e ${exptDesign}
+		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -r ${analysisDir} -c ${codeDir} -d ${dataDir} -e ${exptDesign}
 	}
 
 	output {
@@ -60,7 +60,19 @@ workflow pgdac_basic {
 	File rnaExpr
 	String analysisDir
 
-  call parse_sm_table {input:SMtable=SMtable, analysisDir=analysisDir, exptDesign=exptDesign}
-  call mrna_protein_corr {input: tarball=parse_sm_table.outputs, rnaExpr=rnaExpr}
+  call parse_sm_table {
+    input:
+      SMtable=SMtable, 
+      analysisDir=analysisDir, 
+      exptDesign=exptDesign
+  }
+  
+  call mrna_protein_corr {
+    input: 
+      tarball=parse_sm_table.outputs, 
+      rnaExpr=rnaExpr
+  }
+  
+  output {File output=mrna_protein_corr.outputs}
 }
 
