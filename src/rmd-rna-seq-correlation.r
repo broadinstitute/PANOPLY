@@ -6,7 +6,7 @@ args <- commandArgs(trailingOnly=T)
 tar.file <- args[1]
 label <- args[2]
 type <- args[3]
-fdr.sig <- args[4] 
+fdr.sig <- as.numeric(args[4]) 
 tmp.dir <- args[5]
 
 ## local testing
@@ -50,7 +50,7 @@ rmd_rna_seq_correlation <- function(tar.file, label='pipeline-test', type='prote
     rna.cor.str <- paste(tmp.dir, '/', label, '/rna/', type, '-mrna-cor.tsv', sep='')
     cat('## Importing file ', rna.cor.str, '\n', file=logfile, append=T)
     rna.cor <- data.frame( read.delim(rna.cor.str, stringsAsFactors = F), stringsAsFactors = F)
-    save(rna.cor, fdr.cut, file=paste(tmp.dir, 'rna_cor.RData', sep='/'))                                  
+    save(rna.cor, fdr.sig, file=paste(tmp.dir, 'rna_cor.RData', sep='/'))                                  
     
     
     
@@ -166,5 +166,5 @@ rm(Median)
 
 ## ################################################
 ## run
-rmd_normalize(tar.file=tar.file, label=label, type=type, fdr.sig=fdr.sig, tmp.dir=tmp.dir)
+rmd_rna_seq_correlation(tar.file=tar.file, label=label, type=type, fdr.sig=fdr.sig, tmp.dir=tmp.dir)
 

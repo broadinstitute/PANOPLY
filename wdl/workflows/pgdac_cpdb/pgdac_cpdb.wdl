@@ -29,7 +29,7 @@ task pgdac_cpdb {
 		docker : "broadcptac/pgdac_cpdb:3"
 		memory : "${memory}GB"
 		disks : "local-disk ${disk_space} HDD"
-		cpu: "${num_threads}"
+		cpu : "${num_threads}"
 	}
 
 	meta {

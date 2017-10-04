@@ -27,7 +27,7 @@ tmp.dir <- '/tmp/'
 ## tmp.dir           character, path to a writeable folder. Used to extract annotation files
 ##
 ## ######################################################################################################
-run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation.zip='./',  tmp.dir='.'){
+run_cpdb <- function(mut.vcf, junc.bed='', fus.bed='', id='test', annotation.zip='./',  tmp.dir='.'){
 
     ## packages
     require(customProDBBI)
@@ -91,8 +91,8 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
     ##                 splice junction database
     ##
     ## ##########################################################
-    if(!is.null(junc.bed)){
-
+    ##if(!is.null(junc.bed)){
+    if(nchar(junc.bed) > 0)
         cat('\n## Junction pipeline\n', file=logfile, append=T)
 
         ## import junctions
@@ -240,7 +240,7 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
 			if(nrow(postable.indel) > 0)
             	Outputaberrant(postable.indel, coding=codingseq.indel, proteinseq=proteinseq, outfile=paste(fn.tmp, '_indel.fasta', sep=''), ids, RPKM=NULL)
 			else 
-				cat('', file=paste(fn.tmp, '_nsSNV.fasta', sep=''))
+			 	cat('', file=paste(fn.tmp, '_nsSNV.fasta', sep=''))
 
 
             ## ##########################
@@ -252,7 +252,6 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
 
             ## writing out the nucleotide sequence (codingseq.indel) causes perl to throw an error due to Excel's character limit per cell
             ##WriteXLS(c('postable.indel', 'indelloc', 'tab.indel'), ExcelFileName=paste(fn.tmp, '_indel_INFO.xlsx', sep=''), SheetNames=c('indel coding', 'indel location', 'location table'), FreezeRow=1, AutoFilter=T,BoldHeaderRow=T )
-        }
     }
 
     ## ############################################
