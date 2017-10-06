@@ -5,6 +5,10 @@ task parse_sm_table {
 	String codeDir = "/prot/proteomics/Projects/PGDAC/src"
 	String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
+  Int memory
+  Int disk_space
+  Int num_threads
+
 	command {
 		set -euo pipefail
 		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -r ${analysisDir} -c ${codeDir} -d ${dataDir} -e ${exptDesign}
@@ -16,6 +20,9 @@ task parse_sm_table {
 
 	runtime { 
 		docker : "broadcptac/pgdac_basic:1"
+		memory : "${memory}GB"
+	  disks : "local-disk ${disk_space} HDD"
+	  cpu : "${num_threads}"
 	}
 
 	meta {
@@ -25,11 +32,14 @@ task parse_sm_table {
 
 }
 
-
 task mrna_protein_corr {
 	File tarball
 	File rnaExpr
 	String codeDir = "/prot/proteomics/Projects/PGDAC/src"
+
+  Int memory
+  Int disk_space
+  Int num_threads
 
 	command {
 		set -euo pipefail
@@ -42,6 +52,9 @@ task mrna_protein_corr {
 
 	runtime {
 		docker : "broadcptac/pgdac_basic:1"
+		memory : "${memory}GB"
+	  disks : "local-disk ${disk_space} HDD"
+	  cpu : "${num_threads}"
 	}
 
 	meta {
