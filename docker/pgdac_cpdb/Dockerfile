@@ -27,9 +27,12 @@ RUN R -e "library(pacman);p_install('WriteXLS')"
 RUN R -e "library(pacman);p_install('shiny')"
 RUN R -e "library(pacman);p_install('plotly')"
 RUN R -e "library(pacman);p_install('customProDB')"
+RUN R -e "library(pacman);p_install('GenomicFeatures')"
+RUN R -e "library(pacman);p_install('AnnotationDbi')"
 RUN R -e "install.packages('customProDBBI_1.13.0.tar.gz', repos=NULL, type='source', dependencies=T)"
 
 
 ## remove tar.gz of 'customProDBBI'
 RUN rm customProDBBI_1.13.0.tar.gz
+RUN rm -R src
 

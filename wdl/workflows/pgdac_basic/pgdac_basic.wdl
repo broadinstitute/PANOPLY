@@ -5,6 +5,10 @@ task parse_sm_table {
 	String codeDir = "/prot/proteomics/Projects/PGDAC/src"
 	String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
+  Int memory
+  Int disk_space
+  Int num_threads
+
 	command {
 		set -euo pipefail
 		/prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -r ${analysisDir} -c ${codeDir} -d ${dataDir} -e ${exptDesign}
@@ -16,6 +20,9 @@ task parse_sm_table {
 
 	runtime { 
 		docker : "broadcptac/pgdac_basic:1"
+		memory : "${memory}GB"
+	  disks : "local-disk ${disk_space} HDD"
+	  cpu : "${num_threads}"
 	}
 
 	meta {
@@ -25,11 +32,14 @@ task parse_sm_table {
 
 }
 
-
 task mrna_protein_corr {
 	File tarball
 	File rnaExpr
 	String codeDir = "/prot/proteomics/Projects/PGDAC/src"
+
+  Int memory
+  Int disk_space
+  Int num_threads
 
 	command {
 		set -euo pipefail
@@ -42,6 +52,9 @@ task mrna_protein_corr {
 
 	runtime {
 		docker : "broadcptac/pgdac_basic:1"
+		memory : "${memory}GB"
+	  disks : "local-disk ${disk_space} HDD"
+	  cpu : "${num_threads}"
 	}
 
 	meta {
@@ -60,6 +73,7 @@ task parse_sm_table_report {
 
   Int memory
   Int disk_space
+  Int num_threads
 
   command {
     set -euo pipefail
@@ -70,17 +84,50 @@ task parse_sm_table_report {
     File report = "norm.html"
   }
 
-
   runtime {
-    docker : "broadcptac/pgdac_cpdb:3"
-    memory : "${memory}GB"
-    disks : "local-disk ${disk_space} HDD"
-  }
+       docker : "broadcptac/pgdac_cpdb:4"
+	     memory : "${memory}GB"
+	     disks : "local-disk ${disk_space} HDD"
+	     cpu : "${num_threads}"
+     }
 
   meta {
-  	author : "Karsten Krug"
-		email : "karsten@broadinstitute.org"
-  }
+		  author : "Karsten Krug"
+		  email : "karsten@broadinstitute.org"
+     }
+}
+
+task mrna_protein_corr_report {
+     File tarball
+     String label
+     String type = "proteome"
+     String tmpDir = "tmp"
+     Float fdr = 0.05
+
+     Int memory
+     Int disk_space
+     Int num_threads
+
+     command {
+     	 set -euo pipefail
+	     Rscript /src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}	
+     }
+
+     output {
+     	    File report = "rna-corr.html"
+     }
+
+     runtime {
+     	  docker : "broadcptac/pgdac_cpdb:4"
+	      memory : "${memory}GB"
+	      disks : "local-disk ${disk_space} HDD"
+	      cpu : "${num_threads}"	       
+     }
+
+    meta {
+  	  author : "Karsten Krug"
+		  email : "karsten@broadinstitute.org"
+    }
 }
 
 
@@ -89,6 +136,7 @@ workflow pgdac_basic {
 	File exptDesign
 	File rnaExpr
 	String analysisDir
+	Float corr_fdr
 
   call parse_sm_table {
     input:
@@ -99,7 +147,7 @@ workflow pgdac_basic {
 
   call parse_sm_table_report {
     input: 
-      tarball=parse_sm_table.outputs, 
+      tarball=parse_sm_table.outputs,
       label=analysisDir
   }
 
@@ -109,9 +157,16 @@ workflow pgdac_basic {
       rnaExpr=rnaExpr
   }
   
+  call mrna_protein_corr_report { 
+    input:
+      tarball=mrna_protein_corr.outputs,
+      label=analysisDir,
+      fdr=corr_fdr
+  }
+
   output {
     File output=mrna_protein_corr.outputs
-    File reports=parse_sm_table_report.report
+    File norm_report=parse_sm_table_report.report
+    File corr_report=mrna_protein_corr_report.report
   }
 }
-

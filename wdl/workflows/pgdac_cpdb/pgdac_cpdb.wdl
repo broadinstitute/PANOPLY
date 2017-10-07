@@ -12,7 +12,7 @@ task pgdac_cpdb {
 	command {
 		set -euo pipefail
 		#Command goes here
-		Rscript /src/customProDB.r ${mut_vcf} ${junc_bed} ${id} ${annotation_zip}
+		Rscript /src/customProDB.r ${mut_vcf} ${id} ${annotation_zip} ${"" + junc_bed}
 	}
 
 	output {
@@ -26,10 +26,10 @@ task pgdac_cpdb {
 	}
 
 	runtime {
-		docker : "broadcptac/pgdac_cpdb:3"
+		docker : "broadcptac/pgdac_cpdb:4"
 		memory : "${memory}GB"
 		disks : "local-disk ${disk_space} HDD"
-		cpu: "${num_threads}"
+		cpu : "${num_threads}"
 	}
 
 	meta {

@@ -4,11 +4,14 @@ args <- commandArgs(trailingOnly=T)
 
 ## get arguments
 mut.vcf <- args[1]
-junc.bed <- args[2]
+id <- args[2]
+annotation.zip <- args[3]
+if(length(args)>3){
+  junc.bed <- args[4]
+} else{
+  junc.bed <- NULL
+}
 ##fus.bed <- args[3]
-id <- args[3]
-annotation.zip <- args[4]
-
 ## used to extract annotation files
 tmp.dir <- '/tmp/' 
 ##logfile <- args[7]
@@ -30,10 +33,13 @@ tmp.dir <- '/tmp/'
 run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation.zip='./',  tmp.dir='.'){
 
     ## packages
-    require(customProDBBI)
-    require(WriteXLS)
-    require(BSgenome.Hsapiens.UCSC.hg19)
+    library(customProDBBI)
+    library(WriteXLS)
+    library(BSgenome.Hsapiens.UCSC.hg19)
+    library(GenomicFeatures)  
+    library(AnnotationDbi)
 
+  
     ## prepare log file
     logfile=paste('cpdb_', id, '.log', sep='')
 
@@ -92,7 +98,7 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
     ##
     ## ##########################################################
     if(!is.null(junc.bed)){
-
+    ##if(nchar(junc.bed) > 0) {
         cat('\n## Junction pipeline\n', file=logfile, append=T)
 
         ## import junctions
@@ -109,6 +115,8 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
         ## write fasta
         cat('Exporting junction fasta\n', file=logfile, append=T)
         OutputNovelJun <- OutputNovelJun(jun_type, Hsapiens, paste(fn.tmp, '_junctions.fasta', sep=''),  proteinseq)
+    } else {
+        cat('', file=paste(fn.tmp, '_junctions.fasta', sep=''))
     }
 
     ## ##########################################################
@@ -240,7 +248,7 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
 			if(nrow(postable.indel) > 0)
             	Outputaberrant(postable.indel, coding=codingseq.indel, proteinseq=proteinseq, outfile=paste(fn.tmp, '_indel.fasta', sep=''), ids, RPKM=NULL)
 			else 
-				cat('', file=paste(fn.tmp, '_nsSNV.fasta', sep=''))
+			 	cat('', file=paste(fn.tmp, '_nsSNV.fasta', sep=''))
 
 
             ## ##########################
@@ -249,11 +257,11 @@ run_cpdb <- function(mut.vcf, junc.bed=NULL, fus.bed=NULL, id='test', annotation
             codingseq.indel <- data.frame(codingseq.indel)
             indelloc <- data.frame(indelloc)
             tab.indel <- data.frame(tab.indel)
-
+      
             ## writing out the nucleotide sequence (codingseq.indel) causes perl to throw an error due to Excel's character limit per cell
             ##WriteXLS(c('postable.indel', 'indelloc', 'tab.indel'), ExcelFileName=paste(fn.tmp, '_indel_INFO.xlsx', sep=''), SheetNames=c('indel coding', 'indel location', 'location table'), FreezeRow=1, AutoFilter=T,BoldHeaderRow=T )
-        }
-    }
+        } ## end if length indel
+    } ## end if  mut.vcf
 
     ## ############################################
     ## delete tmp dir
