@@ -18,21 +18,22 @@ explore.correlations <- function (prefix, pome.gct.file, mrna.gct.file,
   # mrna expression and protein expression
   # n.b: "pome" is used to repesent proteome or phosphoproteome
   
-  # read gct files
-  pome <- read.gct2 (pome.gct.file, check.names=FALSE)
-  mrna <- read.gct2 (mrna.gct.file, check.names=FALSE)
-  common.cols <- intersect (colnames (pome), colnames (mrna))
+  # read gct files 
+  # both mrna and pome should be in GCTv1.3 format, and must include 'GeneSymbol' rdesc
+  pome.ds <- parse.gctx (pome.gct.file)
+  mrna.ds <- parse.gctx (mrna.gct.file)
+  common.cols <- intersect (pome.ds@cid, mrna.ds@cid)
 
-  adjust.columns.rows <- function (d) {
-    d <- d [, common.cols]
-    d <- d [, -1]
+  adjust.columns.rows <- function (ds) {
+    d <- ds@mat[, common.cols]
+    d <- data.frame (ds@rdesc[,'GeneSymbol'], d)
     colnames (d)[1] <- gene.id.col
     d <- process.duplicate.genes (d, genesym.col=1, data.cols=2:ncol(d), map.genes=FALSE,
                                   policy='median')  # irrespective of global policy, median makes sense here
     return (d)
   }
-  pome <- adjust.columns.rows (pome)
-  mrna <- adjust.columns.rows (mrna)
+  pome <- adjust.columns.rows (pome.ds)
+  mrna <- adjust.columns.rows (mrna.ds)
   
   
   data <- merge (pome, mrna, by=gene.id.col, suffixes=c ('.pome', '.mrna'))

@@ -9,7 +9,7 @@ out.prefix <- rna.output.prefix
 
 
 d <- parse.gctx (rna.data.file)
-d@rdesc [,'Description'] <- d@rdesc [,'id']   # make id and Description identical
+d@rdesc[,'GeneSymbol'] <- d@rdesc [,'Description'] <- d@rdesc [,'id']   # make id, Description and GeneSymbol identical
 samples <- d@cid
 
 if (file.exists(expt.design.file)) {
@@ -30,7 +30,7 @@ run.order <- sapply (samples.order,
                      })
 d <- add.cols.gct (d, data.frame (na.col=rep(NA, nrow(d@mat))))   # add NA column at the end -- use for missing samples
 d <- rearrange.gct (d, run.order, new.cid=samples.order)
-write.gct (d, paste (out.prefix, '.gct', sep=''))
+write.gct (d, paste (out.prefix, '.gct', sep=''), ver=3)  # write out GCT v1.3
 
 
 ## filters
