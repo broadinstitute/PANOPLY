@@ -39,8 +39,9 @@ run.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'rna
   n <- nrow (cna.data)
   job.size <- ceiling (n / pe.max)
   for (jid in 1:pe.max) {
-    index.end <- min (jid * job.size, n)
-    if (index.end <= n) cat (jid, file=jfile, sep='\n') else break
+    index.end <- max (jid * job.size, n)
+    cat (jid, file=jfile, sep='\n') 
+    if (index.end > n) break   # last jid (has less than job.size items)
   }
   close (jfile)
   
