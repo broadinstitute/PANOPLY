@@ -1,0 +1,2 @@
+entity:participant_id	cna	rna	pome	prefix	jidsFile
+MedulloProteomeCNA	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/all-cna-matrix.csv	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/all-rna-matrix.csv	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/all-pome-matrix.csv	all	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/cna-jids.txt
