@@ -121,6 +121,11 @@ protein.gene.map <- 'RefSeq.20170701-RefSeq-GeneName-map.txt'
 project.name <- 'default'
 # project.name <- 'cptac2.tcga'
 
+# disease setting is used to run appropriate CNA subsets by creating
+# run-cna-analysis-<disease>.r; uncomment one (or none) below
+disease <- 'MEDULLO'
+# disease <- 'BRCA'
+
 
 
 # definitions for label type, used in parsing input SM table

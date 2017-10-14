@@ -186,7 +186,7 @@ fi
 
 ## link appropriate code in preparation for running pipeline components
 for f in rna-seq.r rna-seq-correlation.r; do ln -s $code_dir/$f rna-seq/$f; done
-for f in cna-analysis.r generate-cna-plots.r run-cna-analysis.r run-cna-analysis-all.r runR-$use_cluster.sh; do ln -s $code_dir/$f cna/$f; done
+for f in cna-analysis.r generate-cna-plots.r run-cna-analysis.r run-cna-analysis-*.r runR-$use_cluster.sh; do ln -s $code_dir/$f cna/$f; done
 for f in netgestalt-input-data.r; do ln -s $code_dir/$f netgestalt/$f; done
 for f in mut-analysis.r sigmut-genes.r mutated-gene-markers.r; do ln -s $code_dir/$f mutation/$f; done
 for f in assoc-analysis.r; do ln -s $code_dir/$f association/$f; done
