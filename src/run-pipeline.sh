@@ -155,7 +155,7 @@ function analysisInit {
                   cp $rna_data $data_dir/$rna_data_file
                   cp $cna_data $data_dir/$cna_data_file
                 fi ;;
-    CNAsetup ) if [ ! -f $harmonize_dir/rna-matrix.csv -o ! -f $harmonize_dir/cna-matrix.csv -o ! -f $harmonize_dir/$prefix-matrix.csv ]; then
+    CNAsetup )  if [ ! -f $harmonize_dir/rna-matrix.csv -o ! -f $harmonize_dir/cna-matrix.csv -o ! -f $harmonize_dir/$prefix-matrix.csv ]; then
                   echo "Harmonized data not found -- run harmonize first ... abort"
                   exit 1
                 else
@@ -165,7 +165,8 @@ function analysisInit {
                     echo "pe.max <- $pe" >> $cna_dir/config.r
                   fi
                   if [ "$groups" != "" ]; then
-                    echo "cna.subgroups <- $groups" >> $cna_dir/config.r
+                    echo "cna.subgroups <- \"$groups\"" >> $cna_dir/config.r
+                    cp $groups $cna_dir/.
                   fi
                 fi ;;
     * )
@@ -213,7 +214,7 @@ while [ "$1" != "" ]; do
 	-d )     shift; common_data=`readlink -f $1` ;;
 	-e )     shift; expt_file=`readlink -f $1` ;;
 	-f )     shift; filt_data=`readlink -f $1` ;;
-	-g )     shift; groups=$1 ;;
+	-g )     shift; groups=`readlink -f $1` ;;
 	-i )     shift; input_tar=`readlink -f $1` ;;
 	-m )     shift; data=$1 ;;
 	-n )     shift; norm_data=`readlink -f $1` ;;

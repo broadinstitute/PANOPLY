@@ -9,6 +9,10 @@ task cna_analysis {
   Int jid
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
 
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+
   command {
     set -euo pipefail
     # setup directories and code
@@ -29,6 +33,10 @@ task cna_analysis {
 
   runtime {
     docker : "broadcptac/pgdac_basic:1"
+    memory : select_first ([memory, 4]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 8]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+
   }
 
   meta {
@@ -49,6 +57,9 @@ task gather_results_and_plot {
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
   
+  Int? memory
+  Int? disk_space
+  Int? num_threads
 
   command {
     set -euo pipefail
@@ -74,6 +85,9 @@ task gather_results_and_plot {
 
   runtime {
     docker : "broadcptac/pgdac_basic:1"
+    memory : select_first ([memory, 16]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 16]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
   }
 
   meta {
