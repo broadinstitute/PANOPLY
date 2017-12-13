@@ -68,15 +68,16 @@ if (length (common.samples) > 0 && length (common.genes) > 0) {
     }
     rownames (sinfo) <- sinfo [,'Sample.ID']
     sinfo <- sinfo [ common.samples, ]
+    if (any (is.na (sinfo [,'Sample.ID']))) stop ("Sample information missing for some samples -- check experiment design file")
 
     # write out properly formatted info file
     out.file <- 'sample-info.csv'
-    colnames (sinfo) [1] <- 'Barcode'
-    col.names <- colnames (sinfo)
-    col.types <- c ('data_type', rep ('CAT', ncol(sinfo)-1))
-    write.csv (col.names, out.file, row.names=FALSE, col.names=FALSE)
-    write.csv (col.types, out.file, append=TRUE, row.names=FALSE, col.names=FALSE)
-    write.csv (sinfo, out.file, append=TRUE, row.names=FALSE, col.names=FALSE)
+    write.csv (sinfo, out.file, row.names=FALSE, quote=FALSE)
+    
+    # recreate cls files (since sample subset included in matrix files could be different)
+    for (g in setdiff (colnames (sinfo), c('id', 'Sample.ID'))) {
+      write.cls (sinfo[,g], sprintf ("%s.cls", g))
+    }
   }
 } else {
   stop ("Harmonized datasets have no data -- check data formats and sample names")

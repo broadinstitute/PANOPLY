@@ -184,4 +184,9 @@ if (!is.null (samples)) {
   write.csv (col.names, out.file, row.names=FALSE, col.names=FALSE)
   write.csv (col.types, out.file, append=TRUE, row.names=FALSE, col.names=FALSE)
   write.csv (sinfo, out.file, append=TRUE, row.names=FALSE, col.names=FALSE)
+  
+  # recreate cls files (since sample subset included in matrix files could be different)
+  for (i in 2:ncol(sinfo)) {
+    write.cls (sinfo[,i], sprintf ("%s.cls", colnames (sinfo)[i]))
+  }
 }

@@ -372,7 +372,7 @@ case $op in
                 (cd $cna_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" cna-analysis-setup.r)
                 # copy required outputs to job wd (parent of $analysis_dir)
-                cp $cna_dir/jids.txt $cna_dir/subgroups.txt $cna_dir/file_table.tsv ../.
+                cp $cna_dir/subgroups.txt $cna_dir/file_table.tsv ../.
                 for f in `cat $cna_dir/file_table.tsv`; do cp $cna_dir/$f ../.; done
              ;;
 #   Unknown operation

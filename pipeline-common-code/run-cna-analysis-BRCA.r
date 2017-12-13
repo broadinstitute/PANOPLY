@@ -3,11 +3,10 @@ source ('run-cna-analysis.r')
 
 
 ## PAM-50 subtypes
-pam50.cls <- read.cls ( file.path (norm.dir, paste (type, subset.str, '-pam50.cls', sep='')) )
+pam50.cls <- read.cls ( file.path (netgestalt.dir, 'pam50.cls') )
 keep <- pam50.cls == "Basal" | pam50.cls == "Her2" | pam50.cls == "LumA" | pam50.cls == "LumB"
 pam50.cls <- pam50.cls [keep]
 pam50.groups <- c ('Basal', 'Her2', 'LumA', 'LumB')
-
 
 
 ## luminal A+B
@@ -16,7 +15,7 @@ lum.groups <- c ('Luminal')
 
 
 ## ER+ and ER-
-er.cls <- read.cls ( file.path (norm.dir, paste (type, subset.str, '-er.cls', sep='')) )
+er.cls <- read.cls ( file.path (netgestalt.dir, 'er.cls') )
 er.cls <- sapply (er.cls, tolower)
 er <- er.cls [ keep ]   # remove non-PAM50 samples
 er <- sapply (er, function (x) ifelse (x == 'positive', 'ER-pos', 'ER-neg'))
@@ -24,7 +23,7 @@ er.groups <- c ('ER-pos', 'ER-neg')
 
 
 ## PR+ and PR-
-pr.cls <- read.cls ( file.path (norm.dir, paste (type, subset.str, '-pr.cls', sep='')) )
+pr.cls <- read.cls ( file.path (netgestalt.dir, 'pr.cls') )
 pr.cls <- sapply (pr.cls, tolower)
 pr <- pr.cls [ keep ]   # remove non-PAM50 samples
 pr <- sapply (pr, function (x) ifelse (x == 'positive', 'PR-pos', 'PR-neg'))
@@ -32,7 +31,7 @@ pr.groups <- c ('PR-pos', 'PR-neg')
 
 
 ## HER2+ and Triple-Negative
-her2.cls <- read.cls ( file.path (norm.dir, paste (type, subset.str, '-her2.cls', sep='')) )
+her2.cls <- read.cls ( file.path (netgestalt.dir, 'her2.cls') )
 her2.cls <- sapply (her2.cls, tolower)
 her2 <- her2.cls [ keep ]   # remove non-PAM50 samples
 her2 <- sapply (her2, function (x) ifelse (x == 'positive', 'Her2-pos', 'Her2-neg'))

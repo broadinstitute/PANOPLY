@@ -91,8 +91,9 @@ official.genesyms <- 'gene-symbol-map.csv'
 duplicate.gene.policy <- 'maxvar'
 
 
-# mutation and correlation analysis -- max number of LSF jobs
-LSF.mut.jid.max <- 400
+# mutation and correlation analysis -- max number of parallel jobs
+# (WGCNA library enables fast correlation calculation -- keep # jobs small)
+LSF.mut.jid.max <- 10
 
 
 
@@ -121,8 +122,10 @@ protein.gene.map <- 'RefSeq.20170701-RefSeq-GeneName-map.txt'
 project.name <- 'default'
 # project.name <- 'cptac2.tcga'
 
-# disease setting is used to run appropriate CNA subsets by creating
-# run-cna-analysis-<disease>.r; uncomment one (or none) below
+
+# disease setting is used to set disease specific options and 
+# run appropriate CNA subsets by creating run-cna-analysis-<disease>.r; 
+# uncomment one (or none) below
 disease <- 'MEDULLO'
 # disease <- 'BRCA'
 

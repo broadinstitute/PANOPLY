@@ -196,4 +196,9 @@ pe.max.default <- 250           # default maximum processors/jobs
 project.name <- 'default'
 # project.name <- 'cptac2.tcga'
 
-
+## Disease
+# disease setting is used to set disease specific options and
+# run appropriate CNA subsets by creating run-cna-analysis-<disease>.r;
+# uncomment one (or none) below
+# disease <- 'MEDULLO'
+# disease <- 'BRCA'

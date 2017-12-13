@@ -2,7 +2,12 @@
 ## install and load libraries automatically
 # library (psych)
 if (!require("pacman")) install.packages ("pacman")
-pacman::p_load (psych)
+pacman::p_load (WGCNA)
+allowWGCNAThreads()
+
+# NB: WGCNA is a fast correlation calculation library -- 2-3 orders of magnitude faster than previous library (psych).
+# Automatic installation may fail; the following may need to be
+# installed manually: BioGenerics, preprocessCore, GO.db, AnnotationDbi
 
 source ('generate-cna-plots.r')
 
@@ -61,12 +66,12 @@ if (jid > 0) {
 
 
   cna.subset <- cna [, index.start:index.end]
-  mrna.vs.cna <- corr.test (mrna, cna.subset, method='pearson', adjust='none')
-  pome.vs.cna <- corr.test (pome, cna.subset, method='pearson', adjust='none')
+  mrna.vs.cna <- corAndPvalue (mrna, cna.subset)
+  pome.vs.cna <- corAndPvalue (pome, cna.subset)
   
-  write.csv (round (mrna.vs.cna$r, digits=4), paste (prefix, '-output/mrna-vs-cna-corr', jid, '.csv', sep=''))
+  write.csv (round (mrna.vs.cna$cor, digits=4), paste (prefix, '-output/mrna-vs-cna-corr', jid, '.csv', sep=''))
   write.csv (round (mrna.vs.cna$p, digits=4), paste (prefix, '-output/mrna-vs-cna-pval', jid, '.csv', sep=''))
-  write.csv (round (pome.vs.cna$r, digits=4), paste (prefix, '-output/pome-vs-cna-corr', jid, '.csv', sep=''))
+  write.csv (round (pome.vs.cna$cor, digits=4), paste (prefix, '-output/pome-vs-cna-corr', jid, '.csv', sep=''))
   write.csv (round (pome.vs.cna$p, digits=4), paste (prefix, '-output/pome-vs-cna-pval', jid, '.csv', sep=''))
 }
 

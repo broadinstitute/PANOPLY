@@ -146,7 +146,7 @@ finish.plots <- function (groups=NULL) {
       cmd <- switch (compute.cluster.type,
                      uger={paste ('qsub -q long -o uger.out -cwd -j y -l h_vmem=16g -V runR-uger.sh Rscript cna-analysis.r 0 ', 
                                   length (list.files (paste (x, '-output', sep='')))/4, ' ', x, ' NULL NULL NULL', sep='')},
-                     slurm={paste ('sbatch -t 4:0:0 -p ', cluster.queue, ' -o slurm.out --mem=16G --export=ALL runR-slurm.sh Rscript cna-analysis.r 0 ', 
+                     slurm={paste ('sbatch -t 4:0:0 -p ', cluster.queue, ' -o slurm.out --mem=32G --export=ALL runR-slurm.sh Rscript cna-analysis.r 0 ', 
                                    length (list.files (paste (x, '-output', sep='')))/4, ' ', x, ' NULL NULL NULL', sep='')},
                      {paste ('Rscript cna-analysis.r 0 1 ', x, ' NULL NULL NULL', sep='')}
       )

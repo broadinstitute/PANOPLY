@@ -11,9 +11,17 @@ RUN apt-get -t unstable install -y libcurl4-openssl-dev
 # install packages
 RUN echo 'install.packages(c(     "MASS",     "MethComp",     "NMF",     "PerformanceAnalytics",     "RColorBrewer",     "RankAggreg",     "RobustRankAggreg",     "bpca",     "caret",     "e1071",     "fastcluster",     "ggplot2",     "glmnet",     "gplots",     "lattice",     "limma",     "lme4",     "maptools",     "mclust",     "misc3d",     "mixtools",     "nlme",     "pacman",    "pamr",     "parmigene",     "psych",     "randomForest",     "reshape",     "rgl",     "rhdf5",     "samr",     "scales",     "scatterplot3d",     "smacof",     "sn",     "tensor",     "tools",     "verification" ), repos="http://cran.us.r-project.org", dependencies=TRUE)' > /tmp/packages.R  \
    && Rscript /tmp/packages.R
+
 # bioconductor libraries
 RUN echo 'source("https://bioconductor.org/biocLite.R"); biocLite("Biobase"); biocLite("graph"); biocLite("Rgraphviz"); biocLite("impute"); biocLite("rhdf5")' > /tmp/biocpkgs.R \
    && Rscript /tmp/biocpkgs.R
+
+# bioconductor libraries for WGCNA (start by updating BiocGenerics)
+RUN echo 'source("https://bioconductor.org/biocLite.R"); biocLite("BiocGenerics"); biocLite("preprocessCore"); biocLite("GO.db"); biocLite("AnnotationDbi")' > /tmp/biocpkgs-wgcna.R \
+   && Rscript /tmp/biocpkgs-wgcna.R
+# WGCNA for fast correlations
+RUN echo 'install.packages("WGCNA")' > /tmp/packages-wgcna.R \
+   && Rscript /tmp/packages-wgcna.R
 
 COPY R-utilities/ /prot/proteomics/Projects/R-utilities
 

@@ -28,22 +28,11 @@ run.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'rna
                             cna.file=file.path (harmonize.dir, 'cna-matrix.csv'),
                             pome.file=file.path (harmonize.dir, paste (type, '-matrix.csv', sep='')),
                             matrix.files.table="file_table.tsv", subgroups.file="subgroups.txt",
-                            job.index.file="jids.txt", force=FALSE) {
+                            force=FALSE) {
   
   rna.data <- read.csv (rna.file)
   cna.data <- read.csv (cna.file)
   pome.data <- read.csv (pome.file)
-  
-  # parallellization scheme -- output jids to job.index.file
-  jfile <- file (job.index.file, "w")
-  n <- nrow (cna.data)
-  job.size <- ceiling (n / pe.max)
-  for (jid in 1:pe.max) {
-    index.end <- max (jid * job.size, n)
-    cat (jid, file=jfile, sep='\n') 
-    if (index.end > n) break   # last jid (has less than job.size items)
-  }
-  close (jfile)
   
   # defaults for cls and groups
   if (is.null (groups)) {

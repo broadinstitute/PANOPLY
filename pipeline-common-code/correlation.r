@@ -2,7 +2,12 @@
 ## install and load libraries automatically
 # library (psych)
 if (!require("pacman")) install.packages ("pacman")
-pacman::p_load (psych)
+pacman::p_load (WGCNA)
+allowWGCNAThreads()
+
+# NB: WGCNA is a fast correlation calculation library -- 2-3 orders of magnitude faster than previous library (psych).
+# Automatic installation may fail; the following may need to be
+# installed manually: BioGenerics, preprocessCore, GO.db, AnnotationDbi
 
 
 args <- commandArgs (TRUE)
@@ -38,9 +43,9 @@ if (jid > 0) {
   
   
   data.subset <- pome.data [, index.start:index.end]
-  pome.corr <- corr.test (pome.data, data.subset, method='pearson', adjust='none')
+  pome.corr <- corAndPvalue (pome.data, data.subset)
   
-  write.csv (round (pome.corr$r, digits=4), paste (prefix, '-output/pome-corr', jid, '.csv', sep=''))
+  write.csv (round (pome.corr$cor, digits=4), paste (prefix, '-output/pome-corr', jid, '.csv', sep=''))
   write.csv (round (pome.corr$p, digits=4), paste (prefix, '-output/pome-pval', jid, '.csv', sep=''))
 }
 
