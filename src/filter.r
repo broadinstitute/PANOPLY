@@ -1,18 +1,24 @@
 
 source ('config.r')
+library (dplyr)  # transition to dplyr to make data wranging more consistent and bug-free
 
 
 filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
                             na.max=NULL, no.na=TRUE, separate.QC.types=TRUE, cls=NULL,
                             min.numratio=1, n.min.numratio=NULL, sd.threshold=NULL) {
+  ## filter input dataset
+  ## separate QC pass/fail by default
   
   write.out <- function (f) {
     # write out current ds (gct) to file f
     if (separate.QC.types && length (unique (cls)) > 1)   # if there is more than one type
       for (cl in unique (cls)) {
         d.t <- subset.gct (ds, cls==cl)
-        if (ncol(d.t@mat) > 0) write.gct (d.t, paste (f, '-', cl, '.gct', sep=''),
-                                          ver=3, precision=ndigits, appenddim=FALSE)
+        if (ncol(d.t@mat) > 0) {
+          if (cl == qc.pass.label) file.name <- paste (f, '.gct', sep='')  # QC passes cases
+          else file.name <- paste (f, '-', cl, '.gct', sep='')
+          write.gct (d.t, file.name, ver=3, precision=ndigits, appenddim=FALSE)
+        }
       }
     else write.gct (ds, paste (f, '.gct', sep=''),
                     ver=input.ver, precision=ndigits, appenddim=FALSE)
@@ -25,15 +31,19 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
   ds <- parse.gctx ( paste (file.prefix, '.gct', sep='') )
   input.ver <- ifelse (ds@version=="#1.3", 3, 2)
   # replace Description with gene names
-  if (input.ver == 3 && grepl ('gene[.-_]?(name|id|symbol)s?$', colnames (ds@rdesc), ignore.case=TRUE)) {
+  if (input.ver == 3 && any (grepl ('gene[.-_]?(name|id|symbol)s?$', colnames (ds@rdesc), ignore.case=TRUE))) {
     # gene symbol is already present as an annotation column
     genesym.col <- grep ('gene[.-_]?(name|id|symbol)s?$', colnames (ds@rdesc), ignore.case=TRUE)
+    if (length (genesym.col) > 1) {
+      genesym.col <- genesym.col[1]
+      warning ( paste ('Identified multiple gene symbol columns. Using', genesym.col) )
+    }
     ds@rdesc [,'GeneSymbol'] <- as.character (ds@rdesc [,genesym.col])
   } else {
     # map protein id to gene symbols
     map <- read.delim ( file.path (data.dir, protein.gene.map) )
-    id.table <- merge ( cbind (ds@rdesc, refseq_protein=sub ("(.*?)\\..?", "\\1", ds@rdesc[,'id'])), map,
-                        by='refseq_protein', all.x=TRUE, sort=FALSE )
+    id.table <- left_join ( cbind (ds@rdesc, refseq_protein=sub ("(.*?)\\..?", "\\1", ds@rdesc[,'id'])), map,
+                            by='refseq_protein' )
     ds@rdesc [,'GeneSymbol'] <- as.character (id.table [,'gene_name'])
   }  
   
@@ -92,14 +102,13 @@ if (apply.SM.filter && file.exists(nr.file.path)) {
 } else {
   nr.file <- NULL
 }
-# separate bimodal and unimodal samples (no effect here), with SD filter
+# With SD filter
 filter.dataset (paste (type, '-ratio-norm', sep=''), 
                 numratio.file=nr.file,
                 na.max=na.max, min.numratio=min.numratio, sd.threshold=sd.filter.threshold)
-# do not separate bi/unimodal samples (no effect here) -- no SD filter (to retain max proteins, for mRNA correlation)
+# No SD filter (to retain max proteins, for mRNA correlation)
 filter.dataset (paste (type, '-ratio-norm', sep=''), 
                 numratio.file=nr.file,
                 out.prefix=paste (type, '-ratio-norm-nosdfilter', sep=''),
-                na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL,
-                separate.QC.types=FALSE)
+                na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL)
 

@@ -25,7 +25,16 @@ rna.gene.id.col <- cna.gene.id.col <- 'id'
 
 
 data.matrix <- function (gct.file, gene.id.col) {
+  # read in data and eliminate rows ("genes") with too many missing or 0 values
   d <- parse.gctx (gct.file)
+  remove <- apply (d@mat, 1, function (x) {
+    n <- length(x) 
+    zero.frac <-  sum (x==0, na.rm=TRUE) / n
+    na.frac <- sum (is.na(x)) / n
+    return ( zero.frac > na.max || na.frac > na.max )
+  })
+  d <- row.subset.gct (d, !remove)
+  
   s <- d@cid
   m <- data.frame (GeneSymbol=d@rdesc[,gene.id.col], d@mat) 
   d.matrix <- process.duplicate.genes (m, genesym.col=1, data.cols=2:ncol(m),

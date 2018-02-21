@@ -20,6 +20,8 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
   # species.filter if TRUE will discard all proteins/peptides not from homo sapiens
   #
   # expt.design file should contain at least Sample.ID, Experiment and Channel columns
+  # (Sample.IDs MUST be unique, valid R names; duplicate samples should have the same sample names, 
+  #  but include a replicate.indicator, eg .REP, followed by a unique suffix: <name>.REP1)
   # additional columns in the file will be treated as sample annotations; could be
   # derived from Spectrum Mill reporter_sample_template (converted to long from)
   
@@ -118,10 +120,10 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
       d <- read.csv (expt.design)
       annot.cols <- setdiff (colnames (d), 'Sample.ID')
       sample.annotations <- d[, c('Sample.ID', annot.cols)]
-      # add sample QC info (unimodal/bimodal)
+      # add sample QC info (pass/fail)
       if (! qc.col %in% sample.annotations) {
-        if (!is.null(bimodal.cls)) qc <- read.cls (bimodal.cls)
-        else qc <- rep ('unimodal', nrow(sample.annotations))
+        if (!is.null(sampleQC.cls)) qc <- read.cls (sampleQC.cls)
+        else qc <- rep (qc.pass.label, nrow(sample.annotations))
         # add to annotation table
         sample.annotations <- cbind (sample.annotations, qc)
         colnames (sample.annotations)[ncol(sample.annotations)] <- qc.col

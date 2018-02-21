@@ -1,4 +1,6 @@
 
+import "cna_analysis.wdl" as cna_analysis
+
 
 task harmonize_data {
   File rna
@@ -7,10 +9,6 @@ task harmonize_data {
   String analysisDir
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
 
   command {
     set -euo pipefail
@@ -24,9 +22,6 @@ task harmonize_data {
 
   runtime {
     docker : "broadcptac/pgdac_basic:1"
-    memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 16]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
   }
 
   meta {
@@ -39,12 +34,9 @@ task harmonize_data {
 
 task cna_analysis_setup {
   File tarball
+  Int? jidMax
   File? groups    # expt-design-like file to use for subgroups
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
 
   command {
     set -euo pipefail
@@ -53,74 +45,18 @@ task cna_analysis_setup {
     # create table of matrix files (tsv, one line per group, in order: rna, cna, pome)
     # determine subgroup list (separately, since this is a string and cannot be part of matrix files)
     # determine actual jidMax and create file with list of jid's
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -c ${codeDir} ${"-g " + groups}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -c ${codeDir} ${"-g " + groups} ${"-pe " + jidMax}
   }
 
   output {
-    Array[Array[String]] matrixFiles = read_tsv ("file_table.tsv")
+    Array[Array[File]] matrixFiles = read_tsv ("file_table.tsv")
     Array[String] subgroups = read_lines ("subgroups.txt")
+    File jidsFile = "jids.txt"
     File outputs = "CNAsetup-output.tar"
   }
 
   runtime {
     docker : "broadcptac/pgdac_basic:1"
-    memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 16]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
-  }
-
-  meta {
-    author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
-  }
-}
-
-
-
-task cna_analysis {
-  File tarball
-  String rna
-  String cna
-  String pome
-  String analysisDir
-  String prefix
-  Int jidMax = 1
-  Int jid = 1
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-
-  command {
-    set -euo pipefail
-    # setup directories, code and supporting data files
-    cp ${codeDir}/cna-analysis.r ${codeDir}/generate-cna-plots.r .
-    cp ${dataDir}/gene-location.csv ${dataDir}/chr-length.csv .
-    if [ ! -d ${prefix}-output ]; then 
-      mkdir ${prefix}-output 
-    fi
-    # extract appropriate input files from tarball and copy to cwd
-    tar -x -f ${tarball} ${analysisDir}/cna
-    cp ${analysisDir}/cna/${rna} ${analysisDir}/cna/${cna} ${analysisDir}/cna/${pome} .
-    # run cna analysis using a single processor (jid=jidMax=1)
-    # with the WGCNA library this is very fast, and does not need a scatter
-    Rscript cna-analysis.r ${jid} ${jidMax} ${prefix} ${rna} ${cna} ${pome}
-    # collect results and plot
-    Rscript cna-analysis.r 0 ${jidMax} ${prefix} NULL NULL NULL
-  }
-
-  output {
-    Array[File] tables=glob ("${prefix}-*-vs-*.csv")
-    File plot="${prefix}-cna-plot.png"
-  }
-
-  runtime {
-    docker : "broadcptac/pgdac_basic:1"
-    memory : select_first ([memory, 16]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 16]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
   }
 
   meta {
@@ -143,7 +79,7 @@ task assemble_results {
     analysis_dir=`tar -t -f ${tarball} | head -1 | sed -e 's/\/.*//'`
     cd $analysis_dir
     # copy result tables/plots to appropriate location
-    # (first flatten the table_files 2D array;
+    # (first flatted the table_files 2D array;
     #  using sep=" " creates ["item1.1", ... "item1.n"] ["item2.1", ... "item2.n"] ...
     #  flatten by removing [ ] , "
     file_list=`echo '${sep=" " table_files}' | tr -d '][,"'`
@@ -160,9 +96,6 @@ task assemble_results {
 
   runtime {
     docker : "broadcptac/pgdac_basic:1"
-    memory : "4GB"
-    disks : "local-disk 16 SSD"
-    cpu : "1"
   }
 
   meta {
@@ -194,14 +127,13 @@ workflow run_cna_analysis_on_subgroups {
   }
   
   scatter (idx in range (length (cna_analysis_setup.subgroups))) {
-    call cna_analysis as cna_s {
+    call cna_analysis.run_cna_analysis as cna_s {
       input:
-        tarball=cna_analysis_setup.outputs,
-        analysisDir=analysisDir,
         prefix=cna_analysis_setup.subgroups[idx],
         rna=cna_analysis_setup.matrixFiles[idx][0],
         cna=cna_analysis_setup.matrixFiles[idx][1],
-        pome=cna_analysis_setup.matrixFiles[idx][2]
+        pome=cna_analysis_setup.matrixFiles[idx][2],
+        jidsFile=cna_analysis_setup.jidsFile
     }
   }
   

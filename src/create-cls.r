@@ -50,8 +50,7 @@ create.cls <- function (out.prefix, expt.design, type.cls=NULL) {
 
 # different "type"s result in the same cls files, 
 # but different file prefix is convenient for batch scripts
-# use exptdesign file if it exists; else use the master data file (normalized+filtered)
+# use the master data file (normalized+filtered) to account for filtered samples
 create.cls (type,
-            expt.design=ifelse (file.exists (expt.design.file), expt.design.file, 
-                                paste (master.prefix, 'gct', sep='.')))
+            expt.design=paste (master.prefix, 'gct', sep='.'))
 

@@ -43,13 +43,13 @@ harmonize.dir <- '../harmonized-data'
 
 ## Command line arguments
 # determine type (proteome/phosphoproteome) based on command line args; defaults to proteome
-# data subset defaults to unimodal, unless specified; if unimodal, subset.str is NULL
+# data subset defaults to QC.pass, unless specified; if QC.pass, subset.str is NULL
 args <- commandArgs (trailingOnly=TRUE)
 type <- ifelse (length(args) > 0, toString (args[1]), "proteome")
 data.subset <- ifelse (length(args) > 1, toString (args[2]), "")
 subset.str <- ifelse (data.subset=="", data.subset, paste ('-', data.subset, sep='')) 
 
-## data subset -- whether to process the entire data set or only unimodal samples
+## data subset -- whether to process the entire data set or only QC.pass samples
 #  (applicable for analysis that uses a specific dataset)
 master.prefix <- paste (type, '-ratio-norm-NArm', subset.str, sep='')
 master.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
@@ -140,15 +140,19 @@ cna.data.file <- file.path (data.dir, 'cna-data.gct')
 label.type <- 'TMT10'   # alternatives: iTRAQ4
 set.label.type (label.type) 
 
+## Sample replicate indicator
+# Sample.IDs MUST be unique in the expt.design.file; duplicate samples should have the same 
+# sample names, but include this replicate.indicator, followed by a unique suffix: <name>REP1)
+replicate.indicator <- '.REP'
 
 ## QC
-# QC status (bimodal samples) can be indiated using a separate cls file,
+# QC status can be indiated using a separate cls file,
 # or included in the experiment design file with column name qc.col;
-# if neither is found, all samples are marked "unimodal"
+# if neither is found, all samples are marked as qc.pass.label
 # if both exist, the experiment design file supercedes
-# NB: QC fail == bimodal; QC pass == unimodal
-bimodal.cls <- NULL
+sampleQC.cls <- NULL
 qc.col <- 'QC.status'
+qc.pass.label <- 'QC.pass'
 
 
 ## Output precision for gct tables
@@ -156,10 +160,10 @@ ndigits <- 5
 
 
 ## Missing values and filtering
-# nmiss.plex <- 0.25
+# nmiss.plex <- 0.25   # must be present in at least nmiss.plex fraction of the experiments (plexes)
 # n.plex <- length (unique (read.csv (expt.design.file)[,'Experiment']))
 # na.max <- ceiling (n.plex * length(plex.channels) * nmiss.plex)                  
-#                               # must be present in at least nmiss.plex fraction of the experiments (plexes)
+#                             
 na.max <- 0.7                 # maximum allowed NA values, can be fraction or integer number of samples
 nmiss.factor <- 0.5           # for some situations, a more stringent condition is needed
 sd.filter.threshold <- 0.5    # SD threshold for SD filtering
@@ -167,7 +171,7 @@ apply.SM.filter <- TRUE       # if TRUE, apply numRatio based filter (use TRUE i
 
 
 ## Normalization
-norm.method <- 'median'        # options: 2comp (default), median, mean
+norm.method <- '2comp'         # options: 2comp (default), median, mean
 alt.method <- 'median'         # alt.method for comparison -- filtered datasets not generated
 if (norm.method == alt.method) alt.method <- NULL
                                # ignored if alt.method is NULL, or is identical to norm.method
