@@ -55,6 +55,8 @@ function usage {
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
   echo "     OPERATION CNAcorr requires (-i); -i is tar output from CNAsetup"
+  echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
+  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c); -i is tar output from normalize/harmonize"
   echo "   Use -h to print this message."
 }
 
@@ -204,6 +206,14 @@ function analysisInit {
                 else
                   createSubdirs $qc_dir
                 fi ;;
+    assoc )     createSubdirs $assoc_dir
+                # add to config.r if specified
+                if [ "$groups" != "" ]; then
+                    echo "assoc.subgroups <- \"$groups\"" >> $assoc_dir/config.r
+                    cp $groups $assoc_dir/.
+                fi ;;
+    cluster )   createSubdirs $cluster_dir
+                ;;
     * )
   esac
 }
@@ -238,7 +248,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|sampleQC) # OK
+  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|sampleQC|assoc|cluster) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -316,6 +326,19 @@ case $op in
                 usage
                 exit 1
               fi ;;
+  assoc )     if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "" || "$groups" = "")   \
+                    || "$code_dir" = "" ]]
+              then
+                usage
+                exit 1
+              fi ;;
+  cluster )   if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
+                    || "$code_dir" = "" ]]
+              then
+                usage
+                exit 1
+              fi ;;
+
   * )        usage           # unknown operation
              exit 1
 esac
@@ -329,6 +352,8 @@ harmonize_dir="harmonized-data"
 rna_dir="rna"
 cna_dir="cna"
 qc_dir="sample-qc"
+assoc_dir="association"
+cluster_dir="clustering"
 if [ "$data" = "" ]; then
   subset_str=""
 else 
@@ -463,6 +488,28 @@ case $op in
                 (cd $qc_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" sample-qc.r)
              ;;
+#   assoc: association analysis for cls's in GCT or supplied in input
+    assoc )     analysisInit "assoc"
+                for f in assoc-analysis.r; do cp $code_dir/$f $assoc_dir/$f; done
+                (cd $assoc_dir;
+                 R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
+             ;;
+#   cluster: perform concensus NMF clustering
+    cluster )   analysisInit "cluster"
+                cp $code_dir/clustering/*.R $cluster_dir/.
+                cp $code_dir/assoc-analysis.r $cluster_dir/.
+                (cd $cluster_dir;
+                 # run NMF clustering and best cluster selection
+                 Rscript prepare-data.R;
+                 Rscript top_genes.R --expfile ${prefix}-data.gct --selected_genes ALL --output_prefix ${prefix};
+                 Rscript gdac_cnmf.R --expfile ${prefix}.expclu.gct --k_int 2 --k_final 8 --output_prefix ${prefix};
+                 Rscript select_best_cluster_merged.R --input_exp ${prefix}.expclu.gct --input_all ${prefix}-data.gct \
+                   --output_prefix ${prefix} --cluster_membership ${prefix}.membership.txt \
+                   --cophenetic ${prefix}.cophenetic.coefficient.txt --measure pearson --cluster nmf;
+                 # run association analysis on clusters to determine markers
+                 Rscript postprocess.R;
+                 R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
+             ;;
 #   Unknown operation
     * )         echo "ERROR: Unknown OPERATION $op"; exit 1 
 esac
@@ -479,40 +526,7 @@ fi
 # cp $analysis_dir.tar /results/.   # for testing
 
 
-# ## copy appropriate code in preparation for running pipeline analysis components
-# for f in cna-analysis.r generate-cna-plots.r run-cna-analysis.r run-cna-analysis-all.r runR.sh; do cp $code_dir/$f cna/$f; done
-# for f in netgestalt-input-data.r; do cp $code_dir/$f netgestalt/$f; done
-# for f in assoc-analysis.r; do cp $code_dir/$f association/$f; done
-# for f in correlation.r run-correlation.r runR.sh; do cp $code_dir/$f correlation/$f; done
-# for f in mut-analysis.r sigmut-genes.r mutated-gene-markers.r; do cp $code_dir/$f mutation/$f; done
-# 
-# # link the following files since they are used by a LSF array job script
-# # (and is easier to manage as files in the current directory)
-# for f in gene-location.csv chr-length.csv; do (cd cna; cp ../data/$f $f); done
-# for f in gene-location.csv; do (cd correlation; cp ../data/$f $f); done
-
-
-# ## association
-# echo "Association analysis ..." >> $log_file
-# (cd association;
-#  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
-# 
-# 
-# # ## mutated gene marker analysis
-# # echo "Mutated gene marker analysis ..." >> $log_file
-# # (cd mutation;
-# #  R CMD BATCH --vanilla "--args $prefix $data" mutated-gene-markers.r)
-# 
-# 
-# # ## mutation analysis (generate tables needed by netgestalt)
-# # if [ $data_source != "whim" ]
-# # then
-# #   echo "Mutation analysis ..." >> $log_file
-# #   (cd mutation;
-# #    R CMD BATCH --vanilla "--args $prefix $data" mut-analysis.r)
-# # fi
-#   
-# 
+#
 # ## netgestalt
 # echo "Generating tables for NetGestalt ..." >> $log_file
 # (cd netgestalt;
@@ -524,23 +538,4 @@ fi
 # (cd correlation;
 #  R CMD BATCH --vanilla "--args $prefix $data" run-correlation.r)
 # 
-#   
-# # ## additional mutation analysis (uses global proteome table from netgestalt)
-# # if [ $data_source != "whim" ]
-# # then
-# #   echo "More mutation analysis ..." >> $log_file
-# #   (cd mutation;
-# #    R CMD BATCH --vanilla "--args $prefix $data" sigmut-genes.r)
-# # fi
-#   
-# 
-# if [ $run_cna = "TRUE" ]
-# then
-# ## cna (plots only -- relies on tables created by netgestalt)
-# echo "Generating CNA plots ..." >> $log_file
-# (cd cna;
-#  R CMD BATCH --vanilla "--args $prefix $data" run-cna-analysis-all.r)
-# fi
-
-
 

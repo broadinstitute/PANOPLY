@@ -167,6 +167,8 @@ ndigits <- 5
 na.max <- 0.7                 # maximum allowed NA values, can be fraction or integer number of samples
 nmiss.factor <- 0.5           # for some situations, a more stringent condition is needed
 sd.filter.threshold <- 0.5    # SD threshold for SD filtering
+clustering.sd.threshold <- 2  # threshold for filtering data before consensus clustering
+clustering.na.threshold <- 0.5 # max fraction of missing values for clustering; rest are imputed
 apply.SM.filter <- TRUE       # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
 
 

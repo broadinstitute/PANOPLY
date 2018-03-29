@@ -14,21 +14,21 @@ if (! exists ("cna.subgroups")) cna.subgroups <- NULL
 
 
 
-create.subset <- function (data, sub, fname, na.max=0.5) {
+create.subset <- function (data, sub, fname, na.max.subset=0.5) {
   # create data subset; ensure there aren't too many NAs after subsetting
   data.sub <- data [, c (TRUE, sub)]
   nas <- apply (data.sub[-1], 1, function (x) sum (is.na (x))) / (ncol (data.sub) - 1)
-  data.sub <- data.sub [nas < na.max, ]
+  data.sub <- data.sub [nas < na.max.subset, ]
   write.csv (data.sub, fname, row.names=FALSE)
   return (fname)
 }
 
 
-run.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'rna-matrix.csv'),
-                            cna.file=file.path (harmonize.dir, 'cna-matrix.csv'),
-                            pome.file=file.path (harmonize.dir, paste (type, '-matrix.csv', sep='')),
-                            matrix.files.table="file_table.tsv", subgroups.file="subgroups.txt",
-                            force=FALSE) {
+setup.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'rna-matrix.csv'),
+                              cna.file=file.path (harmonize.dir, 'cna-matrix.csv'),
+                              pome.file=file.path (harmonize.dir, paste (type, '-matrix.csv', sep='')),
+                              matrix.files.table="file_table.tsv", subgroups.file="subgroups.txt",
+                              force=FALSE) {
   
   rna.data <- read.csv (rna.file)
   cna.data <- read.csv (cna.file)
@@ -72,8 +72,8 @@ run.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'rna
   }
   close (mfile)
   close (sfile)
-
+  
 }
 
 
-run.corr.calcs (groups=cna.subgroups)
+setup.corr.calcs (groups=cna.subgroups)
