@@ -1,0 +1,11 @@
+../../tasks/pgdac_parse_sm_table
+../../tasks/pgdac_normalize_ms_data
+../../tasks/pgdac_parse_sm_table_report
+../../tasks/pgdac_rna_protein_correlation
+../../tasks/pgdac_rna_protein_correlation_report
+../../tasks/pgdac_harmonize
+../../tasks/pgdac_cna_setup
+../../tasks/pgdac_cna_correlation
+../../tasks/pgdac_sampleqc
+../../tasks/pgdac_association
+../../tasks/pgdac_cluster
