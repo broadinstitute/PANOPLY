@@ -10,7 +10,7 @@ if (sum (is.na(data@mat)) > 0) {
   nas <- apply (data@mat, 1, function (x) sum (is.na(x)))
   keep <- nas < (ncol(data@mat) * clustering.na.threshold)
   data.NAthresh <- row.subset.gct (data, keep)
-  data.imputed <- pamr.knnimpute (data=list (x=as.matrix(data.NAthresh@mat)))
+  data.imputed <- pamr.knnimpute (data=list (x=as.matrix(data.NAthresh@mat)), colmax=sample.na.max)
   data.NAthresh@mat <- data.imputed$x
   data <- data.NAthresh
 }
@@ -20,6 +20,6 @@ feature.sd <- apply (data@mat, 1, sd, na.rm=TRUE)
 keep <- feature.sd > clustering.sd.threshold
 data <- row.subset.gct (data, keep)
 
-cluster.data <- data.frame (id=data@rid, data@mat)
+cluster.data <- data.frame (Name=data@rid, Description=data@rid,  data@mat)
 write.gct2 (cluster.data, sprintf ("%s-data.gct", type))
 

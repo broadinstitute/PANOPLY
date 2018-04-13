@@ -14,10 +14,16 @@ if (! exists ("assoc.subgroups")) {
     # marker selection and classification for each file in cls.files
     for (cls in cls.files) {   
       out.prefix <- gsub ("\\.cls$", "", basename (cls))
+      if (min (summary (factor (read.cls (cls)))) < 3)  {
+        # too few members in some class(es)
+        warning ( paste (cls, "has classes with < 3 members ... skipping") )
+        next
+      }
       marker.selection.and.classification (gct.file, cls, paste (out.prefix, '-analysis', sep=''), 
                                            id.col=id.col, desc.col=desc.col, gsea=TRUE,
                                            id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
-                                           duplicate.gene.policy=duplicate.gene.policy)
+                                           duplicate.gene.policy=duplicate.gene.policy,
+                                           impute.colmax=sample.na.max)
     } 
   } else {
     Warning ("No cls files to run association analysis on ... ignoring")
@@ -46,10 +52,16 @@ if (! exists ("assoc.subgroups")) {
       write.gct (ds.g, gct.g)
       write.cls (group [subsamp], cls.g)
       
+      if (min (summary (factor (read.cls (cls.g)))) < 3) {
+        # too few members in some class(es)
+        warning ( paste (g, "has classes with < 3 members ... skipping") )
+        next
+      }
       marker.selection.and.classification (gct.g, cls.g, sprintf ("%s-analysis", f), 
                                            id.col=id.col, desc.col=desc.col, gsea=TRUE,
                                            id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
-                                           duplicate.gene.policy=duplicate.gene.policy)
+                                           duplicate.gene.policy=duplicate.gene.policy,
+                                           impute.colmax=sample.na.max)
     }
     
   } else {

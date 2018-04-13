@@ -500,14 +500,14 @@ case $op in
                 cp $code_dir/assoc-analysis.r $cluster_dir/.
                 (cd $cluster_dir;
                  # run NMF clustering and best cluster selection
-                 Rscript prepare-data.R;
+                 R CMD BATCH --vanilla "--args $prefix $data" prepare-data.R;
                  Rscript top_genes.R --expfile ${prefix}-data.gct --selected_genes ALL --output_prefix ${prefix};
                  Rscript gdac_cnmf.R --expfile ${prefix}.expclu.gct --k_int 2 --k_final 8 --output_prefix ${prefix};
                  Rscript select_best_cluster_merged.R --input_exp ${prefix}.expclu.gct --input_all ${prefix}-data.gct \
                    --output_prefix ${prefix} --cluster_membership ${prefix}.membership.txt \
                    --cophenetic ${prefix}.cophenetic.coefficient.txt --measure pearson --cluster nmf;
                  # run association analysis on clusters to determine markers
-                 Rscript postprocess.R;
+                 R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
                  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
              ;;
 #   Unknown operation
