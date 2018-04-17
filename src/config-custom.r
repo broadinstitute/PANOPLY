@@ -30,7 +30,7 @@
 # 
 # ## Missing values and filtering
 # na.max <- 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
-# sample.na.max <- 0.9           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+# sample.na.max <- 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
 # nmiss.factor <- 0.5            # for some situations, a more stringent condition is needed
 # sd.filter.threshold <- 0.5     # SD threshold for SD filtering
 # clustering.sd.threshold <- 2   # threshold for filtering data before consensus clustering
