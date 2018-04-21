@@ -82,7 +82,7 @@ set.label.type <- function (label.type) {
   ## assign is used to set the value globally
   ## options: TMT10 and iTRAQ4
   
-  ## TMT-10
+  ## TMT-10 (default reference channel in 131)
   if (label.type == 'TMT10') {
     assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
     # match the following channel names in the experiment design file to find sample names
@@ -98,6 +98,24 @@ set.label.type <- function (label.type) {
     assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
     assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
     assign ("refint.pat",  '^TMT_131_total$', envir = .GlobalEnv)
+  }
+
+  ## TMT-10 with 126 as reference channel
+  if (label.type == 'TMT10.126') {
+    assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
+    # match the following channel names in the experiment design file to find sample names
+    assign ("plex.channels",  c('127N','127C','128N','128C','129N','129C','130N','130C', '131'), envir = .GlobalEnv)
+    # the above does not contain the reference channel:
+    assign ("ref.channel",  '126', envir = .GlobalEnv)
+    ## regex patterns for various matching
+    assign ("header.pat",  '.*TMT*', envir = .GlobalEnv)
+    assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("intensity.pat",  '^TMT_1[23][17890][NC]*_total$', envir = .GlobalEnv)
+    assign ("numratio.pat",  '.*numRatios.*_126$', envir = .GlobalEnv)
+    assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
+    assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
+    assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
+    assign ("refint.pat",  '^TMT_126_total$', envir = .GlobalEnv)
   }
   
   ## iTRAQ-4
@@ -137,7 +155,7 @@ cna.data.file <- file.path (data.dir, 'cna-data.gct')
 
 
 ## Label type for MS experiment (set.label.type must be called to initialize variables)
-label.type <- 'TMT10'   # alternatives: iTRAQ4
+label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126
 set.label.type (label.type) 
 
 ## Sample replicate indicator
