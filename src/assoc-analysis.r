@@ -6,6 +6,33 @@ Source ('stats.r')
 
 gct.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
 
+
+run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
+  # runs marker selection on input data for given class vector in input.cls
+  marker.selection.and.classification (input.gct.file, input.cls.file, paste (prefix, '-analysis', sep=''), 
+                                       id.col=id.col, desc.col=desc.col, gsea=TRUE,
+                                       id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
+                                       duplicate.gene.policy=duplicate.gene.policy,
+                                       impute.colmax=sample.na.max)
+  
+  # if class vector has > 2 classes, also run 1 vs. all marker selection for each class
+  cls <- read.cls (input.cls.file)
+  if (nlevels (factor (cls)) > 2) {
+    cls.1vAll <- classes.1vAll (cls)
+    for (i in 1:ncol(cls.1vAll)) {
+      prefix.1vA <- paste (prefix, colnames(cls.1vAll)[i], sep='-')
+      new.clsf <- paste (prefix.1vA, '.cls', sep='')
+      write.cls (cls.1vAll[,i], new.clsf)
+      marker.selection.and.classification (input.gct.file, new.clsf, paste (prefix.1vA, '-analysis', sep=''),
+                                           id.col=id.col, desc.col=desc.col, gsea=TRUE,
+                                           id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
+                                           duplicate.gene.policy=duplicate.gene.policy,
+                                           impute.colmax=sample.na.max)
+    }
+  }
+}
+
+
 # obtain cls's
 if (! exists ("assoc.subgroups")) {
   # no class vectors specified -- use all cls files from norm.dir (these have between 2-5 classes)
@@ -19,11 +46,7 @@ if (! exists ("assoc.subgroups")) {
         warning ( paste (cls, "has classes with < 3 members ... skipping") )
         next
       }
-      marker.selection.and.classification (gct.file, cls, paste (out.prefix, '-analysis', sep=''), 
-                                           id.col=id.col, desc.col=desc.col, gsea=TRUE,
-                                           id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
-                                           duplicate.gene.policy=duplicate.gene.policy,
-                                           impute.colmax=sample.na.max)
+      run.marker.selection (gct.file, cls, out.prefix)
     } 
   } else {
     Warning ("No cls files to run association analysis on ... ignoring")
@@ -57,11 +80,7 @@ if (! exists ("assoc.subgroups")) {
         warning ( paste (g, "has classes with < 3 members ... skipping") )
         next
       }
-      marker.selection.and.classification (gct.g, cls.g, sprintf ("%s-analysis", f), 
-                                           id.col=id.col, desc.col=desc.col, gsea=TRUE,
-                                           id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
-                                           duplicate.gene.policy=duplicate.gene.policy,
-                                           impute.colmax=sample.na.max)
+      run.marker.selection (gct.g, cls.g, f)
     }
     
   } else {

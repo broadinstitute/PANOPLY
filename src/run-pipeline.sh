@@ -56,7 +56,7 @@ function usage {
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
   echo "     OPERATION CNAcorr requires (-i); -i is tar output from CNAsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
-  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c); -i is tar output from normalize/harmonize"
+  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
   echo "   Use -h to print this message."
 }
 
@@ -213,7 +213,12 @@ function analysisInit {
                     cp $groups $assoc_dir/.
                 fi ;;
     cluster )   createSubdirs $cluster_dir
-                ;;
+                # add to config.r if specified 
+                if [ "$groups" != "" ]; then
+                    # class vectors to determine cluster enrichment
+                    echo "cluster.enrichment.subgroups <- \"$groups\"" >> $cluster_dir/config.r
+                    cp $groups $cluster_dir/.
+                fi ;;
     * )
   esac
 }
