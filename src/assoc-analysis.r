@@ -13,7 +13,9 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                        id.col=id.col, desc.col=desc.col, gsea=TRUE,
                                        id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                        duplicate.gene.policy=duplicate.gene.policy,
-                                       impute.colmax=sample.na.max)
+                                       impute.colmax=sample.na.max,
+                                       id.to.gene.map=file.path ('..', 'data', 'RefSeq-GeneName-Map-20170701.txt'),
+                                       official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
   
   # if class vector has > 2 classes, also run 1 vs. all marker selection for each class
   cls <- read.cls (input.cls.file)
@@ -27,7 +29,9 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                            id.col=id.col, desc.col=desc.col, gsea=TRUE,
                                            id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                            duplicate.gene.policy=duplicate.gene.policy,
-                                           impute.colmax=sample.na.max)
+                                           impute.colmax=sample.na.max,
+                                           id.to.gene.map=file.path ('..', 'data', 'RefSeq-GeneName-Map-20170701.txt'),
+                                           official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
     }
   }
 }
