@@ -27,7 +27,7 @@ task pgdac_cna_setup {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {

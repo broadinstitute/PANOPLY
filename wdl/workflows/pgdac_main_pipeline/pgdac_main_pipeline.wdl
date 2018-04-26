@@ -27,7 +27,7 @@ task pgdac_association {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -39,6 +39,7 @@ task pgdac_association {
 task pgdac_cluster {
   File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
   String type
+  File? groupsFile
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
@@ -52,7 +53,7 @@ task pgdac_cluster {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params} ${"-g " + groupsFile}
   }
 
   output {
@@ -64,7 +65,7 @@ task pgdac_cluster {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -100,7 +101,7 @@ task pgdac_cna_correlation {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -138,7 +139,7 @@ task pgdac_cna_setup {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -178,7 +179,7 @@ task pgdac_harmonize {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -202,7 +203,7 @@ task pgdac_normalize_ms_data {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh noramlize -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params}
   }
 
   output {
@@ -214,7 +215,7 @@ task pgdac_normalize_ms_data {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -249,11 +250,11 @@ task pgdac_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:2"
+    docker : "broadcptac/pgdac_main:1"
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -323,7 +324,7 @@ task pgdac_rna_protein_correlation {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -393,7 +394,7 @@ task pgdac_sampleqc {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -409,11 +410,12 @@ workflow pgdac_main_pipeline {
   File cnaData
   String analysisDir
   Float corr_fdr
-  String? dataType="proteome"
+  String dataType
   String? dataSubType
   File? additionalParameters
   File? cna_groups
   File? association_groups
+  File? cluster_enrichment_groups
 
   call pgdac_parse_sm_table {
     input:
@@ -433,11 +435,11 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
 
-  call pgdac_parse_sm_table_report {
-    input: 
-      tarball=pgdac_normalize_ms_data.outputs,
-      label=analysisDir
-  }
+#  call pgdac_parse_sm_table_report {
+#    input: 
+#      tarball=pgdac_normalize_ms_data.outputs,
+#      label=analysisDir
+#  }
 
   call pgdac_rna_protein_correlation {
     input: 
@@ -448,12 +450,12 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
   
-  call pgdac_rna_protein_correlation_report { 
-    input:
-      tarball=pgdac_rna_protein_correlation.outputs,
-      label=analysisDir,
-      fdr=corr_fdr
-  }
+#  call pgdac_rna_protein_correlation_report { 
+#    input:
+#      tarball=pgdac_rna_protein_correlation.outputs,
+#      label=analysisDir,
+#      fdr=corr_fdr
+#  }
 
   call pgdac_harmonize {
     input: 
@@ -503,13 +505,14 @@ workflow pgdac_main_pipeline {
     input:
       tarball=pgdac_association.outputs,
       type=dataType,
+      groupsFile=cluster_enrichment_groups,
       subType=dataSubType,
       params=additionalParameters
   }
 
   output {
     File output=pgdac_cluster.outputs
-    File norm_report=pgdac_parse_sm_table_report.report
-    File corr_report=pgdac_rna_protein_correlation_report.report
+#    File norm_report=pgdac_parse_sm_table_report.report
+#    File corr_report=pgdac_rna_protein_correlation_report.report
   }}
 

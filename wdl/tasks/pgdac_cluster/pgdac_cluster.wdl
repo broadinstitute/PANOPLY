@@ -1,6 +1,7 @@
 task pgdac_cluster {
   File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
   String type
+  File? groupsFile
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
@@ -14,7 +15,7 @@ task pgdac_cluster {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params} ${"-g " + groupsFile}
   }
 
   output {
@@ -26,7 +27,7 @@ task pgdac_cluster {
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemtions, 0])
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
