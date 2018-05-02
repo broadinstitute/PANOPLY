@@ -9,7 +9,7 @@ RUN apt-get -t unstable install -y libssl-dev
 RUN apt-get -t unstable install -y libcurl4-openssl-dev
 
 # install packages
-RUN echo 'install.packages(c( "ComplexHeatmap",     "MASS",     "MethComp",     "NMF",     "PerformanceAnalytics",     "RColorBrewer",     "RankAggreg",     "RobustRankAggreg",     "ape",     "bpca",     "caret",     "circlize",    "cluster",     "dplyr",    "e1071",     "fastcluster",     "ggplot2",     "glmnet",     "gplots",     "lattice",     "limma",     "lme4",     "maptools",     "mclust",     "misc3d",     "mixtools",     "nlme",     "pacman",    "pamr",     "parmigene",     "psych",     "randomForest",     "reshape",     "rgl",     "rhdf5",     "samr",     "scales",     "scatterplot3d",     "smacof",     "sn",     "tensor",     "tools",     "verification" ), repos="http://cran.us.r-project.org", dependencies=TRUE)' > /tmp/packages.R  \
+RUN echo 'install.packages(c( "Cairo", "ComplexHeatmap",     "MASS",     "MethComp",     "NMF",     "PerformanceAnalytics",     "RColorBrewer",     "RankAggreg",     "RobustRankAggreg",     "ape",     "bpca",     "caret",     "circlize",    "cluster",     "dplyr",    "e1071",     "fastcluster",     "ggplot2",     "glmnet",     "gplots",     "lattice",     "limma",     "lme4",     "maptools",     "mclust",     "misc3d",     "mixtools",     "nlme",     "optparse",    "pacman",    "pamr",     "parmigene",     "psych",     "randomForest",     "reshape",     "rgl",     "rhdf5",     "samr",     "scales",     "scatterplot3d",     "smacof",     "sn",     "tensor",     "tools",     "verification" ), repos="http://cran.us.r-project.org", dependencies=TRUE)' > /tmp/packages.R  \
    && Rscript /tmp/packages.R
 
 # bioconductor libraries
