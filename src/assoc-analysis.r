@@ -14,7 +14,6 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                        id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                        duplicate.gene.policy=duplicate.gene.policy,
                                        impute.colmax=sample.na.max,
-                                       id.to.gene.map=file.path ('..', 'data', 'RefSeq-GeneName-Map-20170701.txt'),
                                        official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
   
   # if class vector has > 2 classes, also run 1 vs. all marker selection for each class
@@ -30,7 +29,6 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                            id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                            duplicate.gene.policy=duplicate.gene.policy,
                                            impute.colmax=sample.na.max,
-                                           id.to.gene.map=file.path ('..', 'data', 'RefSeq-GeneName-Map-20170701.txt'),
                                            official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
     }
   }
@@ -53,7 +51,7 @@ if (! exists ("assoc.subgroups")) {
       run.marker.selection (gct.file, cls, out.prefix)
     } 
   } else {
-    Warning ("No cls files to run association analysis on ... ignoring")
+    warning ("No cls files to run association analysis on ... ignoring")
   }
 } else {
   # groups file specified
@@ -88,6 +86,6 @@ if (! exists ("assoc.subgroups")) {
     }
     
   } else {
-    Warning ("No cls files to run association analysis on ... ignoring")
+    warning ("No cls files to run association analysis on ... ignoring")
   }
 }
