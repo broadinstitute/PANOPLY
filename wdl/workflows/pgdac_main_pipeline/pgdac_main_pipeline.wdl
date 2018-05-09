@@ -24,8 +24,8 @@ task pgdac_association {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -62,8 +62,8 @@ task pgdac_cluster {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -98,8 +98,8 @@ task pgdac_cna_correlation {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -136,8 +136,8 @@ task pgdac_cna_setup {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -176,8 +176,8 @@ task pgdac_harmonize {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -212,8 +212,8 @@ task pgdac_normalize_ms_data {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -251,8 +251,8 @@ task pgdac_parse_sm_table {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -284,8 +284,8 @@ task pgdac_parse_sm_table_report {
 
   runtime {
     docker : "broadcptac/pgdac_cpdb:4"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
@@ -321,8 +321,8 @@ task pgdac_rna_protein_correlation {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -355,8 +355,8 @@ task pgdac_rna_protein_correlation_report {
 
   runtime {
     docker : "broadcptac/pgdac_cpdb:4"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
@@ -391,8 +391,8 @@ task pgdac_sampleqc {
 
   runtime {
     docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 4]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
