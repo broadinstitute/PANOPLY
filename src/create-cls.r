@@ -27,7 +27,7 @@ create.cls <- function (out.prefix, expt.design, type.cls=NULL) {
   for (g in setdiff (colnames (tumor.info), c('id', 'Sample.ID'))) {
     tumor.group <- make.names (tumor.info [ sample.order, g ])  # use make.names to convert text to proper class labels
     n.groups <- nlevels (factor (tumor.group))                  # and ensure there are a reasonable number of groups
-    if (n.groups < 2 || n.groups > 6) next
+    if (n.groups < 2 || n.groups > 5) next
     # global class labels
     write.cls (tumor.group, paste (out.prefix, '-', g, '.cls', sep=''))
     
