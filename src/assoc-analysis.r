@@ -16,9 +16,10 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                        impute.colmax=sample.na.max,
                                        official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
   
-  # if class vector has > 2 classes, also run 1 vs. all marker selection for each class
+  # if class vector has > 2 classes, and sufficient numbers per class,
+  # run 1 vs. all marker selection for each class
   cls <- read.cls (input.cls.file)
-  if (nlevels (factor (cls)) > 2) {
+  if (nlevels (factor (cls)) > 2 && min (summary (factor (cls))) >= 10) {
     cls.1vAll <- classes.1vAll (cls)
     for (i in 1:ncol(cls.1vAll)) {
       prefix.1vA <- paste (prefix, colnames(cls.1vAll)[i], sep='-')
