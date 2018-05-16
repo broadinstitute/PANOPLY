@@ -103,9 +103,10 @@ function initDataDir {
       fi
     done  
   fi
-  # copy expt_file if specified
+  # copy expt_file if specified (and keep original -- expt_design_file may get overwritten)
   if [ "$expt_file" != "" ]; then
     cp $expt_file $data_dir/$expt_design_file
+    cp $expt_file $data_dir/.
   fi
 }
 
