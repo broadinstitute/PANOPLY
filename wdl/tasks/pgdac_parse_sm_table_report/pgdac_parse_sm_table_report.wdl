@@ -1,7 +1,7 @@
 task pgdac_parse_sm_table_report {
   File tarball
   String label
-  String type = "proteome"
+  String type
   String tmpDir = "tmp"
 
   Int? memory
@@ -10,7 +10,7 @@ task pgdac_parse_sm_table_report {
 
   command {
     set -euo pipefail
-    Rscript /src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}
+    Rscript /home/pgdac/src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}
   }
 
   output {
@@ -18,7 +18,7 @@ task pgdac_parse_sm_table_report {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cpdb:4"
+    docker : "broadcptac/pgdac_rmd:1"
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

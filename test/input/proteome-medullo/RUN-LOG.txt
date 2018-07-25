@@ -1,0 +1,13 @@
+PGDAC data analysis pipeline
+Command line: /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s /cromwell_root/fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-medullo-v2-SMout.ssv -r proteome-medullo -c /prot/proteomics/Projects/PGDAC/src -e /cromwell_root/fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-medullo-exptdesign.csv
+Analysis directory: proteome-medullo
+Input SM data file: /cromwell_root/fc-2358f2a7-8fbb-4b2d-b592-5e06284aac07/medullo/proteome-medullo-v2-SMout.ssv
+Input nomalized data: 
+Input filtered data: 
+Input tar file: 
+Code directory: /prot/proteomics/Projects/PGDAC/src
+Common data directory: 
+Parameters file: 
+Data prefix: proteome
+Data type: 
+Data source: default
