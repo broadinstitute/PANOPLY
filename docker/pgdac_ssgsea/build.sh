@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ver=2
+ver=3
 name=`basename $PWD`
 docker_tag=broadcptac/$name:$ver
 
@@ -11,11 +11,9 @@ cp -r ../../src/$name/* src
 
 # get ssGSEA scripts from GitHub
 wget https://raw.githubusercontent.com/karstenkrug/ssGSEA2.0/master/src/ssGSEA2.0.R
-#cp /media/sf_Dropbox/Devel/ptmGSEA/src/ssGSEA2.0.R .
 mv *.R src
 
 wget https://raw.githubusercontent.com/karstenkrug/ssGSEA2.0/master/ssgsea-cli.R
-#cp /media/sf_Dropbox/Devel/ptmGSEA/ssgsea-cli.R .
 dos2unix ssgsea-cli.R
 
 
