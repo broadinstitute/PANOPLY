@@ -10,7 +10,7 @@
 
 ## Path for R-utilites (for I/O and other misc functions)
 Rutil.path <- switch (Sys.info()[['sysname']],
-                      Windows = {'//argon-cifs/prot_proteomics/Projects/R-utilities'},
+                      Windows = {'//flynn-cifs/prot_proteomics/Projects/R-utilities'},
                       Darwin = {'/Volumes/prot_proteomics/Projects/R-utilities'},
                       Linux = {'/prot/proteomics/Projects/R-utilities'})
 
