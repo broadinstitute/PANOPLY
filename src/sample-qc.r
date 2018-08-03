@@ -25,7 +25,7 @@ read <- function (f, suffix) {
 
 ## read data and filter by protein-RNA correlation
 rna <- read ( sprintf ('%s/rna-matrix.csv', harmonize.dir), 'RNA' )
-pome <- read ( sprintf ('%s/proteome-matrix.csv', harmonize.dir), 'PROT')
+pome <- read ( sprintf ('%s/%s-matrix.csv', harmonize.dir, type), 'PROT')
 cna <- read ( sprintf ('%s/cna-matrix.csv', harmonize.dir), 'CNA')
 
 cis.cor.file <- sprintf ('%s/proteome-mrna-cor.tsv', rna.dir)
@@ -53,7 +53,7 @@ pdf ('sample-qc-plots.pdf', width=12, height=10, pointsize=8)
 
 ## correlations (heatmap)
 draw.heatmap <- function (d, title) {
-  heatmap.range <- range (as.vector (unlist (d)))
+  heatmap.range <- range (as.vector (unlist (d)), na.rm=TRUE)
   h <- Heatmap (d, col=colorRamp2 (c(heatmap.range[1], 0, heatmap.range[2]), heatmap.colors [c(11, 6, 1)]),
                 cluster_columns=FALSE, cluster_rows=FALSE, name=title,
                 heatmap_legend_param=list (color_bar='continuous'), 
@@ -77,7 +77,7 @@ draw.fanplot <- function (d, title, n.types=2) {
   joint.phy <- as.phylo (as.hclust (joint.cluster))
   # graphics parameters
   n <- ncol (d) / 2
-  xmax <- max (joint.phy$edge.length) * 6 / n.types
+  xmax <- max (joint.phy$edge.length, na.rm=TRUE) * 6 / n.types
   cmax <- n / ceiling (n / length (samplecolors))
   # create plot
   plot (joint.phy, type='fan', tip.color = samplecolors[1:cmax], no.margin=FALSE, cex=0.7, main=title, x.lim=c(-xmax, xmax))

@@ -10,7 +10,7 @@
 
 ## Path for R-utilites (for I/O and other misc functions)
 Rutil.path <- switch (Sys.info()[['sysname']],
-                      Windows = {'//argon-cifs/prot_proteomics/Projects/R-utilities'},
+                      Windows = {'//flynn-cifs/prot_proteomics/Projects/R-utilities'},
                       Darwin = {'/Volumes/prot_proteomics/Projects/R-utilities'},
                       Linux = {'/prot/proteomics/Projects/R-utilities'})
 
@@ -82,7 +82,7 @@ set.label.type <- function (label.type) {
   ## assign is used to set the value globally
   ## options: TMT10 and iTRAQ4
   
-  ## TMT-10
+  ## TMT-10 (default reference channel in 131)
   if (label.type == 'TMT10') {
     assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
     # match the following channel names in the experiment design file to find sample names
@@ -98,6 +98,24 @@ set.label.type <- function (label.type) {
     assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
     assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
     assign ("refint.pat",  '^TMT_131_total$', envir = .GlobalEnv)
+  }
+
+  ## TMT-10 with 126 as reference channel
+  if (label.type == 'TMT10.126') {
+    assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
+    # match the following channel names in the experiment design file to find sample names
+    assign ("plex.channels",  c('127N','127C','128N','128C','129N','129C','130N','130C', '131'), envir = .GlobalEnv)
+    # the above does not contain the reference channel:
+    assign ("ref.channel",  '126', envir = .GlobalEnv)
+    ## regex patterns for various matching
+    assign ("header.pat",  '.*TMT*', envir = .GlobalEnv)
+    assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("intensity.pat",  '^TMT_1[23][17890][NC]*_total$', envir = .GlobalEnv)
+    assign ("numratio.pat",  '.*numRatios.*_126$', envir = .GlobalEnv)
+    assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
+    assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
+    assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
+    assign ("refint.pat",  '^TMT_126_total$', envir = .GlobalEnv)
   }
   
   ## iTRAQ-4
@@ -137,7 +155,7 @@ cna.data.file <- file.path (data.dir, 'cna-data.gct')
 
 
 ## Label type for MS experiment (set.label.type must be called to initialize variables)
-label.type <- 'TMT10'   # alternatives: iTRAQ4
+label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126
 set.label.type (label.type) 
 
 ## Sample replicate indicator
@@ -160,16 +178,13 @@ ndigits <- 5
 
 
 ## Missing values and filtering
-# nmiss.plex <- 0.25   # must be present in at least nmiss.plex fraction of the experiments (plexes)
-# n.plex <- length (unique (read.csv (expt.design.file)[,'Experiment']))
-# na.max <- ceiling (n.plex * length(plex.channels) * nmiss.plex)                  
-#                             
-na.max <- 0.7                 # maximum allowed NA values, can be fraction or integer number of samples
-nmiss.factor <- 0.5           # for some situations, a more stringent condition is needed
-sd.filter.threshold <- 0.5    # SD threshold for SD filtering
-clustering.sd.threshold <- 2  # threshold for filtering data before consensus clustering
+na.max <- 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+sample.na.max <- 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+nmiss.factor <- 0.5            # for some situations, a more stringent condition is needed
+sd.filter.threshold <- 0.5     # SD threshold for SD filtering
+clustering.sd.threshold <- 2   # threshold for filtering data before consensus clustering
 clustering.na.threshold <- 0.5 # max fraction of missing values for clustering; rest are imputed
-apply.SM.filter <- TRUE       # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+apply.SM.filter <- TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
 
 
 ## Normalization

@@ -30,6 +30,8 @@ function usage {
   echo "             -p <parameters-file> -t <type>  -m <data>"
   echo "             -rna <rna-expression> -cna <copy-number-data>"
   echo "             -g <groups> -pe <#processors>"
+  echo "             -CMAPgroup <group-name>  -CMAPtype <data-type>  -CMAPnperm <# permutations>"
+  echo "             -CMAPscr <subset-scores-directory>" 
   echo "   OPERATIONs allowed are listed below"
   echo "   <input-tarball> is a tar file with the initialized directory structure"
   echo "       if specfied, -s, -r, -c and -d are not required -- allowed only when OPERATION is not input*"
@@ -54,9 +56,11 @@ function usage {
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
-  echo "     OPERATION CNAcorr requires (-i); -i is tar output from CNAsetup"
+  echo "     OPERATION CNAcorr requires (-i,); -i is tar output from CNAsetup"
+  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPnperm); -i is tar output from CNAcorr"
+  echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
-  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c); -i is tar output from normalize/harmonize"
+  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
   echo "   Use -h to print this message."
 }
 
@@ -103,9 +107,10 @@ function initDataDir {
       fi
     done  
   fi
-  # copy expt_file if specified
+  # copy expt_file if specified (and keep original -- expt_design_file may get overwritten)
   if [ "$expt_file" != "" ]; then
     cp $expt_file $data_dir/$expt_design_file
+    cp $expt_file $data_dir/.
   fi
 }
 
@@ -200,6 +205,18 @@ function analysisInit {
                 else
                   createSubdirs $cna_dir
                 fi ;;
+    CMAPsetup ) if [ ! -f $cna_dir/$cmap_prefix-matrix.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-sigevents.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-pval.csv -o ! -f $data_dir/cmap-knockdown-genes-list.txt ]; then
+                  echo "Required initialization files not found -- run CNAcorr first ... abort"
+                  exit 1
+                else
+                  createSubdirs $cmap_dir
+                fi ;;
+    CMAPconn ) if [ ! -d $cmap_dir ]; then
+                  echo "CMAP directory not found -- run CMAPsetup first ... abort"
+                  exit 1
+                else
+                  createSubdirs $cmap_dir
+                fi ;;
     sampleQC )  if [ ! -f $harmonize_dir/rna-matrix.csv -o ! -f $harmonize_dir/cna-matrix.csv -o ! -f $harmonize_dir/$prefix-matrix.csv ]; then
                   echo "Harmonized data not found -- run harmonize first ... abort"
                   exit 1
@@ -213,7 +230,12 @@ function analysisInit {
                     cp $groups $assoc_dir/.
                 fi ;;
     cluster )   createSubdirs $cluster_dir
-                ;;
+                # add to config.r if specified 
+                if [ "$groups" != "" ]; then
+                    # class vectors to determine cluster enrichment
+                    echo "cluster.enrichment.subgroups <- \"$groups\"" >> $cluster_dir/config.r
+                    cp $groups $cluster_dir/.
+                fi ;;
     * )
   esac
 }
@@ -238,6 +260,10 @@ rna_data=
 cna_data=
 groups=
 pe=
+cmap_group="all"
+cmap_type="pome"
+cmap_nperm="0"
+cmap_scores=
 prefix="proteome"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -248,7 +274,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|sampleQC|assoc|cluster) # OK
+  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -274,6 +300,14 @@ while [ "$1" != "" ]; do
 	-pe )    shift; pe=$1 ;;
 	-rna )   shift; rna_data=`readlink -f $1` ;;
 	-cna )   shift; cna_data=`readlink -f $1` ;;
+	-CMAPgroup )
+	         shift; cmap_group=`readlink -f $1` ;;
+	-CMAPtype )
+	         shift; cmap_type=`readlink -f $1` ;;
+	-CMAPnperm )
+	         shift; cmap_nperm=`readlink -f $1` ;;
+	-CMAPscr )
+	         shift; cmap_scores=`readlink -f $1` ;;
   -h )     usage; exit ;;
 	* )      usage; exit 1
   esac
@@ -321,6 +355,16 @@ case $op in
                 usage
                 exit 1
               fi ;;
+  CMAPsetup ) if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
+              then
+                usage
+                exit 1
+              fi ;;
+  CMAPconn ) if [[ ("$input_tar" = "") || "$cmap_scores" = "" ]]
+              then
+                usage
+                exit 1
+              fi ;;
   sampleQC )  if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
                 usage
@@ -351,6 +395,8 @@ norm_dir="normalized-data"
 harmonize_dir="harmonized-data"
 rna_dir="rna"
 cna_dir="cna"
+cmap_dir="cmap"
+cmap_prefix="$cmap_group-$cmap_type"
 qc_dir="sample-qc"
 assoc_dir="association"
 cluster_dir="clustering"
@@ -469,7 +515,7 @@ case $op in
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
-                 # interate through groups and execute cna-analysis.r for each
+                 # iterate through groups and execute cna-analysis.r for each
                  for i in `seq 1 "${#g[@]}"`; do
                    line_i=`sed -n "${i}p" file_table.tsv`
                    l=($line_i)
@@ -480,6 +526,26 @@ case $op in
                    Rscript cna-analysis.r 1 1 $group_prefix "${l[0]}" "${l[1]}" "${l[2]}"
                    Rscript cna-analysis.r 0 1 $group_prefix NULL NULL NULL
                  done)
+             ;;
+#   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creats input files (genesets)
+#            input must be tar file obtained after CNAcorr
+    CMAPsetup ) analysisInit "CMAPsetup"
+                #for f in cmap-knockdown-genes-list.txt; do cp $data_dir/$f $cmap_dir/$f; done
+                for f in cmap-input.r connectivity.r; do cp $code_dir/cmap-analysis/$f $cmap_dir/$f; done
+                #for f in $cmap_prefix-matrix.csv $cmap_prefix-vs-cna-sigevents.csv $cmap_prefix-vs-cna-pval.csv; do cp $cna_dir/$f $cmap_dir/$f; done
+                (cd $cmap_dir;
+                 # generate cmap input genesets
+                 Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm)
+                # copy output (geneset file) to job wd (parent of $analysis_dir)
+                cp $cmap_dir/$cmap_group-cmap-$cmap_type-updn-genes.gmt ../cmap-trans-genesets.gmt
+             ;;
+#   CMAPconn: calculate connectivity scores for CMAP analysis -- also gather ssGSEA scores from scatter (FireCloud) and assemble
+#            input must be tar file obtained after CMAPsetup
+    CMAPconn )  analysisInit "CMAPconn"
+                mv ../$cmap_scores $cmap_dir/.
+                (cd $cmap_dir;
+                 # combine subset scores, and calculate connectivity scores
+                 Rscript connectivity.r $cmap_scores $cmap_group $cmap_type)
              ;;
 #   sampleQC: sample-level correlation between p'ome, RNA and CNA, with some clustering/fanplots
 #             input must be tar file obtained after harmonize
@@ -500,14 +566,14 @@ case $op in
                 cp $code_dir/assoc-analysis.r $cluster_dir/.
                 (cd $cluster_dir;
                  # run NMF clustering and best cluster selection
-                 Rscript prepare-data.R;
+                 R CMD BATCH --vanilla "--args $prefix $data" prepare-data.R;
                  Rscript top_genes.R --expfile ${prefix}-data.gct --selected_genes ALL --output_prefix ${prefix};
                  Rscript gdac_cnmf.R --expfile ${prefix}.expclu.gct --k_int 2 --k_final 8 --output_prefix ${prefix};
                  Rscript select_best_cluster_merged.R --input_exp ${prefix}.expclu.gct --input_all ${prefix}-data.gct \
                    --output_prefix ${prefix} --cluster_membership ${prefix}.membership.txt \
                    --cophenetic ${prefix}.cophenetic.coefficient.txt --measure pearson --cluster nmf;
                  # run association analysis on clusters to determine markers
-                 Rscript postprocess.R;
+                 R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
                  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
              ;;
 #   Unknown operation

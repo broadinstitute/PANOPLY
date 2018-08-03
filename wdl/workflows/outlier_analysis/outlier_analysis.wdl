@@ -3,10 +3,11 @@
 task outlier_analysis {
   File inputTarball
   String outputTarball
+  Int plotTopN
 
   command {
     set -euo pipefail
-    /prog/outlier.sh ${inputTarball} ${outputTarball}
+    /prog/outlier.sh ${inputTarball} ${outputTarball} ${plotTopN}
   }
 
   output {
@@ -14,13 +15,13 @@ task outlier_analysis {
   }
 
   runtime {
-    docker : "huazhou2/outlier:v2"
+    docker : "huazhou2/outlier:v4"
   }
 
   meta {
     author : "Hua Zhou"
     email : "Hua.Zhou@nyumc.org"
-	}
+  }
 
 }
 
@@ -29,7 +30,8 @@ task outlier_analysis {
 workflow run_outlier_analysis {
   File inputFile
   String outputName
+  Int plotTopN
 
-  call outlier_analysis {input: inputTarball=inputFile, outputTarball=outputName}
+  call outlier_analysis {input: inputTarball=inputFile, outputTarball=outputName, plotTopN=plotTopN}
 }
 
