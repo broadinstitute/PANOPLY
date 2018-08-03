@@ -5,12 +5,14 @@ task pgdac_mo_nmf {
 	Int kmin
 	Int kmax
 	Int nrun
+	Int nrun_bs
 	
 	String seed
 	String class_variable
 	String other_variable
 	String class_colors
 	String output_prefix
+	String genes_of_interest
 
 	Boolean no_plot
 
@@ -22,7 +24,7 @@ task pgdac_mo_nmf {
 	command {
 		set -euo pipefail
 		#Command goes here
-		Rscript /home/pgdac/src/mo-nmf.r -t ${tar_file} -l ${kmin} -m ${kmax} -n ${nrun} -s ${seed} -c ${class_variable} -o ${other_variable} -d ${class_colors} -r ${no_plot}
+		Rscript /home/pgdac/src/mo-nmf.r -t ${tar_file} -l ${kmin} -m ${kmax} -n ${nrun} -s ${seed} -c ${class_variable} -o ${other_variable} -d ${class_colors} -r ${no_plot} -b ${nrun_bs} -g ${genes_of_interest}
 		find * -type d -name "[0-9]*" -print0 | tar -czvf ${output_prefix}.tar --null -T -
 	
 		}
@@ -33,7 +35,7 @@ task pgdac_mo_nmf {
 		}
 
 	runtime {
-		docker : "broadcptac/pgdac_mo_nmf:3"
+		docker : "broadcptac/pgdac_mo_nmf:4"
 		memory : select_first ([memory, 7]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
 		cpu : select_first ([num_threads, 12]) + ""
