@@ -307,15 +307,15 @@ while [ "$1" != "" ]; do
 	-rna )   shift; rna_data=`readlink -f $1` ;;
 	-cna )   shift; cna_data=`readlink -f $1` ;;
 	-CMAPgroup )
-	         shift; cmap_group=`readlink -f $1` ;;
+	         shift; cmap_group=$1 ;;
 	-CMAPtype )
-	         shift; cmap_type=`readlink -f $1` ;;
+	         shift; cmap_type=$1 ;;
 	-CMAPnperm )
-	         shift; cmap_nperm=`readlink -f $1` ;;
+	         shift; cmap_nperm=$1 ;;
 	-CMAPlog )
-	         shift; cmap_log=`readlink -f $1` ;;
+	         shift; cmap_log=$1 ;;
 	-CMAPscr )
-	         shift; cmap_scores=`readlink -f $1` ;;
+	         shift; cmap_scores=$1 ;;
   -h )     usage; exit ;;
 	* )      usage; exit 1
   esac
@@ -538,9 +538,7 @@ case $op in
 #   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creats input files (genesets)
 #            input must be tar file obtained after CNAcorr
     CMAPsetup ) analysisInit "CMAPsetup"
-                #for f in cmap-knockdown-genes-list.txt; do cp $data_dir/$f $cmap_dir/$f; done
                 for f in cmap-input.r connectivity.r; do cp $code_dir/cmap-analysis/$f $cmap_dir/$f; done
-                #for f in $cmap_prefix-matrix.csv $cmap_prefix-vs-cna-sigevents.csv $cmap_prefix-vs-cna-pval.csv; do cp $cna_dir/$f $cmap_dir/$f; done
                 (cd $cmap_dir;
                  # generate cmap input genesets
                  Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm $cmap_log)
