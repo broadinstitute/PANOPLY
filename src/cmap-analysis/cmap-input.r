@@ -11,7 +11,7 @@ generate.cmap.input <- function (target.cna.dir,
                                  cna.threshold=0.3,          # copy number up/down if abs (log2(copy number) - 1) is > 0.3
                                  cna.effects.threshold=15,   # min number of tumors with up/down copy number to include gene for CMAP analysis
                                  min.sigevents=20,           # gene must have at least this many significant trans events to be considered  
-                                 top.N=500,
+                                 top.N=750,
                                  fdr.pvalue=0.05,
                                  exclude.cis=FALSE,
                                  log.transform=FALSE)
@@ -112,8 +112,9 @@ kd.list <- toString (args[2])
 gr <- toString (args[3])
 typ <- toString (args[4])
 perm <- as.numeric (args[5])
+logtr <- ifelse (toString (args[6])=='TRUE', TRUE, FALSE)
 
 ## execute generator function
 generate.cmap.input (target.cna.dir=cna.dir, cmap.kd.genelist=kd.list, group=gr,
-                     dtype=typ, generate.permuted.genesets=perm)
+                     dtype=typ, generate.permuted.genesets=perm, log.transform=logtr)
 

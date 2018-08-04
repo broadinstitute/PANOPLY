@@ -1,0 +1,3 @@
+entity:participant_id	tarFile	subsetBucket	subsetListFile	applyLogTransform
+CMAPTest	gs://fc-99ba449e-3dcf-49a5-83fd-c5bff21f4497/input-data/proteome-v1.02041-firecloud.tar	"gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets"	gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt	FALSE
+CMAPTestTCGA	gs://fc-99ba449e-3dcf-49a5-83fd-c5bff21f4497/input-data/proteome-reanalysis-v2.22011.tar	"gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets"	gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt	TRUE
