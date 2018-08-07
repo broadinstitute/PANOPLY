@@ -1,9 +1,9 @@
 task pgdac_rna_protein_correlation_report {
   File tarball
   String label
-  String type = "proteome"
-  String tmpDir = "tmp"
-  Float fdr = 0.05
+  String type
+  String tmpDir
+  Float fdr
 
   Int? memory
   Int? disk_space
@@ -11,16 +11,16 @@ task pgdac_rna_protein_correlation_report {
 
   command {
     set -euo pipefail
-    Rscript /src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
+    Rscript /home/pgdac/src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
   }
 
   output {
-    File report = "rna-corr.html"
+    File report = "rna-corr_" + label + ".html"
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cpdb:4"
-    memory : select_first ([memory, 4]) + "GB"
+    docker : "broadcptac/pgdac_rmd:3"
+    memory : select_first ([memory, 8]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
