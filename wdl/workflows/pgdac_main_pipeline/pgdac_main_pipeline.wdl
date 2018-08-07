@@ -110,6 +110,40 @@ task pgdac_cna_correlation {
   }
 }
 
+task pgdac_cna_correlation_report {
+  File tarball
+  String label
+  String type
+  String tmpDir
+  Float fdr
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+
+  command {
+    set -euo pipefail
+    Rscript /home/pgdac/src/rmd-cna-analysis.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
+  }
+
+  output {
+    File report = "cna-analysis_" + label + ".html"
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_rmd:3"
+    memory : select_first ([memory, 8]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+  }
+
+  meta {
+    author : "Karsten Krug"
+    email : "karsten@broadinstitute.org"
+  }
+}
+
+
 task pgdac_cna_setup {
   File tarball   # output from pgdac_harmonize
   File? groupsFile
@@ -224,6 +258,39 @@ task pgdac_normalize_ms_data {
   }
 }
 
+task pgdac_normalize_ms_data_report {
+  File tarball
+  String label
+  String type
+  String tmpDir
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+
+  command {
+    set -euo pipefail
+    Rscript /home/pgdac/src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}
+  }
+
+  output {
+    File report = "norm_" + label + ".html"
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_rmd:3"
+    memory : select_first ([memory, 8]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+  }
+
+  meta {
+    author : "Karsten Krug"
+    email : "karsten@broadinstitute.org"
+  }
+}
+
+
 task pgdac_parse_sm_table {
   File SMtable
   File exptDesign
@@ -260,38 +327,6 @@ task pgdac_parse_sm_table {
   meta {
     author : "D. R. Mani"
     email : "manidr@broadinstitute.org"
-  }
-}
-
-task pgdac_parse_sm_table_report {
-  File tarball
-  String label
-  String type = "proteome"
-  String tmpDir = "tmp"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-
-  command {
-    set -euo pipefail
-    Rscript /src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}
-  }
-
-  output {
-    File report = "norm.html"
-  }
-
-  runtime {
-    docker : "broadcptac/pgdac_cpdb:4"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
-  }
-
-  meta {
-    author : "Karsten Krug"
-    email : "karsten@broadinstitute.org"
   }
 }
 
@@ -336,9 +371,9 @@ task pgdac_rna_protein_correlation {
 task pgdac_rna_protein_correlation_report {
   File tarball
   String label
-  String type = "proteome"
-  String tmpDir = "tmp"
-  Float fdr = 0.05
+  String type
+  String tmpDir
+  Float fdr
 
   Int? memory
   Int? disk_space
@@ -346,17 +381,17 @@ task pgdac_rna_protein_correlation_report {
 
   command {
     set -euo pipefail
-    Rscript /src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
+    Rscript /home/pgdac/src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
   }
 
   output {
-    File report = "rna-corr.html"
+    File report = "rna-corr_" + label + ".html"
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cpdb:4"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    docker : "broadcptac/pgdac_rmd:3"
+    memory : select_first ([memory, 8]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
@@ -365,6 +400,7 @@ task pgdac_rna_protein_correlation_report {
     email : "karsten@broadinstitute.org"
   }
 }
+
 
 task pgdac_sampleqc {
   File tarball   # output from pgdac_harmonize
@@ -403,6 +439,39 @@ task pgdac_sampleqc {
   }
 }
 
+task pgdac_sampleqc_report {
+  File tarball
+  String label
+  String type
+  String tmpDir
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+
+  command {
+    set -euo pipefail
+    Rscript /home/pgdac/src/rmd-sample-qc.r ${tarball} ${label} ${type} ${tmpDir}
+  }
+
+  output {
+    File report = "sample-qc_" + label + ".html"
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_rmd:3"
+    memory : select_first ([memory, 8]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+  }
+
+  meta {
+    author : "Karsten Krug"
+    email : "karsten@broadinstitute.org"
+  }
+}
+
+
 workflow pgdac_main_pipeline {
   File SMtable
   File exptDesign
@@ -435,11 +504,13 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
 
-#  call pgdac_parse_sm_table_report {
-#    input: 
-#      tarball=pgdac_normalize_ms_data.outputs,
-#      label=analysisDir
-#  }
+  call pgdac_normalize_ms_data_report {
+    input: 
+      tarball=pgdac_normalize_ms_data.outputs,
+      label=analysisDir,
+      type=dataType,
+			tmpDir="tmp"
+  }
 
   call pgdac_rna_protein_correlation {
     input: 
@@ -450,12 +521,14 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
   
-#  call pgdac_rna_protein_correlation_report { 
-#    input:
-#      tarball=pgdac_rna_protein_correlation.outputs,
-#      label=analysisDir,
-#      fdr=corr_fdr
-#  }
+  call pgdac_rna_protein_correlation_report { 
+    input:
+      tarball=pgdac_rna_protein_correlation.outputs,
+      label=analysisDir,
+      fdr=corr_fdr,
+      type=dataType,
+			tmpDir="tmp"
+  }
 
   call pgdac_harmonize {
     input: 
@@ -475,6 +548,14 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
 
+  call pgdac_sampleqc_report {
+    input:
+			tarball=pgdac_sampleqc.outputs,
+			type=dataType,
+			label=analysisDir,
+			tmpDir="tmp"
+  }
+
   call pgdac_cna_setup {
     input: 
       tarball=pgdac_sampleqc.outputs, 
@@ -490,6 +571,15 @@ workflow pgdac_main_pipeline {
       type=dataType,
       subType=dataSubType,
       params=additionalParameters
+  }
+
+  call pgdac_cna_correlation_report {
+    input:
+			tarball=pgdac_cna_correlation.outputs,
+			type=dataType,
+			label=analysisDir,
+			fdr=corr_fdr,
+			tmpDir="tmp"
   }
 
   call pgdac_association {
@@ -512,7 +602,9 @@ workflow pgdac_main_pipeline {
 
   output {
     File output=pgdac_cluster.outputs
-#    File norm_report=pgdac_parse_sm_table_report.report
-#    File corr_report=pgdac_rna_protein_correlation_report.report
+    File norm_report=pgdac_normalize_ms_data_report.report
+    File rna_corr_report=pgdac_rna_protein_correlation_report.report
+		File cna_corr_report=pgdac_cna_correlation_report.report
+		File sample_qc=pgdac_sampleqc_report.report
   }}
 

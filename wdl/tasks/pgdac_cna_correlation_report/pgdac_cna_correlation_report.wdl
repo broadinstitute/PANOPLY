@@ -1,4 +1,4 @@
-task pgdac_rna_protein_correlation_report {
+task pgdac_cna_correlation_report {
   File tarball
   String label
   String type
@@ -11,11 +11,11 @@ task pgdac_rna_protein_correlation_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
+    Rscript /home/pgdac/src/rmd-cna-analysis.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
   }
 
   output {
-    File report = "rna-corr_" + label + ".html"
+    File report = "cna-analysis_" + label + ".html"
   }
 
   runtime {
@@ -32,6 +32,6 @@ task pgdac_rna_protein_correlation_report {
 }
 
 
-workflow pgdac_rna_protein_correlation_report_workflow {
-	call pgdac_rna_protein_correlation_report
+workflow pgdac_cna_correlation_report_workflow {
+	call pgdac_cna_correlation_report
 }

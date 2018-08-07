@@ -1,4 +1,5 @@
 
+
 nmf2class <- function(cdesc, 
                       class.variable){
   
@@ -35,7 +36,6 @@ nmf2class <- function(cdesc,
   }
   cdesc.color$NMF.consensus <- NMF.consensus.col
   names(cdesc.color$NMF.consensus) <- 1:length(NMF.consensus.col)
-  
   
 }
 
@@ -78,20 +78,21 @@ make.nn <- function(m){
   
 ## ###########################################################################################
 ## consensus clustering
-consensus.clust <- function(m,               ## data matrix
-                          method=c('hclust', 'nmf'),  
-                          nmf.nrun=10,     ## number of random restarts for NMF
-                          bs.nrun=5,     ## number of bootstrap runs for consensus
-                          nmf.opts=NULL,   ## additional options for function NMF
+consensus.clust <- function(m,                 ## data matrix
+                          method=c('hclust', 'nmf', 'kmeans'), ## cluster method  
+                          nmf.nrun=10,         ## number of random restarts for NMF
+                          bs.nrun=5,           ## number of bootstrap runs for consensus
+                          nmf.opts=NULL,       ## additional options for function NMF
                           nmf.method='brunet', ## nmf method
-                          seed='random',   ## nmf seed method
-                          rank=3,           ## nmf rank (number of clusters)
-                          make.nn=FALSE,    ## make matrix non-negative?
+                          seed='random',       ## nmf seed method
+                          rank=3,              ## nmf rank (number of clusters)
+                          make.nn=FALSE,       ## make matrix non-negative?
                           ...
 ){
   
   if(!require(pacman)) install.packages('pacman')
   p_load(NMF)
+  
   
   ## parse cluster method
   method <- match.arg(method)
@@ -124,24 +125,27 @@ consensus.clust <- function(m,               ## data matrix
     ## nmf clustering
     if(method == 'nmf'){
         
-      if(make.nn)
+      if(make.nn | min(m.bs, na.rm=T) < 0)
         m.bs <- make.nn(m.bs)
         
         nmf.bs <- nmf(m.bs, rank=rank, method=nmf.method, seed=seed, nrun=nmf.nrun, .options = nmf.opts)
         
         ## cluster assignment
         if(nmf.nrun > 1)
-          nmf.bs.cons <- predict(nmf.bs, 'consensus')
+          bs.cons <- predict(nmf.bs, 'consensus')
         else
-          nmf.bs.cons <- predict(nmf.bs)
+          bs.cons <- predict(nmf.bs)
     }
     if(method == 'hclust'){
-      nmf.bs.cons <- cutree( hclust(dist(t(m.bs))), rank)
+      bs.cons <- cutree( hclust(dist(t(m.bs))), rank)
+    }
+    if(method == 'kmeans'){
+      bs.cons <-  kmeans(t(m.bs), rank)$cluster
     }
     
     ## connectivity
     for(i in 1:rank){
-      samp.i <- names(nmf.bs.cons[ nmf.bs.cons == i ])
+      samp.i <- names(bs.cons[ bs.cons == i ])
       M[samp.i, samp.i] <-  M[samp.i, samp.i] + 1
     }
 
@@ -171,13 +175,13 @@ consensus.clust <- function(m,               ## data matrix
 # rownames(data2) <- paste('feature', 1:1000, sep='-')
 # colnames(data2) <- paste('sample', 1:30,sep='-')
 # 
+# # 
+#  data3 <- matrix( c(rnorm(10000, 0, 1),
+#                    rnorm(10000, -.3, .1),
+#                    rnorm(10000, .4, .5)),
+#                  nrow=1000, dimnames=list(paste('feature', 1:1000, sep='-'), paste('sample', 1:30,sep='-'))
+#  )
 # 
-# data3 <- matrix( c(rnorm(10000, 0, 1),
-#                   rnorm(10000, -.3, .1),
-#                   rnorm(10000, .4, .5)),
-#                 nrow=1000, dimnames=list(paste('feature', 1:1000, sep='-'), paste('sample', 1:30,sep='-'))
-# )
-
 
 
 #####################################################
@@ -188,6 +192,7 @@ consensus.clust <- function(m,               ## data matrix
 
 #tmp<-consensus.clust(data, bnmf.opts=opts)
 #tmp3<-consensus.clust(data2, method='nmf', bs.nrun = 100, nmf.nrun = 1)
+#tmp3<-consensus.clust(data3, method='kmeans', bs.nrun = 100, nmf.nrun = 1)
 #pheatmap(tmp3, symm=T)
 
 

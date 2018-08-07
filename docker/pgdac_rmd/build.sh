@@ -1,5 +1,5 @@
 #!/bin/bash
-ver=2
+ver=3
 
 name=`basename $PWD`
 

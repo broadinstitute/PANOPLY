@@ -169,5 +169,5 @@ RNA | `r length(unique(rna.cna$HGNCsymbol))` | `r sum(rna.cna$SignificantEvents 
 
 ## ################################################
 ## run
-rmd_cna_analysis(tar.file=tar.file, label=label, tmp.dir=tmp.dir, type=type)
+rmd_cna_analysis(tar.file=tar.file, label=label, tmp.dir=tmp.dir, type=type, fdr=fdr.sig)
 

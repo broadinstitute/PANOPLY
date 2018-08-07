@@ -1,9 +1,8 @@
-task pgdac_rna_protein_correlation_report {
+task pgdac_sampleqc_report {
   File tarball
   String label
   String type
   String tmpDir
-  Float fdr
 
   Int? memory
   Int? disk_space
@@ -11,11 +10,11 @@ task pgdac_rna_protein_correlation_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-rna-seq-correlation.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
+    Rscript /home/pgdac/src/rmd-sample-qc.r ${tarball} ${label} ${type} ${tmpDir}
   }
 
   output {
-    File report = "rna-corr_" + label + ".html"
+    File report = "sample-qc_" + label + ".html"
   }
 
   runtime {
@@ -32,6 +31,6 @@ task pgdac_rna_protein_correlation_report {
 }
 
 
-workflow pgdac_rna_protein_correlation_report_workflow {
-	call pgdac_rna_protein_correlation_report
+workflow pgdac_sampleqc_report_workflow {
+	call pgdac_sampleqc_report
 }
