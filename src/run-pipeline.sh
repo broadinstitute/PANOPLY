@@ -30,8 +30,8 @@ function usage {
   echo "             -p <parameters-file> -t <type>  -m <data>"
   echo "             -rna <rna-expression> -cna <copy-number-data>"
   echo "             -g <groups> -pe <#processors>"
-  echo "             -CMAPgroup <group-name>  -CMAPtype <data-type>  -CMAPnperm <# permutations>"
-  echo "             -CMAPscr <subset-scores-directory>" 
+  echo "             -CMAPgroup <CMAP-group-name>  -CMAPtype <CMAP-data-type>  -CMAPnperm <CMAP # permutations>"
+  echo "             -CMAPscr <CMAP-subset-scores-directory>  -CMAPlog <log-transfrom-CNA-data>" 
   echo "   OPERATIONs allowed are listed below"
   echo "   <input-tarball> is a tar file with the initialized directory structure"
   echo "       if specfied, -s, -r, -c and -d are not required -- allowed only when OPERATION is not input*"
@@ -47,7 +47,12 @@ function usage {
   echo "   <rna-expression> GCT file with RNA expression data"
   echo "   <copy-number-data> GCT file with CNA data"
   echo "   <groups> is a expt-design-like-file used for subsetting CNA analysis"
-  echo "   <pe> is the number of processors (jobs) to use for CNA/correlation analysis"
+  echo "   <#processors> is the number of processors (jobs) to use for CNA/correlation analysis"
+  echo "   <CMAP-group-name> is group name for which CNA analysis was performed; defaults to 'all'"
+  echo "   <CMAP-data-type> is data type for CMAP analysis; 'pome' or 'mrna'"
+  echo "   <CMAP # permutations> is number of CMAP permutations to derive FDR"
+  echo "   <CMAP-subset-scores-directory> is directory containing CMAP scores for data subsets run in parallel"
+  echo "   <log-transfrom-CNA-data> whether to log transform CNA data for CMAP analysis; 'TRUE' or 'FALSE'"
   echo "   Input Requirements:"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
   echo "     OPERATION inputNorm requires (-n, -r, -c)"
@@ -57,7 +62,7 @@ function usage {
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
   echo "     OPERATION CNAcorr requires (-i,); -i is tar output from CNAsetup"
-  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPnperm); -i is tar output from CNAcorr"
+  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPnperm, -CMAPlog); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
   echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
@@ -263,6 +268,7 @@ pe=
 cmap_group="all"
 cmap_type="pome"
 cmap_nperm="0"
+cmap_log="FALSE"
 cmap_scores=
 prefix="proteome"
 data_source="default"
@@ -306,6 +312,8 @@ while [ "$1" != "" ]; do
 	         shift; cmap_type=`readlink -f $1` ;;
 	-CMAPnperm )
 	         shift; cmap_nperm=`readlink -f $1` ;;
+	-CMAPlog )
+	         shift; cmap_log=`readlink -f $1` ;;
 	-CMAPscr )
 	         shift; cmap_scores=`readlink -f $1` ;;
   -h )     usage; exit ;;
@@ -535,7 +543,7 @@ case $op in
                 #for f in $cmap_prefix-matrix.csv $cmap_prefix-vs-cna-sigevents.csv $cmap_prefix-vs-cna-pval.csv; do cp $cna_dir/$f $cmap_dir/$f; done
                 (cd $cmap_dir;
                  # generate cmap input genesets
-                 Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm)
+                 Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm $cmap_log)
                 # copy output (geneset file) to job wd (parent of $analysis_dir)
                 cp $cmap_dir/$cmap_group-cmap-$cmap_type-updn-genes.gmt ../cmap-trans-genesets.gmt
              ;;

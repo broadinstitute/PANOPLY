@@ -3,6 +3,7 @@ task cmap_input {
   File tarball   # output from pgdac_cna_correlation
   String? cmap_group
   String? cmap_type
+  String? cmap_log
   Int? cmap_permutations
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "pgdac_cmapsetup-output.tar"
@@ -15,7 +16,7 @@ task cmap_input {
   
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} ${"-CMAPlog " + cmap_log}
   }
   
   output {
@@ -25,8 +26,8 @@ task cmap_input {
 
   runtime {
     docker : "broadcptac/pgdac_main:1.1"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    memory : select_first ([memory, 32]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -75,10 +76,10 @@ task cmap_ssgsea {
 
 	runtime {
 		docker : "broadcptac/pgdac_ssgsea:3"
-    memory : select_first ([memory, 64]) + "GB"
+    memory : select_first ([memory, 60]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 16]) + ""
-    preemptible : select_first ([num_preemptions, 0])
+    preemptible : select_first ([num_preemptions, 2])
 	}
 
 	meta {
