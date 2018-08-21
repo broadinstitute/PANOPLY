@@ -49,10 +49,10 @@ task cmap_ssgsea {
 	# other ssgsea options (below) are fixed for CMAP analysis
 	String sample_norm_type = "rank"
 	String correl_type = "rank"
-	String statistic = "area.under.RES"
+	String statistic = "Kolmogorov-Smirnov"
 	String output_score_type = "NES"
 
-	Float weight = 1.0
+	Float weight = 0
 	Int min_overlap = 5
 	Int nperm = 0
 	String global_fdr = "TRUE"
