@@ -35,6 +35,10 @@ generate.cmap.input <- function (target.cna.dir,
   pvals <- read.csv (file.path (target.cna.dir, paste (group, dtype, 'vs-cna-pval.csv', sep='-')), row.names=1)
   data <- read.csv (file.path (target.cna.dir, paste (group, dtype, 'matrix.csv', sep='-')))
 
+  # calculate cis correlation to cna -- this is needed to filter enriched signatures in connectivity.r
+  cis.corr <- calc.cis.correlation (cna, data)
+  write.csv (cis.corr, paste (group, dtype, 'cis-correlation.csv', sep='-'), row.names=FALSE, quote=FALSE)
+  
   # filter to determine genes to run CMAP on
   keep <- sigevents[,'HGNCsymbol'] %in% selected.cna.genes & sigevents[,'SignificantEvents'] >= min.sigevents
   sigevents <- sigevents [keep,]
@@ -102,6 +106,30 @@ generate.cmap.input <- function (target.cna.dir,
     }
   }
 }
+
+
+
+
+calc.cis.correlation <- function (data1, data2) {
+  ## support function to calculate cis-correlation
+  # data prep
+  rownames (data1) <- data1 [,'GeneSymbol']
+  rownames (data2) <- data2 [,'GeneSymbol']
+  common.genes <- intersect (data1[,'GeneSymbol'], data2[,'GeneSymbol'])
+  data1 <- t (data1 [common.genes,-1])
+  data2 <- t (data2 [common.genes,-1])
+  
+  corr <- sapply (1:length(common.genes),
+                  function (x) {
+                    result <- cor.test (data1[,x], data2[,x], method='pearson')
+                    return (c (result$estimate, result$p.value))
+                  })
+  retval <- cbind (common.genes, t (corr), p.adjust (corr[2,], method='BH'))
+  colnames (retval) <- c ('gene', 'correlation', 'pvalue', 'adj.pvalue')
+  return (retval)
+}
+
+
 
 
 ## read argument options from command line

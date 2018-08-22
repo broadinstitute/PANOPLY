@@ -21,7 +21,8 @@ Source ('gct-io.r')
 pacman::p_load (dplyr)
 
 
-cmap.connectivity <- function (subset.scores.dir, results.prefix, rankpt.n=4, mean.rankpt.threshold=90) {
+cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype,
+                               rankpt.n=4, mean.rankpt.threshold=85, cis.fdr=0.05) {
   ## calculate CMAP connectivity scores after assembling subset ssGSEA (un-normalized ES) scores into a single table
   ## determine significant genes: 
   ##   a gene has a significant effect if it is CIS-enriched
@@ -81,21 +82,29 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, rankpt.n=4, me
     m.hi <- mean ( rev(sx)[1:n], na.rm=TRUE )
     ifelse (abs(m.hi) >= abs(m.lo), m.hi, m.lo)
   }
+  get.rankpt <- function (rx, cx) {
+    # get rankpt value from row rx, column cx; return 0 is NA or not present
+    ret.val <- ifelse (cx %in% sig.cols, 
+                       {val <- mean_rankpt.n [rx, cx]; ifelse (is.na (val), 0, val)}, 
+                       0)
+    return (ret.val)
+  }
   mean_rankpt.n <- rankpts %>% group_by (gene=ES@cdesc$pert_iname) %>% summarise_all (~ mean.rankpt (.))
   write.csv (mean_rankpt.n, sprintf ("%s-meanrankpt%d.csv", results.prefix, rankpt.n), row.names=FALSE)
-  # a gene is significant if it is CIS-enriched in both CNAdel (+ve) and CNAamp (-ve)
+  # a gene is significant if it is CIS-enriched in both CNAdel (+ve) and CNAamp (-ve),
+  #  and gene has positive, significant cis-correlation (cna vs dtype)
   # genes used for the analysis are listed in the *-gene-list.csv file output by cmap-input.r
   genes <- read.csv ( sprintf ("%s-gene-list.csv", results.prefix), as.is=TRUE )[,1]
+  cis.sigtable <- read.csv ( sprintf ("%s-%s-cis-correlation.csv", group, dtype), row.names=1 )
   sig.amp <- sig.del <- sig.both <- NULL
   sig.cols <- colnames (mean_rankpt.n)
   for (g in genes) {
+    if (cis.sigtable [g, 'adj.pvalue'] > cis.fdr || cis.sigtable [g, 'correlation'] < 0) next
     print (g)
     g.row <- which (mean_rankpt.n [,'gene'] == g)
     if (length (g.row) != 1) next   # gene not found in mean_rankpt.n table
-    amp.col <- sprintf ("%s_CNAamp", g)
-    amp <- ifelse (amp.col %in% sig.cols, mean_rankpt.n [g.row, amp.col], 0)
-    del.col <- sprintf ("%s_CNAdel", g)
-    del <- ifelse (del.col %in% sig.cols, mean_rankpt.n [mean_rankpt.n [,'gene'] == g, del.col], 0)
+    amp <- get.rankpt (g.row, sprintf ("%s_CNAamp", g))
+    del <- get.rankpt (g.row, sprintf ("%s_CNAdel", g))
     if (amp <= -mean.rankpt.threshold && del >= mean.rankpt.threshold) { sig.both <- c (sig.both, g) }
     else {
       if (amp <= -mean.rankpt.threshold) sig.amp <- c (sig.amp, g)
@@ -117,4 +126,4 @@ typ <- toString (args[3])
 
 
 # calculate connectivity scores
-cmap.connectivity (scores.dir, paste (gr, 'cmap', typ, sep='-'))
+cmap.connectivity (scores.dir, paste (gr, 'cmap', typ, sep='-'), gr, typ)
