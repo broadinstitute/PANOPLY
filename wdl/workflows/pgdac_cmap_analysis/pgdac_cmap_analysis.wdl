@@ -1,5 +1,5 @@
 
-task cmap_input {
+task pgdac_cmap_input {
   File tarball   # output from pgdac_cna_correlation
   String? cmap_group
   String? cmap_type
@@ -40,7 +40,7 @@ task cmap_input {
 
 
 
-task cmap_ssgsea {
+task pgdac_cmap_ssgsea {
   # task adapted from pgdac_ssgsea; many inputs are set to specfic values for CMAP analysis
 	File input_ds
 	File gene_set_database
@@ -52,7 +52,7 @@ task cmap_ssgsea {
 	String statistic = "Kolmogorov-Smirnov"
 	String output_score_type = "NES"
 
-	Float weight = 0
+	Float weight = 0.0
 	Int min_overlap = 5
 	Int nperm = 0
 	String global_fdr = "TRUE"
@@ -90,7 +90,7 @@ task cmap_ssgsea {
 
 
 
-task cmap_connectivity {
+task pgdac_cmap_connectivity {
   File tarball
   Array[File] subset_scores
   String scores_dir = "cmap-subset-scores"
@@ -142,27 +142,27 @@ workflow run_cmap_analysis {
   Array[String] subset_files = read_lines ("${subsetListFile}")
 
   
-  call cmap_input {
+  call pgdac_cmap_input {
     input:
       tarball=CNAcorr_tarball
   }
 
   scatter (f in subset_files) {
-    call cmap_ssgsea {
+    call pgdac_cmap_ssgsea {
       input:
 	      input_ds="${subset_bucket}/${f}",
-	      gene_set_database=cmap_input.genesets
+	      gene_set_database=pgdac_cmap_input.genesets
     }
   }
   
-  call cmap_connectivity {
+  call pgdac_cmap_connectivity {
     input:
-      tarball=cmap_input.outputs,
-      subset_scores=cmap_ssgsea.scores
+      tarball=pgdac_cmap_input.outputs,
+      subset_scores=pgdac_cmap_ssgsea.scores
   }
 
   output {
-    File output = cmap_connectivity.outputs
+    File output = pgdac_cmap_connectivity.outputs
   }
 }
 
