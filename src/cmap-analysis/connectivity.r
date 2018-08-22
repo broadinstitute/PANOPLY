@@ -92,7 +92,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype,
   mean_rankpt.n <- rankpts %>% group_by (gene=ES@cdesc$pert_iname) %>% summarise_all (~ mean.rankpt (.))
   write.csv (mean_rankpt.n, sprintf ("%s-meanrankpt%d.csv", results.prefix, rankpt.n), row.names=FALSE)
   # a gene is significant if it is CIS-enriched in both CNAdel (+ve) and CNAamp (-ve),
-  #  and gene has positive, significant cis-correlation (cna vs dtype)
+  # ... and gene has positive, significant cis-correlation (cna vs dtype)
   # genes used for the analysis are listed in the *-gene-list.csv file output by cmap-input.r
   genes <- read.csv ( sprintf ("%s-gene-list.csv", results.prefix), as.is=TRUE )[,1]
   cis.sigtable <- read.csv ( sprintf ("%s-%s-cis-correlation.csv", group, dtype), row.names=1 )
