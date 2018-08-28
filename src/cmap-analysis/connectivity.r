@@ -20,7 +20,7 @@ Source ('gct-io.r')
 pacman::p_load (dplyr)
 
 
-cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, permutation=0,
+cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, permutation=NULL,
                                rankpt.n=4, mean.rankpt.threshold=85, cis.fdr=0.05) {
   ## calculate CMAP connectivity scores after assembling subset ssGSEA (un-normalized ES) scores into a single table
   ## determine significant genes: 
@@ -29,7 +29,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, 
 
   ES <- NULL
   filename.pattern <- '-scores\\.gct$'
-  if (permutation != 0) filename.pattern <- sprintf ("-%d-%s", permutation, filename.pattern)
+  if (!is.null (permutation)) filename.pattern <- sprintf ("-%d-%s", permutation, filename.pattern)
   for (f in dir (subset.scores.dir, pattern=filename.pattern)) {
     d <- parse.gctx (file.path (subset.scores.dir, f))
     if (is.null (ES)) ES <- d
@@ -41,7 +41,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, 
   write.score <- function (d, f) {
     # utility function
     # write out d to file f filling in annotations using ES
-    if (permutation != 0) return ()    # do not write for permutation scores
+    if (is.null (permutation)) return ()    # do not write for permutation scores
     D <- ES
     D@mat <- as.matrix (d)
     write.gct (D, f)
@@ -155,7 +155,7 @@ summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dt
                                     permuted.scores.dir, ...) {
   # determine connectivity scores for (i) actual genesets; and (ii) permuted genesets
   # output results for actual genesets, and determine FDR using permuted genesets
-  actual <- cmap.connectivity (scores.dir, paste (gr, 'cmap', typ, sep='-'), gr, typ, permutation=0, ...)
+  actual <- cmap.connectivity (scores.dir, paste (gr, 'cmap', typ, sep='-'), gr, typ, ...)
   permuted <- NULL
   for (i in 0:(nperm-1)) {
     p <- cmap.connectivity (permuted.scores.dir, paste (gr, 'cmap', typ, 'permutation', i, sep='-'), gr, typ, permutation=i, ...)   

@@ -2,7 +2,7 @@ task pgdac_cmap_connectivity {
   File tarball
   Int permutations
   Array[File] subset_scores
-  Array[File] permutation_scores
+  Array[File]? permutation_scores
   String scores_dir = "cmap-subset-scores"
   String permutation_dir = "cmap-permutation-scores"
   String outFile = "pgdac_cmap-output.tar"
@@ -96,7 +96,7 @@ task pgdac_cmap_ssgsea {
 	File input_ds
 	File gene_set_database
 	Int? permutation_num
-	String output_prefix = "${basename (input_ds, '.gctx')}-${if defined (permutation_num) then permutation_num else ''}"
+	String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
 	
 	# other ssgsea options (below) are fixed for CMAP analysis
 	String sample_norm_type = "rank"
@@ -146,7 +146,6 @@ workflow run_cmap_analysis {
   String subset_bucket
   Int n_permutations
   Array[String] subset_files = read_lines ("${subsetListFile}")
-  Array[String] null_array = [""]
 
   
   call pgdac_cmap_input {
@@ -182,7 +181,7 @@ workflow run_cmap_analysis {
       tarball=pgdac_cmap_input.outputs,
       subset_scores=pgdac_cmap_ssgsea.scores,
       permutations=n_permutations,
-      permutation_scores="${if (n_permutations > 0) then permutation.scores else null_array}"
+      permutation_scores=permutation.scores
   }
 
   output {
