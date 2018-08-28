@@ -17,11 +17,10 @@ Source <- function (f) {
 
 
 Source ('gct-io.r')
-
 pacman::p_load (dplyr)
 
 
-cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype,
+cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, permutation=0,
                                rankpt.n=4, mean.rankpt.threshold=85, cis.fdr=0.05) {
   ## calculate CMAP connectivity scores after assembling subset ssGSEA (un-normalized ES) scores into a single table
   ## determine significant genes: 
@@ -29,7 +28,9 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype,
   ##   enrichment is defined as mean.rankpt<n> > mean.rankpt.threshold
 
   ES <- NULL
-  for (f in dir (subset.scores.dir, pattern='-scores\\.gct$')) {
+  filename.pattern <- '-scores\\.gct$'
+  if (permutation != 0) filename.pattern <- sprintf ("-%d-%s", permutation, filename.pattern)
+  for (f in dir (subset.scores.dir, pattern=filename.pattern)) {
     d <- parse.gctx (file.path (subset.scores.dir, f))
     if (is.null (ES)) ES <- d
     else ES <- add.cols.gct (ES, d@mat, d@cdesc)
@@ -40,6 +41,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype,
   write.score <- function (d, f) {
     # utility function
     # write out d to file f filling in annotations using ES
+    if (permutation != 0) return ()    # do not write for permutation scores
     D <- ES
     D@mat <- as.matrix (d)
     write.gct (D, f)
@@ -113,6 +115,61 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype,
   }
   write.table (sig.both, sprintf ("%s-sig-genes-bidirectional.txt", results.prefix))
   write.table (c (sig.amp, sig.del), sprintf ("%s-sig-genes-unidirectional.txt", results.prefix))
+  
+  return (list (amp.and.del=sig.both, amp.or.del=c(sig.amp, sig.del)))
+}
+
+
+
+poisson.score.ci <- function (x, alpha=0.05) {
+  # the random permuations are treated as poisson trials with false positive rate lambda
+  # n * lambda is small -- hence Wald CI is not appropriate
+  # hence use score CI
+  # see "A Comparison of Nine Confidence Intervals for a Poisson Parameter When the Expected Number
+  #      of Events Is <=5", Lawrence Barker, The American Statistician, Vol. 56, No. 2, pp. 85-89, 2002.
+  x.bar <- mean (x)
+  n <- length(x)
+  z <- qnorm (alpha/2, lower.tail=FALSE)
+  x.est <- x.bar + z^2 / (2*n)
+  ci.factor <- z * (4*x.bar + z^2/n)^0.5 / (4*n)^0.5
+  return (list (estimate=x.est, ci=c (x.est-ci.factor, x.est+ci.factor)))
+}
+
+
+print.FDR.summary <- function (act, perm, type, output.file) {
+  ## write out FDR summary
+  str <- '\n   '
+  act.n <- ifelse (type=='and', act$N.and, act$N.or)
+  cat ('Genes CIS-enriched in CNAAMP', type, 'CNADEL:', act.n, '\n', file=output.file)
+  cat (' Gene list:', str, file=output.file, append=TRUE)
+  if (type=='and') cat ( paste (act$amp.and.del, collapse=str), '\n', file=output.file, append=TRUE)
+  else cat ( paste (act$amp.or.del, collapse=str), '\n', file=output.file, append=TRUE)
+  cat ('FDR:', round (perm$estimate / act.n, digits=4), '[',
+       round (perm$ci[1]/act.n, digits=4), ',',
+       round (perm$ci[2]/act.n, digits=4), ']\n\n',
+       file=output.file, append=TRUE)
+}
+
+
+summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dtype, nperm, 
+                                    permuted.scores.dir, ...) {
+  # determine connectivity scores for (i) actual genesets; and (ii) permuted genesets
+  # output results for actual genesets, and determine FDR using permuted genesets
+  actual <- cmap.connectivity (scores.dir, paste (gr, 'cmap', typ, sep='-'), gr, typ, permutation=0, ...)
+  permuted <- NULL
+  for (i in 0:(nperm-1)) {
+    p <- cmap.connectivity (permuted.scores.dir, paste (gr, 'cmap', typ, 'permutation', i, sep='-'), gr, typ, permutation=i, ...)   
+    permuted <- c (permuted, list (amp.and.del=p$amp.and.del, amp.or.del=p$amp.or.del,
+                                   N.and=length(p$amp.and.del), N.or=length(p$amp.or.del)))
+  }
+  # FDR
+  perm.and <- poisson.score.ci (sapply (permuted, function (x) x$N.and))
+  perm.or <- poisson.score.ci (sapply (permuted, function (x) x$N.or))
+  
+  ## write out FDR calc summary
+  out.file <- sprintf ("%s-sig-genes-with-fdr.txt", results.prefix)
+  print.FDR.summary (actual, perm.and, 'and', out.file)
+  print.FDR.summary (actual, perm.or, 'or', out.file)
 }
 
 
@@ -123,7 +180,8 @@ args <- commandArgs (TRUE)
 scores.dir <- toString (args[1])
 gr <- toString (args[2])
 typ <- toString (args[3])
-
+n <- as.integer (args[4])
+perm.dir <- ifelse (n > 0, toString (args[5]), "tmp")
 
 # calculate connectivity scores
-cmap.connectivity (scores.dir, paste (gr, 'cmap', typ, sep='-'), gr, typ)
+summarize.cmap.results (scores.dir, paste (gr, 'cmap', typ, sep='-'), gr, typ, n, perm.dir)

@@ -6,7 +6,7 @@ generate.cmap.input <- function (target.cna.dir,
                                  cmap.kd.genelist, 
                                  group='all',                # subgroup name on which CNA analysis was run
                                  dtype='pome',               # dtype is either pome or mrna
-                                 generate.permuted.genesets=0,  ### NEEDS IMPLEMENTATION
+                                 generate.permuted.genesets=0,  # number of permuted datasets to generate
                                                              # if >0, generate permuted genesets; else output actual genesets
                                  cna.threshold=0.3,          # copy number up/down if abs (log2(copy number) - 1) is > 0.3
                                  cna.effects.threshold=15,   # min number of tumors with up/down copy number to include gene for CMAP analysis
@@ -37,6 +37,7 @@ generate.cmap.input <- function (target.cna.dir,
 
   # calculate cis correlation to cna -- this is needed to filter enriched signatures in connectivity.r
   cis.corr <- calc.cis.correlation (cna, data)
+  all.genes <- as.character (cis.corr [,'gene'])
   write.csv (cis.corr, paste (group, dtype, 'cis-correlation.csv', sep='-'), row.names=FALSE, quote=FALSE)
   
   # filter to determine genes to run CMAP on
@@ -57,7 +58,22 @@ generate.cmap.input <- function (target.cna.dir,
   write.csv (sigevents [ sigevents[,'HGNCsymbol'] %in% top.genes, ],
              paste (group, 'cmap', dtype, 'gene-list.csv', sep='-'), row.names=FALSE)
     
+  # output files for genesets
   cmap.updn.genes.file <- paste (group, 'cmap', dtype, 'updn-genes.gmt', sep='-')
+  permuted.genes.prefix <- paste (group, 'cmap', dtype, 'permuted-genes', sep='-')
+  if (file.exists (cmap.updn.genes.file)) file.remove (cmap.updn.genes.file)  # genesets are appended to file -- start fresh
+  if (generate.permuted.genesets > 0) {
+    for (p in 1:generate.permuted.genesets) 
+      if (file.exists (sprintf ("%s-%03d.gmt", permuted.genes.prefix, p))) 
+        file.remove (sprintf ("%s-%03d.gmt", permuted.genes.prefix, p))
+  }
+  
+  write.geneset <- function (gene, up.list, dn.list, output.file) {
+    # function to write out a single geneset to a specified file
+    cat (gene, '_CNA', v, '\t', 'na\t', paste (up.list, collapse=';u\t'), ';u\t', paste (dn.list, collapse=';d\t'), ';d', '\n',
+         file=output.file, append=TRUE, sep='')
+  }
+  
   for (g in top.genes) {
     cat ('  gene', g, '\n')
     
@@ -99,8 +115,18 @@ generate.cmap.input <- function (target.cna.dir,
           dn <- setdiff (dn, g)
         }
         if (length(up) > 0 && length(dn) > 0) {
-          cat (g, '_CNA', v, '\t', 'na\t', paste (up, collapse=';u\t'), ';u\t', paste (dn, collapse=';d\t'), ';d', '\n',
-               file=cmap.updn.genes.file, append=TRUE, sep='')
+          write.geneset (g, up, dn, cmap.updn.genes.file)
+          if (generate.permuted.genesets > 0) {
+            ## generate permuted datasets for FDR calculation
+            for (p in 1:generate.permuted.genesets) {
+              # for each gene, generate a random set of trans genes
+              # (generate up and dn trans genes together to prevent overlap)
+              trans.p <- sample (all.genes, length (c (up, dn)))
+              up.p <- trans.p [ 1:length(up) ]
+              dn.p <- rev (trans.p) [ 1:length(dn) ]
+              write.geneset (g, up.p, dn.p, sprintf ("%s-%03d.gmt", permuted.genes.prefix, p))
+            }
+          }
         }
       }
     }
