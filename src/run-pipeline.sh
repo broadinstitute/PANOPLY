@@ -373,7 +373,7 @@ case $op in
                 usage
                 exit 1
               fi ;;
-  CMAPconn ) if [[ ("$input_tar" = "") || "$cmap_scores" = "" ]]
+  CMAPconn ) if [[ ("$input_tar" = "") || "$cmap_scores" = "" || ($cmap_nperm -gt 0 && "$cmap_permutation" = "") ]]
               then
                 usage
                 exit 1
@@ -555,6 +555,9 @@ case $op in
 #            input must be tar file obtained after CMAPsetup
     CMAPconn )  analysisInit "CMAPconn"
                 mv ../$cmap_scores $cmap_dir/.
+                if [ $cmap_nperm -gt 0 ]; then 
+                  mv ../$cmap_permutation $cmap_dir/.
+                fi
                 (cd $cmap_dir;
                  # combine subset scores, and calculate connectivity scores
                  Rscript connectivity.r $cmap_scores $cmap_group $cmap_type $cmap_nperm $cmap_permutation)
