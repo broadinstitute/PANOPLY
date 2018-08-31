@@ -9,3 +9,5 @@ COPY . $wd
 
 WORKDIR $wd
 
+RUN R -e "library(pacman);p_install('UpSetR')"
+RUN R -e "library(pacman);p_install('ComplexHeatmap')"
