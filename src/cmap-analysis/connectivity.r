@@ -29,7 +29,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, 
 
   ES <- NULL
   filename.pattern <- '-scores\\.gct$'
-  if (!is.null (permutation)) filename.pattern <- sprintf ("-%d-%s", permutation, filename.pattern)
+  if (!is.null (permutation)) filename.pattern <- sprintf ("-%d%s", permutation, filename.pattern)
   for (f in dir (subset.scores.dir, pattern=filename.pattern)) {
     d <- parse.gctx (file.path (subset.scores.dir, f))
     if (is.null (ES)) ES <- d
@@ -41,7 +41,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, 
   write.score <- function (d, f) {
     # utility function
     # write out d to file f filling in annotations using ES
-    if (is.null (permutation)) return ()    # do not write for permutation scores
+    if (!is.null (permutation)) return ()    # do not write for permutation scores
     D <- ES
     D@mat <- as.matrix (d)
     write.gct (D, f)
@@ -96,7 +96,7 @@ cmap.connectivity <- function (subset.scores.dir, results.prefix, group, dtype, 
   # a gene is significant if it is CIS-enriched in both CNAdel (+ve) and CNAamp (-ve),
   # ... and gene has positive, significant cis-correlation (cna vs dtype)
   # genes used for the analysis are listed in the *-gene-list.csv file output by cmap-input.r
-  genes <- read.csv ( sprintf ("%s-gene-list.csv", results.prefix), as.is=TRUE )[,1]
+  genes <- read.csv ( sprintf ("%s-cmap-%s-gene-list.csv", group, dtype), as.is=TRUE )[,1]
   cis.sigtable <- read.csv ( sprintf ("%s-%s-cis-correlation.csv", group, dtype), row.names=1 )
   sig.amp <- sig.del <- sig.both <- NULL
   sig.cols <- colnames (mean_rankpt.n)
