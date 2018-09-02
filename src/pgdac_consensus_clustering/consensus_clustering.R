@@ -1,116 +1,12 @@
-# #!/usr/bin/env Rscript
-#options( warn = -1 )
-library(optparse)
-
-options(stringsAsFactors=FALSE)
-
-option.list <- list(
-  make_option(c("-i", "--input"), action="store", dest='tar.file' , type="character" ,help="input tar-file."),
-  make_option(c("-l", "--label"), action="store", dest='label', type="character", help=""),
-  make_option(c("-t", "--type"), action="store", dest='type', type="character", help="Data type, i.e. proteome, phospho, rna, ..."),
-  make_option(c("-d", "--tempdir"), action="store", dest='tmp.dir', type="character", help="temp-folder", default="tmp"),
-  make_option(c("-n", "--normdir"), action="store", dest='norm.dir', type="character", help="normalization-folder", default="normalized-data"),
-  make_option(c("-c", "--clustdir"), action="store", dest='clust.dir', type="character", help="clustering-folder", default="clustering"),
-  make_option(c("-u", "--k_min"), action="store", dest='k_min', type="numeric", help="Minimal cluster number.", default=2),
-  make_option(c("-v", "--k_max"), action="store", dest='k_max', type="numeric", help="Maximal cluster number.", default=10),
-  make_option(c("-s", "--sdfilter"), action="store", dest='clustering.sd.threshold', type="numeric", help="Minmal standard deviation acreoss samples required for clustering.", default=1.5),
-  make_option(c("-m", "--method"), action="store", dest='method', type="character", help="clustering method. hclust, kmeans, nmf", default='kmeans'),
-  make_option(c("-b", "--bootstrapiter"), action="store", dest='bs.nrun', type="numeric", help="Number of bootstrap iterations.", default=20),
-  make_option(c("-a", "--annotation"), action="store", dest='class.var', type="character", help="Name of column annotation field of GCT file used to plat as heatmap track.", default='')
-)
-opt  <- parse_args(OptionParser(option_list=option.list, usage = "Rscript %prog [options]"), print_help_and_exit=TRUE)
-
 
 if(!require('pacman')) install.packages('pacman')
 p_load(NMF)
 p_load(NbClust)
-#p_load(cluster)
 p_load(factoextra)
 p_load(glue)
 p_load(magrittr)
 p_load(cmapR)
 p_load(doParallel)
-
-
-## ###########################################################################################
-## main
-main <- function(opt) {
-  
-  wd <- getwd()
-
-  ## prepare log file
-  #logfile <- paste(cluster.path.full, paste(opt$label, '_consensus_clustering.log', sep=''), sep='/' )
-  logfile <- paste(opt$label, '_consensus_clustering.log', sep='')
-  start.time <- Sys.time()
-  cat(paste(rep('#', 40), collapse=''),'\n##', paste0(start.time), '--\'consensus_clustering\'--\n\n', file=logfile ) 
-  cat('## parameters\ntar file:', opt$tar.file, '\ntmp dir:', opt$tmp.dir, '\nlabel:', opt$label, '\nlog file:', logfile, '\n', file=logfile, append=T)
-  
-  
-  ## extract tar ball
-  if(!dir.exists(opt$tmp.dir))
-    dir.create(opt$tmp.dir)
-  cat('\n## Extracting tar file to', opt$tmp.dir, '\n', file=logfile, append=T)
-  if(!dir.exists( file.path(opt$tmp.dir, opt$label) ))
-    untar(opt$tar.file, exdir=opt$tmp.dir)
-  
-  
-  cluster.path.full <- file.path( opt$tmp.dir, opt$label, opt$clust.dir)
-  if(!dir.exists(cluster.path.full))
-    dir.create(cluster.path.full)
-  
-  
-  ## identify input GCT file
-  gct.str <- file.path(opt$tmp.dir, opt$label, opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
-  
-  ## import data
-  cat('\n## reading data from', gct.str, '\n', file=logfile, append=T)
-  gct <- parse.gctx(gct.str)
-  mat <- gct@mat
-  rdesc <- gct@rdesc
-  cdesc <- gct@cdesc
-  
-  ## eliminate features with not enough variation
-  cat('\n## eliminating features with not enough variation (sd<', opt$clustering.sd.threshold, ')\n', file=logfile, append=T)
-  feature.sd <- apply (mat, 1, sd, na.rm=TRUE)
-  keep <- which( feature.sd > opt$clustering.sd.threshold )
-  mat <- mat[keep, ]
-  rdesc <- rdesc[keep, ]
-  
-  cat('\n##', length(keep), 'features used for clustering\n', file=logfile, append=T)
-  
-  
-  
-  ##
-  if( nchar(opt$class.var) == 0 | !(opt$class.var %in% colnames(cdesc))){
-    cdesc.plot <- NULL
-  } else {
-   
-    class.var <- opt$class.var
-    cdesc.plot <- data.frame(cdesc[, class.var])
-    colnames(cdesc.plot) <- class.var
-  }
-  
-  ## run clustering
-  setwd(cluster.path.full  )
-  cons.clust <- consensus_clustering(mat,
-                                     method=opt$method,
-                                     nmf.nrun=2,
-                                     bs.nrun=opt$bs.nrun,
-                                     nmf.method='brunet',
-                                     seed='random',      
-                                     k.min=opt$k_min,            
-                                     k.max=opt$k_max,
-                                     make.nn=FALSE,
-                                     ncore=detectCores(),
-                                     plot=T,
-                                     logfile=logfile,
-                                     prefix=opt$label,
-                                     cdesc=cdesc.plot
-                                     )
-  
-  setwd(wd)
-  file.copy(logfile, cluster.path.full) 
-}
 
 
 ## ###########################################################################################
@@ -347,6 +243,251 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
   return(out)
 }
 
+## ######################################################################
+## performs the actual consensus clustering
+## - loop over cluster numbers k.min to k.max
+## - perform bootstraping-based consensus clustering
+## - determine optimal number of clusters
+##
+consensus_clustering <- function(m,                 ## data matrix p x n
+                                 method=c('hclust', 'nmf', 'kmeans'), ## cluster method  
+                                 nmf.nrun=10,         ## number of random restarts for NMF
+                                 bs.nrun=5,           ## number of bootstrap runs for consensus
+                                 nmf.opts=NULL,       ## additional options for function NMF
+                                 nmf.method='brunet', ## nmf method
+                                 seed='random',       ## nmf seed method
+                                 k.min=2,             ## min. number of clusters
+                                 k.max=4,             ## max. number of clusters
+                                 make.nn=FALSE,       ## make matrix non-negative? NMF only
+                                 ncore=2,             ## number of cores
+                                 plot=T,              ## if TRUE, a heatmap of the consensus matrix will be plotted
+                                 prefix='out',
+                                 cdesc=NULL,
+                                 ...
+){
+  
+  
+  method <- match.arg(method)
+  
+  
+  ## ################################
+  ## loop over cluster numbers  
+  cons.res <- lapply( k.min:k.max, function(k) 
+    consensus_clustering_single_k(m, method=method, nmf.nrun=nmf.nrun, bs.nrun=bs.nrun, nmf.opts=nmf.opts, seed=seed, k=k,
+                                  make.nn=make.nn, ncore=ncore, plot=F, ...) 
+  )
+  names(cons.res) <- k.min:k.max
+  
+  
+  ## #################################
+  ## select best number of clusters  
+  k_opt <- select_best_k(cons.res, data=m, plot=plot, prefix=prefix)
+  K <- k_opt$k.opt[1]
+  
+  ## #################################
+  ## extract results for optimal K
+  res.opt <- cons.res[[as.character(K)]]
+  write.table(k_opt$all.metrics, file=glue('{prefix}_cluster_metrics.csv'), row.names = T, quote = F, col.names = NA, sep=',')
+  write.table(k_opt$best.metrics, file=glue('{prefix}_best_K.csv'), row.names = T, quote=F, col.names = NA, sep=',')
+  
+  
+
+  ## #################################
+  ## export final clustering
+  cluster.final <- res.opt$cluster.results$membership
+  if(plot)
+    pdf(glue('{prefix}.bestclus.silhouette.pdf'))
+  silhoutte.final <- silhouette_scores(res.opt$cluster.results$cluster.object)
+  sil.val <- silhoutte.final[, 'sil_width']
+  if(plot)
+    dev.off()
+  
+  ## assemble final table
+  bestclus <- data.frame(
+    SampleName=colnames(m),
+    cluster=cluster.final,
+    SilhouetteValue=sil.val
+  )
+  fn <- glue ("{prefix}.bestclus.txt")
+  write.table(bestclus, file=fn, row.names=F, sep='\t', quote=F)
+  
+  ## ##################################
+  ## plot
+  if(plot){
+    
+    ## ##############################
+    ## best K
+    hm.consensus(M = res.opt$M, membership = res.opt$cluster.results$membership,
+                 cdesc=cdesc,
+                 show_rownames=F,
+                 show_colnames=F,
+                 filename=glue('{prefix}_consensus_matrix_K{K}.pdf'))  
+    
+    pdf(glue('{prefix}_cluster_pca_K{K}.pdf'))
+    fviz_cluster_plot(m, res.opt$cluster.results$membership)
+    dev.off()
+    
+    ## ###############################
+    ## all K
+    dummy <- sapply(names(cons.res), function(k){
+      cl=cons.res[[k]]
+      hm.consensus(cl$M, cl$cluster.results$membership, cdesc=cdesc, 
+                   show_rownames=F, show_colnames=F, 
+                   filename=glue('{prefix}_consensus_matrix_k{k}.png'))
+      })
+  }
+  
+  
+  ## assemble output
+  
+  return(cons.res)
+  
+}
+
+
+## ###############################################################
+## select the best number of clusters
+select_best_k <- function(cons.res, 
+                          data,              ## the data
+                          delta.auc.sig=0.1, ## threshold for delta auc of consensus cdf  
+                          plot=T,
+                          prefix='out'){
+  
+  k.max <- names(cons.res) %>% as.numeric %>% max
+  k.min <- names(cons.res) %>% as.numeric %>% min
+  n.clust <- length(cons.res)
+  k.all <- names(cons.res)
+  
+  ## ##########################################
+  ## cluster metrics
+  
+  ## delta auc
+  clust.auc <- sapply(cons.res, function(k) auc_cdf_cons(k$M) )
+  clust.auc.delta <-  sapply(1:(n.clust), function(k, auc) {
+    if(k == 1) return(auc[k])
+    return( (auc[k] - auc[k-1])/auc[k-1])
+  }, clust.auc)
+  clust.auc.delta.diff <- sapply(1:(n.clust-1), function(i, val){ val[i+1] - val[i]}, clust.auc.delta ) 
+  clust.auc.delta.diff <- c(0, clust.auc.delta.diff) %>% abs
+  
+  ## calculate cluster consensus
+  #clust.cons <- lapply(cons.res, function(k) clust_cons(k$M, k$cluster.results$membership))
+  #clust.cons.avg <- sapply(clust.cons, function(k) mean(k, na.rm=T))
+  
+  ## calculate silhouette scores
+  clust.sil <- lapply( cons.res, function(k) silhouette_scores(k$cluster.results$cluster.object, data=data, plot=F))
+  clust.sil.avg <- sapply(clust.sil, function(k) mean( k[, 'sil_width'], na.rm=T ))
+  
+  ## cophenetic correlation
+  clust.coph <- sapply( cons.res, function(k) cophenetic_correlation(k$M))
+  clust.coph.diff <- sapply(1:(n.clust-1), function(i, val){ val[i+1] - val[i]}, clust.coph ) 
+  clust.coph.diff <- c(0, clust.coph.diff)
+  
+  
+  ## gap statistics
+  #clust.gap <- NbClust(data, method = 'average', index = 'gap', min.nc = k.min, max.nc = k.max)
+  #clust.gap.value <- clust.gap$All.index
+  
+  ## ###############################################################
+  ## assemeble all metrics into a data frame
+  cm.all <- data.frame(#cdf.auc=clust.auc,
+    #delta.auc=clust.auc.delta,
+    delta.auc.diff=clust.auc.delta.diff,
+    #cluster.consensus=clust.cons.avg,
+    silhouette.score=clust.sil.avg,
+    cophenetic.correlation.diff=clust.coph.diff,
+    #gap.statistic=clust.gap.value,
+    stringsAsFactors = F
+  )
+  
+  ## ###########################################
+  ## determine best k for each metric
+  cm.best <- matrix(NA, nrow=ncol(cm.all), ncol=3, dimnames=list(colnames(cm.all), c('best.k', 'best.k.idx', 'best.k.score')))
+  for(i in rownames(cm.best)){
+    
+    best.k <- best.idx <- best.val <- NA
+    
+    ## delta area  
+    if(i == 'delta.auc.diff'){
+      best.idx <- max(which.max(cm.all[, i])-1, 1)
+      
+      
+      #best.idx <- max(which( cm.all[, i] > delta.auc.sig))
+      
+    }
+    ## cluster consensus / silhouette score
+    if(i == 'cluster.consensus' |  i == 'silhouette.score'){
+      best.idx <- which.max(cm.all[, i])
+    }
+    ## cophenetic correlation
+    if(i == 'cophenetic.correlation.diff'){
+      
+      ## descrease in coph
+      #best.idx <- which( cm.all[, i] < 0 )
+      #if( length(best.idx) > 0 ) {
+      #  best.idx <- best.idx[ which.min( best.idx ) ] - 1
+      #} else {
+      best.idx <- which.max( cm.all[, i])
+      #}
+      
+    }
+    ## gap statistic
+    if(i == 'gap.statistic'){
+      best.idx <- clust.gap$Best.nc[1]
+      best.idx <- which(k.all == best.idx)
+    }
+    
+    ## fill matrix
+    if(!is.na(best.idx)){  
+      best.val <- cm.all[best.idx, i]
+      best.k <- k.all[best.idx]
+      cm.best[i, ] <- c(best.k, best.idx, best.val) %>% as.numeric
+    }
+  }
+  
+  ## ############################################
+  ## plot
+  if(plot){
+    
+    nr <- ceiling(nrow(cm.best)/2)
+    
+    pdf(glue('{prefix}_cluster_metrics.pdf'), 6, 3*nr)
+    par(mfrow=c(nr ,2))
+    for(i in colnames(cm.all)){
+      #col.tmp <- rep('black', k.max)
+      #col.tmp[cm.best[i, 'best.k.idx' ]] <- 'red'
+      best.idx <- cm.best[i, 'best.k.idx' ]
+      plot(1:n.clust,  cm.all[, i], col='black', pch=20, cex=2, main=i, xaxt='n', xlab='Number of clusters', ylab='score', type='b')
+      points(c(1:n.clust)[best.idx], cm.all[best.idx, i], col='red', pch=20, cex=2)
+      axis(1, at=1:n.clust, labels=k.all)
+      legend('topright', legend=glue('k={cm.best[i, "best.k"]}'), bty='n')
+      #if(i == 'delta.auc') 
+      #abline(h=delta.auc.sig, col='grey', lty='dashed')
+      #if(i == 'cophenetic.correlation.diff')  abline(h=0, col='grey', lty='dashed')
+    }
+    dev.off()
+  }
+  
+  ## ############################################
+  ## determine best k
+  ##
+  #  exclude <- which(rownames(cm.best) == 'cluster.consensus')
+  k.opt <- table(cm.best[ , 'best.k'])
+  # k.opt <- table(cm.best[-exclude, 'best.k'])
+  k.opt <- names(k.opt)[ which.max(k.opt) ] %>% as.numeric %>% sort
+  
+  ## ############################################
+  ## assemble output
+  out <- c()
+  out$all.metrics <- cm.all
+  out$best.metrics <- cm.best
+  out$k.opt <- k.opt
+  
+  return(out) 
+}
+
+
+
 ## #################################################################
 ## heatmap of consensus matrix
 hm.consensus <- function(M, 
@@ -361,13 +502,13 @@ hm.consensus <- function(M,
     anno <- data.frame(anno, cdesc)
   
     
-  clust.col <- RColorBrewer::brewer.pal(k, "Dark2")
+  clust.col <- RColorBrewer::brewer.pal(max(k, 3), "Dark2")[1:k]
   names(clust.col) <- unique(anno$cluster)
   
   anno.col <- list(cluster=clust.col)
   if(!is.null(cdesc)){
-    
-    col.cdesc <- RColorBrewer::brewer.pal(length(unique(cdesc[, 1])), "Set1") %>% unlist
+    n.class <- length(unique(cdesc[, 1]))
+    col.cdesc <- unlist( brewer.pal( max(n.class, 3), "Set1") )[1:n.class]
     names(col.cdesc) <- unique( cdesc[, 1] )
       
     anno.col[[2]] <- col.cdesc
@@ -473,9 +614,14 @@ silhouette_scores <- function(cluster.object,
     #sil <- silhouette(cluster.object$cluster, d)
   }
   
-  sil <- silhouette(cluster.object$cluster, d) %>% sortSilhouette()
-  rownames(sil) <- colnames(data)[ rownames(sil) %>% as.numeric ]
+  #sil <- silhouette(cluster.object$cluster, d) %>% sortSilhouette()
+  sil <- silhouette(cluster.object$cluster, d)
   
+  #if(!is.null(data))#{
+  #  rownames(sil) <- colnames(data)[ rownames(sil) %>% as.numeric ]
+  #} else {
+  #  rownames(sil) <- colnames(d)[ rownames(sil) %>% as.numeric ]
+  #}
   if(plot)
     plot(sil, main=glue('Silhouette plot, cluster method: {method}'))
   
@@ -498,223 +644,42 @@ cophenetic_correlation <- function(connect.matrix){
   return(rho)
 }
 
-## ######################################################################
-## performs the actual consensus clustering
-## - loop over cluster numbers k.min to k.max
-## - perform bootstraping-based consensus clustering
-## - determine optimal number of clusters
-##
-consensus_clustering <- function(m,                 ## data matrix p x n
-                                method=c('hclust', 'nmf', 'kmeans'), ## cluster method  
-                                nmf.nrun=10,         ## number of random restarts for NMF
-                                bs.nrun=5,           ## number of bootstrap runs for consensus
-                                nmf.opts=NULL,       ## additional options for function NMF
-                                nmf.method='brunet', ## nmf method
-                                seed='random',       ## nmf seed method
-                                k.min=2,             ## min. number of clusters
-                                k.max=4,             ## max. number of clusters
-                                make.nn=FALSE,       ## make matrix non-negative? NMF only
-                                ncore=2,             ## number of cores
-                                plot=T,              ## if TRUE, a heatmap of the consensus matrix will be plotted
-                                prefix='out',
-                                cdesc=NULL,
-                                ...
+## #############################################################
+## simulate data by drawing form normal distribution
+## export as gct for testing cluster module in PGDAC pipeline
+simulate.data <- function(p=100,       # number of features
+                          n=40,        # number of samples 
+                          k=4          # number of classes, i.e. Gaussian distr with different mean/sd
 ){
   
+  N <- p*n
+  Nk <- N/k
+  nk <- n/k
   
-  method <- match.arg(method)
+  comp <- lapply(1:k, function(i) rnorm(Nk, rnorm(1, 0, 3), rnorm(1, 1, 0.1) ) )
+  #comp <- lapply(comp, function(x) matrix(x, nrow=p, dimnames=list(paste('feature', 1:p, sep='-'), paste('sample', 1:(n/k), sep=''))) )
+  comp <- lapply(comp, function(x) matrix(x, nrow=p))
   
-
-  ## ################################
-  ## loop over cluster numbers  
-  cons.res <- lapply( k.min:k.max, function(k) 
-    consensus_clustering_single_k(m, method=method, nmf.nrun=nmf.nrun, bs.nrun=bs.nrun, nmf.opts=nmf.opts, seed=seed, k=k,
-                                  make.nn=make.nn, ncore=ncore, plot=F, ...) 
-    )
-  names(cons.res) <- k.min:k.max
-    
-
-  ## #################################
-  ## select best number of clusters  
-  k_opt <- select_best_k(cons.res, data=m, plot=plot, prefix=prefix)
-  K <- k_opt$k.opt[1]
+  mat <- Reduce(f = cbind, comp)
+  dimnames(mat) <- list(paste('feature', 1:p, sep='-'), paste('sample', 1:n, sep='')) 
   
-  ## #################################
-  ## extract results for optimal K
-  res.opt <- cons.res[[as.character(K)]]
-  write.table(k_opt$all.metrics, file=glue('{prefix}_cluster_metrics.csv'), row.names = T, quote = F, col.names = NA, sep=',')
-  write.table(k_opt$best.metrics, file=glue('{prefix}_best_K.csv'), row.names = T, quote=F, col.names = NA, sep=',')
+  rid <- rownames(mat)
+  cid <- colnames(mat)
+  rdesc <- data.frame(dummy=rep('ABC', p))
+  cdesc <- data.frame(class=lapply(1:k, function(x) rep(glue('c{x}'), nk)) %>% unlist)
+  rownames(cdesc) <- colnames(mat)
   
+  gct <- new('GCT')
+  gct@mat <- mat
+  gct@cdesc <- cdesc
+  gct@rdesc <- rdesc
+  gct@rid <- rid
+  gct@cid <- cid
   
-  ## #################################
-  ## export final clustering
-  cluster.final <- res.opt$cluster.results$membership
+  write.gct(gct, ofile=glue('proteome-ratio-norm-NArm'), appenddim = F)
   
-  ## ##################################
-  ## plot
-  if(plot){
-    
-    ## ##############################
-    ## best K
-    hm.consensus(M = res.opt$M, membership = res.opt$cluster.results$membership,
-                 cdesc=cdesc,
-                 show_rownames=F,
-                 show_colnames=F,
-                 filename=glue('{prefix}_consensus_matrix_K{K}.pdf'))  
-    
-    pdf(glue('{prefix}_cluster_pca_K{K}.pdf'))
-    fviz_cluster_plot(m, res.opt$cluster.results$membership)
-    dev.off()
-  }
-  
-  
-  ## assemble output
-  
-  return(cons.res)
-  
+  pheatmap(mat, annotation_col=cdesc)
 }
-
-
-
-
-## ###############################################################
-## select the best number of clusters
-select_best_k <- function(cons.res, 
-                          data,              ## the data
-                          delta.auc.sig=0.1, ## threshold for delta auc of consensus cdf  
-                          plot=T,
-                          prefix='out'){
-
-  k.max <- names(cons.res) %>% as.numeric %>% max
-  k.min <- names(cons.res) %>% as.numeric %>% min
-  n.clust <- length(cons.res)
-  k.all <- names(cons.res)
-  
-  ## ##########################################
-  ## cluster metrics
-  
-  ## delta auc
-  clust.auc <- sapply(cons.res, function(k) auc_cdf_cons(k$M) )
-  clust.auc.delta <-  sapply(1:(n.clust), function(k, auc) {
-    if(k == 1) return(auc[k])
-    return( (auc[k] - auc[k-1])/auc[k-1])
-  }, clust.auc)
-  
-  ## calculate cluster consensus
-  clust.cons <- lapply(cons.res, function(k) clust_cons(k$M, k$cluster.results$membership))
-  clust.cons.avg <- sapply(clust.cons, function(k) mean(k, na.rm=T))
-  
-  ## calculate silhouette scores
-  clust.sil <- lapply( cons.res, function(k) silhouette_scores(k$cluster.results$cluster.object, data=data, plot=F))
-  clust.sil.avg <- sapply(clust.sil, function(k) mean( k[, 'sil_width'], na.rm=T ))
-  
-  ## cophenetic correlation
-  clust.coph <- sapply( cons.res, function(k) cophenetic_correlation(k$M))
-  clust.coph.diff <- sapply(1:(n.clust-1), function(i, val){ val[i+1] - val[i]}, clust.coph ) 
-  clust.coph.diff <- c(0, clust.coph.diff)
-  
-  
-  ## gap statistics
-  clust.gap <- NbClust(data, method = 'average', index = 'gap', min.nc = k.min, max.nc = k.max)
-  clust.gap.value <- clust.gap$All.index
-  
-  ## ###############################################################
-  ## assemeble all metrics into a data frame
-  cm.all <- data.frame(#cdf.auc=clust.auc,
-                              delta.auc=clust.auc.delta,
-                              cluster.consensus=clust.cons.avg,
-                              silhouette.score=clust.sil.avg,
-                              cophenetic.correlation.diff=clust.coph.diff,
-                              gap.statistic=clust.gap.value,
-                              stringsAsFactors = F
-                              )
-  
-  ## ###########################################
-  ## determine best k for each metric
-  cm.best <- matrix(NA, nrow=ncol(cm.all), ncol=3, dimnames=list(colnames(cm.all), c('best.k', 'best.k.idx', 'best.k.score')))
-  for(i in rownames(cm.best)){
-    
-    best.k <- best.idx <- best.val <- NA
-  
-    ## delta area  
-    if(i == 'delta.auc'){
-      best.idx <- max(which( cm.all[, i] > delta.auc.sig))
-    }
-    ## cluster consensus / silhouette score
-    if(i == 'cluster.consensus' |  i == 'silhouette.score'){
-      best.idx <- which.max(cm.all[, i])
-    }
-    ## cophenetic correlation
-    if(i == 'cophenetic.correlation.diff'){
-   
-      ## descrease in coph
-      best.idx <- which( cm.all[, i] < 0 )
-      if( length(best.idx) > 0 ) {
-        best.idx <- best.idx[ which.min( best.idx ) ] - 1
-      } else {
-        best.idx <- which.max( cm.all[, i])
-      }
-      
-    }
-    ## gap statistic
-    if(i == 'gap.statistic'){
-      best.idx <- clust.gap$Best.nc[1]
-      best.idx <- which(k.all == best.idx)
-    }
-    
-    ## fill matrix
-    if(!is.na(best.idx)){  
-      best.val <- cm.all[best.idx, i]
-      best.k <- k.all[best.idx]
-      cm.best[i, ] <- c(best.k, best.idx, best.val) %>% as.numeric
-    }
-  }
-
-  ## ############################################
-  ## plot
-  if(plot){
-
-      nr <- ceiling(nrow(cm.best)/2)
-      
-      pdf(glue('{prefix}_cluster_metrics.pdf'), 6, 3*nr)
-      par(mfrow=c(nr ,2))
-      for(i in colnames(cm.all)){
-        col.tmp <- rep('black', k.max)
-        col.tmp[cm.best[i, 'best.k.idx' ]] <- 'red'
-        plot(1:n.clust,  cm.all[, i], col=col.tmp, pch=20, cex=2, main=i, xaxt='n', xlab='Number of clusters', ylab='scoere', type='b')
-        axis(1, at=1:n.clust, labels=k.all)
-        legend('topright', legend=glue('k={cm.best[i, "best.k"]}'), bty='n')
-        if(i == 'delta.auc') abline(h=delta.auc.sig, col='grey', lty='dashed')
-        if(i == 'cophenetic.correlation.diff')  abline(h=0, col='grey', lty='dashed')
-      }
-      dev.off()
-  }
-  
-  ## ############################################
-  ## determine best k
-  ##
-  exclude <- which(rownames(cm.best) == 'cluster.consensus')
-  
-  k.opt <- table(cm.best[-exclude, 'best.k'])
-  k.opt <- names(k.opt)[ which.max(k.opt) ] %>% as.numeric %>% sort
-  
-  ## ############################################
-  ## assemble output
-  out <- c()
-  out$all.metrics <- cm.all
-  out$best.metrics <- cm.best
-  out$k.opt <- k.opt
- 
-  return(out) 
-}
-
-## ######################################################################
-## run the pipeline
-main(opt)
-
-
-
-
 
 
 
@@ -748,49 +713,3 @@ main(opt)
 #   return(best.nc)
 # }
 # # 
-
-
-
-###########################################
-## simulated data, 3 clusters
-#data.sim <- matrix( c(rnorm(1000, 101, 1),
-#                  rnorm(1000, 103, 1),
-#                  rnorm(1000, 99, 0.5)),
-#               nrow=100, dimnames=list(paste('feature', 1:100, sep='-'), paste('sample', 1:30,sep='-'))
-#                )
-#data.sim2 <- matrix( c(rnorm(1000, 0, 1),
-#                 rnorm(1000, -1, .7),
-#                 rnorm(1000, 1, 0.9),
-#                 rnorm(1000, 1.7, 0.8)),
-#              nrow=100, dimnames=list(paste('feature', 1:100, sep='-'), paste('sample', 1:40, sep='-'))
-#               )
-#pca <- prcomp(t(data.sim))
-
-#plot(pca$x[,1], pca$x[,2], col=p$clust, pch=20, cex=2)
-
-# data2 <- syntheticNMF(1000, r = 3, p = 30)
-# rownames(data2) <- paste('feature', 1:1000, sep='-')
-# colnames(data2) <- paste('sample', 1:30,sep='-')
-# 
-# # 
-#  data3 <- matrix( c(rnorm(10000, 0, 1),
-#                    rnorm(10000, -.3, .1),
-#                    rnorm(10000, .4, .5)),
-#                  nrow=1000, dimnames=list(paste('feature', 1:1000, sep='-'), paste('sample', 1:30,sep='-'))
-#  )
-# 
-
-
-#####################################################
-#library(pheatmap)
-#debug(nmf.consensus)
-
-#opts <-  paste('vp3t', sep='')
-
-#tmp<-consensus.clust(data, bnmf.opts=opts)
-#tmp3<-consensus.clust(data2, method='nmf', bs.nrun = 100, nmf.nrun = 1)
-#tmp3<-consensus.clust(data3, method='kmeans', bs.nrun = 100, nmf.nrun = 1)
-#pheatmap(tmp3, symm=T)
-
-
-
