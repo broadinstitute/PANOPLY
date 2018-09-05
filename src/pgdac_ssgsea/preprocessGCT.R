@@ -18,10 +18,12 @@ option_list <- list(
   make_option( c("-i", "--input"), action='store', type='character',  dest='gct.str', help='Path to input GCT file.'),
   make_option( c("-l", "--level"), action='store', type='character',  dest='level', help='Mode of report, "site" or "gene".', default='site'),
   make_option( c("-r", "--residue"), action='store', type='character',  dest='mod.res', help='Modified residues, e.g. "S|T|Y" or "K".', default='S|T|Y'),
-  make_option( c("-m", "--modification"), action='store', type='character',  dest='mod.type', help='Type of modification.', default = '-p'),
+  make_option( c("-m", "--modification"), action='store', type='character',  dest='mod.type', help='Type of modification, e.g "-p" or "-ac".', default = '-p'),
   make_option( c("-a", "--accession"), action='store', type='character',  dest='acc.type', help='Type of protein accession number.', default = 'uniprot'),
-  make_option( c("-o", "--organism"), action='store', type='character',  dest='org', help='Organism.', default = 'human')
- )
+  make_option( c("-o", "--organism"), action='store', type='character',  dest='org', help='Organism.', default = 'human'),
+  make_option( c("-d", "--dimension"), action='store', type='logical',  dest='appenddim', help='Logical, should matrix dimensions be included in file name?', default = TRUE)
+  
+  )
 # parse command line parameters
 opt <- parse_args( OptionParser(option_list=option_list) )
 
@@ -137,6 +139,7 @@ preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_P
                           mod.type=c('-p', '-ac', '-ub'),
                           acc.type=c('uniprot', 'refseq'),
                           org=c('human', 'mouse', 'rat'),
+                          appenddim=T,
                           do.it=T   ## flag, if FALSE nothing will be done 
                           ){
   
@@ -351,9 +354,11 @@ preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_P
     gct@cdesc <- cdesc
     gct@rdesc <- rdesc
     
-    fn <- paste(sub('\\.gct$', paste('_',level, '-centric', sep=''), gct.str), '.gct', sep='')
-    
-    write.gct(gct, fn, appenddim = F)
+    fn <- ifelse(appenddim,
+      paste(sub('_n[0-9]*x[0-9]*\\.gct$', paste('_',level, '-centric', sep=''), gct.str), '', sep=''),
+      paste(sub('\\.gct',paste('_',level, '-centric', sep=''), gct.str), '', sep='')
+    ) 
+    write.gct(gct, fn, appenddim = appenddim)
     
     return(0)
   }
@@ -369,4 +374,5 @@ preprocessGCT(gct.str = opt$gct.str,
               mod.res = opt$mod.res,
               mod.type=opt$mod.type,
               acc.type=opt$acc.type,
-              org=opt$org)
+              org=opt$org,
+              appenddim=opt$appenddim)

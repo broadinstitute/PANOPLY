@@ -4,6 +4,7 @@ suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("pacman"))
 
 #Rscript c:\Users\karsten\Dropbox\Devel\PGDAC\src\pgdac_mo_nmf\mo-nmf.r -t ..\data\v2\ssGSEA\westbrook_baseline_ssGSEA_rna_psty_prot.tar -c Response -o Group -l 2 -m 3 -n 2
+#Rscript c:\Users\karsten\Dropbox\Devel\PGDAC\src\pgdac_mo_nmf\mo-nmf.r -t .. -c PTPN12Class -o PTPN12IHCscores;Group -l 3 -m 3 -n 2 -b 10
 
 # parse the directory this file is located in
 this.file.dir <- commandArgs()[4]
@@ -17,48 +18,6 @@ source(paste(this.file.dir,  'my_plots.r', sep='/'))
 source(paste(this.file.dir,  'my_io.r', sep='/'))
 source(paste(this.file.dir,  'nmf_consensus.R', sep='/'))
 
-#source(paste(this.file.dir, 'src', 'my_plots.r', sep='/'))
-#source(paste(this.file.dir, 'src', 'my_io.r', sep='/'))
-
-
-# specify command line arguments
-option_list <- list(
-  make_option( c("-t", "--tar"), action='store', type='character',  dest='tar.file', help='tar file containing data tables in GCT v1.3 format.'),
-  make_option( c("-l", "--lowrank"), action='store', type='numeric',  dest='rank.low', help='Minimal factorization rank.', default = 2),
-  make_option( c("-m", "--maxrank"), action='store', type='numeric',  dest='rank.high', help='Maximal factorization rank.', default = 4),
-  make_option( c("-n", "--nrun"), action='store', type='numeric',  dest='nrun', help='Number of NMF runs with different starting seeds.', default = 5),
-  make_option( c("-b", "--bootstrap"), action='store', type='numeric',  dest='nrun.bs', help='Number of bootstrap iterations for consensus clustering.', default = 100),
-  make_option( c("-s", "--seed"), action='store', type='character',  dest='seed', help='Seed method for NMF factorization.', default = 'random'),
-  make_option( c("-c", "--classvariable"), action='store', type='character', dest='class.variable', help='Class variable of interest, NMF results will be mapped to levels of that variable. Must be present in the cdesc object of the GCT 1.3 file.'),
-  make_option( c("-d", "--definecolors"), action='store', type='character', dest='class.colors', help='Specifiy colors for each level in "class variable". Example: "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"', default = "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"),
-  make_option( c("-o", "--othervariable"), action='store', type='character', dest='variable.other', help='Other variable(s) in cdesc that should be included in the annotation column tracks of heatmaps. If multiple variables are of interest, separate by semicolon, e.g. -o "var1;var2;varN".', default=FALSE),
-  make_option( c("-r", "--runonly"), action='store', type='logical', dest='no.plots', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.', default=FALSE),
-  make_option( c("-g", "--genesofinterest"), action='store', type='character', dest='genes.of.interest', help='Character vector of gene symbols separated by semicolon. Example: "^PTPN1$;ERBB2;CDK5"', default='')
-  
-  )
-# parse command line parameters
-opt <- parse_args( OptionParser(option_list=option_list) )
-
-#####################
-## for local testing
-dummy <- F
-if(dummy){
-    opt$tar.file <- 'bc_prosp_pr_ph_rna-2comp-cnv_harmon.tar'
-    opt$variable.other <- 'ER;PR;HER2'
-    opt$class.colors <- "PAM50=Basal:red;Her2:magenta;LumA
-    :blue;LumB:cyan;Normal:grey|ER=positive:black;negative:white;unknown:grey|PR=positive:black;negative:white;unknown:grey|HER2=positive:black;negative:white;unknown:grey"
-    opt$class.variable <- "PAM50"
-    opt$nrun <- 2
-    opt$nrun.bs <- 10
-    opt$rank.low <- 4
-    opt$rank.high <- 4
-    opt$seed <- "random"
-    opt$genes.of.interest <- ''
-}
-
-tmp.dir ='tmp'
-
-## #################################################
 ## libraries
 require('pacman')
 p_load(NMF)
@@ -74,39 +33,69 @@ p_load(plotly)
 p_load(rmarkdown)
 p_load(maptools)
 p_load(UpSetR)
-
-## #################################
-## extract tar ball
-if(!dir.exists(tmp.dir))
-  dir.create(tmp.dir)
-untar(opt$tar.file, exdir=tmp.dir)
-
-##  import config file
-conf <- read.delim(paste( tmp.dir, 'nmf.conf', sep='/'), row.names = NULL, stringsAsFactors = F, header=F)
-data.str <- paste('..', tmp.dir, conf[, 2], sep='/')
-names(data.str) <- conf[,1]
+p_load(ComplexHeatmap)
 
 
+#source(paste(this.file.dir, 'src', 'my_plots.r', sep='/'))
+#source(paste(this.file.dir, 'src', 'my_io.r', sep='/'))
+
+# specify command line arguments
+option_list <- list(
+  make_option( c("-t", "--tar"), action='store', type='character',  dest='tar.file', help='tar file containing data tables in GCT v1.3 format.'),
+  make_option( c("-l", "--lowrank"), action='store', type='numeric',  dest='rank.low', help='Minimal factorization rank.', default = 2),
+  make_option( c("-m", "--maxrank"), action='store', type='numeric',  dest='rank.high', help='Maximal factorization rank.', default = 4),
+  make_option( c("-n", "--nrun"), action='store', type='numeric',  dest='nrun', help='Number of NMF runs with different starting seeds.', default = 5),
+  make_option( c("-b", "--bootstrap"), action='store', type='numeric',  dest='nrun.bs', help='Number of bootstrap iterations for consensus clustering.', default = 100),
+  make_option( c("-s", "--seed"), action='store', type='character',  dest='seed', help='Seed method for NMF factorization.', default = 'random'),
+  make_option( c("-c", "--classvariable"), action='store', type='character', dest='class.variable', help='Class variable of interest, NMF results will be mapped to levels of that variable. Must be present in the cdesc object of the GCT 1.3 file.'),
+  make_option( c("-d", "--definecolors"), action='store', type='character', dest='class.colors', help='Specifiy colors for each level in "class variable". Example: "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"', default = "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"),
+  make_option( c("-o", "--othervariable"), action='store', type='character', dest='variable.other', help='Other variable(s) in cdesc that should be included in the annotation column tracks of heatmaps. If multiple variables are of interest, separate by semicolon, e.g. -o "var1;var2;varN".', default=FALSE),
+  make_option( c("-r", "--runonly"), action='store', type='logical', dest='no.plots', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.', default=FALSE),
+  make_option( c("-g", "--genesofinterest"), action='store', type='character', dest='genes.of.interest', help='Character vector of gene symbols separated by semicolon. Example: "^PTPN1$;ERBB2;CDK5"', default=''),
+  make_option( c("-f", "--sdfilter"), action='store', type='numeric', dest='sd.perc.rm', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed.', default=0)
+  
+  )
+# parse command line parameters
+opt <- parse_args( OptionParser(option_list=option_list) )
+
+#####################
+## for local testing
+dummy <- F
+if(dummy){
+    opt <- c()
+    #opt$tar.file <- 'baseline_study_v5.tar' #'bc_prosp_pr_ph_rna-2comp-cnv_harmon.tar'
+    opt$tar.file <- 'bc_prosp_pr_ph_rna-2comp-cnv_harmon_2000.tar'
+    #opt$variable.other <- 'Group' #'ER;PR;HER2'
+    opt$variable.other <- 'ER;PR;HER2'
+    #opt$class.colors <- "PTPN12Class=high:red;low:blue;NotAvailable:white|Group=ExtraCluster:darkred;NonRespondingCluster:darkgreen;RespondingCluster:orange" 
+    # "PAM50=Basal:red;Her2:magenta;LumA:blue;LumB:cyan;Normal:grey|ER=positive:black;negative:white;unknown:grey|PR=positive:black;negative:white;unknown:grey|HER2=positive:black;negative:white;unknown:grey"
+    opt$class.colors <- "PAM50=Basal:red;Her2:magenta;LumA:blue;LumB:cyan;Normal:grey|ER=positive:black;negative:white;unknown:grey|PR=positive:black;negative:white;unknown:grey|HER2=positive:black;negative:white;unknown:grey"
+    #opt$class.variable <- "PTPN12Class" #"PAM50"
+    opt$class.variable <- "PAM50"
+    opt$nrun <- 2
+    opt$nrun.bs <- 10
+    opt$rank.low <- 2
+    opt$rank.high <- 2
+    opt$seed <- "random"
+    opt$genes.of.interest <- 'PTPN;CDK'
+}
+
+## ##################################################
+##           parse parameters
 ## ###################################################
-## data filtering / normalization
-## ###################################################
-zscore.cnv = F     ## should CNVs be z-scored?
-zscore.all = F     ## apply z-score to all data types
-sd.perc.rm = 0     ## percentile to remove from the data
+tar.file <- opt$tar.file
+
+## percentile to remove from the data
+sd.perc.rm <- opt$sd.perc.rm
 
 # variables of interest
 class.variable <- opt$class.variable
 variable.other <- strsplit( opt$variable.other, ';' ) %>% unlist
-
-gene.column <- 'geneSymbol'
-
-
 class.variable <- gsub('\\\'', '', class.variable) 
 variable.other <- gsub('\\\'', '', variable.other) 
 
-## ################################################
+## ################################
 ##            NMF paramters
-## ###################################################
 ranks <- opt$rank.low:opt$rank.high
 seed <- opt$seed
 nrun <- opt$nrun
@@ -115,29 +104,44 @@ method <- 'brunet'
 cores <- detectCores()
 opts <- paste('vp', cores,'t', sep='')
 
-## ####################################################
-## pheatmap
+
+## ################################
+## parse genes of interest
+genes.of.interest <- opt$genes.of.interest
+if(nchar(genes.of.interest) < 3){
+  genes.of.interest <- NULL
+} else{
+  genes.of.interest <- strsplit( genes.of.interest, ';' ) %>% unlist
+}
+
+## ################################
+## extract colors for class vector
+class.colors <- opt$class.colors
+color.all <- class.colors %>% strsplit(., '\\|') %>% unlist
+
+
+## ###################################################
+##       hard-coded parameters
+## ###################################################
+tmp.dir ='tmp'
+
+## ################################
+## data filtering / normalization
+zscore.cnv = F     ## should CNVs be z-scored?
+zscore.all = F     ## apply z-score to all data types
+#sd.perc.rm = 0     ## percentile to remove from the data
+
+gene.column <- 'geneSymbol'
+
+## ################################
+## pheatmap parameters
 cw <- 15
 ch <- 15
 max.val <- 10
 
-
-## ####################################################
-## genes of interest
-genes.of.interest <- opt$genes.of.interest
-if(nchar(genes.of.interest) < 3){
-    genes.of.interest <- NULL
-} else{
-  genes.of.interest <- strsplit( genes.of.interest, ';' ) %>% unlist
-}
-  #genes.of.interest <- c('^PTPN', 'ERBB2', 'CDK5', 'CDK12', 'PAK1', 'PTK2', 'RIPK2', 'TLK2', 'CETN3', 'SKP1', 'TP53', 'GATA3', 'ESR1', 'PGR')
-
-
-## ##################################################
-## colors for class vector
-class.colors <- opt$class.colors
-color.all <- class.colors %>% strsplit(., '\\|') %>% unlist
-
+## #################################################
+##                  colors
+## #################################################
 cdesc.color <- vector('list', length(color.all))
 names(cdesc.color) <- sub('^(.*?)=.*', '\\1', color.all)
 
@@ -176,79 +180,14 @@ param <- c('## NMF parameters:', paste('rank:', paste(ranks, collapse=',')), pas
 writeLines(param, con='parameters.txt')
 
 
-## ###################################################
-## import data tables
-for(i in 1:length(data.str)){
-
-    ##gct
-    gct <-  parse.gctx2(data.str[i])  
-    ## extract data matrix
-    data.tmp <- gct@mat
-    ## append data type to row names
-    rownames(data.tmp) <- paste(names(data.str)[i], gct@rid, sep='-')
-    colnames(data.tmp) <- gct@cid
-
-    ## remove columns with no data values
-    keep.idx <- which(apply(data.tmp, 2, function(x) ifelse(sum(is.na(x))/length(x) == 1, F, T)))
-    data.tmp <- data.tmp[, keep.idx]
-    
-    ## row annotations    
-    rdesc.tmp <- gct@rdesc
-    rownames(rdesc.tmp) <- paste(names(data.str)[i], gct@rid, sep='-')
-    rdesc.tmp <- data.frame( Data.Type.ID=rownames(rdesc.tmp), rdesc.tmp)
-    
-    ## column annotations
-    cdesc.tmp <- gct@cdesc %>% data.frame
-    
-    #cdesc.tmp[] <- lapply(cdesc.tmp, as.character) %>% as.data.frame()
-    if(nrow(cdesc.tmp) > 0){
-      cdesc.tmp <- data.frame(ID=gct@cid, cdesc.tmp)
-      cdesc.tmp <- cdesc.tmp[ keep.idx,  ]
-    }
-    
-    ## Z-score CNV?
-    if(names(data.str)[i] == 'CNV' & zscore.cnv)
-        data.tmp <- apply(data.tmp, 2, function(x) (x-median(x, na.rm=T))/mad(x, na.rm=T))
-    
-    ## merge data tables, row and column annotations
-    if(i == 1){
-        data <- data.tmp
-        samp <- colnames(data.tmp)
-        rdesc <- rdesc.tmp
-        cdesc <- cdesc.tmp
-      
-    } else {
-        ## only sample columns present in all tables will be carried over
-        samp <- intersect(samp, colnames(data.tmp))
-        data <- data[, samp]
-        cdesc <- cdesc[samp, ]
-        cdesc[] <- lapply(cdesc, function(x){if(sum(is.na(as.numeric(x))) == 0){as.numeric(x);} else {x} })
-
-        ## append to data matrix
-        data <- rbind(data, data.tmp[, colnames(data)])
-        
-        ## row annotations
-        rdesc <- full_join(rdesc, rdesc.tmp)
-        ## add back rownames
-        rownames(rdesc) <- rdesc$Data.Type.ID
-        ## ensure same order as data
-        rdesc <- rdesc[rownames(data), ]
-        
-        ## column annotations
-        if(nrow(cdesc.tmp) > 0){
-          cdesc.tmp[] <- lapply(cdesc.tmp, function(x){if(sum(is.na(as.numeric(x))) == 0){as.numeric(x);} else {x} })
-          #cdesc.tmp[] <- lapply(cdesc.tmp, as.character) %>% as.data.frame()
-          cdesc <- left_join(cdesc, cdesc.tmp)
-          rownames(cdesc) <- cdesc$ID
-          #cdesc2 <- full_join(data.frame(t(cdesc)), data.frame(t(cdesc.tmp)))
-        }
-      }
-}
-
-
 ## ##################################################
-## extract expression data
-expr <- data.matrix(data)
+## import data files
+data.imported <- import.data.sets(tar.file, tmp.dir, zscore.cnv)
+#data.imported <- import.data.sets(data.str, zscore.cnv)
+expr <- data.imported$expr
+cdesc <- data.imported$cdesc
+rdesc <- data.imported$rdesc
+
 expr.org <- expr
 cdesc.org <- cdesc
 variable.other.org <- variable.other
@@ -263,6 +202,7 @@ expr.full.org <- expr
 ## Z-score
 if(zscore.all)
     expr <- scale(expr)
+
 
 ## ###################################################
 ##       calculate SD accross samples
@@ -319,12 +259,18 @@ expr.comb <- expr.comb[keep.idx, ]
 ## ###################################################
 ##     Estimate factorization rank
 ## ###################################################
-res.rank <- res.rank.random <- vector('list', length(ranks))
-names(res.rank) <- names(res.rank.random) <- ranks
-res.cons <- res.cons.random <- res.rank
+#res.rank <- res.rank.random <- vector('list', length(ranks))
+#names(res.rank) <- names(res.rank.random) <- ranks
+#res.cons <- res.cons.random <- res.rank
+
+res.rank <- vector('list', length(ranks))
+names(res.rank) <- ranks
+res.cons <- res.rank
+
 
 ## shuffle data
-expr.comb.random <- randomize(expr.comb)
+#expr.comb.random <- randomize(expr.comb)
+nmf.run.bs <- 5
 
 ## loop over clusters
 for(i in 1:length(ranks)){
@@ -332,14 +278,15 @@ for(i in 1:length(ranks)){
   ###############################
   # actual data
   res.rank[[i]] <-  nmf(expr.comb, rank=ranks[i], method=method, seed=seed, nrun=nrun, .options = opts)
+  
   ## consensus matrix
-  res.cons[[i]] <- consensus.clust( expr.comb, method='nmf', nmf.nrun = 10, bs.nrun = nrun.bs, nmf.opt = opts )
+  res.cons[[i]] <- consensus.clust( expr.comb, method='nmf', nmf.nrun = nmf.run.bs, bs.nrun = nrun.bs, nmf.opt = opts, ncore=max(cores-nmf.run.bs, 2) )
   
   #################################
   # shuffled data
-  res.rank.random[[i]] <- nmf(expr.comb.random, rank=ranks[i], method=method, seed=seed, nrun=nrun, .options = opts)
+  ##res.rank.random[[i]] <- nmf(expr.comb.random, rank=ranks[i], method=method, seed=seed, nrun=nrun, .options = opts)
   ## consensus matrix
-  res.cons.random[[i]] <- consensus.clust( expr.comb.random, method='nmf', nmf.nrun = 10, bs.nrun = nrun.bs, nmf.opt = opts )
+  ##res.cons.random[[i]] <- consensus.clust( expr.comb.random, method='nmf', nmf.nrun = 10, bs.nrun = nrun.bs, nmf.opt = opts )
  
 }
 
@@ -361,14 +308,15 @@ if(opt$no.plots == FALSE){
     
     ## SVD
     rank.svd <- svd(expr.comb)
-    rank.svd.random <- svd(expr.comb.random)
+    #rank.svd.random <- svd(expr.comb.random)
     ## silhouette
     rank.sil <- lapply(res.rank, silhouette)
-    rank.sil.random <- lapply(res.rank.random, silhouette)
-    rank.sil.avg <- lapply(rank.sil, function(x) tapply(x[,3], x[, 1], mean)) 
+    #rank.sil.random <- lapply(res.rank.random, silhouette)
+    rank.sil.avg <- lapply(rank.sil, function(x) tapply(x[,3], x[, 1], mean))
+    
     ## cophenic
     rank.coph <- sapply(res.rank, cophcor)
-    rank.coph.random <- sapply(res.rank.random, cophcor)
+    #rank.coph.random <- sapply(res.rank.random, cophcor)
     
     if(length(ranks) > 1){
       
@@ -376,19 +324,22 @@ if(opt$no.plots == FALSE){
           pdf('1_cluster_metrics.pdf')
           ## SVD
           plot(rank.svd$d, cex=2, type='b', pch=20, main='SVD', xlab= 'Sample index', ylab='Singular values of x', col='darkblue')
-          lines(rank.svd.random$d, cex=2, type='b', col='grey', pch=20)
-          legend('right', legend=c('Actual data', 'Randomized data'), col=c('darkblue', 'grey'), pch=20, cex=1.5, bty='n')
+          # lines(rank.svd.random$d, cex=2, type='b', col='grey', pch=20)
+          #legend('right', legend=c('Actual data', 'Randomized data'), col=c('darkblue', 'grey'), pch=20, cex=1.5, bty='n')
           
           ## cophenetic
-          plot(as.numeric(names(rank.coph)), rank.coph, type='b', pch=20, cex=2, col='darkblue', xaxt='n', xlab='Factorization rank / No. of clusters', ylab='Cophenetic score', main='Cophenetic correlation coefficient', ylim=c(min(c(rank.coph.random, rank.coph)), 1) )
+          plot(as.numeric(names(rank.coph)), rank.coph, type='b', pch=20, cex=2, col='darkblue', xaxt='n', xlab='Factorization rank / No. of clusters', ylab='Cophenetic score', main='Cophenetic correlation coefficient', 
+               ylim=c( min(rank.coph)-(min(rank.coph)*0.1), 1) )
           axis(1, at=as.numeric(names(rank.coph)))
-          lines(as.numeric(names(rank.coph.random)), rank.coph.random,  type='b', pch=20, cex=2, col='grey')
-          legend('right', legend=c('Actual data', 'Randomized data'), col=c('darkblue', 'grey'), pch=20, cex=1.5, bty='n')
+          # lines(as.numeric(names(rank.coph.random)), rank.coph.random,  type='b', pch=20, cex=2, col='grey')
+          #legend('right', legend=c('Actual data', 'Randomized data'), col=c('darkblue', 'grey'), pch=20, cex=1.5, bty='n')
           
           ## silhouette
-          par(mfrow=c(2,1))
-          fancyBoxplot( lapply(rank.sil, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters', main='Silhouette scores', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4, col='darkblue')
-          fancyBoxplot( lapply(rank.sil.random, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters', main='Randomized data', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4)
+          # par(mfrow=c(2,1))
+          fancyBoxplot( lapply(rank.sil, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters',
+                        main='Silhouette scores', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4, 
+                        col='white', box.border = 'darkblue', vio.alpha = 0, lwd=2.5)
+          #fancyBoxplot( lapply(rank.sil.random, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters', main='Randomized data', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4)
           dev.off()
     }
     
@@ -412,9 +363,9 @@ if(opt$no.plots == FALSE){
       ## ##########################################
       ## silhoutte plots
       pdf(paste('1.0_silhouette_K_', rank, '.pdf', sep=''), 10, 6)
-      par(mfrow=c(1,2))
+      #par(mfrow=c(1,2))
       plot(rank.sil[[rank]], main=paste('K=', rank, sep=''), col=palette()[1:as.numeric(rank)+1] )
-      plot(rank.sil.random[[rank]], main=paste('Randomized data', sep=''), col=palette()[1:as.numeric(rank)+1])
+      #plot(rank.sil.random[[rank]], main=paste('Randomized data', sep=''), col=palette()[1:as.numeric(rank)+1])
       dev.off()
       
       
@@ -534,18 +485,30 @@ if(opt$no.plots == FALSE){
         ## ##########################################
         ## consensus matrix from bootstrapping
         cons.bs <- res.cons[[as.character( rank )]]
-        pheatmap(cons.bs, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+        try(
+          pheatmap(cons.bs, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
                  annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
                  annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
                  cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
                  filename=paste('3.2_consensus_matrix_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
+            )
         
+        ## ordered by NMF cluster assignment
+        cdesc.bs <- cdesc[ , rev(c(class.variable, variable.other))]
+        ord.idx <- order(cdesc.bs$NMF.consensus)
+        cons.bs.ord <- cons.bs[ ord.idx, ord.idx ]
         
-        cons.bs.rand <- res.cons.random[[as.character( rank )]]
-        pheatmap(cons.bs.rand, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+        pheatmap(cons.bs.ord, cluster_row=F, cluster_col=F, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+                 annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
                  annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
-                 cellwidth = cw-10, cellheight = ch-10,
-                 filename=paste('3.3_consensus_matrix_RANDOM_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
+                 cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
+                 filename=paste('3.3_consensus_matrix_bootstrap_nrun_', nrun.bs,'_NMF_ordered.pdf', sep=''))
+        
+        #cons.bs.rand <- res.cons.random[[as.character( rank )]]
+        #pheatmap(cons.bs.rand, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+        #         annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
+        #         cellwidth = cw-10, cellheight = ch-10,
+        #         filename=paste('3.3_consensus_matrix_RANDOM_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
         
         
         
@@ -744,7 +707,7 @@ if(opt$no.plots == FALSE){
         ##
         ##                plot ALL markers
         ##
-        feat.all <- unique(unlist(s.acc2))
+        feat.all <- unique(unlist(s.acc2)) %>% sort
         rdesc.feat <- matrix(0, nrow=length(feat.all), ncol=length(s.acc), dimnames=list( feat.all, names(s.acc) ))
         for(i in 1:length(s.acc))
           rdesc.feat[ s.acc[[i]]$Accession, i] <- 1
@@ -766,9 +729,58 @@ if(opt$no.plots == FALSE){
         pheatmap(m, scale='none', fontsize_row=0, annotation_row = rdesc.feat, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.0_heatmap_ALL_features.pdf', show_rownames=F, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cellwidth = cw)
         
         
+
+        ## #########################################################
+        ##  complex heatmap
+          
+        # reorder according to 'omics type
+        
+        ## row annotations
+        #rdesc.feat2 <- apply(rdesc.feat, 1, as.character) %>% t
+        #colnames(rdesc.feat2) <- colnames(rdesc.feat)
+        ## row annotation colors
+        #rdesc.color <- vector('list', ncol(rdesc.feat))
+        #names(rdesc.color) <- names(rdesc.feat)
+        #for(p in 1:length(rdesc.color)) rdesc.color[[p]] <- c('0'='white', '1'='black')
+        #rdesc.ha <- HeatmapAnnotation(df=tmp, which='row', col=rdesc.col)
+        
+        
+        cdesc.ord <- cdesc[ , rev(c(class.variable, variable.other))]
+        ord.idx <- order(cdesc.ord$NMF.consensus)
+        
+        ## column annotations
+        
+        
+        cdesc.ha <- HeatmapAnnotation(df=cdesc[ ord.idx, rev(c(class.variable, variable.other))], col=cdesc.color)
+        
+        m <- m[, colnames(m)[ord.idx]]
+        #m <- scale(m)
+        ## set up heatmap
+        hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
+                      cluster_columns = F,
+                      top_annotation = cdesc.ha, 
+                      split = sub('-.*','',rownames(m)),
+                      row_dend_side = 'right',
+                      name='NMF features',
+                      show_row_names = F)
+        ## plot
+        pdf('6.1_ComplexHeatmap_ALL_features.pdf')
+        draw(hm)
+        for(an in rev(c(class.variable, variable.other)) ) {
+          decorate_annotation(an, {
+            # annotation names on the right
+            grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
+            # annotation names on the left
+            #grid.text(an, unit(0, "npc") - unit(2, "mm"), 0.5, default.units = "npc", just = "right")
+          })
+        }
+        dev.off()
+        #draw(rdesc.ha + hm)
+        
         ## ############################################################
         ## plot ALL markersbut without CNV
-        if('CNV' %in% names(data.str)){
+        if(length( grep('CNV',names(data.str)) ) > 0 ){
+        #if('CNV' %in% names(data.str)){
             m.org <- m
             #m <- expr.org[ unique( unlist(s.acc)[-grep('CNV',  unlist(s.acc))] ), ]
             cnv.idx <- grep('CNV-', rownames(m.org))
@@ -783,7 +795,7 @@ if(opt$no.plots == FALSE){
                 m[m > m.max] <- m.max
                 m[m < -m.max] <- -m.max
               }
-              pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.1_heatmap_ALL_features_no_CNV.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
+              pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.2_heatmap_ALL_features_no_CNV.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
             
         
               ## CNV only
@@ -836,14 +848,14 @@ if(opt$no.plots == FALSE){
          
                      ## heatmap
                      m.max <- ceiling(max(abs(m), na.rm=T))
-                     pheatmap( m,  annotation_col=cdesc[, rev(c(class.variable, variable.other) )], annotation_colors=cdesc.color, cluster_col=F, gaps_col=cumsum(table(cdesc[, 2])), main=paste('Positive ctrl:', i), filename=paste('7_heatmap_gene_of_interest_', sub('\\[.*|\\$','',i), '.pdf', sep=''), cellwidth=cw, cellheight=ch, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cluster_row=F)
+                     pheatmap( m,  annotation_col=cdesc[, rev(c(class.variable, variable.other) )], annotation_colors=cdesc.color, cluster_col=F, gaps_col=cumsum(table(cdesc[, 2])), main=paste('GOI:', i), filename=paste('7_heatmap_gene_of_interest_', sub('\\[.*|\\$','',i), '.pdf', sep=''), cellwidth=cw, cellheight=ch, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cluster_row=F)
          
                  } else {
                      m <- feat.expr[, ord.idx]
          
                      ## heatmap
                      m.max <-  ceiling(max(abs(m), na.rm=T))
-                     pheatmap( m,  annotation_col=cdesc[ , rev(c(class.variable, variable.other) )],annotation_colors=cdesc.color, cluster_col=F, gaps_col=cumsum(table(cdesc[, 'NMF.consensus'])),main=paste('Positive ctrl:', i), filename=paste('7_heatmap_gene_of_interest_', sub('\\[.*|\\$','',i), '.pdf', sep=''), cellwidth=cw, cellheight=ch, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
+                     pheatmap( m,  annotation_col=cdesc[ , rev(c(class.variable, variable.other) )],annotation_colors=cdesc.color, cluster_col=F, gaps_col=cumsum(table(cdesc[, 'NMF.consensus'])),main=paste('GOI:', i), filename=paste('7_heatmap_gene_of_interest_', sub('\\[.*|\\$','',i), '.pdf', sep=''), cellwidth=cw, cellheight=ch, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
                  }
          
                  feat.n <- unlist(lapply(feat, length))
