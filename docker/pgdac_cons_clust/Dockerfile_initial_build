@@ -1,0 +1,24 @@
+FROM broadcptac/pgdac_main:1
+
+LABEL maintainer="karsten@broadinstitute.org"
+LABEL description="Docker for single-omics kmeans consensus clustering."
+
+
+RUN rm -R /prot/proteomics/Projects/PGDAC/src/*
+COPY src/* /prot/proteomics/Projects/PGDAC/src/
+
+RUN R -e "library(pacman);p_install('optparse')"
+RUN R -e "library(pacman);p_install('NMF')"
+RUN R -e "library(pacman);p_install('factoextra')"
+RUN R -e "library(pacman);p_install('glue')"
+RUN R -e "library(pacman);p_install('magrittr')"
+Run R -e "library(pacman);p_install('rhdf5')"
+RUN R -e "devtools::install_github('cmap/cmapR')"
+RUN R -e "library(pacman);p_install('doParallel')"
+RUN R -e "library(pacman);p_install('pheatmap')"
+RUN R -e "library(pacman);p_install('RColorBrewer')"
+RUN R -e "library(pacman);p_install('NbClust')"
+
+
+
+

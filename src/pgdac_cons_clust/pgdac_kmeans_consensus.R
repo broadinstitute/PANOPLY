@@ -5,7 +5,7 @@ library(optparse)
 options(stringsAsFactors=FALSE)
 
 option.list <- list(
-  make_option(c("-i", "--input"), action="store", dest='tar.file' , type="character" ,help="input tar-file."),
+  make_option(c("-i", "--input"), action="store", dest='tar.file' , type="character" ,help="input tar-file or (extracted) folder."),
   make_option(c("-l", "--label"), action="store", dest='label', type="character", help=""),
   make_option(c("-t", "--type"), action="store", dest='type', type="character", help="Data type, i.e. proteome, phospho, rna, ..."),
   make_option(c("-d", "--tempdir"), action="store", dest='tmp.dir', type="character", help="temp-folder", default="tmp"),
@@ -43,32 +43,51 @@ source(file.path(opt$lib.dir, 'consensus_clustering.R'))
 ## main
 main <- function(opt) {
   
+  ## analysis_dir = opt$tmp.dir/opt$label
+  
   wd <- getwd()
   
+  
   ## prepare log file
-  #logfile <- paste(cluster.path.full, paste(opt$label, '_consensus_clustering.log', sep=''), sep='/' )
   logfile <- paste(opt$label, '_consensus_clustering.log', sep='')
   start.time <- Sys.time()
   cat(paste(rep('#', 40), collapse=''),'\n##', paste0(start.time), '--\'consensus_clustering\'--\n\n', file=logfile ) 
   cat('## parameters\ntar file:', opt$tar.file, '\ntmp dir:', opt$tmp.dir, '\nlabel:', opt$label, '\nlog file:', logfile, '\n', file=logfile, append=T)
   
+  cat('current folder:', getwd(), '\n')
   
-  ## extract tar ball
-  if(!dir.exists(opt$tmp.dir))
-    dir.create(opt$tmp.dir)
-  cat('\n## Extracting tar file to', opt$tmp.dir, '\n', file=logfile, append=T)
-  if(!dir.exists( file.path(opt$tmp.dir, opt$label) ))
-    untar(opt$tar.file, exdir=opt$tmp.dir)
+  ## check whether input is a .tar archive
+  suffix <- sub('.*\\.(.*)$', '\\1', opt$tar.file)
   
   
-  cluster.path.full <- file.path( opt$tmp.dir, opt$label, opt$clust.dir)
+  if(suffix == 'tar'){
+    
+    ## extract tar ball
+    if(!dir.exists(opt$tmp.dir))
+      dir.create(opt$tmp.dir)
+    cat('\n## Extracting tar file to', opt$tmp.dir, '\n', file=logfile, append=T)
+    if(!dir.exists( file.path(opt$tmp.dir, opt$label) ))
+      untar(opt$tar.file, exdir=opt$tmp.dir)
+    
+    ## cluster folder
+    cluster.path.full <- file.path( opt$tmp.dir, opt$label, opt$clust.dir)
+    
+    ## path to GCT file
+    gct.str <- file.path(opt$tmp.dir, opt$label, opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+    
+    } else { ## PGDAC-main pipeline
+    
+      ## assume the current folder is the clustering-folder
+      cluster.path.full <- getwd()
+    
+      ## path to GCT file
+      gct.str <- file.path('..', opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+  }
+  
   if(!dir.exists(cluster.path.full))
     dir.create(cluster.path.full)
   
-  
-  ## identify input GCT file
-  gct.str <- file.path(opt$tmp.dir, opt$label, opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
-  
+ 
   ## import data
   cat('\n## reading data from', gct.str, '\n', file=logfile, append=T)
   gct <- parse.gctx(gct.str)
@@ -111,7 +130,7 @@ main <- function(opt) {
                                      ncore=detectCores(),
                                      plot=T,
                                      logfile=logfile,
-                                     prefix=opt$label,
+                                     prefix=opt$type,
                                      cdesc=cdesc.plot
   )
   

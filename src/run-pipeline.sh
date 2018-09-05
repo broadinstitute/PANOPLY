@@ -412,7 +412,7 @@ cmap_dir="cmap"
 cmap_prefix="$cmap_group-$cmap_type"
 qc_dir="sample-qc"
 assoc_dir="association"
-cluster_dir="clustering"
+cluster_dir="clustering-test"
 if [ "$data" = "" ]; then
   subset_str=""
 else 
@@ -572,18 +572,28 @@ case $op in
                 (cd $assoc_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
              ;;
-#   cluster: perform concensus NMF clustering
+#   cluster: perform consensus kmeans clustering
     cluster )   analysisInit "cluster"
-                cp $code_dir/clustering/*.R $cluster_dir/.
-                cp $code_dir/assoc-analysis.r $cluster_dir/.
+                cp $code_dir/pgdac_kmeans_consensus.R $cluster_dir/
+                cp $code_dir/consensus_clustering.R $cluster_dir/
+                cp $code_dir/assoc-analysis.r $cluster_dir/
+                cp $code_dir/postprocess.R $cluster_dir/
                 (cd $cluster_dir;
-                 # run NMF clustering and best cluster selection
-                 R CMD BATCH --vanilla "--args $prefix $data" prepare-data.R;
-                 Rscript top_genes.R --expfile ${prefix}-data.gct --selected_genes ALL --output_prefix ${prefix};
-                 Rscript gdac_cnmf.R --expfile ${prefix}.expclu.gct --k_int 2 --k_final 8 --output_prefix ${prefix};
-                 Rscript select_best_cluster_merged.R --input_exp ${prefix}.expclu.gct --input_all ${prefix}-data.gct \
-                   --output_prefix ${prefix} --cluster_membership ${prefix}.membership.txt \
-                   --cophenetic ${prefix}.cophenetic.coefficient.txt --measure pearson --cluster nmf;
+                 
+                 # extract 'label' and 'tmp.dir'  from 'analysis_dir'
+                 label=`echo $analysis_dir | sed -E 's,.*/(.*).*,\1,'`
+                 #tmpdir=`echo $analysis_dir | sed -E 's,(/.*/).*,\1,'`
+                 tmpdir='.'
+                 
+                 # run kmeans clustering and best cluster selection
+                 Rscript pgdac_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 4 -s 1 -b 50 -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
+                 
+                 #R CMD BATCH --vanilla "--args $prefix $data" prepare-data.R;
+                 #Rscript top_genes.R --expfile ${prefix}-data.gct --selected_genes ALL --output_prefix ${prefix};
+                 #Rscript gdac_cnmf.R --expfile ${prefix}.expclu.gct --k_int 2 --k_final 8 --output_prefix ${prefix};
+                 #Rscript select_best_cluster_merged.R --input_exp ${prefix}.expclu.gct --input_all ${prefix}-data.gct \
+                 #   --output_prefix ${prefix} --cluster_membership ${prefix}.membership.txt \
+                 #   --cophenetic ${prefix}.cophenetic.coefficient.txt --measure pearson --cluster nmf;
                  # run association analysis on clusters to determine markers
                  R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
                  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)

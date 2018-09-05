@@ -370,10 +370,6 @@ select_best_k <- function(cons.res,
   clust.auc.delta.diff <- sapply(1:(n.clust-1), function(i, val){ val[i+1] - val[i]}, clust.auc.delta ) 
   clust.auc.delta.diff <- c(0, clust.auc.delta.diff) %>% abs
   
-  ## calculate cluster consensus
-  #clust.cons <- lapply(cons.res, function(k) clust_cons(k$M, k$cluster.results$membership))
-  #clust.cons.avg <- sapply(clust.cons, function(k) mean(k, na.rm=T))
-  
   ## calculate silhouette scores
   clust.sil <- lapply( cons.res, function(k) silhouette_scores(k$cluster.results$cluster.object, data=data, plot=F))
   clust.sil.avg <- sapply(clust.sil, function(k) mean( k[, 'sil_width'], na.rm=T ))
@@ -383,20 +379,14 @@ select_best_k <- function(cons.res,
   clust.coph.diff <- sapply(1:(n.clust-1), function(i, val){ val[i+1] - val[i]}, clust.coph ) 
   clust.coph.diff <- c(0, clust.coph.diff)
   
-  
-  ## gap statistics
-  #clust.gap <- NbClust(data, method = 'average', index = 'gap', min.nc = k.min, max.nc = k.max)
-  #clust.gap.value <- clust.gap$All.index
-  
+
   ## ###############################################################
   ## assemeble all metrics into a data frame
   cm.all <- data.frame(#cdf.auc=clust.auc,
-    #delta.auc=clust.auc.delta,
+    delta.auc=clust.auc.delta,
     delta.auc.diff=clust.auc.delta.diff,
-    #cluster.consensus=clust.cons.avg,
     silhouette.score=clust.sil.avg,
     cophenetic.correlation.diff=clust.coph.diff,
-    #gap.statistic=clust.gap.value,
     stringsAsFactors = F
   )
   
@@ -410,10 +400,7 @@ select_best_k <- function(cons.res,
     ## delta area  
     if(i == 'delta.auc.diff'){
       best.idx <- max(which.max(cm.all[, i])-1, 1)
-      
-      
       #best.idx <- max(which( cm.all[, i] > delta.auc.sig))
-      
     }
     ## cluster consensus / silhouette score
     if(i == 'cluster.consensus' |  i == 'silhouette.score'){
@@ -421,7 +408,6 @@ select_best_k <- function(cons.res,
     }
     ## cophenetic correlation
     if(i == 'cophenetic.correlation.diff'){
-      
       ## descrease in coph
       #best.idx <- which( cm.all[, i] < 0 )
       #if( length(best.idx) > 0 ) {
@@ -449,21 +435,25 @@ select_best_k <- function(cons.res,
   ## plot
   if(plot){
     
-    nr <- ceiling(nrow(cm.best)/2)
+    ## number of rows in plot
+    nr <- ceiling((nrow(cm.best)-1)/2)
     
-    pdf(glue('{prefix}_cluster_metrics.pdf'), 6, 3*nr)
+    pdf(glue('{prefix}_cluster_metrics_K{k.min}-K{k.max}.pdf'), 6, 3*nr)
     par(mfrow=c(nr ,2))
     for(i in colnames(cm.all)){
-      #col.tmp <- rep('black', k.max)
-      #col.tmp[cm.best[i, 'best.k.idx' ]] <- 'red'
+
       best.idx <- cm.best[i, 'best.k.idx' ]
-      plot(1:n.clust,  cm.all[, i], col='black', pch=20, cex=2, main=i, xaxt='n', xlab='Number of clusters', ylab='score', type='b')
-      points(c(1:n.clust)[best.idx], cm.all[best.idx, i], col='red', pch=20, cex=2)
-      axis(1, at=1:n.clust, labels=k.all)
-      legend('topright', legend=glue('k={cm.best[i, "best.k"]}'), bty='n')
-      #if(i == 'delta.auc') 
-      #abline(h=delta.auc.sig, col='grey', lty='dashed')
-      #if(i == 'cophenetic.correlation.diff')  abline(h=0, col='grey', lty='dashed')
+      metric <- cm.all[, i]
+      
+      if(i == 'delta.auc.diff'){
+        metric <- cm.all[, 'delta.auc']
+      }
+      if(i != 'delta.auc'){
+        plot(1:n.clust,  metric, col='black', pch=20, cex=2, main=i, xaxt='n', xlab='Number of clusters', ylab='score', type='b')
+        points(c(1:n.clust)[best.idx], metric[best.idx], col='red', pch=20, cex=2)
+        axis(1, at=1:n.clust, labels=k.all)
+        legend('topright', legend=glue('k={cm.best[i, "best.k"]}'), bty='n')
+      }
     }
     dev.off()
   }
@@ -493,6 +483,7 @@ select_best_k <- function(cons.res,
 hm.consensus <- function(M, 
                          membership,
                          cdesc=NULL,
+                         method='ward.D2',
                          ...){
   k <- membership %>% as.character %>% as.numeric %>% max
 
@@ -524,7 +515,9 @@ hm.consensus <- function(M,
            annotation_col = anno,
            annotation_row = anno,
            annotation_colors = anno.col,
-
+           clustering_method=method,
+           clustering_distance_row=as.dist(1 - M),
+           clustering_distance_col=as.dist(1 - M),
                       ...)
 
 }
