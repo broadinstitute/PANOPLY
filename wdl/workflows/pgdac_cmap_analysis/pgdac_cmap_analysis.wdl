@@ -1,6 +1,8 @@
 task pgdac_cmap_connectivity {
   File tarball
   Int permutations
+  Int? rankpt_n
+  Int? rankpt_threshold
   Array[File] subset_scores
   Array[File]? permutation_scores
   String scores_dir = "cmap-subset-scores"
@@ -30,7 +32,7 @@ task pgdac_cmap_connectivity {
     fi
     
     # combine shards/gather and run conectivity score calculations
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${permutations} -CMAPpmt ${permutation_dir}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${permutations} -CMAPpmt ${permutation_dir} -CMAPrpt ${default="4" rankpt_n} -CMAPth ${default="85" rankpt_threshold}
   }
 
   output {
@@ -41,7 +43,7 @@ task pgdac_cmap_connectivity {
     docker : "broadcptac/pgdac_main:1.1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
+    cpu : select_first ([num_threads, permutations+1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
 
