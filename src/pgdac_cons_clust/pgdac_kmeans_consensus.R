@@ -56,10 +56,9 @@ main <- function(opt) {
   
   cat('current folder:', getwd(), '\n')
   
+  ## ###############################################
   ## check whether input is a .tar archive
   suffix <- sub('.*\\.(.*)$', '\\1', opt$tar.file)
-  
-  
   if(suffix == 'tar'){
     
     ## extract tar ball
@@ -75,8 +74,17 @@ main <- function(opt) {
     ## path to GCT file
     gct.str <- file.path(opt$tmp.dir, opt$label, opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
     
-    } else { ## PGDAC-main pipeline
-    
+    ## ################################################
+    ## if the input is not a .tar file assume that the
+    ## function is called from the PGDAC-main pipeline
+    } else {
+      ## source 'config.r' to get all parameters  
+      #system(glue('R CMD BATCH --vanilla "--args {opt$type}" config.r;'))
+      #source(glue('config.r'))
+      
+      #opt$clustering.sd.threshold <- clustering.sd.threshold
+      cat(glue('test: {opt$clustering.sd.threshold}\n\n'))
+      
       ## assume the current folder is the clustering-folder
       cluster.path.full <- getwd()
     
@@ -96,17 +104,17 @@ main <- function(opt) {
   cdesc <- gct@cdesc
   
   ## eliminate features with not enough variation
-  cat('\n## eliminating features with not enough variation (sd<', opt$clustering.sd.threshold, ')\n', file=logfile, append=T)
+  cat('\n## eliminating features with not enough variation ( standard deviation <', opt$clustering.sd.threshold, ')\n', file=logfile, append=T)
   feature.sd <- apply (mat, 1, sd, na.rm=TRUE)
   keep <- which( feature.sd > opt$clustering.sd.threshold )
   mat <- mat[keep, ]
   rdesc <- rdesc[keep, ]
   
-  cat('\n##', length(keep), 'features used for clustering\n', file=logfile, append=T)
+  cat(glue( '\nRemaining features used for clustering: {length(keep)}\n'), file=logfile, append=T)
   
   
   
-  ##
+  ## class variable of interest
   if( nchar(opt$class.var) == 0 | !(opt$class.var %in% colnames(cdesc))){
     cdesc.plot <- NULL
   } else {

@@ -135,7 +135,7 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
   } ## end function cluster
   ## ###############################
   cat(glue('\nk={k} \n'))
-  cat(glue('\n\n{paste(rep("#", 20), collapse="")}\nPartitioning data in k={k} clusters.\n'), file=logfile, append=T)
+  cat(glue('\n\n{paste(rep("#", 20), collapse="")}\nPartitioning data in k={k} clusters using {method}-clustering.\n'), file=logfile, append=T)
   
   ## number of sample columns
   ns <- ncol(m)
@@ -151,7 +151,7 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
   ## ################################
   ## parallelize
   ncore.tot <- detectCores()
-  ncore <- min(ncore.tot, ncore)
+  ncore <- min(ncore.tot-1, ncore)
   
   cat('\nDetected', ncore.tot, 'cores.\nUsing', ncore, 'cores for bootstrapping.\n', file=logfile, append=T)
   
@@ -180,7 +180,6 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
     m.bs <- m.bs[keep.idx, ]
    
     ## indicator matrix
-    #I[samp.bs, samp.bs] <- I[samp.bs, samp.bs] + 1
     I[samp.bs, samp.bs] <- 1
     
     ## cluster
@@ -381,11 +380,12 @@ select_best_k <- function(cons.res,
   
 
   ## ###############################################################
-  ## assemeble all metrics into a data frame
+  ## assemble all metrics into a data frame
   cm.all <- data.frame(#cdf.auc=clust.auc,
     delta.auc=clust.auc.delta,
     delta.auc.diff=clust.auc.delta.diff,
     silhouette.score=clust.sil.avg,
+    cophenetic.correlation=clust.coph,
     cophenetic.correlation.diff=clust.coph.diff,
     stringsAsFactors = F
   )
@@ -396,33 +396,21 @@ select_best_k <- function(cons.res,
   for(i in rownames(cm.best)){
     
     best.k <- best.idx <- best.val <- NA
-    
+
     ## delta area  
-    if(i == 'delta.auc.diff'){
+    if(i == 'delta.auc.diff'){ # choose K before biggest drop in delta AUC
       best.idx <- max(which.max(cm.all[, i])-1, 1)
       #best.idx <- max(which( cm.all[, i] > delta.auc.sig))
     }
     ## cluster consensus / silhouette score
-    if(i == 'cluster.consensus' |  i == 'silhouette.score'){
+    if(i == 'cluster.consensus' |  i == 'silhouette.score'){ # choose K with maximal silhouette score
       best.idx <- which.max(cm.all[, i])
     }
     ## cophenetic correlation
-    if(i == 'cophenetic.correlation.diff'){
-      ## descrease in coph
-      #best.idx <- which( cm.all[, i] < 0 )
-      #if( length(best.idx) > 0 ) {
-      #  best.idx <- best.idx[ which.min( best.idx ) ] - 1
-      #} else {
+    if(i == 'cophenetic.correlation'){ # choose K with maximal cophentic correlation
       best.idx <- which.max( cm.all[, i])
-      #}
+    }
       
-    }
-    ## gap statistic
-    if(i == 'gap.statistic'){
-      best.idx <- clust.gap$Best.nc[1]
-      best.idx <- which(k.all == best.idx)
-    }
-    
     ## fill matrix
     if(!is.na(best.idx)){  
       best.val <- cm.all[best.idx, i]
@@ -448,7 +436,7 @@ select_best_k <- function(cons.res,
       if(i == 'delta.auc.diff'){
         metric <- cm.all[, 'delta.auc']
       }
-      if(i != 'delta.auc'){
+      if( !(i %in% c('delta.auc', 'cophenetic.correlation.diff') ) ) {
         plot(1:n.clust,  metric, col='black', pch=20, cex=2, main=i, xaxt='n', xlab='Number of clusters', ylab='score', type='b')
         points(c(1:n.clust)[best.idx], metric[best.idx], col='red', pch=20, cex=2)
         axis(1, at=1:n.clust, labels=k.all)
@@ -458,14 +446,17 @@ select_best_k <- function(cons.res,
     dev.off()
   }
   
-  ## ############################################
+  ## #############################################
   ## determine best k
-  ##
-  #  exclude <- which(rownames(cm.best) == 'cluster.consensus')
+  ## -  pick K according to majority of three metrics
+  ## - if all three netrix don't agree, use delta AUC
+  ##   as metric
   k.opt <- table(cm.best[ , 'best.k'])
-  # k.opt <- table(cm.best[-exclude, 'best.k'])
-  k.opt <- names(k.opt)[ which.max(k.opt) ] %>% as.numeric %>% sort
-  
+  if(length(k.opt) < 3){
+    k.opt <- names(k.opt)[ which.max(k.opt) ] %>% as.numeric %>% sort
+  } else {
+    k.opt <- cm.best['delta.auc.diff', 'best.k']
+  }
   ## ############################################
   ## assemble output
   out <- c()

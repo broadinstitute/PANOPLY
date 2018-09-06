@@ -26,9 +26,9 @@ task pgdac_cons_clust {
 
   runtime {
     docker : "broadcptac/pgdac_cons_clust:2"
-    memory : select_first ([memory, 4]) + "GB"
+    memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
+    cpu : select_first ([num_threads, 8]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
 
