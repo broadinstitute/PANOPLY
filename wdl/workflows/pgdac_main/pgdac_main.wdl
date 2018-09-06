@@ -36,7 +36,7 @@ task pgdac_association {
   }
 }
 
-task pgdac_cluster {
+task pgdac_cons_clust {
   File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
   String type
   File? groupsFile
@@ -53,7 +53,9 @@ task pgdac_cluster {
 
   command {
     set -euo pipefail
+    echo ${type}
     /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params} ${"-g " + groupsFile}
+   
   }
 
   output {
@@ -61,18 +63,19 @@ task pgdac_cluster {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
+    docker : "broadcptac/pgdac_cons_clust:2"
+    memory : select_first ([memory, 16]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    cpu : select_first ([num_threads, 8]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
-    author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    author : "D. R. Mani, Karsten Krug"
+    email : "karsten@broadinstitute.org"
   }
 }
+
 
 task pgdac_cna_correlation {
   File tarball   # output from pgdac_cna_setup
@@ -591,7 +594,7 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
 
-  call pgdac_cluster {
+  call pgdac_cons_clust {
     input:
       tarball=pgdac_association.outputs,
       type=dataType,
@@ -601,7 +604,7 @@ workflow pgdac_main_pipeline {
   }
 
   output {
-    File output=pgdac_cluster.outputs
+    File output=pgdac_cons_clust.outputs
     File norm_report=pgdac_normalize_ms_data_report.report
     File rna_corr_report=pgdac_rna_protein_correlation_report.report
 		File cna_corr_report=pgdac_cna_correlation_report.report
