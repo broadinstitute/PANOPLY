@@ -176,7 +176,13 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
     ## bootstrap
     samp.bs <- sample(samp, ns, replace=T)
     m.bs <- m[, samp.bs]
-    keep.idx <- which(apply(m.bs, 1, function(x) sum(x != 0) ) > 0)
+    
+    ## take car of missing values
+    if(method == 'nmf')
+      keep.idx <- which(apply(m.bs, 1, function(x) sum(x != 0) ) > 0)
+    if(method == 'kmeans')
+      keep.idx <- which(apply(m.bs, 1, function(x) sum( is.na(x)) ) == 0)
+    
     m.bs <- m.bs[keep.idx, ]
    
     ## indicator matrix
