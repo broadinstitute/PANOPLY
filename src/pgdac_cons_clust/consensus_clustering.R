@@ -1,5 +1,6 @@
 
 if(!require('pacman')) install.packages('pacman')
+p_load(ggplot2)
 p_load(NMF)
 p_load(NbClust)
 p_load(factoextra)
@@ -457,12 +458,14 @@ select_best_k <- function(cons.res,
   ## -  pick K according to majority of three metrics
   ## - if all three netrix don't agree, use delta AUC
   ##   as metric
-  k.opt <- table(cm.best[ , 'best.k'])
-  if(length(k.opt) < 3){
-    k.opt <- names(k.opt)[ which.max(k.opt) ] %>% as.numeric %>% sort
-  } else {
+  
+  #k.opt <- table(cm.best[ , 'best.k'])
+  #if(length(k.opt) < 3){
+  #  k.opt <- names(k.opt)[ which.max(k.opt) ] %>% as.numeric %>% sort
+  #} else {
     k.opt <- cm.best['delta.auc.diff', 'best.k']
-  }
+  #}
+  
   ## ############################################
   ## assemble output
   out <- c()
@@ -670,6 +673,9 @@ simulate.data <- function(p=100,       # number of features
   
   pheatmap(mat, annotation_col=cdesc)
 }
+
+
+
 
 
 

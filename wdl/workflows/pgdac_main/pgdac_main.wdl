@@ -67,7 +67,7 @@ task pgdac_cons_clust {
   runtime {
     docker : "broadcptac/pgdac_cons_clust:2"
     memory : select_first ([memory, 16]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 8]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -138,7 +138,7 @@ task pgdac_cna_correlation_report {
   runtime {
     docker : "broadcptac/pgdac_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
@@ -285,7 +285,7 @@ task pgdac_normalize_ms_data_report {
   runtime {
     docker : "broadcptac/pgdac_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
@@ -396,7 +396,7 @@ task pgdac_rna_protein_correlation_report {
   runtime {
     docker : "broadcptac/pgdac_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
@@ -466,7 +466,7 @@ task pgdac_sampleqc_report {
   runtime {
     docker : "broadcptac/pgdac_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
   }
 
