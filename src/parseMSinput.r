@@ -163,7 +163,9 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
   if (species.filter) {
     species <- sapply (d[, species.col(header.info$col.names.all)],
                        function (x) tolower (gsub ("\\s", "", x)))
-    keep <- species %in% c ('human', 'homosapiens')
+    # keep <- species %in% c ('human', 'homosapiens')
+    # change to below to support ORFs or other "species" names that include 'human' as a substring
+    keep <- sapply (species, function (x) grepl ('human', x) || grepl ('homosapiens',x))
     d <- d [keep, ]
   }
     
@@ -209,6 +211,7 @@ if (type == "proteome") {
                   'numPepsUnique',
                   'scoreUnique', 
                   'species', 
+                  'orfCategory',
                   'accession_number', 
                   'accession_numbers',
                   'subgroupNum', 
@@ -233,6 +236,7 @@ if (type == "proteome") {
                   'protein_mw',
                   'species',
                   'speciesMulti',
+                  'orfCategory',
                   'accession_number',
                   'accession_numbers',
                   'protein_group_num',
