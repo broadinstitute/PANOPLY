@@ -23,14 +23,119 @@ task pgdac_association {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cons_clust:2"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
 
+  meta {
+    author : "D. R. Mani"
+    email : "manidr@broadinstitute.org"
+  }
+}
 
+task pgdac_cna_correlation {
+  File tarball   # output from pgdac_cna_setup
+  String type
+  String? subType
+  File? params
+  String outFile = "pgdac_cna_correlation-output.tar"
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+  Int? num_preemptions
+
+
+  command {
+    set -euo pipefail
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+  }
+
+  output {
+    File outputs = "${outFile}"
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_main:2"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+    preemptible : select_first ([num_preemptions, 0])
+  }
+
+  meta {
+    author : "D. R. Mani"
+    email : "manidr@broadinstitute.org"
+  }
+}
+
+task pgdac_cna_correlation_report {
+  File tarball
+  String label
+  String type
+  String tmpDir
+  Float fdr
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+
+  command {
+    set -euo pipefail
+    Rscript /home/pgdac/src/rmd-cna-analysis.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
+  }
+
+  output {
+    File report = "cna-analysis_" + label + ".html"
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_rmd:3"
+    memory : select_first ([memory, 8]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+  }
+
+  meta {
+    author : "Karsten Krug"
+    email : "karsten@broadinstitute.org"
+  }
+}
+
+task pgdac_cna_setup {
+  File tarball   # output from pgdac_harmonize
+  File? groupsFile
+  String type
+  String? subType
+  File? params
+  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
+  String outFile = "pgdac_cna_setup-output.tar"
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+  Int? num_preemptions
+
+
+  command {
+    set -euo pipefail
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-g " + groupsFile} ${"-m " + subType} ${"-p " + params}
+  }
+
+  output {
+    File outputs = "${outFile}"
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_main:2"
+    memory : select_first ([memory, 12]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+    preemptible : select_first ([num_preemptions, 0])
+  }
 
   meta {
     author : "D. R. Mani"
@@ -78,115 +183,6 @@ task pgdac_cons_clust {
   }
 }
 
-
-task pgdac_cna_correlation {
-  File tarball   # output from pgdac_cna_setup
-  String type
-  String? subType
-  File? params
-  String outFile = "pgdac_cna_correlation-output.tar"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
-
-
-  command {
-    set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} ${"-m " + subType} ${"-p " + params}
-  }
-
-  output {
-    File outputs = "${outFile}"
-  }
-
-  runtime {
-    docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
-  }
-
-  meta {
-    author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
-  }
-}
-
-task pgdac_cna_correlation_report {
-  File tarball
-  String label
-  String type
-  String tmpDir
-  Float fdr
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-
-  command {
-    set -euo pipefail
-    Rscript /home/pgdac/src/rmd-cna-analysis.r ${tarball} ${label} ${type} ${fdr} ${tmpDir}
-  }
-
-  output {
-    File report = "cna-analysis_" + label + ".html"
-  }
-
-  runtime {
-    docker : "broadcptac/pgdac_rmd:3"
-    memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
-  }
-
-  meta {
-    author : "Karsten Krug"
-    email : "karsten@broadinstitute.org"
-  }
-}
-
-
-task pgdac_cna_setup {
-  File tarball   # output from pgdac_harmonize
-  File? groupsFile
-  String type
-  String? subType
-  File? params
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_cna_setup-output.tar"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
-
-
-  command {
-    set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-g " + groupsFile} ${"-m " + subType} ${"-p " + params}
-  }
-
-  output {
-    File outputs = "${outFile}"
-  }
-
-  runtime {
-    docker : "broadcptac/pgdac_main:1"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
-  }
-
-  meta {
-    author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
-  }
-}
-
 task pgdac_harmonize {
   File tarball
   File rnaExpr
@@ -214,7 +210,7 @@ task pgdac_harmonize {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -250,7 +246,7 @@ task pgdac_normalize_ms_data {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -295,7 +291,6 @@ task pgdac_normalize_ms_data_report {
   }
 }
 
-
 task pgdac_parse_sm_table {
   File SMtable
   File exptDesign
@@ -322,7 +317,7 @@ task pgdac_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -360,7 +355,7 @@ task pgdac_rna_protein_correlation {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -406,7 +401,6 @@ task pgdac_rna_protein_correlation_report {
   }
 }
 
-
 task pgdac_sampleqc {
   File tarball   # output from pgdac_harmonize
   String type
@@ -431,7 +425,7 @@ task pgdac_sampleqc {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -475,7 +469,6 @@ task pgdac_sampleqc_report {
     email : "karsten@broadinstitute.org"
   }
 }
-
 
 workflow pgdac_main_pipeline {
   File SMtable
@@ -596,7 +589,7 @@ workflow pgdac_main_pipeline {
       params=additionalParameters
   }
 
-  call pgdac_cons_clust {
+  call pgdac_cluster {
     input:
       tarball=pgdac_association.outputs,
       type=dataType,
@@ -606,7 +599,7 @@ workflow pgdac_main_pipeline {
   }
 
   output {
-    File output=pgdac_cons_clust.outputs
+    File output=pgdac_cluster.outputs
     File norm_report=pgdac_normalize_ms_data_report.report
     File rna_corr_report=pgdac_rna_protein_correlation_report.report
 		File cna_corr_report=pgdac_cna_correlation_report.report

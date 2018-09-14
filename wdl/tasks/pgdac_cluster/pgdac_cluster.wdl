@@ -23,7 +23,7 @@ task pgdac_cluster {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:1"
+    docker : "broadcptac/pgdac_main:2"
     memory : select_first ([memory, 4]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 5]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
