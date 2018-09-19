@@ -16,7 +16,7 @@ this.file.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', this.file.dir))
 #cat('------:',this.file.dir, '\n')
 source(paste(this.file.dir,  'my_plots.r', sep='/'))
 source(paste(this.file.dir,  'my_io.r', sep='/'))
-source(paste(this.file.dir,  'nmf_consensus.R', sep='/'))
+source(paste(this.file.dir,  'consensu_clustering.R', sep='/'))
 
 ## libraries
 require('pacman')
@@ -98,7 +98,8 @@ prepare.data.sets <- function( tar.file, tmp.dir){
   
   ##  import config file
   conf <- read.delim(paste( tmp.dir, 'nmf.conf', sep='/'), row.names = NULL, stringsAsFactors = F, header=F)
-  data.str <- paste('..', tmp.dir, conf[, 2], sep='/')
+  ##data.str <- paste('..', tmp.dir, conf[, 2], sep='/')
+  data.str <- paste( tmp.dir, conf[, 2], sep='/')
   names(data.str) <- conf[,1]
   
   return(data.str)
@@ -147,7 +148,7 @@ import.data.sets <- function(tar.file, tmp.dir, zscore.cnv=F){
     if(nrow(cdesc.tmp) > 0){
       cdesc.tmp <- data.frame(ID=gct@cid, cdesc.tmp)
       cdesc.tmp <- cdesc.tmp[ keep.idx,  ]
-      rownames(cdesc.tmp) <- gct@cid
+      rownames(cdesc.tmp) <- colnames(data.tmp)
     }
     
     ## Z-score CNV?
@@ -989,7 +990,7 @@ main <- function(opt){
             
             ## correct colors
             col.tmp <- cdesc.color[[class.variable]]
-            col <- cdesc[,class.variable]
+            col <- as.character(cdesc[,class.variable])
             #names(col) <- cdesc[,1]
             col <- sapply(col, function(i) col.tmp[i])
             
@@ -1019,7 +1020,7 @@ main <- function(opt){
             pc2 <- pca.nmf$x[,2]
             
             col.tmp <- cdesc.color[[class.variable]]
-            col <- cdesc[,class.variable]
+            col <- as.character(cdesc[,class.variable])
             #names(col) <- cdesc[,1]
             col <- sapply(col, function(i) col.tmp[i])
             
