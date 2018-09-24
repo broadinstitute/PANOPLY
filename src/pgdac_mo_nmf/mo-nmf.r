@@ -312,13 +312,27 @@ main <- function(opt){
     
     expr.org <- expr
     cdesc.org <- cdesc
+    rdesc.org <- rdesc
     variable.other.org <- variable.other
     
     ## ##################################################
     ## fully quantified
     keep.idx <- which(apply(expr, 1, function(x) ifelse(sum(is.na(x)) > 0, F, T)))
     expr <- expr[keep.idx, ]
+    rdesc <- rdesc[keep.idx, ]
     expr.full.org <- expr
+    
+    ## ############################################
+    ##  export merged data used for nmf as gct
+    gct.comb <- new('GCT')
+    gct.comb@mat <- data.matrix(expr)
+    gct.comb@cdesc <- cdesc
+    gct.comb@rdesc <- rdesc
+    gct.comb@cid <- colnames(gct.comb@mat)
+    gct.comb@rid <- rownames(gct.comb@mat)
+    write.gct(gct.comb, ofile = 'mo-data_matrix')
+    
+    
     
     ## ##################################################
     ## Z-score
@@ -498,7 +512,7 @@ main <- function(opt){
           ## add to heatmap annotation tracks
           variable.other <- c('NMF.consensus', variable.other)
         
-              
+             
           ## #######################################################################################################
           ## add NMF to color list for pheatmap
           ## - map NMF classes to levels in 'class.variable'

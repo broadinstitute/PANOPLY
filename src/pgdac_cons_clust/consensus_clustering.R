@@ -24,6 +24,7 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
                           ncore=2,             ## number of cores
                           plot=F,              ## if TRUE, a heatmap of the consensus matrix will be plotted
                           logfile="",
+                          logfile.append=T,
                           ...
 ){
   
@@ -499,11 +500,13 @@ hm.consensus <- function(M,
   anno.col <- list(cluster=clust.col)
   if(!is.null(cdesc)){
     n.class <- length(unique(cdesc[, 1]))
-    col.cdesc <- unlist( brewer.pal( max(n.class, 3), "Set1") )[1:n.class]
-    names(col.cdesc) <- unique( cdesc[, 1] )
-      
+    if(n.class <= 8){
+      col.cdesc <- unlist( brewer.pal( max(n.class, 3), "Set1") )[1:n.class]
+      names(col.cdesc) <- unique( cdesc[, 1] )
+    
     anno.col[[2]] <- col.cdesc
     names(anno.col)[2] <- colnames(cdesc)[1]
+    }
   }
   
   hm.col <- colorRampPalette(rev(brewer.pal(7, "RdYlBu")))(100)

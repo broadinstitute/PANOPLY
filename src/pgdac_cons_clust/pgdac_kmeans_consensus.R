@@ -16,7 +16,7 @@ option.list <- list(
   make_option(c("-s", "--sdfilter"), action="store", dest='clustering.sd.threshold', type="numeric", help="Minmal standard deviation acreoss samples required for clustering.", default=1.5),
   make_option(c("-m", "--method"), action="store", dest='method', type="character", help="clustering method. hclust, kmeans, nmf", default='kmeans'),
   make_option(c("-b", "--bootstrapiter"), action="store", dest='bs.nrun', type="numeric", help="Number of bootstrap iterations.", default=20),
-  make_option(c("-a", "--annotation"), action="store", dest='class.var', type="character", help="Name of column annotation field of GCT file used to plat as heatmap track.", default=''),
+  make_option(c("-a", "--annotation"), action="store", dest='class.var', type="character", help="Name of column annotation field of GCT file used to plot as heatmap track.", default=''),
   make_option(c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='.')
   
   )
@@ -109,7 +109,7 @@ main <- function(opt) {
   keep <- which( feature.sd > opt$clustering.sd.threshold )
   mat <- mat[keep, ]
   rdesc <- rdesc[keep, ]
-  
+  cat(glue( '\nRemaining features used for clustering: {length(keep)}\n'))
   cat(glue( '\nRemaining features used for clustering: {length(keep)}\n'), file=logfile, append=T)
   
   

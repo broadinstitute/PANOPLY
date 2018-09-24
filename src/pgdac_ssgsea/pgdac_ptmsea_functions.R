@@ -42,7 +42,7 @@ prepare_pam_output <- function( csv.str,  ## path to input csv
 
 ## ########################################################################
 ## function to map RefSeq accession numbers  to UniProt accession numbers
-RefSeq2UniProt <- function(ids, n.try=10 ){
+RefSeq2UniProt <- function(ids, n.try=10, keytype=c('REFSEQ', 'SYMBOL') ){
   
   ## id mapping
   p_load(RSQLite)
@@ -54,7 +54,7 @@ RefSeq2UniProt <- function(ids, n.try=10 ){
   ## ###################################
   ##           id type
   ## ###################################
-  keytype <- 'REFSEQ'
+  keytype <- match.arg(keytype)
   
   ## ###################################
   ##        extract query strings
@@ -143,11 +143,12 @@ RefSeq2UniProt <- function(ids, n.try=10 ){
 # - create gene-centric GCT
 preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_PTRC/Westbrook/data/phosphoproteome-ratio-norm-NArm.gct',
   gct.str='//flynn-cifs/prot_proteomics/LabMembers/Karsten/Projects/20180122_CPATC3_PTRC/Westbrook/data/phosphoproteome-ratio-norm-NArm.gct', 
-  level=c('site', 'gene'), 
+  level=c('site', 'gene'),
+  id.type=c('sm', 'wg'), # sm-Spectrum Mill; wg-Web Gestalt
   mode=c('mean', 'median', 'sd'),
   mod.res=c('S|T|Y', 'K'), #modified residue(s)
   mod.type=c('-p', '-ac', '-ub'),
-  acc.type=c('uniprot', 'refseq'),
+  acc.type=c('uniprot', 'refseq', 'symbol'),
   org=c('human', 'mouse', 'rat'),
   appenddim=T,
   do.it=T   ## flag, if FALSE nothing will be done 
@@ -169,6 +170,7 @@ preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_P
   mod.type <- match.arg( mod.type )
   acc.type <- match.arg( acc.type )
   org <- match.arg(org)
+  id.type <- match.arg(id.type)
   
   
   #import GCT---------
@@ -251,110 +253,116 @@ preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_P
       #rid <- site.ids
     }
     
-    #localized sites----
-    # - index of fully localized sites 
-    loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
-    
-    # update GCT
-    rid <- rid[ loc.idx ]
-    site.ids <- site.ids[ loc.idx ]
-    mat <- mat[loc.idx, ]
-    rdesc <- rdesc[loc.idx,]
-    
-    #parse UniProt accession----
-    ## the code below works for UniProt accession numbers. Leave as is for the time being
-    ## and merge at a later point
-    #if(acc.type == 'uniprot'){
-    
-    ## variable sites
-    site.var <- sub('^(.*?_.*?)_.*', '\\1', site.ids)
-    names(site.var) <- names(site.ids)
-    
-    ## accession number plus modified residue
-    all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
-      prot.acc=sub('_.*', '', x[1])
-      x=sub('.*?_', '', x)
-      paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+    ## ###############################################
+    ## gene symbol + site
+    ## EIF2S2.S2
+    if(acc.type == 'symbol'){
       
-    })
-    #names(all.sites) <- site.ids
-    #}
-    #parse RefSeq accessions----
-    ## RefSeq accesion numbers
-    # if(acc.type == 'refseq'){
-    #   
-    #   ## variable sites
-    #   site.var <- sub('^(.*?_.*?_.*?)_.*', '\\1', site.ids)
-    #   
-    #   ## accession number plus modified residue
-    #   all.sites <- lapply( strsplit(site.var, '(s|t|y)'), function(x){ 
-    #     prot.acc=sub('_[S|T|Y].*', '', x[1])
-    #     x=sub('^.*_([S|T|Y].*)$', '\\1', x)
-    #     paste(prot.acc, grep( '(S|T|Y)', x, value=T), sep=';' )
-    #     
-    # #  })
-    #  names(all.sites) <- site.ids
-    #}
-    
-    #redundant sites on multiply modified peptides---- 
-    ## Exclude sites on multiply phosphorylated peptides for which we
-    ## have also detected singly phosphorylated version
-    n.sites <- sapply(all.sites, length)
-    all.sites.mult <- all.sites[which(n.sites > 1)]
-    all.sites.sing <- all.sites[which(n.sites == 1)]
-    all.sites.mult <- lapply(all.sites.mult, function(x){
-      rm.idx=which(x %in% unlist(all.sites.sing))
-      if(length(rm.idx)>0)
-        x=x[-rm.idx]
-      x
-    })
-    all.sites.mult <- all.sites.mult[ sapply(all.sites.mult, length) > 0 ]
-    ## all sites as list
-    all.sites <- append(all.sites.mult, all.sites.sing)
-    all.sites.unique <- unique(unlist(all.sites))
-    
-    sites.dup <- unlist(all.sites)[ duplicated( unlist(all.sites)) ]
-    sites.nondup <- setdiff(all.sites.unique, sites.dup)
-    
-    #prepare site-centric table----
-    mat.ss <- matrix(NA, nrow=length(all.sites.unique), ncol=ncol(mat), dimnames=list(all.sites.unique, cid))
-    
-    # map of row indices between site-centric and original table
-    ##map.idx <- lapply(rownames(mat.ss), function(x) grep(x, all.sites))
-    #cat('yeppp111\n')
-    #cl <- makeCluster(detectCores()-1)
-    #registerDoParallel(cl)
-    #map.idx <-  foreach(x = rownames(mat.ss)) %dopar% {function(x) grep(paste(x, '($|\\")', sep=''), all.sites)}
-    #on.exit(stopCluster(cl))
-    #cat('yeppp\n')
-    map.idx <- lapply(rownames(mat.ss), function(x) names(all.sites)[grep(paste(x, '($|\\")', sep=''), all.sites)])
-    names(map.idx) <- rownames(mat.ss)
-    
-    #combine expression of duplicated sites
-    for(s in sites.dup){
-      mat.tmp <- mat[map.idx[[s]], ]
-      mat.ss[s, ] <- apply(mat.tmp, 2, eval(parse(text=mode)), na.rm=T)
+      #map to UniProt
+      up <- RefSeq2UniProt( sub('^(.*?)\\..*', '\\1', site.ids), keytype = 'SYMBOL' )$id.map$id.mapped
+      mapped.idx <- which(!is.na(up))
+      
+  
+      ## update
+      up <- up[mapped.idx]
+      site.ids <- site.ids[mapped.idx]
+      rid <- rid[mapped.idx]
+      mat <- mat[mapped.idx, ]
+      rdesc <- rdesc[mapped.idx, ]
+      
+      ## creat PTM-SEA compatible ids
+      site.ids <- glue("{up};{sub('^(.*?)\\\\.(.*)', '\\\\2', site.ids)}{mod.type}")
+      names(site.ids) <- rid
     }
-    mat.ss[names(map.idx[sites.nondup]), ] <- data.matrix( mat[unlist(map.idx[sites.nondup]), ] )
     
+    ## Spectrum Mill VM site ids
+    if(id.type == 'sm'){
+      #localized sites----
+      # - index of fully localized sites 
+      loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
     
+      # update GCT
+      rid <- rid[ loc.idx ]
+      site.ids <- site.ids[ loc.idx ]
+      mat <- mat[loc.idx, ]
+      rdesc <- rdesc[loc.idx,]
+  
+      ## variable sites
+      site.var <- sub('^(.*?_.*?)_.*', '\\1', site.ids)
+      names(site.var) <- names(site.ids)
+    
+      ## accession number plus modified residue
+      all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
+        prot.acc=sub('_.*', '', x[1])
+        x=sub('.*?_', '', x)
+        paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+      
+      })
+
+      #redundant sites on multiply modified peptides---- 
+      ## Exclude sites on multiply phosphorylated peptides for which we
+      ## have also detected singly phosphorylated version
+      n.sites <- sapply(all.sites, length)
+      all.sites.mult <- all.sites[which(n.sites > 1)]
+      all.sites.sing <- all.sites[which(n.sites == 1)]
+      all.sites.mult <- lapply(all.sites.mult, function(x){
+        rm.idx=which(x %in% unlist(all.sites.sing))
+        if(length(rm.idx)>0)
+          x=x[-rm.idx]
+        x
+      })
+      all.sites.mult <- all.sites.mult[ sapply(all.sites.mult, length) > 0 ]
+      ## all sites as list
+      all.sites <- append(all.sites.mult, all.sites.sing)
+      all.sites.unique <- unique(unlist(all.sites))
+      
+      sites.dup <- unlist(all.sites)[ duplicated( unlist(all.sites)) ]
+      sites.nondup <- setdiff(all.sites.unique, sites.dup)
+      
+      #prepare site-centric table----
+      mat.ss <- matrix(NA, nrow=length(all.sites.unique), ncol=ncol(mat), dimnames=list(all.sites.unique, cid))
+      
+      # map of row indices between site-centric and original table
+      ##map.idx <- lapply(rownames(mat.ss), function(x) grep(x, all.sites))
+      #cat('yeppp111\n')
+      #cl <- makeCluster(detectCores()-1)
+      #registerDoParallel(cl)
+      #map.idx <-  foreach(x = rownames(mat.ss)) %dopar% {function(x) grep(paste(x, '($|\\")', sep=''), all.sites)}
+      #on.exit(stopCluster(cl))
+      #cat('yeppp\n')
+      map.idx <- lapply(rownames(mat.ss), function(x) names(all.sites)[grep(paste(x, '($|\\")', sep=''), all.sites)])
+      names(map.idx) <- rownames(mat.ss)
+      
+      #combine expression of duplicated sites
+      for(s in sites.dup){
+        mat.tmp <- mat[map.idx[[s]], ]
+        mat.ss[s, ] <- apply(mat.tmp, 2, eval(parse(text=mode)), na.rm=T)
+      }
+      mat.ss[names(map.idx[sites.nondup]), ] <- data.matrix( mat[unlist(map.idx[sites.nondup]), ] )
+      
+      #update GCT----
+      ## - multiple sites (rids) have been combined.
+      ## - pick single rid for combined sites
+      idx <- sapply(map.idx, function(x)x[1])
+      #rid.org <- rid
+      #rdesc.org <- rdesc
+      rid <- rid[ idx ]
+      names(rid) <- names(map.idx)
+      rdesc <- rdesc[idx, ]
+      VMsitesAll <- sapply(map.idx, function(x) paste(names(all.sites)[x], collapse='|'))
+      rdesc <- data.frame(rdesc, VMsitesAll)
+      
+      #create site ids-----
+      ptm.site.ids <- paste(names(map.idx), mod.type, sep=ifelse(length(grep('^-', mod.type)) > 0, '','-'))
+      
+    } else { # end if Spectrum Mill VM ids
+      ## assume input is site centric
+      ptm.site.ids <- site.ids
+      mat.ss <- mat
+    }
     #mat[names(all.sites[map.idx[[sites.dup[1]]]]), ]
     
-    #update GCT----
-    ## - multiple sites (rids) have been combined.
-    ## - pick single rid for combined sites
-    idx <- sapply(map.idx, function(x)x[1])
-    #rid.org <- rid
-    #rdesc.org <- rdesc
-    rid <- rid[ idx ]
-    names(rid) <- names(map.idx)
-    rdesc <- rdesc[idx, ]
-    VMsitesAll <- sapply(map.idx, function(x) paste(names(all.sites)[x], collapse='|'))
-    rdesc <- data.frame(rdesc, VMsitesAll)
-    
-    #create site ids-----
-    ptm.site.ids <- paste(names(map.idx), mod.type, sep=ifelse(length(grep('^-', mod.type)) > 0, '','-'))
-    
+       
     ##rid <- ptm.site.ids
     rownames(mat.ss) <- rownames(rdesc) <- rid <- ptm.site.ids
     #export GCT
