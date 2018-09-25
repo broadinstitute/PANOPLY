@@ -3,6 +3,7 @@ MAINTAINER manidr@broadinstitute.org
 
 COPY src /prot/proteomics/Projects/PGDAC/src
 COPY data /prot/proteomics/Projects/PGDAC/data
+COPY packages /prot/proteomics/Projects/PGDAC/packages
 COPY R-utilities /prot/proteomics/Projects/R-utilities
 
 ## install additional libraries required for PGDAC pipeline components
@@ -19,7 +20,7 @@ RUN R -e "library(pacman);p_install('pheatmap')"
 RUN R -e "library(pacman);p_install('RColorBrewer')"
 RUN R -e "library(pacman);p_install('NbClust')"
 # samr not avauilable on CRAN since July 20, 2018
-RUN R -e "install.packages('packages/samr_2.0.tar.gz', repos=NULL, type='source', dependencies=T)"
+RUN R -e "install.packages('/prot/proteomics/Projects/PGDAC/packages/samr_2.0.tar.gz', repos=NULL, type='source', dependencies=T)"
 RUN R -e "library(pacman);p_install('rjson')"
 RUN R -e "library(pacman);p_install('GlobalOptions')"
 RUN R -e "library(pacman);p_install('GetoptLong')"
