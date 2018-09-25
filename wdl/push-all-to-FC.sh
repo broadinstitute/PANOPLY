@@ -24,5 +24,6 @@ firecloud -u https://api.firecloud.org/api -m push -s broadcptac -n pgdac_ssgsea
 
 # Workflows
 firecloud -u https://api.firecloud.org/api -m push -s broadcptac -n pgdac_main -t Workflow -y "PGDAC Main pipeline" workflows/pgdac_main/pgdac_main.wdl
+firecloud -u https://api.firecloud.org/api -m push -s broadcptac -n pgdac_main_ext -t Workflow -y "PGDAC Main pipeline for external, normalized data" workflows/pgdac_main_ext/pgdac_main_ext.wdl
 firecloud -u https://api.firecloud.org/api -m push -s broadcptac -n pgdac_cmap_analysis -t Workflow -y "PGDAC CMAP analysis" workflows/pgdac_cmap_analysis/pgdac_cmap_analysis.wdl
 firecloud -u https://api.firecloud.org/api -m push -s cptac -n cptac_outlier_analysis -t Workflow -y "CPTAC NYU outlier analysis" workflows/outlier_analysis/outlier_analysis.wdl
