@@ -16,7 +16,7 @@ this.file.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', this.file.dir))
 #cat('------:',this.file.dir, '\n')
 source(paste(this.file.dir,  'my_plots.r', sep='/'))
 source(paste(this.file.dir,  'my_io.r', sep='/'))
-source(paste(this.file.dir,  'consensu_clustering.R', sep='/'))
+source(paste(this.file.dir,  'consensus_clustering.R', sep='/'))
 
 ## libraries
 require('pacman')
@@ -469,7 +469,7 @@ main <- function(opt){
         ##
         ## #######################################################################
         for(rank in as.character(ranks)){
-          
+        #for(rank in as.character(ranks[5:7])){
           dir.create(paste('K', rank, sep='_'))
           setwd(paste('K', rank, sep='_'))
         
@@ -498,7 +498,7 @@ main <- function(opt){
           NMF.basis <- predict(res)
           NMF.consensus <- predict(res, 'consensus')
           
-          ## map consensuns to basis
+          ## map consensus to basis
           NMF.consensus.map <- NMF.consensus
           for(ii in 1:as.numeric(rank))
             NMF.consensus[ NMF.consensus == ii ] <-  NMF.basis[NMF.consensus == ii]
@@ -510,7 +510,7 @@ main <- function(opt){
           write.table(cdesc, file=paste('clin_anno_nmf.txt'), sep='\t', quote=F, na='', col.names=NA)
             
           ## add to heatmap annotation tracks
-          variable.other <- c('NMF.consensus', variable.other)
+          variable.other <- c('NMF.consensus',  'NMF.consensus.mapped', variable.other)
         
              
           ## #######################################################################################################
@@ -554,9 +554,9 @@ main <- function(opt){
             #NMF.consensus.col <- c(NMF.consensus.col, col.tmp)
             NMF.consensus.col[idx.tmp] <- col.tmp
           }
-          
-          cdesc.color$NMF.consensus <- NMF.consensus.col
-          names(cdesc.color$NMF.consensus) <- 1:length(NMF.consensus.col)
+          cdesc$NMF.consensus.mapped <-  cdesc$NMF.consensus
+          cdesc.color$NMF.consensus.mapped <- NMF.consensus.col
+          names(cdesc.color$NMF.consensus.mapped) <- 1:length(NMF.consensus.col)
           
     
           ## ########################################
@@ -621,17 +621,6 @@ main <- function(opt){
                      annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
                      cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
                      filename=paste('3.3_consensus_matrix_bootstrap_nrun_', nrun.bs,'_NMF_ordered.pdf', sep=''))
-            
-            #cons.bs.rand <- res.cons.random[[as.character( rank )]]
-            #pheatmap(cons.bs.rand, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-            #         annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
-            #         cellwidth = cw-10, cellheight = ch-10,
-            #         filename=paste('3.3_consensus_matrix_RANDOM_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
-            
-            
-            
-            ##V.hat = fitted(res)
-            ##fit(res)
             
             ## ###############################################################
             ##
@@ -813,9 +802,9 @@ main <- function(opt){
                   m[m > m.max] <- m.max
                   m[m < -m.max] <- -m.max
                 }
-                pheatmap(m[, order(cdesc$NMF.consensus)], scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+                pheatmap(m[, order(cdesc$NMF.consensus)], scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
                          annotation_colors=cdesc.color, filename=paste('5.',i-1,'_heatmap_expression_basis_', i, '.pdf', sep=''),  
-                         breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cellwidth = cw,
+                         breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cellwidth = cw, cellheight=ch-(ch/2),
                          main=names(NMF.consensus.col)[i], cluster_cols = F)
                 
             }
@@ -867,8 +856,6 @@ main <- function(opt){
             ord.idx <- order(cdesc.ord$NMF.consensus)
             
             ## column annotations
-            
-            
             cdesc.ha <- HeatmapAnnotation(df=cdesc[ ord.idx, rev(c(class.variable, variable.other))], col=cdesc.color)
             
             m <- m[, colnames(m)[ord.idx]]
@@ -893,7 +880,30 @@ main <- function(opt){
               })
             }
             dev.off()
-            #draw(rdesc.ha + hm)
+            
+            ## ####################################################
+            ## z-scored matrix
+            hm.scaled <- Heatmap(scale(m), col=rev(brewer.pal (11, "RdBu")), 
+                          cluster_columns = F,
+                          top_annotation = cdesc.ha, 
+                          split = sub('-.*','',rownames(m)),
+                          row_dend_side = 'right',
+                          name='NMF features',
+                          show_row_names = F)
+            ## plot
+            pdf('6.1_ComplexHeatmap_ALL_features_z-score.pdf')
+            draw(hm.scaled)
+            for(an in rev(c(class.variable, variable.other)) ) {
+              decorate_annotation(an, {
+                # annotation names on the right
+                grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
+                # annotation names on the left
+                #grid.text(an, unit(0, "npc") - unit(2, "mm"), 0.5, default.units = "npc", just = "right")
+              })
+            }
+            dev.off()
+            
+            
             
             ## ############################################################
             ## plot ALL markersbut without CNV
@@ -922,7 +932,9 @@ main <- function(opt){
                   m[m > 1] <- 1
                   m[m < -1] <- -1
                   m.max <- ceiling(max(abs(m), na.rm=T))
-                  pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.2_heatmap_ALL_features_CNV_only.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
+                  #pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.2_heatmap_ALL_features_CNV_only.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
+                  pheatmap(m[,  rownames(cdesc)[cdesc$NMF.consensus %>% as.numeric %>% order ] ], scale='none', fontsize_row=3, annotation_col=cdesc[rownames(cdesc)[cdesc$NMF.consensus %>% as.numeric %>% order ] , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color,
+                           cluster_cols = F, filename='6.2_heatmap_ALL_features_CNV_only.pdf', show_rownames=T,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
                 }
             }
             
@@ -936,7 +948,6 @@ main <- function(opt){
             if(!is.null(genes.of.interest))
             {
               
-            
               pdf('barchart_positive_controls.pdf', 3, 3)
                for(i in genes.of.interest){
              
@@ -1010,7 +1021,8 @@ main <- function(opt){
             
             ## plot
             pdf(paste('9.0_PCA.pdf'))
-            plot(pc1, pc2, col=col,  cex=2, main=paste('PCA: ', paste(names(data.str), collapse=', '), '\n', paste(paste(dim(expr), collapse=' x '), 'matrix')), xlab='PC 1', ylab='PC2', pch=pch.vec[ kmeans(cbind(pc1, pc2), rank)$cluster] )
+            #plot(pc1, pc2, col=col,  cex=2, main=paste('PCA: ', paste(names(data.str), collapse=', '), '\n', paste(paste(dim(expr), collapse=' x '), 'matrix')), xlab='PC 1', ylab='PC2', pch=pch.vec[ kmeans(cbind(pc1, pc2), rank)$cluster] )
+            plot(pc1, pc2, col=col,  cex=2, main=paste('PCA: ', paste(names(data.str), collapse=', '), '\n', paste(paste(dim(expr), collapse=' x '), 'matrix')), xlab='PC 1', ylab='PC2' )
             pointLabel(pc1, pc2, labels=cdesc[,1], col=col, offset=50, method='SANN', cex=.5)
             legend('topright', legend=names(col.tmp), pch=16, cex=1, col=col.tmp, bty='n')
             
@@ -1041,7 +1053,8 @@ main <- function(opt){
             ## correct colors
             ## plot
             pdf(paste('9.1_PCA_NMF_features.pdf'))
-            plot(pc1, pc2, col=col,  cex=2, main=paste('PCA on NMF features: ', paste(names(data.str), collapse=', '), '\n', paste(paste(dim(expr.nmf), collapse=' x '), 'matrix')), xlab='PC 1', ylab='PC2', pch=pch.vec[ kmeans(cbind(pc1, pc2), rank)$cluster])
+            #plot(pc1, pc2, col=col,  cex=2, main=paste('PCA on NMF features: ', paste(names(data.str), collapse=', '), '\n', paste(paste(dim(expr.nmf), collapse=' x '), 'matrix')), xlab='PC 1', ylab='PC2', pch=pch.vec[ kmeans(cbind(pc1, pc2), rank)$cluster])
+            plot(pc1, pc2, col=col,  cex=2, main=paste('PCA on NMF features: ', paste(names(data.str), collapse=', '), '\n', paste(paste(dim(expr.nmf), collapse=' x '), 'matrix')), xlab='PC 1', ylab='PC2')
             pointLabel(pc1, pc2, labels=cdesc[,1], col=col, offset=20, method='SANN', cex=.5)
             legend('topright', legend=names(col.tmp), pch=16, cex=1, col=col.tmp, bty='n')
             
