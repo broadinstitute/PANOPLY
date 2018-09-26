@@ -9,8 +9,9 @@ cp -r ../../src . || true
 rm -rf src/.Rproj* src/*.Rproj
 dos2unix src/*
 
-cp -r ../../data . || true
-cp -r ../packages . || true
+cp -r -L ../../data . || true
+cp -r -L ../packages . || true
+# in the above dereference any symbolic links using -L
 
 # also update R-utilities to include changes without having to rebuild r-util
 mkdir R-utilities
