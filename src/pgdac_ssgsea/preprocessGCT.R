@@ -133,14 +133,14 @@ RefSeq2UniProt <- function(ids, n.try=10 ){
 # - create gene-centric GCT
 preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_PTRC/Westbrook/data/phosphoproteome-ratio-norm-NArm.gct',
                           gct.str='//flynn-cifs/prot_proteomics/LabMembers/Karsten/Projects/20180122_CPATC3_PTRC/Westbrook/data/phosphoproteome-ratio-norm-NArm.gct', 
-                          level=c('site', 'gene'), 
+                          level=c('site', 'gene'),  
                           mode=c('mean', 'median', 'sd'),
                           mod.res=c('S|T|Y', 'K'), #modified residue(s)
                           mod.type=c('-p', '-ac', '-ub'),
                           acc.type=c('uniprot', 'refseq'),
                           org=c('human', 'mouse', 'rat'),
                           appenddim=T,
-                          do.it=T   ## flag, if FALSE nothing will be done 
+                          do.it=T   ## flag, if FALSE nothing will be done; for compatibility reasons
                           ){
   
   ## imediatly return
@@ -197,7 +197,9 @@ preprocessGCT <- function(#gct.str='/media/sf_Karsten/Projects/20180122_CPATC3_P
   #parse GCT object
   mat <- gct@mat
   rid <- gct@rid
+  if(is.null(rid)) rid <- rownames(mat)
   cid <- gct@cid
+  if(is.null(cid)) cid <- colnames(mat)
   cdesc <- gct@cdesc
   rdesc <- gct@rdesc
     

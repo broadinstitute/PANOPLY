@@ -1,21 +1,130 @@
 ## 20151013 collection of plotting functions
 library(pacman)
 
-#OS <- Sys.info()['sysname']
-#if(OS == 'Windows')
-#  url.stem <- 'C:/Users/karsten/Dropbox/Devel/R-code/'
-#  ##  url.stem <- '//flynn-cifs/prot_proteomics/'
-#if(OS == 'Linux')
-#  url.stem <- '~/karsten/'
-#if(OS == 'Darwin')
-#  url.stem <- '/Volumes/prot_proteomics/'
+
+OS <- Sys.info()['sysname']
+if(OS == 'Windows')
+  url.stem <- 'C:/Users/karsten/Dropbox/Devel/R-code/'
+  ##  url.stem <- '//flynn-cifs/prot_proteomics/'
+if(OS == 'Linux')
+  url.stem <- '~/karsten/'
+if(OS == 'Darwin')
+  url.stem <- '/Volumes/prot_proteomics/'
   
 
 
-#source(paste(url.stem, "misc.r", sep='/') )
+source(paste(url.stem, "misc.r", sep='/') )
 
 ##source(paste("c:/Users/Karsten/Dropbox/Devel/Code/misc.r", sep='/') )
 
+## ###########################################################################
+## ssGSEA volcano
+##
+##
+gsea_volc <- function(x, y, s=NULL, pch.cex=NULL, ids=NULL, l=NULL, lcol=NULL, fdr.max=0.05, alpha=150, ...){
+  # x - logFC
+  # y - log p-val
+  # s - index of significant features
+  # pch.cex - point size
+  # ids - unique ids for features
+  # l - named list of characters of labels
+  # l.col - names list (same as l) defining colors
+  # fdr.max -only used as label in legend; ought to be consistent to 's'
+  # alpha - passed to 'my.col2rgb'
+  
+  col=my.col2rgb('grey', alpha)
+  col.b <- my.col2rgb('grey 20', alpha) # border
+  
+  col.dn <- my.col2rgb('lightblue', alpha)
+  col.up <- my.col2rgb('coral1', alpha)
+  
+  pch <- 21
+  pch.org <- pch
+  #pch.b <- 21 # border
+  
+  pch.sig <- 23
+  pch.sig.org <- pch.sig
+  #pch.sig.b <- 23 # border
+  
+  if(is.null(pch.cex)) pch.cex <- 1
+  
+  ## pch and col
+  if(!is.null(s)){
+    # color points
+    col=rep(col, length(x))
+    col[ s[x[s] > 0] ] <- col.up
+    col[ s[x[s] < 0] ] <- col.dn
+    
+    # border border
+    col.b=rep(col.b, length(x))
+    #col.b[ s[x[s] > 0] ] <- col.up
+    #col.b[ s[x[s] < 0] ] <- col.dn
+    
+    ## pch
+    pch=rep(pch, length(x))
+    pch[s] <- rep(pch.sig, length(s))
+    ## pch border
+    #pch.b=rep(pch.b, length(x))
+    #pch.b[s] <- rep(pch.sig.b, length(s))
+  }
+  ## map labels
+  if(is.null(ids))
+    ids <- 1:length(x) %>% as.character()
+  
+  ## plot  
+  plot(x, y, col=col.b, bg=col, pch=pch, cex=pch.cex, xlab=expression(log(FC)), ylab=expression(-10*log[10](p-value)), ...)
+  abline(v=0, lty='dashed', lwd=2, col='grey')
+  #points(x, y, col=col.b, bg=col.b ,pch=pch.b, cex=pch.cex)
+  
+  ## labels
+  if(!is.null(l)){
+    ## loop over label groups
+    for(j in 1:length(l)){
+      ## match to 'ids'
+      l.idx <- grep(l[[j]], ids)
+      l.lab <- sub('.*?_','',grep(l[[j]], ids, value=T))
+      ## label if found
+      if(length(l.idx) > 0){
+        
+        ## right side
+        l.idx.up <- l.idx[ which(x[l.idx] > 0) ] 
+        l.lab.up <- l.lab[ which(x[l.idx] > 0) ]
+        if(length(l.idx.up)>0)
+          #text(x=xlim[2], y=y[l.idx.up], labels = l.lab.up, cex=0.6, pos=2, col=lcol[[j]])
+          text(x=x[l.idx.up]+0.5, y=y[l.idx.up], labels = l.lab.up, cex=0.6, pos=4, col=lcol[[j]])
+        ## left side
+        l.idx.dn <- l.idx[which(x[l.idx] < 0)]
+        l.lab.dn <- l.lab[ which(x[l.idx] < 0) ]
+        if(length(l.idx.dn))
+          text(x=x[l.idx.dn]-0.5, y=y[l.idx.dn], labels = l.lab.dn, cex=0.6, pos=2, col=lcol[[j]])
+        #text(x=xlim[1], y=y[l.idx.dn], labels = l.lab.dn, cex=0.6, pos=4, col=lcol[[j]])
+        
+        points(x[l.idx], y[l.idx], col=lcol[[j]], bg=my.col2rgb(lcol[[j]], alpha), pch=pch[l.idx], cex=pch.cex[l.idx])
+      }
+    }
+  }
+  
+  legend('topright', legend=names(lcol), col=unlist(lcol), pch=20, cex=0.8, pt.cex=2, bty='n')
+  legend('topleft', legend=c(paste('FDR >=', fdr.max), paste('FDR <', fdr.max)), col='black', pch=c(pch.org, pch.sig.org), bty='n', cex=0.8, pt.cex=1.6)
+  legend('top', legend=c('100%', '50%', '10%') , pch=21, pt.cex=c(2, 1, 0.2), bty='o', title='Signature coverage', ncol = 3, cex=.8, bg='white', box.col='white')
+}
+## ###############################################################
+## gsea_volc_ly
+gsea_volc_ly <- function(fc, logP, fdr, id, perc, perc.scale=3, fdr.max, main=''){
+  require(plotly)
+  dat <- data.frame(fc, logP, fdr, id, perc, 
+                    cex=perc/perc.scale,
+                    info=paste(id,'\nFDR: ', round(fdr,3), '\n% detect: ', perc, sep=''))
+  sig <- which(fdr < fdr.max)
+  dat.bg <- dat[-sig, ]
+  dat.sig <- dat[sig, ]
+  
+  p <- plot_ly(x=dat.bg$fc, y=dat.bg$logP, text=dat.bg$info, 
+               type='scatter', mode='markers', marker=list(size=dat.bg$cex, color='grey'), name=paste('FDR>=', fdr.max, sep='') ) 
+  p <- p %>% add_trace(x=dat.sig$fc, y=dat.sig$logP, text=dat.sig$info, type='scatter', mode='markers', marker=list(size=dat.sig$cex, color='red'), name=paste('FDR<', fdr.max, sep=''))
+  p <- p %>% layout(title=main)
+  return(p)
+}
 
 #################################################################################################
 ##            multiscatterplot using hexagonal binning
@@ -166,8 +275,15 @@ my.col2rgb <- function(color, alpha=80, maxColorValue=255){
 ## 20110217 added support for matrices
 ## 20140201 'cex.numb'
 #####################################################
-fancyBarplot <- function(x, space=0.2, ylim=c(0, max(x, na.rm=T)+ 0.15*max(x, na.rm=T)), ndigits=3, add.numb=T, cex.numb=.9, srt=90, border=NA, ...)
+fancyBarplot <- function(x, space=0.2, 
+                         ylim=c(0, max(x, na.rm=T)+ 0.15*max(x, na.rm=T)), 
+                         ndigits=3, 
+                         add.numb=T,
+                         numb=c('counts', 'dev.median.perc'),
+                         cex.numb=.9, srt=90, border=NA, ...)
 {
+  numb <- match.arg(numb)
+  
   #########################################
   #         vector
   #########################################
@@ -176,9 +292,27 @@ fancyBarplot <- function(x, space=0.2, ylim=c(0, max(x, na.rm=T)+ 0.15*max(x, na
     barplot(x, space=space, ylim=ylim, border=border, ...)
     
     # add numbers
-    if(add.numb) text(  seq( 0.5+space, (0.5+space)+((length(x)-1)*(1+space)), 1+space ),
-                        x+(0.05*max(x)), round(x, ndigits), srt=srt, pos=4, offset=-0.05, cex=cex.numb )
-  } else{
+    if(add.numb){
+      if(numb=='counts'){
+        numb.to.add <- x
+        ## add to plot
+        text(  seq( 0.5+space, (0.5+space)+((length(numb.to.add)-1)*(1+space)), 1+space ),
+               x+(0.05*max(x)), round(numb.to.add, ndigits), srt=srt, pos=4, offset=-0.05, cex=cex.numb )
+      }
+      
+      if(numb == 'dev.median.perc'){
+        numb.median <- median(x, na.rm=T)
+        numb.to.add <- sapply(x, function(y) 100*(y-numb.median)/numb.median )
+        abline(h=numb.median, col='darkblue', lty='dashed')
+        #legend('topleft', legend=c(paste('Median:', round(numb.median, ndigits))), bty='n', text.col = 'darkblue')
+        mtext(c(paste('Median:', round(numb.median, ndigits))),side = 2, at = numb.median, col = 'darkblue', cex = 0.8)
+        ## add to plot
+        text(  seq( 0.5+space, (0.5+space)+((length(numb.to.add)-1)*(1+space)), 1+space ),
+               x+(0.05*max(x)), paste(round(numb.to.add, ndigits),'%', sep=''), srt=srt, pos=4, offset=-0.05, cex=cex.numb )
+      }
+        }
+      
+    } else{
     
     #########################################
     #        matrix
@@ -485,7 +619,14 @@ fancyPlot <- function(x, y, rug=F, grid=T, reg=c("none", "linear", "loess"), reg
   ########################################
   #            plot
   #########################################
-  scatterplot(x,y, col=col, pch=pch, boxplots=boxplots, reg.line=F, smooth=F, sub=paste("N=", length(x),sep=""), groups=groups, reset.par=reset.par ,legend.plot=ifelse(length(groups) == 1, F, T), cex=cex.pch, ...)
+ # rver <- Rversion() 
+  rver <-  paste(version$major, version$minor, sep='.')
+  if(rver != "3.5.0")
+    scatterplot(x,y, col=col, pch=pch, boxplots=boxplots, reg.line=F, smooth=F, sub=paste("N=", length(x),sep=""), groups=groups, reset.par=reset.par ,legend.plot=ifelse(length(groups) == 1, F, T), cex=cex.pch, ...)
+  else{
+    
+    scatterplot(x,y, col=col, pch=pch, boxplots=boxplots, regLine=F, smooth=F, sub=paste("N=", length(x),sep=""), reset.par=reset.par , cex=cex.pch, ...)
+  }
   
   # grid
   if(grid) grid()
@@ -643,7 +784,7 @@ fancyBoxplot <- function(x,
     x = unlist(x)
     plot(NA, axes=F, xlab=xlab, ylab=ylab, ylim=ylim, type="n", main=main, ...)
     
-    vioplot( x, add=T, at=1, col=col, drawRect=drawRect, wex=vio.wex, ...)
+    try(vioplot( x, add=T, at=1, col=col, drawRect=drawRect, wex=vio.wex, ...))
     boxplot( x, add=T, at=1, border=box.border, pch=box.pch, ...)
   }
   
@@ -691,7 +832,7 @@ fancyBoxplot <- function(x,
       
       if(length(x[[i]]) > 0){
         
-        vioplot( x[[i]], add=T, at=at[i], col=my.col2rgb(col[i], vio.alpha), drawRect=drawRect, border=F, wex=vio.wex,...)
+        try(vioplot( x[[i]], add=T, at=at[i], col=my.col2rgb(col[i], vio.alpha), drawRect=drawRect, border=F, wex=vio.wex,...))
         boxplot( x[[i]], add=T, at=at[i], border=box.border[i], pch=box.pch, col=col[i], axes=F,...)
         
         if(show.numb=='median')
@@ -1983,7 +2124,8 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
                         class_vector_levels=NULL, ## specify levels of interest 
                         hm_color_scheme=c('cyan2brown','blue2red'),
                         fdr.max=0.01,        ## max FDR; cells will be marked with 'cellnote_pch'  
-                        fdr.rep=4,
+                        fdr.rep=4,           ## min. number of replicates in 'class_vector'
+                        regex=NULL,          ## regular expression applied to @rid
                         cellnote_pch='*',
                         cellnote_size=15,
                         cellnote_color='grey30',
@@ -1996,7 +2138,9 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
                         sort_col=F,        ## if TRUE columns will be sorted according to 'class vector' and NOT be clustered
                         cluster_rows=T,
                         cluster_cols=T,
-                        ...){
+                        exclude.from.cdesc=c('SM.id','Age', 'QC.status', 'QC.status.1', 'Race', 'Ethnicity', 'Ischemia.Time', 'normalization', 'Total.Cellularity', 'Tumor.Cellularity','Sample.Type', 'Channel', 'Sample.ID', 'Experiment', 'Necrosis'),
+                        ...  ## further arguments passed to pheatmap
+                        ){
   
   require(pacman)
   p_load(cmapR)
@@ -2010,14 +2154,42 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
   gct <- parse.gctx(gct.str)
   
   ## extract scores
-  score <- gct@mat
+  score <- gct@mat %>% data.matrix
   rownames(score) <- gct@rid
   colnames(score) <- gct@cid
   
+  ## regex
+  if(!is.null(regex)){
+    idx <- grep(regex, gct@rid)
+    
+    if(length(idx) ==  0)
+      stop(paste('\n\nNo signatures found:', regex, '\n\n'))
+    
+    score <- score[idx, ]
+    gct@rdesc <- gct@rdesc[idx, ]
+    gct@mat <- gct@mat[idx, ]
+    
+    ## filename suffix
+    fn.suffix <- gsub('\\^|\\$\\|', '', regex) %>% sub('(-|_)$','', .)
+    
+    if(!is.na(filename))
+      filename <- sub('\\.pdf$', paste('_', fn.suffix, '.pdf', sep=''), filename)
+    
+  } 
+  
   ## extract FDRs
   rdesc <- gct@rdesc
-  fdr <-  rdesc[, grep('fdr.pvalue', colnames(rdesc))]
-  #fdr <-  rdesc[, grep('^pvalue', colnames(rdesc))]
+  fdr <-  rdesc[, grep('fdr.pvalue', colnames(rdesc))] %>% data.matrix
+  
+  score.bin <- score
+  score.bin[score < 0] <- -1
+  score.bin[score > 0] <- 1
+  fdr <- fdr * score.bin
+  
+  ## extract percent overlaps
+  perc.ol <- rdesc[ , grep('Signature.set.overlap.percent', colnames(rdesc))]
+
+  
   
   ## extract colum meta data
   cdesc <- gct@cdesc
@@ -2057,13 +2229,35 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
   #############################################
   #extract significant signatures
   colnames(fdr) <- paste(cdesc[, class_vector], colnames(fdr))
-  gs.signif <- which(apply(fdr, 1, function(x) { sapply( cdesc[, class_vector] %>% unique , function(xx) ifelse( sum(x[grep(paste('^',xx, ' ', sep=''), names(x))] < fdr.max, na.rm=T) >= fdr.rep, 1, 0 )) }) %>% t %>% apply(., 1, sum) > 0) %>% names
+  #gs.signif <- which(apply(fdr, 1, function(x) { sapply( cdesc[, class_vector] %>% unique , function(xx) ifelse( sum(x[grep(paste('^',xx, ' ', sep=''), names(x))] < fdr.max, na.rm=T) >= fdr.rep, 1, 0 )) }) %>% t %>% apply(., 1, sum) > 0) %>% names
+  gs.signif <- which( apply(fdr, 1, function(x) { 
+    sapply( 
+      cdesc[, class_vector] %>% unique ,
+      function(class){
+        # extract FDRs of current class
+        class.fdrs <- x[grep(paste('^',class, ' ', sep=''), names(x))]
+        class.fdrs.sig.idx <- which(abs(class.fdrs) < fdr.max)
+        
+        if(length(class.fdrs.sig.idx) > 0) {
+          class.fdrs.sig <- class.fdrs[ class.fdrs.sig.idx ]
+        } else {
+          return(0)
+        }
+        # require 'min.rep' significant samples regulated in the same direction
+        ifelse( length( class.fdrs.sig)  >= fdr.rep & prod(range( class.fdrs.sig[ class.fdrs.sig != 0] )) > 0, 1, 0 ) 
+        #ifelse( length( class.fdrs.sig)  >= fdr.rep, 1, 0 ) 
+      })
+    }) %>% t %>% apply(., 1, sum) > 0) %>% names
+  
+  #gs.signif %>% t %>% apply(., 1, sum)
+  
+  ##gs.signif <- which(apply(fdr, 1, function(x) { sapply( cdesc[, class_vector] %>% unique , function(xx) ifelse( sum( abs(x[grep(paste('^',xx, ' ', sep=''), names(x))]) < fdr.max & prod(range( x[grep(paste('^',xx, ' ', sep=''), names(x))]  )) > 0, na.rm=T) >= fdr.rep, 1, 0 )) }) %>% t %>% apply(., 1, sum) > 0) %>% names
   
   if(length(gs.signif) == 0)
     stop(paste('\n\nNo gene sets meeting the criteria: FDR <', fdr.max, ' in min.', fdr.rep, 'samples in "', class_vector,'"\n\n' ))
   
   score.signif <- score[gs.signif, ]
-  fdr.signif <- fdr[gs.signif, ]
+  fdr.signif <- abs(fdr[gs.signif, ])
   
   ## use cell notes to mark significant signatures
   cellnote <- apply( fdr.signif, 1, function(x){xx=x;xx[x >= fdr.max]='';xx[x < fdr.max]=cellnote_pch;xx[is.na(x)]='';xx }) %>% t %>% data.frame
@@ -2087,9 +2281,21 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
     color.breaks = seq( min.val, max.val, length.out=9 )
     color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
   }
+  if(!is.null( exclude.from.cdesc)){
+    
+    rm.idx <- which(colnames(cdesc)  %in% exclude.from.cdesc)
+    if(length(rm.idx) > 0)
+      cdesc <- cdesc[, -rm.idx]
+    
+  }
     
   ## plot
-  pheatmap(score.signif, annotation_col=cdesc, annotation_color=anno_colors, display_numbers = cellnote, cutree_cols = cutree_cols, fontsize_number = cellnote_size, number_color= cellnote_color, main=main, color = color.hm, breaks = color.breaks, filename=filename, cluster_cols=cluster_cols, cluster_rows=cluster_rows, gaps_col=gaps_col, ...)
+  #pheatmap(score.signif, annotation_col=cdesc, annotation_row=perc.ol,
+  #         annotation_color=anno_colors, display_numbers = cellnote, cutree_cols = cutree_cols, fontsize_number = cellnote_size, number_color= cellnote_color, main=main, color = color.hm, breaks = color.breaks, filename=filename, 
+  #         cluster_cols=cluster_cols, cluster_rows=cluster_rows, gaps_col=gaps_col, ...)
+  pheatmap(score.signif, annotation_col=cdesc,
+         annotation_color=anno_colors, display_numbers = cellnote, cutree_cols = cutree_cols, fontsize_number = cellnote_size, number_color= cellnote_color, main=main, color = color.hm, breaks = color.breaks, filename=filename, 
+         cluster_cols=cluster_cols, cluster_rows=cluster_rows, gaps_col=gaps_col, ...)
 
   return(0)
   }
