@@ -387,14 +387,14 @@ workflow pgdac_main_ext {
       params=additionalParameters
   }
   
-  call pgdac_rna_protein_correlation_report { 
-    input:
-      tarball=pgdac_rna_protein_correlation.outputs,
-      label=analysisDir,
-      fdr=corr_fdr,
-      type=dataType,
-			tmpDir="tmp"
-  }
+#  call pgdac_rna_protein_correlation_report { 
+#    input:
+#      tarball=pgdac_rna_protein_correlation.outputs,
+#      label=analysisDir,
+#      fdr=corr_fdr,
+#      type=dataType,
+#			tmpDir="tmp"
+#  }
 
   call pgdac_harmonize {
     input: 
@@ -414,13 +414,13 @@ workflow pgdac_main_ext {
       params=additionalParameters
   }
 
-  call pgdac_sampleqc_report {
-    input:
-			tarball=pgdac_sampleqc.outputs,
-			type=dataType,
-			label=analysisDir,
-			tmpDir="tmp"
-  }
+#  call pgdac_sampleqc_report {
+#    input:
+#			tarball=pgdac_sampleqc.outputs,
+#			type=dataType,
+#			label=analysisDir,
+#			tmpDir="tmp"
+#  }
 
   call pgdac_cna_setup {
     input: 
@@ -439,14 +439,14 @@ workflow pgdac_main_ext {
       params=additionalParameters
   }
 
-  call pgdac_cna_correlation_report {
-    input:
-			tarball=pgdac_cna_correlation.outputs,
-			type=dataType,
-			label=analysisDir,
-			fdr=corr_fdr,
-			tmpDir="tmp"
-  }
+#  call pgdac_cna_correlation_report {
+#    input:
+#			tarball=pgdac_cna_correlation.outputs,
+#			type=dataType,
+#			label=analysisDir,
+#			fdr=corr_fdr,
+#			tmpDir="tmp"
+#  }
 
   call pgdac_association {
     input: 
@@ -468,8 +468,8 @@ workflow pgdac_main_ext {
 
   output {
     File output=pgdac_cons_clust.outputs
-    File rna_corr_report=pgdac_rna_protein_correlation_report.report
-		File cna_corr_report=pgdac_cna_correlation_report.report
-		File sample_qc=pgdac_sampleqc_report.report
+#   File rna_corr_report=pgdac_rna_protein_correlation_report.report
+#		File cna_corr_report=pgdac_cna_correlation_report.report
+#		File sample_qc=pgdac_sampleqc_report.report
   }}
 

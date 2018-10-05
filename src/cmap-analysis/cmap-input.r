@@ -4,6 +4,7 @@
 ## generate input data files for CMAP analysis
 generate.cmap.input <- function (target.cna.dir,
                                  cmap.kd.genelist, 
+                                 input.genes='cmap-input-genes-list.txt',   # genes listed here will always be included
                                  group='all',                # subgroup name on which CNA analysis was run
                                  dtype='pome',               # dtype is either pome or mrna
                                  generate.permuted.genesets=0,  # number of permuted datasets to generate
@@ -11,7 +12,9 @@ generate.cmap.input <- function (target.cna.dir,
                                  cna.threshold=0.3,          # copy number up/down if abs (log2(copy number) - 1) is > 0.3
                                  cna.effects.threshold=15,   # min number of tumors with up/down copy number to include gene for CMAP analysis
                                  min.sigevents=20,           # gene must have at least this many significant trans events to be considered  
-                                 top.N=750,
+                                 max.sigevents=1800,         # if a gene has more then max.sigevents, the top max.sigevents will be chosen
+                                                             #  (having >1999 items in a geneset results in a crash -- unix buffer limits?)
+                                 top.N=500,
                                  fdr.pvalue=0.05,
                                  exclude.cis=FALSE,
                                  log.transform=FALSE)
@@ -31,7 +34,7 @@ generate.cmap.input <- function (target.cna.dir,
 
 
   # read in all required tables
-  sigevents <- read.csv (file.path (target.cna.dir, paste (group, dtype, 'vs-cna-sigevents.csv', sep='-')))
+  sigevents.all <- read.csv (file.path (target.cna.dir, paste (group, dtype, 'vs-cna-sigevents.csv', sep='-')))
   pvals <- read.csv (file.path (target.cna.dir, paste (group, dtype, 'vs-cna-pval.csv', sep='-')), row.names=1)
   data <- read.csv (file.path (target.cna.dir, paste (group, dtype, 'matrix.csv', sep='-')))
 
@@ -41,12 +44,19 @@ generate.cmap.input <- function (target.cna.dir,
   write.csv (cis.corr, paste (group, dtype, 'cis-correlation.csv', sep='-'), row.names=FALSE, quote=FALSE)
   
   # filter to determine genes to run CMAP on
+  sigevents <- sigevents.all
   keep <- sigevents[,'HGNCsymbol'] %in% selected.cna.genes & sigevents[,'SignificantEvents'] >= min.sigevents
   sigevents <- sigevents [keep,]
   event.count <- order (sigevents [,'SignificantEvents'], decreasing=TRUE)
   sigevents <- sigevents [ event.count, ]
   # top genes are picked based on (i) number of significant events; and
   # (ii) whether they have been knocked down in the CMAP profiles
+  # if provided, genes listed in input.genes are always retained
+  if (file.exists(input.genes)) {
+    must.keep <- as.character (read.delim (input.genes, header=FALSE)[,1])
+    sigevents <- rbind (sigevents.all [sigevents.all [,'HGNCsymbol'] %in% must.keep, ],
+                        sigevents)
+  }
   cmap.sh.genes <- as.character (read.delim (cmap.kd.genelist, header=FALSE)[,1])
   top.genes <- NULL
   i <- 1
@@ -82,7 +92,8 @@ generate.cmap.input <- function (target.cna.dir,
     
     # get trans genes
     g.pvals <- pvals [, g]
-    siggenes <- rownames (pvals) [g.pvals < fdr.pvalue]
+    max.sigevent.pval <- g.pvals [ order (g.pvals) ] [max.sigevents]
+    siggenes <- rownames (pvals) [g.pvals < min (fdr.pvalue, max.sigevent.pval, na.rm=TRUE)]
     
     # get expression data for trans genes
     g.alldata <- data [ data[,'GeneSymbol'] %in% siggenes,]

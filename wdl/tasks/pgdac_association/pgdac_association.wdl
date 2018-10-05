@@ -24,8 +24,8 @@ task pgdac_association {
 
   runtime {
     docker : "broadcptac/pgdac_main:2"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    memory : select_first ([memory, 16]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
