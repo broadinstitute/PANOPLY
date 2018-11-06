@@ -1,6 +1,6 @@
 ../../tasks/pgdac_rna_protein_correlation
 ../../tasks/pgdac_rna_protein_correlation_report
-../../tasks/pgdac_harmonize
+../../tasks/pgdac_harmonize_ext
 ../../tasks/pgdac_sampleqc
 ../../tasks/pgdac_sampleqc_report
 ../../tasks/pgdac_cna_setup

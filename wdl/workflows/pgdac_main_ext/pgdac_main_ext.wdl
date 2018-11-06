@@ -24,8 +24,8 @@ task pgdac_association {
 
   runtime {
     docker : "broadcptac/pgdac_main:2"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    memory : select_first ([memory, 16]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
@@ -183,16 +183,18 @@ task pgdac_cons_clust {
   }
 }
 
-task pgdac_harmonize {
-  File tarball
+task pgdac_harmonize_ext {
+  File normData
   File rnaExpr
   File cnaExpr
+  File exptDesign
+  String analysisDir
   String type
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-  String outFile = "pgdac_harmonize-output.tar"
+  String outFile = "pgdac_harmonize_ext-output.tar"
 
   Int? memory
   Int? disk_space
@@ -202,7 +204,7 @@ task pgdac_harmonize {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize -i ${tarball} -t ${type} -c ${codeDir} -d ${dataDir} -rna ${rnaExpr} -cna ${cnaExpr} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize -f ${normData} -t ${type} -c ${codeDir} -d ${dataDir} -r ${analysisDir} -e ${exptDesign} -rna ${rnaExpr} -cna ${cnaExpr} -o ${outFile} ${"-m " + subType} ${"-p " + params}
   }
 
   output {
@@ -364,7 +366,7 @@ task pgdac_sampleqc_report {
 }
 
 workflow pgdac_main_ext {
-  File input_tarball
+  File normalized_data
   File exptDesign
   File rnaData
   File cnaData
@@ -378,27 +380,11 @@ workflow pgdac_main_ext {
   File? cluster_enrichment_groups
 
 
-  call pgdac_rna_protein_correlation {
+  call pgdac_harmonize_ext {
     input: 
-      tarball=input_tarball, 
-      rnaExpr=rnaData,
-      type=dataType,
-      subType=dataSubType,
-      params=additionalParameters
-  }
-  
-#  call pgdac_rna_protein_correlation_report { 
-#    input:
-#      tarball=pgdac_rna_protein_correlation.outputs,
-#      label=analysisDir,
-#      fdr=corr_fdr,
-#      type=dataType,
-#			tmpDir="tmp"
-#  }
-
-  call pgdac_harmonize {
-    input: 
-      tarball=pgdac_rna_protein_correlation.outputs, 
+      normData=normalized_data, 
+      exptDesign=exptDesign,
+      analysisDir=analysisDir,
       rnaExpr=rnaData,
       cnaExpr=cnaData,
       type=dataType,
@@ -406,21 +392,39 @@ workflow pgdac_main_ext {
       params=additionalParameters
  }
 
+  call pgdac_rna_protein_correlation {
+    input: 
+      tarball=pgdac_harmonize_ext.outputs, 
+      rnaExpr=rnaData,
+      type=dataType,
+      subType=dataSubType,
+      params=additionalParameters
+  }
+  
+  call pgdac_rna_protein_correlation_report { 
+    input:
+      tarball=pgdac_rna_protein_correlation.outputs,
+      label=analysisDir,
+      fdr=corr_fdr,
+      type=dataType,
+			tmpDir="tmp"
+  }
+
   call pgdac_sampleqc {
     input:
-      tarball=pgdac_harmonize.outputs,
+      tarball=pgdac_harmonize_ext.outputs,
       type=dataType,
       subType=dataSubType,
       params=additionalParameters
   }
 
-#  call pgdac_sampleqc_report {
-#    input:
-#			tarball=pgdac_sampleqc.outputs,
-#			type=dataType,
-#			label=analysisDir,
-#			tmpDir="tmp"
-#  }
+  call pgdac_sampleqc_report {
+    input:
+			tarball=pgdac_sampleqc.outputs,
+			type=dataType,
+			label=analysisDir,
+			tmpDir="tmp"
+  }
 
   call pgdac_cna_setup {
     input: 
@@ -439,14 +443,14 @@ workflow pgdac_main_ext {
       params=additionalParameters
   }
 
-#  call pgdac_cna_correlation_report {
-#    input:
-#			tarball=pgdac_cna_correlation.outputs,
-#			type=dataType,
-#			label=analysisDir,
-#			fdr=corr_fdr,
-#			tmpDir="tmp"
-#  }
+  call pgdac_cna_correlation_report {
+    input:
+			tarball=pgdac_cna_correlation.outputs,
+			type=dataType,
+			label=analysisDir,
+			fdr=corr_fdr,
+			tmpDir="tmp"
+  }
 
   call pgdac_association {
     input: 
@@ -468,8 +472,8 @@ workflow pgdac_main_ext {
 
   output {
     File output=pgdac_cons_clust.outputs
-#   File rna_corr_report=pgdac_rna_protein_correlation_report.report
-#		File cna_corr_report=pgdac_cna_correlation_report.report
-#		File sample_qc=pgdac_sampleqc_report.report
+    File rna_corr_report=pgdac_rna_protein_correlation_report.report
+		File cna_corr_report=pgdac_cna_correlation_report.report
+		File sample_qc=pgdac_sampleqc_report.report
   }}
 

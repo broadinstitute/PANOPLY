@@ -54,7 +54,8 @@ generate.cmap.input <- function (target.cna.dir,
   # if provided, genes listed in input.genes are always retained
   if (file.exists(input.genes)) {
     must.keep <- as.character (read.delim (input.genes, header=FALSE)[,1])
-    sigevents <- rbind (sigevents.all [sigevents.all [,'HGNCsymbol'] %in% must.keep, ],
+    sigevents <- rbind (sigevents.all [sigevents.all [,'HGNCsymbol'] %in% must.keep & 
+                                         !sigevents.all[,'HGNCsymbol'] %in% sigevents[,'HGNCsymbol'], ],   # avoid duplicates
                         sigevents)
   }
   cmap.sh.genes <- as.character (read.delim (cmap.kd.genelist, header=FALSE)[,1])
