@@ -31,7 +31,7 @@ task pgdac_ssgsea {
 		}
 
 	runtime {
-		docker : "broadcptac/pgdac_ssgsea:2"
+		docker : "broadcptac/pgdac_ssgsea:4"
 		memory : "${memory}GB"
 		disks : "local-disk ${disk_space} HDD"
 		cpu : "${num_threads}"

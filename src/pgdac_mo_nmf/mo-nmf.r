@@ -16,7 +16,7 @@ this.file.dir <- sub('^(.*(/|\\\\)).*', '\\1', sub('.*?\\=','', this.file.dir))
 #cat('------:',this.file.dir, '\n')
 source(paste(this.file.dir,  'my_plots.r', sep='/'))
 source(paste(this.file.dir,  'my_io.r', sep='/'))
-source(paste(this.file.dir,  'consensus_clustering.R', sep='/'))
+#source(paste(this.file.dir,  'consensus_clustering.R', sep='/'))
 
 ## libraries
 require('pacman')
@@ -34,6 +34,8 @@ p_load(rmarkdown)
 p_load(maptools)
 p_load(UpSetR)
 p_load(ComplexHeatmap)
+p_load(glue)
+p_load(circlize)
 
 
 #source(paste(this.file.dir, 'src', 'my_plots.r', sep='/'))
@@ -313,17 +315,19 @@ main <- function(opt){
       
     ## ##################################################
     ## fully quantified
+    expr.full.org <- expr
+    
     keep.idx <- which(apply(expr, 1, function(x) ifelse(sum(is.na(x)) > 0, F, T)))
     expr <- expr[keep.idx, ]
     #rdesc <- rdesc[keep.idx, ]
     rdesc <- rdesc[rownames(expr), ]
-    expr.full.org <- expr
-   
+    
     ## save a copy
     expr.org <- expr
     cdesc.org <- cdesc
     rdesc.org <- rdesc
     variable.other.org <- variable.other
+    class.variable.org <- class.variable
     
     
     ## ############################################
@@ -458,9 +462,9 @@ main <- function(opt){
               
               ## silhouette
               # par(mfrow=c(2,1))
-              fancyBoxplot( lapply(rank.sil, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters',
-                            main='Silhouette scores', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4, 
-                            col='white', box.border = 'darkblue', vio.alpha = 0, lwd=2.5)
+              #fancyBoxplot( lapply(rank.sil, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters',
+              #              main='Silhouette scores', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4, 
+              #              col='white', box.border = 'darkblue', vio.alpha = 0, lwd=2.5)
               #fancyBoxplot( lapply(rank.sil.random, function(x)x[, 3] ), xlab='Factorization rank / No. of clusters', main='Randomized data', ylab='Silhouette scores', show.numb = 'mean', numb.cex = 1.5, numb.pos = 4)
               dev.off()
         }
@@ -472,8 +476,19 @@ main <- function(opt){
         ##              Generate some plots
         ##
         ## #######################################################################
-        for(rank in as.character(ranks)){
-        #for(rank in as.character(ranks[5:7])){
+        
+        ## extract topn ranks based on cophentic correlation
+        topn.rank <- 3
+        exclude.2 <- T ## should rank=2 be excluded?
+        
+        rank.top <- names(rank.coph)[ order(rank.coph, decreasing=T)] [1:topn.rank]
+        if(exclude.2){
+          rank.top <- setdiff(rank.top, '2') 
+        }
+        
+        for(rank in rank.top) {
+        #for(rank in as.character(ranks)){
+        #for(rank in as.character(c(4,5,6))){
           dir.create(paste('K', rank, sep='_'))
           setwd(paste('K', rank, sep='_'))
         
@@ -495,6 +510,7 @@ main <- function(opt){
           cdesc.color <- cdesc.color.org
           cdesc <- cdesc.org
           variable.other <- variable.other.org
+          class.variable <- class.variable.org
           
           ## data matrix
           expr <- expr.org
@@ -571,7 +587,7 @@ main <- function(opt){
           ## ########################################
           ## order according to nmf clustering
           nmf.ord <-  rownames(cdesc)[cdesc$NMF.consensus %>% as.numeric %>% order ] 
-          expr <-expr[, nmf.ord]
+          expr <- expr[, nmf.ord]
           cdesc <- cdesc[nmf.ord, ]
           
           
@@ -583,7 +599,7 @@ main <- function(opt){
           coefmap(res, annCol=cdesc[, c(class.variable, variable.other)], annColors=cdesc.color, filename='2.0_coefmap.pdf')
           
           # pheatmap version
-          H <- res@fit@H
+          H <- res@fit@H[ , nmf.ord ]
           H.norm <- apply(H, 2, function(x)x/max(x))
           pheatmap(H.norm, cluster_row=F, annotation_col=cdesc[, rev(c(class.variable, variable.other))],
                      annotation_colors = cdesc.color,
@@ -591,7 +607,8 @@ main <- function(opt){
                      filename='2.1_coefmap_pheatmap.pdf', cellwidth = cw, cellheight = ch)
           
           ## disable clustering
-          pheatmap(H.norm[, order(cdesc[, 'NMF.consensus'])], cluster_row=F, cluster_cols = F, annotation_col=cdesc[, rev(c(class.variable, variable.other) )],
+          #pheatmap(H.norm[, order(cdesc[, 'NMF.consensus'])], cluster_row=F, cluster_cols = F, annotation_col=cdesc[order(cdesc[, 'NMF.consensus']), rev(c(class.variable, variable.other) )],
+          pheatmap(H.norm, cluster_row=F, cluster_cols = F, annotation_col=cdesc[ , rev(c(class.variable, variable.other) )],
                    annotation_colors = cdesc.color,
                    color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), 
                    filename='2.2_coefmap_pheatmap_sorted.pdf', cellwidth = cw, cellheight = ch)
@@ -602,15 +619,15 @@ main <- function(opt){
             
             ## #######################################
             ## consensus map
-            cons <- res@consensus
-            colnames(cons) <- rownames(cons) <- colnames(H)
+            cons <- res@consensus[nmf.ord, nmf.ord]
+            #colnames(cons) <- rownames(cons) <- colnames(H)
             
             res2 <- res
             res2@consensus <- cons
             consensusmap(res2, filename=paste('3.0_consensusmap_nrun_', nrun, '.pdf', sep=''))
             
-            cons.ord <- order(NMF.consensus)
-            cons <- cons[cons.ord, cons.ord ]
+            #cons.ord <- order(NMF.consensus)
+            #cons <- cons[cons.ord, cons.ord ]
             
             pheatmap(cons, cluster_row=F, cluster_col=F, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
                      annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
@@ -645,43 +662,134 @@ main <- function(opt){
             ##                   extract NMF features
             ##
             ## ###############################################################
-            feature.methods <- list('kim', 'max', 1, '10L')
-            feature.methods.score <- list('kim', 'max', 'max', 'max')
             
-            success <- F
-            pdf('4.0_histogram_feature_scores.pdf')
-            j <- 1
-            while(!success){
-    
-              feature.method=feature.methods[[j]]
-              feature.method.score=feature.methods.score[[j]]
-              
-              ## feature scores
-              s.i <- featureScore(res, method=feature.method.score)
-              
-              hist( unlist(s.i), main=paste("Feature scores (method:", feature.method,")"), xlab='Feature score' )
-          
-              ## extract features
-              s <- extractFeatures(res, method=feature.method)
+            # success <- F
+            # pdf('4.0_histogram_feature_scores.pdf')
+            # j <- 1
+            # while(!success){
+            # 
+            #   feature.method=feature.methods[[j]]
+            #   feature.method.score=feature.methods.scores[[j]]
+            #   
+            #   ## feature scores
+            #   s.i <- featureScore(res, method=feature.method.score)
+            #   
+            #   hist( unlist(s.i), main=paste("Feature scores (method:", feature.method,")"), xlab='Feature score' )
+            # 
+            #   ## extract features
+            #   s <- extractFeatures(res, method=feature.method)
+            # 
+            #   if( sum( sapply(s, function(x) sum(is.na(x))) ) == 0 ){
+            #     success=T
+            #   } else {
+            #     warning(paste("\nExtracting NMF features using method '", feature.method, "' did not return features for all basis\n"))    
+            #     j <- j + 1
+            #     if(j > length(feature.methods)){
+            #      break
+            #       warning('No success!')
+            #     }  
+            #   }
+            # }
+            # dev.off()
+            # 
+            #success <- F
+            ## ###############################################################################
+            feature.methods <- list('kim', 'max', 1, 10L)
+            feature.methods.scores <- list('kim', 'max', 'max', 'max')
             
-              if( sum( sapply(s, function(x) sum(is.na(x))) ) == 0 ){
-                success=T
+            
+            ## ##############################################################
+            ##
+            ##           extract meta feature matrix
+            ##
+            ## used as ranking for cluster marker selection
+            ## ##############################################################
+            W <- res@fit@W
+            colnames(W) <- 1:ncol(W)
+            ## row-normalize
+            W.norm <- t(apply(W, 1,  function(x)x/sum(x)))
+            
+            ## combine up/down: take highest normalized score
+            feat.comb <- unique( sub('^(.*-.*)_(up|down)$' , '\\1', rownames(W.norm)) )
+            W.norm.comb <- matrix(NA, nrow=length(feat.comb), ncol=ncol(W))
+            dimnames(W.norm.comb) <- list(feat.comb, colnames(W))
+            
+            W.norm.dir <- W.norm
+            direction.tmp <- sub('.*_(.*)$', '\\1', rownames(W.norm.dir))
+            ## sign the coefficients
+            direction.tmp[direction.tmp == 'down' ] <- -1
+            direction.tmp[direction.tmp == 'up' ] <- 1
+            direction.tmp <- as.numeric(direction.tmp)
+            W.norm.dir <- direction.tmp*W.norm.dir
+            
+            for(ii in feat.comb){
+              idx.tmp <- grep(glue("^{ii}_(up|down)$"), rownames(W.norm))
+              
+              #direction.tmp <- sub('.*_(.*)$', '\\1', rownames(W.norm)[idx.tmp])
+              #for(iii in 1:length(idx.tmp))
+                
+              W.tmp <- W.norm.dir[ idx.tmp, ]
+              if(length(idx.tmp) > 1){
+                W.norm.comb[ii, ] <- apply(W.tmp, 2, function(x) x[ which.max(abs(x)) ])
               } else {
-                warning(paste("\nExtracting NMF features using method '", feature.method, "' did not return features for all basis\n"))    
-                j <- j + 1
-                if(j > length(feature.methods)){
-                 break
-                }  
+                W.norm.comb[ii, ] <- W.tmp
               }
+                
             }
+            ## gct
+            w.comb.rdesc <- data.frame(Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), stringsAsFactors = F)
+            rownames(w.comb.rdesc) <- rownames(W.norm.comb)
+            w.gct <- new('GCT')
+            w.gct@mat <- data.matrix(W.norm.comb)
+            w.gct@rid <- rownames(W.norm.comb)
+            w.gct@cid <- colnames(W.norm.comb)
+            w.gct@rdesc <- w.comb.rdesc
+            write.gct(w.gct, ofile=glue("matrix_W_combined_signed"))
+            
+            ## export
+            #write.table(W.norm.comb, sep='\t', quote=F,  na='', col.names=NA, file=glue("matrix_W_combined.txt"))
+            
+            
+            ## #############################################################
+            ## 
+            ##                      extract features
+            ##
+            ## ##############################################################
+            
+            
+            #W.norm <- W.norm*log2(W.norm)
+            #H.norm <- apply(H, 2, function(x)x/max(x))
+            
+            ## feature scores
+            s.i <- featureScore(res, method=feature.methods.scores[[1]])
+            
+            ## extract features
+            s <- extractFeatures(res, method=feature.methods[[1]])
+            
+            #names(s) <- names(s.i) <- paste('features_basis', 1:length(s), sep='_')
+            names(s) <- paste(1:length(s))
+              
+            ## cluster with no features
+            rm.idx <- which( sapply(s, function(x) sum(is.na(x))) > 0)
+            if(length(rm.idx) > 0){
+              s <- s[-c(rm.idx)]
+             # s.i <- s.i[-c(rm.idx)]
+              
+              cons.map <- cons.map[-c(rm.idx)]
+              cons.map.max <- cons.map.max[-c(rm.idx)]
+            }
+            
+            pdf('4.0_histogram_feature_scores.pdf')
+            hist( unlist(s.i), main=paste("Feature scores (method:", feature.methods[[1]],")"), xlab='Feature score' )
             dev.off()
+            
         
             ## ####################################
             ##  annotate the features
             
             ## get accession numbers
             s.acc <- lapply(s, function(x) data.frame(Accession=sub('_up|_down','',rownames(expr.comb)[x]) , id=rownames(expr.comb)[x], stringsAsFactors = F) ) 
-            names(s.acc) <- paste('features_basis', 1:length(s.acc), sep='_')
+            #names(s.acc) <- paste('features_basis', 1:length(s.acc), sep='_')
         
             
             ## features plus scores
@@ -706,7 +814,6 @@ main <- function(opt){
               } else {
                 ## unique gene names
                 s.gn <- lapply(s.acc, function(x) unique(sub('\\|.*','',sub('.*?\\|(.*).*', '\\1', sub('^CNV-(.*?)\\|.*', '\\1', x$Accession)))))
-                #s.gn <- lapply(s.acc, function(x) unique(sub('\\|.*','',sub('.*?\\|(.*).*', '\\1', sub('^(CNV-|RNAseq-)(.*?)\\|.*', '\\2', x$Accession)))))
                 ##  redundant gene names
                 s.gn.red <- lapply(s.acc, function(x) sub('\\|.*','',sub('.*?\\|(.*).*', '\\1', sub('^CNV-(.*?)\\|.*', '\\1', x$Accession))))
                 
@@ -771,6 +878,8 @@ main <- function(opt){
             list2env(s.acc.gn.anno , envir=.GlobalEnv)
             WriteXLS(names(s.acc.gn.anno), ExcelFileName=paste('NMF_features_N_', length(unique(unlist(s.acc2))),'.xlsx', sep=''), FreezeRow=1, FreezeCol=1, SheetNames=make.unique(substr(names(s.acc.gn.anno), 1, 20)), row.names=F, BoldHeaderRow=T, AutoFilter=T)
             
+            
+            
            
             ## #####################################################################################
             ##
@@ -780,13 +889,15 @@ main <- function(opt){
             data.types <- lapply(s.acc, function(x) table(sub('-.*','', x$Accession)))
             tmp <- lapply(data.types, names)
             tmp <- unique(unlist(tmp))
-            data.types.mat <- matrix(0, nrow=length(data.types), ncol=length(tmp), dimnames=list(1:length(data.types), tmp) )
-            for(i in 1:length(data.types))
+            data.types.mat <- matrix(0, nrow=length(data.types), ncol=length(tmp), dimnames=list(names(s), tmp) )
+            for(i in rownames(data.types.mat))
                 data.types.mat[i, names(data.types[[i]])] <- data.types[[i]]
             
-            ## add MB subtype
+            ## add mapping to class variable
             #idx.tmp <- match( cons.map.max, rownames(data.types.mat))
+            
             idx.tmp <- match( names(cons.map), rownames(data.types.mat))
+            
             rownames(data.types.mat)[idx.tmp] <- paste(rownames(data.types.mat)[idx.tmp], ' (', cons.map.max, ')', sep='' )
             
             
@@ -810,7 +921,9 @@ main <- function(opt){
             
             ## ###########################################################
             ## plot the actual expression values for the extracted features
-            for(i in 1:length(s.gn)){
+            #for(i in 1:length(s.gn)){
+            cc <- 1
+            for(i in names(s.gn)){
               
                  m <- expr[ s.acc[[i]]$Accession, ]
                 if(is.null(max.val)){
@@ -822,22 +935,25 @@ main <- function(opt){
                 }
                 #pheatmap(m[, order(cdesc$NMF.consensus)], scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
                  pheatmap(m, scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-                         annotation_colors=cdesc.color, filename=paste('5.',i-1,'_heatmap_expression_basis_', i, '.pdf', sep=''),  
+                         annotation_colors=cdesc.color, filename=paste('5.',cc-1,'_heatmap_expression_basis_', i, '.pdf', sep=''),  
                          breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), 
                          main=names(NMF.consensus.col)[i], cluster_cols = F, height=8, width=8)
                 
                  ## #####################################
                  ## complexheatmap
+                 col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
                  cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
-                 hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
-                               cluster_columns = F,
+                 #hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
+                 hm <- Heatmap(m, col=col.hm, 
+                               
+                                cluster_columns = F,
                                top_annotation = cdesc.ha, 
                                split = sub('-.*','',rownames(m)),
                                row_dend_side = 'right',
                                name='NMF features',
                                show_row_names = F)
                  ## plot
-                 pdf(paste('5.',i-1,'_ComplexHeatmap_expression_basis_', i, '.pdf', sep=''))
+                 pdf(paste('5.',cc-1,'_ComplexHeatmap_expression_basis_', i, '.pdf', sep=''))
                  draw(hm)
                  for(an in rev(c(class.variable, variable.other)) ) {
                    decorate_annotation(an, {
@@ -849,6 +965,7 @@ main <- function(opt){
                  }
                  dev.off()
                  
+                 cc <- cc +1
                 
                 
             }
@@ -895,8 +1012,9 @@ main <- function(opt){
             cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
             
             #m <- m[, colnames(m)[ord.idx]]
+            col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
             
-            hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
+            hm <- Heatmap(m, col=col.hm, 
                           cluster_columns = F,
                           top_annotation = cdesc.ha, 
                           split = sub('-.*','',rownames(m)),
@@ -966,7 +1084,9 @@ main <- function(opt){
                       ## #####################################
                       ## complexheatmap
                       cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
-                      hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
+                      col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
+                      
+                      hm <- Heatmap(m, col=col.hm, 
                                     cluster_columns = F,
                                     top_annotation = cdesc.ha, 
                                     split = sub('-.*','',rownames(m)),
@@ -1008,7 +1128,9 @@ main <- function(opt){
                       ## #####################################
                       ## complexheatmap
                       cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
-                      hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
+                      col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
+                      
+                      hm <- Heatmap(m, col=col.hm, 
                                     cluster_columns = F,
                                     top_annotation = cdesc.ha, 
                                     split = sub('-.*','',rownames(m)),

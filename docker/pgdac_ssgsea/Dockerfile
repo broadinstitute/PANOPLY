@@ -1,7 +1,7 @@
 FROM broadcptac/r-util:1
 
 LABEL maintainer="karsten@broadinstitute.org"
-LABEL description="Docker running gene-centric single-sample Gene Set Enrichment Analysis (ssGSEA) and site-specific PTM Signature Enrichment Analysis (ssPSEA)".
+LABEL description="Docker running gene-centric single-sample Gene Set Enrichment Analysis (ssGSEA) and PTM Signature Enrichment Analysis (PTM-SEA)".
 
 ENV wd /home/pgdac/
 

@@ -3,19 +3,24 @@ if(!require(pacman)){install.packages("pacman");library(pacman)}
 if(!require(cmapR)){p_install('rhdf5');devtools::install_github("cmap/cmapR")}
 
 
-# ###################################################################
+## ###################################################################
 # preprocess GCT file for subsequent ssGSEA/PTM-SEA analysis, e.g.
 # - create site-centric GCT
 # - create PTMsigDB compatible site identifier
 # - create gene-centric GCT for ssGSEA; not implemented yet
+#
 preprocessGCT <- function(
   gct.str='',                         ## path to GCT file 
   level=c('site', 'gene'),            ## create  site or gene-centric reports; ('gene' not supported as of now)
   id.type=c('sm', 'wg'),              ## notation of site-ids: sm-Spectrum Mill; wg-Web Gestalt
+  id.type.out=c('uniprot', 'seqwin', 'psp'), ## NOT WORKING
+  seqwin.col='VMsiteFlanks',          ## NOT WORKING  
+  loc=T,                              ## if TRUE only fully localized sites will be considered
   mode=c('mean', 'median', 'sd'),     ## how should multiple sites per gene be combine; sd - most variable (standard deviation) across sample columns 
   mod.res=c('S|T|Y', 'K'),            ## modified residue(s) 
   mod.type=c('-p', '-ac', '-ub'),     ## modification type
   acc.type=c('uniprot', 'refseq', 'symbol'),  ## 
+  map2up=T,                           ## if TRUE, RefSeq and GeneSymbols will be mapped to UniProt 
   org=c('human', 'mouse', 'rat'),     ## supported organism; parameter not used right now; function 'RefSeq2UniProt' tries to determine organism automatically
   appenddim=T,                        ## see cmapR::write.gct()
   do.it=T                             ## flag, if FALSE nothing will be done; probably needed for to make this step optional in a FireCLoud WDL.
@@ -77,7 +82,12 @@ preprocessGCT <- function(
   #parse GCT object
   mat <- gct@mat
   n <- ncol(mat) ## number of data colums
+  
   rid <- gct@rid
+  
+  ## remove blanks in SM VM site ids
+  ##rid <- sub('\\._', '_', rid)
+  
   if(is.null(rid)) rid <- rownames(mat)
   cid <- gct@cid
   if(is.null(cid)) cid <- colnames(mat)
@@ -117,27 +127,29 @@ preprocessGCT <- function(
       #dimnames(rdesc) <- list(rid, rdesc.ids)
       
       #map to UniProt
-      up <- RefSeq2UniProt( sub('^(.*?_.*?)_.*', '\\1', site.ids) )$id.map$id.mapped
-      mapped.idx <- which(!is.na(up))
-      
-      ## update
-      up <- up[mapped.idx]
-      site.ids <- site.ids[mapped.idx]
-      rid <- rid[mapped.idx]
-      
-      if(n == 1){
-        mat <- matrix(mat[mapped.idx, ], ncol=ncol(mat))
-        dimnames(mat) <- list(rid, cid)
-      } else{
-        mat <- mat[mapped.idx, ]
-      }
-      
-      rdesc <- rdesc[mapped.idx, ]
-      #rdesc <- matrix(rdesc[mapped.idx, ], ncol=length(rdesc.ids))
-      #dimnames(rdesc) <- list(rid, rdesc.ids)
-      
-      site.ids <- paste(up, sub('^(.*?_.*?)(_.*)', '\\2', site.ids), sep='')
-      names(site.ids) <- rid
+      if(map2up){
+            up <- RefSeq2UniProt( sub('^(.*?_.*?)_.*', '\\1', site.ids) )$id.map$id.mapped
+            mapped.idx <- which(!is.na(up))
+            
+            ## update
+            up <- up[mapped.idx]
+            site.ids <- site.ids[mapped.idx]
+            rid <- rid[mapped.idx]
+            
+            if(n == 1){
+              mat <- matrix(mat[mapped.idx, ], ncol=ncol(mat))
+              dimnames(mat) <- list(rid, cid)
+            } else{
+              mat <- mat[mapped.idx, ]
+            }
+            
+            rdesc <- rdesc[mapped.idx, ]
+            #rdesc <- matrix(rdesc[mapped.idx, ], ncol=length(rdesc.ids))
+            #dimnames(rdesc) <- list(rid, rdesc.ids)
+            
+            site.ids <- paste(up, sub('^(.*?_.*?)(_.*)', '\\2', site.ids), sep='')
+            names(site.ids) <- rid
+            }
       # use as ids
       #rownames(mat) <- rownames(rdesc) <- site.ids
       #rid <- site.ids
@@ -149,7 +161,8 @@ preprocessGCT <- function(
     if(acc.type == 'symbol'){
       
       #map to UniProt
-      up <- RefSeq2UniProt( sub('^(.*?)\\..*', '\\1', site.ids), keytype = 'SYMBOL' )$id.map$id.mapped
+      #up <- RefSeq2UniProt( sub('^(.*?)\\..*', '\\1', site.ids), keytype = 'SYMBOL' )$id.map$id.mapped
+      up <- RefSeq2UniProt( sub('^(.*?)-.*', '\\1', site.ids), keytype = 'SYMBOL' )$id.map$id.mapped
       mapped.idx <- which(!is.na(up))
       
       ## update
@@ -161,7 +174,7 @@ preprocessGCT <- function(
         mat <- matrix(mat[mapped.idx, ], ncol=ncol(mat))
         dimnames(mat) <- list(rid, cid)
       } else {
-        mat[mapped.idx, ]
+        mat <- mat[mapped.idx, ]
       }
       
       rdesc <- rdesc[mapped.idx, ]
@@ -169,45 +182,66 @@ preprocessGCT <- function(
       #dimnames(rdesc) <- list(rid, rdesc.ids)
       
       ## creat PTM-SEA compatible ids
-      site.ids <- glue("{up};{sub('^(.*?)\\\\.(.*)', '\\\\2', site.ids)}{mod.type}")
+      #site.ids <- glue("{up};{sub('^(.*?)\\\\.(.*)', '\\\\2', site.ids)}{mod.type}")
+      site.ids <- glue("{up};{sub('^(.*?)-(.*)', '\\\\2', site.ids)}{mod.type}")
+      
       names(site.ids) <- rid
     }
     ## ###############################
     ## Spectrum Mill VM site ids
     if(id.type == 'sm'){
       
-      #localized sites----
-      # - index of fully localized sites 
-      loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
       
-      # update GCT
-      rid <- rid[ loc.idx ]
-      site.ids <- site.ids[ loc.idx ]
+      if(loc){
+          #localized sites----
+          # - index of fully localized sites 
+          loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
+          
+          # update GCT
+          rid <- rid[ loc.idx ]
+          site.ids <- site.ids[ loc.idx ]
+          
+          
+          if(n == 1){
+            mat <- matrix(mat[loc.idx, ], ncol=ncol(mat))
+            dimnames(mat) <- list(rid, cid)
+          } else {
+            mat <- mat[loc.idx, ]
+          }
+          
+          rdesc <- rdesc[loc.idx,]
+          #rdesc <- matrix(rdesc[loc.idx, ], ncol=ncol(rdesc))
+          #dimnames(rdesc) <- list(rid, rdesc.ids)
+          }
       
-      #mat <- mat[loc.idx, ]
-      if(n == 1){
-        mat <- matrix(mat[loc.idx, ], ncol=ncol(mat))
-        dimnames(mat) <- list(rid, cid)
-      } else {
-        mat <- mat[loc.idx, ]
-      }
-      
-      rdesc <- rdesc[loc.idx,]
-      #rdesc <- matrix(rdesc[loc.idx, ], ncol=ncol(rdesc))
-      #dimnames(rdesc) <- list(rid, rdesc.ids)
-      
+      ## ##################################################
       ## variable sites
-      site.var <- sub('^(.*?_.*?)_.*', '\\1', site.ids)
-      names(site.var) <- names(site.ids)
-      
-      ## accession number plus modified residue
-      all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
-        prot.acc=sub('_.*', '', x[1])
-        x=sub('.*?_', '', x)
-        paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+      if(acc.type == 'refseq' & !map2up){
+        site.var <- sub('^(.{2}_.*?_.*?)_.*', '\\1', site.ids)
+        names(site.var) <- names(site.ids)
         
-      })
-      
+        ## accession number plus modified residue
+        all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
+          prot.acc=sub('^(.{2}_.*?)_.*', '\\1', x[1])
+          x=sub(paste0(prot.acc,'_'), '', x)
+          paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+          
+        })
+        
+      } else{
+        site.var <- sub('^(.*?_.*?)_.*', '\\1', site.ids)
+        names(site.var) <- names(site.ids)
+        
+        ## accession number plus modified residue
+        all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
+          prot.acc=sub('_.*', '', x[1])
+          x=sub('.*?_', '', x)
+          paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+          
+        })
+        
+      }
+         
       #redundant sites on multiply modified peptides---- 
       ## Exclude sites on multiply phosphorylated peptides for which we
       ## have also detected singly phosphorylated version
@@ -218,6 +252,7 @@ preprocessGCT <- function(
         rm.idx=which(x %in% unlist(all.sites.sing))
         if(length(rm.idx)>0)
           x=x[-rm.idx]
+        
         x
       })
       all.sites.mult <- all.sites.mult[ sapply(all.sites.mult, length) > 0 ]
@@ -285,12 +320,24 @@ preprocessGCT <- function(
                  paste(sub('_n[0-9]*x[0-9]*\\.gct$', paste('_',level, '-centric', sep=''), gct.str), '', sep=''),
                  paste(sub('\\.gct',paste('_',level, '-centric.gct', sep=''), gct.str), '', sep='')
     ) 
-    write.gct(gct, fn, appenddim = appenddim)
+  
+    
+    
+    
+    
+      write.gct(gct, fn, appenddim = appenddim)
+    
+  } ## end if level=site
+  
+  ## ##################################
+  ##  gene-centric table
+  if(level == 'gene'){
     
   }
   
   return(0)
 }
+
 
 ## ########################################################################
 ## create UniProt-centric accesion numbers
@@ -390,9 +437,9 @@ RefSeq2UniProt <- function(ids,                          ## character vector of 
 }
 
 ## ##########################################################################
-## function to convert an output file from PAM-based marker selection
+## function to convert an output file from SAM-based marker selection
 ## into a GCT 1.3 file as input for PTM-SEA
-prepare_pam_output <- function( csv.str,  ## path to input csv
+prepare_sam_output <- function( csv.str,  ## path to input csv
                                 expr='^(contrast-|Fold Change)',
                                 ofile=sub('\\.csv', '\\.gct', sub('.*/','', csv.str))
 ){
@@ -424,6 +471,198 @@ prepare_pam_output <- function( csv.str,  ## path to input csv
   write.gct(gct, ofile = ofile, appenddim = F)
   
   return(0)
+}
+
+## ###########################################################################
+## prepare nmf results for PTM-SEA
+prepare_mo_nmf_output <- function(w.str, 
+                                  type=c('pSTY', 'Prot'),
+                                  ofile='out'){
+  
+  type <- match.arg(type)
+  
+  ## import w
+  w.gct <- parse.gctx(w.str)
+  w <- w.gct@mat
+  rdesc <- w.gct@rdesc
+  
+  ## extract p-sites/proteins
+  idx <- which(rdesc$Type == type)
+
+  w <- w[idx, ]
+  rdesc <- rdesc[idx, ]
+  rdesc <- data.frame(rdesc, id.nmf=rownames(w))
+  
+  cdesc <- data.frame(Dummy=rep('NMF.cluster', ncol(w)), Dummy2=rep('NMF.cluster', ncol(w)))
+  rownames(cdesc) <- colnames(w)
+  
+  rownames(w) <- sub(glue("^{type}-"), '', rownames(w))
+  
+  colnames(w) <- glue("cluster_{colnames(w)}")
+  
+  out <- new("GCT")
+  out@mat <- data.matrix(w)
+  out@rid <- rownames(w)
+  out@cid <- colnames(w)
+  out@rdesc <- rdesc
+  out@cdesc <- cdesc
+  
+  write.gct(out, ofile = ofile, appenddim = F)
+  
+  return(0)
+}
+
+## ###########################################################################
+##               PTM-SEA / ssGSEA volcano plots
+gg_volc <- function(output.prefix, 
+                    fdr.max = 0.05, ## max. FDR
+                    n.max = 5, ## maximal number of signatures to label each side of the volcano plots
+                    ...  ## passed to ggsave
+                    ){
+    #fdr.max <- 0.05 
+    #n.max <- 5 
+    
+    ## import ptm-sea results
+    fn3 <- glue('{output.prefix}-combined.gct')
+    ptm <- parse.gctx(fn3)
+    mat <- ptm@mat
+    cid <- ptm@cid
+    rdesc <- ptm@rdesc
+    rid <- ptm@rid
+    
+    
+    ## loop over sample columns
+    plot.list <- vector('list', length(cid))
+    names(plot.list) <- cid
+    
+    for(s in cid){
+      
+      pval.tmp <- rdesc[ , glue("pvalue.{sub('^X','',make.names(s))}")]
+      fdr.tmp <- rdesc[ , glue("fdr.pvalue.{sub('^X','',make.names(s))}")]
+      ol.tmp <- rdesc[, glue("Signature.set.overlap.percent.{sub('^X','',make.names(s))}")]
+      score.tmp <- mat[ , glue('{s}')]
+      
+      Enrichment.Score <- score.tmp
+      P.Value <- -10*log(pval.tmp, 10)
+      
+      
+      Significant <- rep('n', nrow(rdesc))
+      sig.idx <- which(fdr.tmp < fdr.max) 
+      if(length(sig.idx) > 0)
+        Significant[sig.idx] <- 'y'
+      
+      ## used for ranking
+      Rank <- P.Value * Enrichment.Score
+      
+      data.plot <- data.frame(Enrichment.Score,
+                              P.Value,
+                              Significant,
+                              Signature=rid,
+                              Overlap.Percent=ol.tmp,
+                              Rank=Rank)
+      
+      xlim=max(abs(data.plot$Enrichment.Score))
+      ymax=max(abs(data.plot$P.Value))
+      
+      data.sig.dn <- data.plot %>% 
+        filter(Significant == 'y' & Enrichment.Score < 0) %>% 
+        arrange(Rank) 
+      if(nrow(data.sig.dn) > n.max)
+        data.sig.dn <- data.sig.dn[1:(min( n.max, nrow(data.sig.dn))), ]
+        #data.sig.dn <- data.sig.dn %>% slice(1:(min( n.max, nrow(data.sig.dn))))
+      
+      data.sig.up <- data.plot %>% 
+        filter(Significant == 'y' & Enrichment.Score > 0) %>% 
+        arrange(desc(Rank)) 
+      if(nrow(data.sig.up) > n.max)
+        data.sig.up <- data.sig.up[1:(min( n.max, nrow(data.sig.up))), ]
+      
+      #  data.sig.up <- data.sig.up %>% slice(1:(min( n.max, nrow(data.sig.up))))
+      
+      
+      p <- ggplot(data.plot, aes(Enrichment.Score, P.Value ) ) + 
+        geom_point(aes(size=Overlap.Percent, colour=Significant)) + 
+        xlim(-xlim, xlim) +
+        geom_vline(xintercept=0, linetype=3) +
+        labs(title=glue('{s}'), y='-10log10(P-value)') +
+        
+        geom_label_repel( aes(label=Signature),
+                          #nudge_x=data.sig.dn$Enrichment.Score,
+                          nudge_x=-5,
+                          #nudge_y=seq(max(data.plot$P.Value), min(data.plot$P.Value), length.out = nrow(data.sig.dn) )[order(data.sig.dn$P.Value, decreasing = T)],
+                          nudge_y=-5,
+                          direction='y',
+                          data=data.sig.dn,
+                          force=1, size=3) +
+        
+        geom_label_repel( aes(label=Signature),
+                          #nudge_x=data.sig.up$Enrichment.Score,
+                          nudge_x=5,
+                          nudge_y=-5,
+                          direction='y',
+                          data=data.sig.up,
+                          force=1, size=3)
+      
+      p <- p + theme_bw() + theme(plot.title=element_text(hjust=0.5))
+      
+      
+      plot.list[[s]] <- p
+    }
+    
+    ## plot and save
+    pp <- ggarrange(plotlist= plot.list, common.legend=T)
+    annotate_figure(pp, top=glue("class vector: {output.prefix}"))
+    ggsave(glue("volcano_{output.prefix}.pdf"), device='pdf', ...)
+    
+    return(0)
+}
+
+## ######################################################
+## pathway heatmap
+pw_hm <- function(output.prefix, 
+                  fdr.max = 0.05, ## max. FDR
+                  n.max = 10, ## maximal number of signatures to label each side of the volcano plots
+                  ...  ## passed to pheatmap
+){
+  #fdr.max <- 0.05 
+  #n.max <- 5 
+  
+  ## import ptm-sea results
+  fn3 <- glue('{output.prefix}-combined.gct')
+  ptm <- parse.gctx(fn3)
+  mat <- ptm@mat
+  cid <- ptm@cid
+  rdesc <- ptm@rdesc
+  rid <- ptm@rid
+  
+  ## fdr
+  fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
+  keep.idx <- c()
+  for(i in 1:ncol(fdr)){
+    f <- fdr[, i]
+    s <- mat[, i]
+    idx=which(f < fdr.max)
+    keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
+  }
+  
+  fdr.filt <- fdr[keep.idx, ]
+  mat.filt <- mat[keep.idx, ]
+  
+  dist.row <- dist(mat.filt, method = 'euclidean')
+  
+  mat.filt[fdr.filt > fdr.max] <- NA
+  
+  max.val = ceiling( max( abs(mat.filt), na.rm=T) )
+  min.val = -max.val
+  
+  color.breaks = seq( min.val, max.val, length.out=12 )
+  color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
+  
+
+  fn.out=glue("heatmap_{output.prefix}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
+  pheatmap(mat.filt, cluster_cols = F, cluster_rows=T, clustering_distance_rows = dist.row, col=color.hm, breaks = color.breaks, filename = fn.out, ...)
+      
+
 }
 
 

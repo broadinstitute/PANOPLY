@@ -17,6 +17,7 @@ option.list <- list(
   make_option(c("-m", "--method"), action="store", dest='method', type="character", help="clustering method. hclust, kmeans, nmf", default='kmeans'),
   make_option(c("-b", "--bootstrapiter"), action="store", dest='bs.nrun', type="numeric", help="Number of bootstrap iterations.", default=20),
   make_option(c("-a", "--annotation"), action="store", dest='class.var', type="character", help="Name of column annotation field of GCT file used to plot as heatmap track.", default=''),
+  #make_option(c("-x", "--firecloud"), action="store", dest='firecloud', type="logical", help="Running in FireCloud?", default=TRUE)
   make_option(c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='.')
   
   )
@@ -77,20 +78,33 @@ main <- function(opt) {
     ## ################################################
     ## if the input is not a .tar file assume that the
     ## function is called from the PGDAC-main pipeline
+    } else if(suffix == 'gct'){
+      
+      gct.str <- opt$tar.file
+      cluster.path.full <- opt$clust.dir
+      
+      #cat('#### ', cluster.path.full, '\n')
+      
     } else {
       ## source 'config.r' to get all parameters  
       #system(glue('R CMD BATCH --vanilla "--args {opt$type}" config.r;'))
       #source(glue('config.r'))
       
       #opt$clustering.sd.threshold <- clustering.sd.threshold
-      cat(glue('test: {opt$clustering.sd.threshold}\n\n'))
+      cat(glue('Using minimal sd of: {opt$clustering.sd.threshold}\n\n'))
       
       ## assume the current folder is the clustering-folder
-      cluster.path.full <- getwd()
-    
-      ## path to GCT file
-      gct.str <- file.path('..', opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
-  }
+      #if(opt$x){
+        cluster.path.full <- getwd()
+        ## path to GCT file
+        gct.str <- file.path('..', opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+      #} else {
+        
+       # gct.str <- i
+        
+      #}
+      
+    }
   
   if(!dir.exists(cluster.path.full))
     dir.create(cluster.path.full)
