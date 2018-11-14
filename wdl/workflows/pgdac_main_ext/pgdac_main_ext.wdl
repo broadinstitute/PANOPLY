@@ -412,7 +412,7 @@ workflow pgdac_main_ext {
 
   call pgdac_sampleqc {
     input:
-      tarball=pgdac_harmonize_ext.outputs,
+      tarball=pgdac_rna_protein_correlation.outputs,
       type=dataType,
       subType=dataSubType,
       params=additionalParameters
