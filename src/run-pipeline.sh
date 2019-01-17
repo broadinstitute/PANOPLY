@@ -33,7 +33,7 @@ function usage {
   echo "             -CMAPgroup <CMAP-group-name>  -CMAPtype <CMAP-data-type>  -CMAPnperm <CMAP # permutations>"
   echo "             -CMAPscr <CMAP-subset-scores-directory>  -CMAPlog <log-transfrom-CNA-data>" 
   echo "             -CMAPpmt <CMAP-permutation-scores-directory> -CMAPrpt <CMAP-rank-point-n>"
-  echo "             -CMAPth <CMAP-rankpoint-threshold>"
+  echo "             -CMAPth <CMAP-rankpoint-threshold> -CMAPgenes <CMAP-input-gene-list-file>"
   echo "   OPERATIONs allowed are listed below"
   echo "   <input-tarball> is a tar file with the initialized directory structure"
   echo "       if specfied, -s, -r, -c and -d are not required -- allowed only when OPERATION is not input*"
@@ -57,6 +57,7 @@ function usage {
   echo "   <CMAP-permutation-scores-directory> is directory containing CMAP scores for permutation subsets run in parallel"
   echo "   <CMAP-rank-point-n> determines how many ranks are averaged to opbtain the rank point"
   echo "   <CMAP-rankpoint-threshold> is the rank point threshold beyond which a query is considered enriched"
+  echo "   <CMAP-input-gene-list-file> is a file containing genes that must be included in CMAP input"
   echo "   <log-transfrom-CNA-data> whether to log transform CNA data for CMAP analysis; 'TRUE' or 'FALSE'"
   echo "   Input Requirements:"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
@@ -67,7 +68,7 @@ function usage {
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
   echo "     OPERATION CNAcorr requires (-i,); -i is tar output from CNAsetup"
-  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPnperm, -CMAPlog); -i is tar output from CNAcorr"
+  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPnperm, -CMAPlog, -CMAPgenes); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPnperm, -CMAPpmt, CMAPrpt, -CMAPth); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
   echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
@@ -278,6 +279,7 @@ cmap_scores=
 cmap_permutation=
 cmap_rankpt_n="4"
 cmap_rankpt_thresh="85"
+cmap_genes_file=
 prefix="proteome"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -330,6 +332,8 @@ while [ "$1" != "" ]; do
 	         shift; cmap_rankpt_n=$1 ;;
 	-CMAPth )
 	         shift; cmap_rankpt_thresh=$1 ;;
+	-CMAPgenes )
+	         shift; cmap_genes_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
 	* )      usage; exit 1
   esac
@@ -553,6 +557,9 @@ case $op in
 #            input must be tar file obtained after CNAcorr
     CMAPsetup ) analysisInit "CMAPsetup"
                 for f in cmap-input.r connectivity.r; do cp $code_dir/cmap-analysis/$f $cmap_dir/$f; done
+                if [ "$cmap_genes_file" != "" ]; then
+                  cp $cmap_genes_file $cmap_dir/cmap-input-genes-list.txt
+                fi
                 (cd $cmap_dir;
                  # generate cmap input genesets
                  Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm $cmap_log)

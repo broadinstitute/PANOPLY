@@ -1,16 +1,36 @@
 # PGDAC Pipeline
 
-### File Formats
+## Overview of `pgdac_main` workflow
+
+![alt text](workflowchart.jpg)
+
+## Required inputs for the `pgdac_main` workflow
+
+Fields listed below are required fields in the inputs `.json` file to the `pgdac-main` workflow. Other fields are optional and can be eliminated. ***NOTE: Make sure that the file paths are absolute file paths. Failing to do so might result in unexpected errors.***
+
+| Field                            | Description                                                           |
+|---------------------------------:|-----------------------------------------------------------------------|
+| `pgdac_main_pipeline.exptDesign` | Experiment Design File Path                                           |
+| `pgdac_main_pipeline.rnaData`    | RNA Expression Data File Path                                         |
+| `pgdac_main_pipeline.cnaData`    | CNA Data File Path                                                    |
+| `pgdac_main_pipeline.SMtable`    | Spectrum Mill Output File Path                                        |
+| `pgdac_main_pipeline.dataType`   | Data Type - "proteome", "phosphoproteome", etc, ...                        |
+| `pgdac_main_pipeline.corr_fdr`   | Correlation FDR (float)                                               |
+| `pgdac_main_pipeline.analysisDir`| Name of the analysis directory in which you wish to store the results |
+
+In case of input files not from Spectrum Mill (`.ssv`), please use the `pgdac_main_ext` pipeline which has a converter module facilitating the conversion of external file types to `.gct`.
+
+## File formats used in `pgdac_main` workflow
 
 |File                   | Specification                                                                                |
 |-----------------------|----------------------------------------------------------------------------------------------|
-|Experiment Design File | This file should contain at least Sample.ID, Experiment and Channel columns. Sample.IDs must be unique, valid R names; duplicate samples should have the same sample names but include a replicate.indicator, eg. `.REP`, followed by an unique suffix: `<name>.REP1`. Additional columns in the file will be treated as sample annotation; could be derived from Spectrum Mill `reporter_sample_template`                                                                  | 
-|`.GCT`                 | File format specifications - [Version 1.3](https://clue.io/connectopedia/gct_format), [Version 1.2](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#GCT). Converting to `.GCT` from - [text](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#_Creating_Input_Files_Tab) files, [`.CDT`](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#_Creating_Input_Files_CDT). |
-|`.CLS`                 | File format specifications- [here](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#CLS)                                |
+|Experiment Design File | This file should contain at least Sample.ID, Experiment and Channel columns. Sample.IDs must be unique, valid R names; duplicate samples should have the same sample names but include a replicate.indicator, eg. `.REP`, followed by an unique suffix: `<name>.REP1`. Additional columns in the file will be treated as sample annotation; could be derived from Spectrum Mill `reporter_sample_template`                                                                  |
+|`.gct`                 | [version #1.3](https://clue.io/connectopedia/gct_format), [version #1.2](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#GCT). Find more information about converting to `.GCT` from various formats such as (`.txt`, `.cdt`, etc) [here](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide).|
+|`.cls`                 | Find more information [here](http://software.broadinstitute.org/cancer/software/genepattern/file-formats-guide#CLS). |
 
-### Currently Available Tasks
+## Details of Individual Tasks in the Workflow
 
-Below is a description of tasks in the PGDAC pipeline which can be executed independently with each task's **required** inputs and generated outputs.
+All tasks listed below can be executed independently using the `wdl` workflows present in `wdl/tasks`.
 
 | Step                   | Description | Input | Output |
 |:----------------------:|-------------|-------|--------|
@@ -24,50 +44,31 @@ CNA Setup                | Sets up directories and code for running CNA analysis
 |Association             | <ul><li>Runs marker selection using [SAM](http://ugrad.stat.ubc.ca/R/library/siggenes/html/sam.html).</li><li>Uses the best markers to build classifiers using [PLS](https://cran.r-project.org/web/packages/pls/vignettes/pls-manual.pdf), [PAM](http://statweb.stanford.edu/~tibs/PAM/pam.pdf), [GLMNET](https://www.rdocumentation.org/packages/glmnet/versions/2.0-16/topics/glmnet), and RF models.</li><li>Filters out (by removing features with >50% missing values) or imputes missing values using [k-NN](https://www.rdocumentation.org/packages/bnstruct/versions/1.0.2/topics/knn.impute).</li><li>If provided wih test data, runs prediction using all classifiers.</li><li>Plots heatmap of training data showing significant markers.</li><li>Runs [GSEA](http://software.broadinstitute.org/gsea/index.jsp) for 2-class `.cls` files.</li></ul> | tarball from the ***CNA Correlation*** step, data type | tarball of `.gct`. and `.cls` files containing: <ul><li>Classifier performance contingency tables.</li><li>List of significant markers derived using SAM.</li><li>Table of prediction results for training data from all classifiers.</li><li>GSEA Outputs.</li></ul>|
 |Cluster                  | <ul><li>Uses consensus clustering.</li><li>Filters proteome data to remove all proteins with missing data and standard deviation <= 1.5.</li><li>Transforms resulting data set into 1000 bootstrap sample data sets.</li><li>Clusters the bootstrap data sets using k-means clustering with upto six clusters.</li></ul> |tarball from the ***Association*** step, data type | tarball of `.png`, <ul><li>`.consensus.all.k.plot`</li><li>`.consensus.all.plot.k[2-8]`</li><li>`.cormatrix`</li><li>`.geneheatmap`</li><li>`geneheatmaptopgenes`</li><li>`.silfig`</li></ul> `.gct`, <ul><li>`-Cluster`</li><li>`-data`</li><li>`-expclu`</li>`normalized`<li></li></ul> `.cls`, <ul><li>`-Cluster`</li></ul> and `.txt` files <ul><li>`.bestclus`</li><li>`.cophenetic.coefficient`</li><li>`.membership`</li><li>`.params`</li><li>`samplebysamples`</li><li>`selectmarker`</li><li>`subclassmarkers`</li></ul>|
 
-
-### Running ***PGDAC-Main*** Pipeline
-
-Below listed fields are required to be filled in the `.json` file where you provide inputs to the `pgdac-main` workflow. Other fields are optional and can be eliminated. ***NOTE: Make sure that the file paths are absolute file paths and not relative to your current working directory.*** Failing to do so might result in unexpected errors. 
-
-
-| Field                            | Description                                                           |
-|---------------------------------:|-----------------------------------------------------------------------|
-| `pgdac_main_pipeline.exptDesign` | Experiment Design File Path                                           |
-| `pgdac_main_pipeline.rnaData`    | RNA Expression Data File Path                                         |
-| `pgdac_main_pipeline.SMtable`    | Spectrum Mill Output File Path                                        |
-| `pgdac_main_pipeline.dataType`   | Data Type- Proteome, Phosphoproteome, etc, ...                        |
-| `pgdac_main_pipeline.corr_fdr`   | Correlation FDR (float)                                               |
-| `pgdac_main_pipeline.analysisDir`| Name of the analysis directory in which you wish to store the results |
-| `pgdac_main_pipeline.cnaData`    | CNA Data File Path                                                    |
-
 ### Running PGDAC on your local machine
 
 In order to run the pipeline on your local machine, first clone the repository or download the zip from Github. Make sure you download and store [cromwell](https://github.com/broadinstitute/cromwell/releases) and [wdltool](https://github.com/broadinstitute/wdltool/releases/tag/0.14) in a folder where you want to store the executions and results of your pipelines. ***NOTE: Make sure you pass absolute file paths everywhere and not relative paths to your current working directory.*** Failing to do so might result in unexpected errors. Following commands will prove to be useful:
 
-1. `java -jar wdltool.jar validate <WDL File>` you can perform full validation of the WDL file including syntax and semantic checking. 
+1. `java -jar wdltool.jar validate <WDL File>` you can perform full validation of the WDL file including syntax and semantic checking.
 2. `java -jar wdltool.jar inputs <WDL File> > <your_inputs>.json` to print a `.json` skeleton file of the inputs needed for this workflow. Fill in the values in this `.json` document and pass it in to the `run` subcommand.
 3. `java -jar cromwell.jar run [options] <your_wdl_file> -i <your_inputs>.json` to run the workflow through the cromwell engine and print out the outputs in `.json` format.
 
 
+### Other Information
 
-# 
-# PGDAC code and pipelines
-#
+The ```docker``` directory contains code to create required docker images for use with the PGDAC pipeline.
+The ```r-util``` image includes R code from https://github.com/broadinstitute/proteomics-Rutil,
+and is the basis for the ```broadcptac/pgdac_main``` image.
 
-The ```docker``` directory contains code to create required docker images for use with the PGDAC pipeline. 
-The ```r-util``` image includes R code from https://github.com/broadinstitute/proteomics-Rutil, 
-and is the basis for the ```broadcptac/pgdac_basic``` image.
-
-The essential code for the ```pgdac_basic``` image is contained in the ```src``` directory, 
-with the associated workflow in the ```wdl``` directory. ```firecloud``` contains 
+The essential code for the ```pgdac_main``` image is contained in the ```src``` directory,
+with the associated workflow in the ```wdl``` directory. ```firecloud``` contains
 FireCloud documentation and supporting files needed to run workflows.
 
-In order to follow the instructions in ```docs/Firecloud workflows from R code modules.ipynb```, 
+In order to follow the instructions in ```docs/Firecloud workflows from R code modules.ipynb```,
 clone the ```gdac-firecloud``` repository from https://github.com/broadinstitute/gdac-firecloud
 into the root ```PGDAC``` directory.
 
-The ```pipeline-common-code``` is a precursor to ```src``` where code for the pipeline is developed
-using actual projects as use-cases. This directory is maintained in order have a version of the 
-pipeline code that can be run on the commandline, without FireCloud support.
+#
+# Contact
+#
 
 Email manidr@broadinstitute.org with questions.

@@ -3,3 +3,7 @@
 *.Rproj
 .Rproj.user
 .Rhistory
+cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx
+cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_n473647x12328.gctx
+cmap-data/cmap-data-subsets/
+gdac-firecloud/

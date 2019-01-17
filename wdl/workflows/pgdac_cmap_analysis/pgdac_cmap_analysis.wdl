@@ -55,6 +55,7 @@ task pgdac_cmap_connectivity {
 
 task pgdac_cmap_input {
   File tarball   # output from pgdac_cna_correlation
+  File? cmap_input_genes
   String? cmap_group
   String? cmap_type
   String? cmap_log
@@ -70,7 +71,7 @@ task pgdac_cmap_input {
   
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} ${"-CMAPlog " + cmap_log}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} ${"-CMAPlog " + cmap_log} ${"-CMAPgenes " + cmap_input_genes}
   }
   
   output {
