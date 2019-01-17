@@ -38,6 +38,7 @@ p_load(glue)
 p_load(circlize)
 
 
+
 #source(paste(this.file.dir, 'src', 'my_plots.r', sep='/'))
 #source(paste(this.file.dir, 'src', 'my_io.r', sep='/'))
 
@@ -55,13 +56,11 @@ option_list <- list(
   make_option( c("-r", "--runonly"), action='store', type='logical', dest='no.plots', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.', default=FALSE),
   make_option( c("-g", "--genesofinterest"), action='store', type='character', dest='genes.of.interest', help='Character vector of gene symbols separated by semicolon. Example: "^PTPN1$;ERBB2;CDK5"', default=''),
   make_option( c("-f", "--sdfilter"), action='store', type='numeric', dest='sd.perc.rm', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed.', default=0),
+  make_option( c("-a", "--geneColumn"), action='store', type='character', dest='gene.column', help='Column name in rdesc in the GCT that contains gene names.', default='geneSymbol'),
   make_option(c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='.')
   )
 # parse command line parameters
 opt <- parse_args( OptionParser(option_list=option_list) )
-
-source(file.path(opt$lib.dir, 'consensus_clustering.R'))
-source(file.path(opt$lib.dir, 'multi-omics_clustering.R'))
 
 
 #####################
@@ -70,134 +69,33 @@ dummy <- F
 if(dummy){
     opt <- c()
     #opt$tar.file <- 'baseline_study_v5.tar' #'bc_prosp_pr_ph_rna-2comp-cnv_harmon.tar'
-    opt$tar.file <- 'bc_prosp_pr_ph_rna-2comp-cnv_harmon_2000.tar'
+    #opt$tar.file <- 'bc_prosp_pr_ph_rna-2comp-cnv_harmon_2000.tar'
+    opt$tar.file <- 'data/prospBC_prot_phgcr_rna_hallmark.tar'
     #opt$variable.other <- 'Group' #'ER;PR;HER2'
     opt$variable.other <- 'ER;PR;HER2'
     #opt$class.colors <- "PTPN12Class=high:red;low:blue;NotAvailable:white|Group=ExtraCluster:darkred;NonRespondingCluster:darkgreen;RespondingCluster:orange" 
     # "PAM50=Basal:red;Her2:magenta;LumA:blue;LumB:cyan;Normal:grey|ER=positive:black;negative:white;unknown:grey|PR=positive:black;negative:white;unknown:grey|HER2=positive:black;negative:white;unknown:grey"
-    opt$class.colors <- "PAM50=Basal:red;Her2:magenta;LumA:blue;LumB:cyan;Normal:grey|ER=positive:black;negative:white;unknown:grey|PR=positive:black;negative:white;unknown:grey|HER2=positive:black;negative:white;unknown:grey"
+    opt$class.colors <- "PAM50.ext=Basal:red;Her2:magenta;LumA:blue;LumB:cyan;Normal:grey|ER=positive:black;negative:white;unknown:grey|PR=positive:black;negative:white;unknown:grey|HER2=positive:black;negative:white;unknown:grey"
     #opt$class.variable <- "PTPN12Class" #"PAM50"
-    opt$class.variable <- "PAM50"
-    opt$nrun <- 2
-    opt$nrun.bs <- 10
+    opt$class.variable <- "PAM50.ext"
+    opt$nrun <- 100
+    #opt$nrun.bs <- 10
     opt$rank.low <- 2
-    opt$rank.high <- 2
+    opt$rank.high <- 6
     opt$seed <- "random"
     opt$genes.of.interest <- 'PTPN;CDK'
+    opt$lib.dir <- 'C:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
+    opt$sd.perc.rm <- 0
+    opt$gene.column <- 'geneSymbol'
+    opt$no.plots <- F
+    
 }
 
 
+#source(file.path(opt$lib.dir, 'consensus_clustering.R'))
+source(file.path(opt$lib.dir, 'nmf_functions.R'))
 
-## #############################################
-## extract tarbar and read configuration file
-prepare.data.sets <- function( tar.file, tmp.dir){
-  
-  ## #################################
-  ## extract tar ball
-  if(!dir.exists(tmp.dir))
-    dir.create(tmp.dir)
-  untar(tar.file, exdir=tmp.dir)
-  
-  ##  import config file
-  conf <- read.delim(paste( tmp.dir, 'nmf.conf', sep='/'), row.names = NULL, stringsAsFactors = F, header=F)
-  ##data.str <- paste('..', tmp.dir, conf[, 2], sep='/')
-  data.str <- paste( tmp.dir, conf[, 2], sep='/')
-  names(data.str) <- conf[,1]
-  
-  return(data.str)
-}
 
-## #############################################
-## import and merge data tables
-import.data.sets <- function(tar.file, tmp.dir, zscore.cnv=F){
-  
-  ## ################################
-  ## extract tar file
-  data.str <- prepare.data.sets(tar.file, tmp.dir)
-  
-  ## ################################
-  ## loop over file path
-  for(i in 1:length(data.str)){
-    
-    ##gct
-    gct <-  parse.gctx2(data.str[i])
-    gct@cid <- make.names(gct@cid)
-    ## extract data matrix
-    data.tmp <- gct@mat
-    ## append data type to row names
-    rownames(data.tmp) <- paste(names(data.str)[i], gct@rid, sep='-')
-    colnames(data.tmp) <- gct@cid
-    
-    ## remove columns with no data values
-    keep.idx <- which(apply(data.tmp, 2, function(x) ifelse(sum(is.na(x))/length(x) == 1, F, T)))
-    data.tmp <- data.tmp[, keep.idx]
-    
-    ## row annotations    
-    rdesc.tmp <- gct@rdesc
-    if(nrow(rdesc.tmp) == 0){
-      rdesc.tmp <- data.frame(id2=gct@rid)
-    }
-    rownames(rdesc.tmp) <- paste(names(data.str)[i], gct@rid, sep='-')
-    rdesc.tmp <- data.frame( Data.Type.ID=rownames(rdesc.tmp), rdesc.tmp)
-    
-    ## column annotations
-    cdesc.tmp <- gct@cdesc %>% data.frame
-    #if(nrow(cdesc.tmp) == 0){
-    #  cdesc.tmp <- data.frame(id2=gct@cid)
-    #}
-    
-    #cdesc.tmp[] <- lapply(cdesc.tmp, as.character) %>% as.data.frame()
-    if(nrow(cdesc.tmp) > 0){
-      cdesc.tmp <- data.frame(ID=gct@cid, cdesc.tmp)
-      cdesc.tmp <- cdesc.tmp[ keep.idx,  ]
-      rownames(cdesc.tmp) <- colnames(data.tmp)
-    }
-    
-    ## Z-score CNV?
-    if(names(data.str)[i] == 'CNV' & zscore.cnv)
-      data.tmp <- apply(data.tmp, 2, function(x) (x-median(x, na.rm=T))/mad(x, na.rm=T))
-    
-    ## merge data tables, row and column annotations
-    if(i == 1){
-      data <- data.tmp
-      samp <- colnames(data.tmp)
-      rdesc <- rdesc.tmp
-      cdesc <- cdesc.tmp
-      
-    } else {
-      ## only sample columns present in all tables will be carried over
-      samp <- intersect(samp, colnames(data.tmp))
-      data <- data[, samp]
-      cdesc <- cdesc[samp, ]
-      cdesc[] <- lapply(cdesc, function(x){if(sum(is.na(as.numeric(x))) == 0){as.numeric(x);} else {x} })
-      
-      ## append to data matrix
-      data <- rbind(data, data.tmp[, colnames(data)])
-      
-      ## row annotations
-      rdesc <- full_join(rdesc, rdesc.tmp)
-      ## add back rownames
-      rownames(rdesc) <- rdesc$Data.Type.ID
-      ## ensure same order as data
-      rdesc <- rdesc[rownames(data), ]
-      
-      ## column annotations
-      if(nrow(cdesc.tmp) > 0){
-        cdesc.tmp[] <- lapply(cdesc.tmp, function(x){if(sum(is.na(as.numeric(x))) == 0){as.numeric(x);} else {x} })
-        #cdesc.tmp[] <- lapply(cdesc.tmp, as.character) %>% as.data.frame()
-        cdesc <- left_join(cdesc, cdesc.tmp)
-        rownames(cdesc) <- cdesc$ID
-        #cdesc2 <- full_join(data.frame(t(cdesc)), data.frame(t(cdesc.tmp)))
-      }
-    }
-  }
-  
-  ## expression data
-  expr <- data.matrix(data)
-  
-  return(list(expr=expr, cdesc=cdesc, rdesc=rdesc))
-  
-}
 
 
 ## #############################################
@@ -255,7 +153,8 @@ main <- function(opt){
     zscore.all = F     ## apply z-score to all data types
     #sd.perc.rm = 0     ## percentile to remove from the data
     
-    gene.column <- 'geneSymbol'
+    #gene.column <- 'geneSymbol'
+    gene.column <- opt$gene.column
     
     ## ################################
     ## pheatmap parameters
@@ -289,6 +188,15 @@ main <- function(opt){
     ##                               START
     ##
     ## #########################################################################################
+   
+     ## ##################################################
+    ## import data files
+    data.imported <- import.data.sets(tar.file, tmp.dir, zscore.cnv)
+    #data.imported <- import.data.sets(data.str, zscore.cnv)
+    expr <- data.imported$expr
+    cdesc <- data.imported$cdesc
+    rdesc <- data.imported$rdesc
+    data.str <- data.imported$data.str
     
     ## ###############################
     ##     prepare output folder
@@ -304,13 +212,6 @@ main <- function(opt){
     writeLines(param, con='parameters.txt')
     
     
-    ## ##################################################
-    ## import data files
-    data.imported <- import.data.sets(tar.file, tmp.dir, zscore.cnv)
-    #data.imported <- import.data.sets(data.str, zscore.cnv)
-    expr <- data.imported$expr
-    cdesc <- data.imported$cdesc
-    rdesc <- data.imported$rdesc
     
       
     ## ##################################################
@@ -393,7 +294,7 @@ main <- function(opt){
     ##           make matrix non-negativ
     ## - separate up/down
     ## ##############################################
-    expr.comb <- make.nn(expr)
+    expr.comb <- make.non.negative(expr)
     
     ## remove rows only containing zero values
     keep.idx <- which(apply(expr.comb, 1, function(x) sum(x != 0) ) > 0)
@@ -406,7 +307,7 @@ main <- function(opt){
     res.rank <- vector('list', length(ranks))
     names(res.rank) <- ranks
     res.cons <- res.rank
-    nmf.run.bs <- 5
+    #nmf.run.bs <- 5
     
     ## loop over clusters
     for(i in 1:length(ranks)){
@@ -476,6 +377,11 @@ main <- function(opt){
         ##              Generate some plots
         ##
         ## #######################################################################
+        
+        ## for UCEC v2.0
+        #colnames(cdesc.org)[grep('Proteomics_Tumor', colnames(cdesc.org))] <- 'Proteomics_Tumor_normal'
+        #colnames(cdesc.org)[grep('Histologic_type', colnames(cdesc.org))] <- 'Histologic_Type'
+        
         
         ## extract topn ranks based on cophentic correlation
         topn.rank <- 3
@@ -637,25 +543,25 @@ main <- function(opt){
             
             ## ##########################################
             ## consensus matrix from bootstrapping
-            cons.bs <- res.cons[[as.character( rank )]]
-            try(
-              pheatmap(cons.bs, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-                     annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
-                     annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
-                     cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
-                     filename=paste('3.2_consensus_matrix_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
-                )
+            #cons.bs <- res.cons[[as.character( rank )]]
+            #try(
+            #  pheatmap(cons.bs, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+            #         annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
+            #         annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
+            #         cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
+            #         filename=paste('3.2_consensus_matrix_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
+            #    )
             
             ## ordered by NMF cluster assignment
-            cdesc.bs <- cdesc[ , rev(c(class.variable, variable.other))]
-            ord.idx <- order(cdesc.bs$NMF.consensus)
-            cons.bs.ord <- cons.bs[ ord.idx, ord.idx ]
+            #cdesc.bs <- cdesc[ , rev(c(class.variable, variable.other))]
+            #ord.idx <- order(cdesc.bs$NMF.consensus)
+            #cons.bs.ord <- cons.bs[ ord.idx, ord.idx ]
             
-            pheatmap(cons.bs.ord, cluster_row=F, cluster_col=F, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-                     annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
-                     annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
-                     cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
-                     filename=paste('3.3_consensus_matrix_bootstrap_nrun_', nrun.bs,'_NMF_ordered.pdf', sep=''))
+            #pheatmap(cons.bs.ord, cluster_row=F, cluster_col=F, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+            #         annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
+            #         annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
+            #         cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
+            #         filename=paste('3.3_consensus_matrix_bootstrap_nrun_', nrun.bs,'_NMF_ordered.pdf', sep=''))
             
             ## ###############################################################
             ##
@@ -737,7 +643,19 @@ main <- function(opt){
                 
             }
             ## gct
-            w.comb.rdesc <- data.frame(Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), stringsAsFactors = F)
+            #w.comb.rdesc <- data.frame(Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), stringsAsFactors = F)
+            if(gene.column %in% colnames(rdesc)){
+              w.comb.rdesc <- data.frame(
+                Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), 
+                geneSymbol=gct.comb@rdesc[rownames(W.norm.comb), gene.column],
+                stringsAsFactors = F)
+              } else {
+                w.comb.rdesc <- data.frame(
+                  Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), 
+                  geneSymbol=rownames(W.norm.comb), 
+                  stringsAsFactors = F)
+                
+            }
             rownames(w.comb.rdesc) <- rownames(W.norm.comb)
             w.gct <- new('GCT')
             w.gct@mat <- data.matrix(W.norm.comb)
@@ -755,16 +673,44 @@ main <- function(opt){
             ##                      extract features
             ##
             ## ##############################################################
-            
+            success <- F
+            pdf('4.0_histogram_feature_scores.pdf')
+            j <- 1
+            while(!success){
+
+              feature.method=feature.methods[[j]]
+              feature.method.score=feature.methods.scores[[j]]
+
+              ## feature scores
+              s.i <- featureScore(res, method=feature.method.score)
+
+              hist( unlist(s.i), main=paste("Feature scores (method:", feature.method,")"), xlab='Feature score' )
+
+              ## extract features
+              s <- extractFeatures(res, method=feature.method)
+
+              if( sum( sapply(s, function(x) sum(is.na(x))) ) < length(s) ){
+                success=T
+              } else {
+                warning(paste("\nExtracting NMF features using method '", feature.method, "' did not return any features\n"))
+                j <- j + 1
+                if(j > length(feature.methods)){
+                 break
+                  warning('No success!')
+                }
+              }
+            }
+            dev.off()
+
             
             #W.norm <- W.norm*log2(W.norm)
             #H.norm <- apply(H, 2, function(x)x/max(x))
             
             ## feature scores
-            s.i <- featureScore(res, method=feature.methods.scores[[1]])
+            #s.i <- featureScore(res, method=feature.methods.scores[[1]])
             
             ## extract features
-            s <- extractFeatures(res, method=feature.methods[[1]])
+            #s <- extractFeatures(res, method=feature.methods[[1]])
             
             #names(s) <- names(s.i) <- paste('features_basis', 1:length(s), sep='_')
             names(s) <- paste(1:length(s))
@@ -779,9 +725,9 @@ main <- function(opt){
               cons.map.max <- cons.map.max[-c(rm.idx)]
             }
             
-            pdf('4.0_histogram_feature_scores.pdf')
-            hist( unlist(s.i), main=paste("Feature scores (method:", feature.methods[[1]],")"), xlab='Feature score' )
-            dev.off()
+            #pdf('4.0_histogram_feature_scores.pdf')
+            #hist( unlist(s.i), main=paste("Feature scores (method:", feature.methods[[1]],")"), xlab='Feature score' )
+            #dev.off()
             
         
             ## ####################################
@@ -925,49 +871,54 @@ main <- function(opt){
             cc <- 1
             for(i in names(s.gn)){
               
-                 m <- expr[ s.acc[[i]]$Accession, ]
-                if(is.null(max.val)){
-                  m.max <- ceiling(max(abs(m), na.rm=T))
-                } else {
-                  m.max <- max.val
-                  m[m > m.max] <- m.max
-                  m[m < -m.max] <- -m.max
-                }
-                #pheatmap(m[, order(cdesc$NMF.consensus)], scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-                 pheatmap(m, scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-                         annotation_colors=cdesc.color, filename=paste('5.',cc-1,'_heatmap_expression_basis_', i, '.pdf', sep=''),  
-                         breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), 
-                         main=names(NMF.consensus.col)[i], cluster_cols = F, height=8, width=8)
-                
-                 ## #####################################
-                 ## complexheatmap
-                 col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
-                 cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
-                 #hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
-                 hm <- Heatmap(m, col=col.hm, 
-                               
-                                cluster_columns = F,
-                               top_annotation = cdesc.ha, 
-                               split = sub('-.*','',rownames(m)),
-                               row_dend_side = 'right',
-                               name='NMF features',
-                               show_row_names = F)
-                 ## plot
-                 pdf(paste('5.',cc-1,'_ComplexHeatmap_expression_basis_', i, '.pdf', sep=''))
-                 draw(hm)
-                 for(an in rev(c(class.variable, variable.other)) ) {
-                   decorate_annotation(an, {
-                     # annotation names on the right
-                     grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
-                     # annotation names on the left
-                     #grid.text(an, unit(0, "npc") - unit(2, "mm"), 0.5, default.units = "npc", just = "right")
-                   })
-                 }
-                 dev.off()
-                 
-                 cc <- cc +1
-                
-                
+              
+              m <- expr[ s.acc[[i]]$Accession, ]
+              
+              if( !is.null(nrow(m))){
+                    
+                 if(is.null(max.val)){
+                    m.max <- ceiling(max(abs(m), na.rm=T))
+                  } else {
+                    m.max <- max.val
+                    m[m > m.max] <- m.max
+                    m[m < -m.max] <- -m.max
+                  }
+                  #pheatmap(m[, order(cdesc$NMF.consensus)], scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+                  # pheatmap(m, scale='none', fontsize_row=4, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
+                  #         annotation_colors=cdesc.color, filename=paste('5.',cc-1,'_heatmap_expression_basis_', i, '.pdf', sep=''),  
+                  #         breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), 
+                  #         main=names(NMF.consensus.col)[i], cluster_cols = F, height=8, width=8)
+                  
+                   ## #####################################
+                   ## complexheatmap
+                   col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
+                   cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
+                   #hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
+                   hm <- Heatmap(m, col=col.hm, 
+                                 
+                                  cluster_columns = F,
+                                 top_annotation = cdesc.ha, 
+                                 split = sub('-.*','',rownames(m)),
+                                 row_dend_side = 'right',
+                                 name='NMF features',
+                                 show_row_names = F)
+                   ## plot
+                   pdf(paste('5.',cc-1,'_ComplexHeatmap_expression_basis_', i, '.pdf', sep=''))
+                   draw(hm)
+                   for(an in rev(c(class.variable, variable.other)) ) {
+                     decorate_annotation(an, {
+                       # annotation names on the right
+                       grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
+                       # annotation names on the left
+                       #grid.text(an, unit(0, "npc") - unit(2, "mm"), 0.5, default.units = "npc", just = "right")
+                     })
+                   }
+                   dev.off()
+                   
+                   cc <- cc +1
+                  
+              } # end !is.null(nrow(m))
+              
             }
             
             
@@ -1285,84 +1236,90 @@ main <- function(opt){
             ##
             ## ################################################################
             ## tsne
-            tsne=Rtsne(expr.nmf, check_duplicates=F)
-            
-            ## tsne components
-            tsneY = tsne$Y
-          
-            ## #################################
-            ## color according to kmeans clustering
-            tsne.clust.col=kmeans(tsneY, length(data.str))$cluster
-            
-            ## ##################################
-            ## color according to data type
-            tsne.dt.col=factor(sub('-.*','',rownames(expr.nmf)))
-            
-            ## ################################
-            ## color according to NMF consensus
-            tsne.nmf.col <- rownames(expr.nmf)
-            names(tsne.nmf.col) <- tsne.nmf.col
-            for(i in 1:length(s.acc))
-                tsne.nmf.col[ s.acc[[i]]$Accession] <- NMF.consensus.col[ i ] %>% as.character #unlist(NMF.basis.col[as.character(i)])
-            
-            ## just the NMF class
-            tsne.nmf.class <- rownames(expr.nmf)
-            names(tsne.nmf.class) <- tsne.nmf.class
-            for(i in 1:length(s.acc))
-                tsne.nmf.class[s.acc[[i]]$Accession ] <- paste(i,  cons.map.max[i], sep=' ')
-            
-            
-            
-            d <- data.frame(
-                tsne_1=tsneY[,1],
-                tsne_2=tsneY[,2],
-                Data_type=sub('-.*', '', rownames(expr.nmf)),
-                Feature=rownames(expr.nmf),
-                NMF_col=tsne.nmf.col,
-                NMF_class=tsne.nmf.class
-            )
-            
-            
-            ##plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', text=~Feature, color=~NMF_class)
-            
-            symbs <- c('circle', 'x', 'o', 'square', 'diamond', 'triangle-down', 'pentagon')
-            
-            #col.tmp <- unique(d$NMF_col)
-            #names(col.tmp) <- unique(d$NMF_class)
-            col.tmp <- NMF.consensus.col
-            names(col.tmp) <- paste(1:length(col.tmp), names(col.tmp ))
+            tsne <- try(Rtsne(expr.nmf, check_duplicates=F))
+                if(!class(tsne) == 'try-error'){
                 
-            symb.tmp <- symbs[ 1:length(data.str) ]
-            names(symb.tmp) <- unique(d$Data_type)
+                ## tsne components
+                tsneY = tsne$Y
+              
+                ## #################################
+                ## color according to kmeans clustering
+                tsne.clust.col=kmeans(tsneY, length(data.str))$cluster
+                
+                ## ##################################
+                ## color according to data type
+                tsne.dt.col=factor(sub('-.*','',rownames(expr.nmf)))
+                
+                ## ################################
+                ## color according to NMF consensus
+                tsne.nmf.col <- rownames(expr.nmf)
+                names(tsne.nmf.col) <- tsne.nmf.col
+                for(i in 1:length(s.acc))
+                    tsne.nmf.col[ s.acc[[i]]$Accession] <- NMF.consensus.col[ i ] %>% as.character #unlist(NMF.basis.col[as.character(i)])
+                
+                ## just the NMF class
+                tsne.nmf.class <- rownames(expr.nmf)
+                names(tsne.nmf.class) <- tsne.nmf.class
+                for(i in 1:length(s.acc))
+                    tsne.nmf.class[s.acc[[i]]$Accession ] <- paste(i,  cons.map.max[i], sep=' ')
+                
+                
+                
+                d <- data.frame(
+                    tsne_1=tsneY[,1],
+                    tsne_2=tsneY[,2],
+                    Data_type=sub('-.*', '', rownames(expr.nmf)),
+                    Feature=rownames(expr.nmf),
+                    NMF_col=tsne.nmf.col,
+                    NMF_class=tsne.nmf.class
+                )
+                
+                
+                ##plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', text=~Feature, color=~NMF_class)
+                
+                symbs <- c('circle', 'x', 'o', 'square', 'diamond', 'triangle-down', 'pentagon')
+                
+                #col.tmp <- unique(d$NMF_col)
+                #names(col.tmp) <- unique(d$NMF_class)
+                col.tmp <- NMF.consensus.col
+                names(col.tmp) <- paste(1:length(col.tmp), names(col.tmp ))
+                    
+                symb.tmp <- symbs[ 1:length(data.str) ]
+                names(symb.tmp) <- unique(d$Data_type)
+                
+                ##
+                dir.create('tsne')
+                save(d, col.tmp, symb.tmp, file='tsne/tsne.RData')
+                
+                
+                ## ####################################################
+                ## Rmarkdown
+                rmd <- c(paste("## T-SNE plot of NMF markers (n=",nrow(d),")\n
+                ### Colored by NMF classification:\n
+                ```{r echo=F}
+                load('tsne.RData')
+                library(plotly)
+                plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', type='scatter', text=~Feature, color=~NMF_class, colors=as.character(col.tmp))\n
+                ```\n
+                ### Colored by data type:\n
+                ```{r echo=F}
+                plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', type='scatter', text=~Feature, color=~Data_type)\n
+                ```
+                \n
+                ", sep=''))
+                writeLines(rmd, con='tsne/tsne.rmd')
+                try(rmarkdown::render('tsne/tsne.rmd'))
             
-            ##
-            dir.create('tsne')
-            save(d, col.tmp, symb.tmp, file='tsne/tsne.RData')
+                } ## ens tsne
             
-            
-            ## ####################################################
-            ## Rmarkdown
-            rmd <- c(paste("## T-SNE plot of NMF markers (n=",nrow(d),")\n
-            ### Colored by NMF classification:\n
-            ```{r echo=F}
-            load('tsne.RData')
-            library(plotly)
-            plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', type='scatter', text=~Feature, color=~NMF_class, colors=as.character(col.tmp))\n
-            ```\n
-            ### Colored by data type:\n
-            ```{r echo=F}
-            plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', type='scatter', text=~Feature, color=~Data_type)\n
-            ```
-            \n
-            ", sep=''))
-            writeLines(rmd, con='tsne/tsne.rmd')
-            try(rmarkdown::render('tsne/tsne.rmd'))
-         
-            setwd('..')   
+            setwd('..')  
         } 
-    
     }
 
 } ## end main
 
+## #########################################################
+##               run pipeline
+main(opt)
+save.image('workspace_after_NMF.RData')
 

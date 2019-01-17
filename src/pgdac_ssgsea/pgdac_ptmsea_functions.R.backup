@@ -11,7 +11,7 @@ if(!require(cmapR)){p_install('rhdf5');devtools::install_github("cmap/cmapR")}
 #
 preprocessGCT <- function(
   gct.str='',                         ## path to GCT file 
-  level=c('ssc', 'gc', 'gcr'),        ## single-site-centric, gene-centric or gene-centric-redundant reports
+  level=c('site', 'gene'),            ## single-site or gene-centric reports
   id.type=c('sm', 'wg', 'ph'),        ## notation of site-ids: sm-Spectrum Mill; wg-Web Gestalt; ph-Philosopher
   id.type.out=c('uniprot', 'refseq', 'seqwin', 'psp'), ## type of site id for output; psp not implemented yet
   acc.type=c('uniprot', 'refseq', 'symbol'),  ## accession type of 'rid' object in GCT file
@@ -23,7 +23,7 @@ preprocessGCT <- function(
                                           ## can be used to fix gene names, e.g. description: 'septin-10 isoform 4 GN=SEPT10'
   fix.gene.names.regexpr='.* GN\\=(.*)$', ## regular expression to extract gene names from 'fix.gene.names.column'
   loc=T,                              ## if TRUE only fully localized sites will be considered
-  mode=c('mean', 'median', 'sd', 'SGT', 'abs.max'),     ## how should multiple sites per gene be combine; 
+  mode=c('mean', 'median', 'sd', 'SGT'),     ## how should multiple sites per gene be combine; 
                                       ## sd - most variable (standard deviation) across sample columns
                                       ## SGT - subgroup top: first subgroup in
   SGT.col='subgroupNum',              ## column used to collpase to SGT        
@@ -124,44 +124,10 @@ preprocessGCT <- function(
   
   ## #######################################################
   ##
-  ##                 gene-centric-redundant
+  ##                   gene-centric
   ##
   ## #######################################################
-  if(level == 'gcr'){
-   
-     if(!gene.col %in% colnames(rdesc))
-      stop(glue("Column {gene.col} not found!"))
-    
-    genes <- rdesc[, gene.col]
-    
-    ## remove empty cells
-    rm.idx <- which(is.na(genes) | nchar(genes) == 0)
-    if(length(rm.idx) > 0){
-      genes <- genes[-rm.idx]
-      mat <- mat[-rm.idx, ]
-      rdesc <- rdesc[-rm.idx,]
-      rid <- rid[ -rm.idx ]
-      warning(glue("Removed {length(rm.idx)} rows due to missing gene symbol in column '{gene.col}'\n\n"))
-    }
-    
-    ## non-redundant gene symbols as rid
-    rid <- genes
-
-    # GCT
-    gct@mat <- data.matrix(mat)
-    gct@rid <- make.unique(rid, sep = '_')
-    gct@cid <- cid
-    gct@cdesc <- cdesc
-    gct@rdesc <- rdesc
-    
-  }
-  
-  ## #######################################################
-  ##
-  ##                   gene-centric (gc)
-  ##
-  ## #######################################################
-  if(level == 'gc'){
+  if(level == 'gene'){
     
     if(!gene.col %in% colnames(rdesc))
       stop(glue("Column {gene.col} not found!"))
@@ -219,7 +185,7 @@ preprocessGCT <- function(
     gct@cdesc <- cdesc
     gct@rdesc <- rdesc.gc
     
-  } ## end if level=='gc'
+  } ## end if level=='gene'
   
   
   ## ###################################################################
@@ -227,7 +193,7 @@ preprocessGCT <- function(
   ##                single site-centric table (ssc)
   ##
   ## ###################################################################
-  if(level == 'ssc'){
+  if(level == 'site'){
     
     #row ids are site ids
     site.ids <- rid
@@ -333,12 +299,15 @@ preprocessGCT <- function(
     ## ####################################
     
     ## Spectrum Mill VM site ids
-    if(id.type == 'sm'){
+    if(id.type == 'sm' | id.type == 'ph'){
       
       if(loc){
         #localized sites----
         # - index of fully localized sites 
-        loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
+       if(id.type == 'sm')
+          loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
+       if(id.type == 'ph')
+          loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_{0,1}.*', '\\1', site.ids), '_'), function(x) x[2] > 0 ) )
         
         
         # update GCT
@@ -401,84 +370,8 @@ preprocessGCT <- function(
         })
         
       }
-      
-    } # end if Spectrum Mill VM ids
-    
-    ## ###############################
-    ## Michigan pipeline Philosopher
-    if(id.type == 'ph'){
-      
-      ## localized sites
-      loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_{0,1}.*', '\\1', site.ids), '_'), function(x) x[2] > 0 ) )
-      # update GCT
-      rid <- rid[ loc.idx ]
-      site.ids <- site.ids[ loc.idx ]
-      
-      if(n == 1){
-        mat <- matrix(mat[loc.idx, ], ncol=ncol(mat))
-        dimnames(mat) <- list(rid, cid)
-      } else {
-        mat <- mat[loc.idx, ]
-      }
-      rdesc <- rdesc[loc.idx,]
-      
-      
-      ## RefSeq-centric site ids
-      if(acc.type == 'refseq' & id.type.out %in% c('refseq')){
-        
-        idx <- grep('^(NP_|XP_|YP_|ZP_)', site.ids)
-        site.ids <- site.ids[idx]
-        rdesc <- rdesc[idx, ]
-        
-        site.var <- site.ids %>% sub('.*_', '', .) %>% gsub('([0-9])([A-Z])','\\1 \\2', .)
-        prot.acc <-  site.ids %>% sub('^(.{2}_.*?\\.[0-9]{1,2})_.*','\\1', .)
-        
-        site.var <- paste(prot.acc, site.var, collapse='_')
-        
-        names(site.var) <- names(site.ids)
-        
-        ## accession number plus modified residue
-        all.sites <- lapply( strsplit(site.var, ' '), function(x){
-          
-          prot.acc=sub('^(.{2}_.*?)_.*', '\\1', x[1])
-          x=sub(paste0(prot.acc,'_'), '', x)
-          paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
-          
-        })
-        
-        ## sequence windows   
-      } else  if( id.type.out == 'seqwin'){
-        
-        if(!seqwin.col %in% colnames(rdesc)) stop(glue("column '{seqwin.col}' not found!"))
-        
-        site.var <- rdesc[, seqwin.col] %>% toupper %>% gsub('-', '_', .)
-        names(site.var) <- names(site.ids)
-        
-        all.sites <- strsplit(site.var, '\\|')
-        
-        
-      } else {
-        
-        ## UniProt-centric site ids
-        site.var <- sub('^(.*?_.*?)_.*', '\\1', site.ids)
-        names(site.var) <- names(site.ids)
-        
-        ## accession number plus modified residue
-        all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
-          prot.acc=sub('_.*', '', x[1])
-          x=sub('.*?_', '', x)
-          paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
-          
-        })
-        
-      }
-      
-      
-      
-    } # end if id.type == 'ph'
 
-      ## ###################################################################
-      ##   create single sites-centric reports
+            ##   create single sites-centric reports
       ##
       ##
       ##redundant sites on multiply modified peptides---- 
@@ -543,17 +436,14 @@ preprocessGCT <- function(
       #create site ids-----
       ptm.site.ids <- paste(names(map.idx), mod.type, sep=ifelse(length(grep('^-', mod.type)) > 0, '','-'))
       
-   # } else { # end if Spectrum Mill VM ids
+    } else { # end if Spectrum Mill VM ids
       
       ## assume input is site centric
-  #    ptm.site.ids <- site.ids
-  #    mat.ss <- mat
+      ptm.site.ids <- site.ids
+      mat.ss <- mat
       
-  #  }
+    }
     
-      
-      
-      
     ##rid <- ptm.site.ids
     rownames(mat.ss) <- rownames(rdesc) <- rid <- ptm.site.ids
     #export GCT
@@ -563,7 +453,7 @@ preprocessGCT <- function(
     gct@cdesc <- cdesc
     gct@rdesc <- rdesc
    
-  } ## end if level=='ssc'
+  } ## end if level=site
   
   
   
@@ -571,18 +461,18 @@ preprocessGCT <- function(
   ## ###################################
   ## export GCT
   #fn <- ifelse(appenddim,
-  #             paste(sub('_n[0-9]*x[0-9]*\\.gct$', paste('_',level, sep=''), sub('.*/','',gct.str)), '', sep=''),
+  #             paste(sub('_n[0-9]*x[0-9]*\\.gct$', paste('_',level, '-centric', sep=''), sub('.*/','',gct.str)), '', sep=''),
   #             paste(sub('\\.gct$',paste('_',level, '-centric.gct', sep=''), sub('.*/','',gct.str)), '', sep='')
   
   fn <- sub('.*/', '', gct.str)
   if(appenddim){
     if(length(grep('_n[0-9]*x[0-9]*\\.gct$', fn)) > 0){
-      fn <- paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue("_{level}-{id.type.out}{ifelse(loc,'_localized','')}"), fn ))
+      fn <- paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue("_{level}-centric-{id.type.out}{ifelse(loc,'_localized','')}"), fn ))
     } else {
-      fn <- paste0(sub('\\.gct$', glue("_{level}-{id.type.out}{ifelse(loc,'_localized','')}"), fn ) )
+      fn <- paste0(sub('\\.gct$', glue("_{level}-centric-{id.type.out}{ifelse(loc,'_localized','')}"), fn ) )
     }
   } else {
-    fn <-  paste0(sub('\\.gct$', glue("_{level}_{id.type.out}{ifelse(loc,'_localized','')}.gct"), sub('.*/', '', gct.str)) )
+    fn <-  paste0(sub('\\.gct$', glue("_{level}-centric_{id.type.out}{ifelse(loc,'_localized','')}.gct"), sub('.*/', '', gct.str)) )
   }
   
   # fn <- ifelse(appenddim,
@@ -762,8 +652,7 @@ prepare_mo_nmf_output <- function(w.str,
   
   #rownames(w) <- sub(glue("^{type}-"), '', rownames(w))
   ## check whether 'id.column' contains unique entries
-  ids <- rdesc[, id.column] %>% gsub(' ', '', .) %>% sub(glue("^{type}-"), '', .)
-  
+  ids <- rdesc[, id.column]
   if(sum(duplicated(ids)) > 0){
     w <-  aggregate(w, by=list(ids), FUN=function(x)x[which.max(abs(x))])
     rdesc <- aggregate(rdesc, by=list(ids), FUN=function(x) paste0(unique(x, collapse='|')))
@@ -900,7 +789,6 @@ gg_volc <- function(output.prefix,
 pw_hm <- function(output.prefix, 
                   fdr.max = 0.05, ## max. FDR
                   n.max = 10, ## maximal number of signatures to label each side of the volcano plots
-                  ptmsigdb=T,
                   ...  ## passed to pheatmap
 ){
   library(pacman)
@@ -917,53 +805,34 @@ pw_hm <- function(output.prefix,
   rdesc <- ptm@rdesc
   rid <- ptm@rid
   
-  ## helper function
-  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
-    ## fdr
-    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
-    keep.idx <- c()
-    for(i in 1:ncol(fdr)){
-      f <- fdr[, i]
-      s <- mat[, i]
-      idx=which(f < fdr.max)
-      #keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
-      keep.idx <- union(keep.idx, idx)
-    }
-    
-    fdr.filt <- fdr[keep.idx, ]
-    mat.filt <- mat[keep.idx, ]
-    
-    dist.row <- dist(mat.filt, method = 'euclidean')
-    
-    mat.filt[fdr.filt > fdr.max] <- NA
-    
-    max.val = ceiling( max( abs(mat.filt), na.rm=T) )
-    min.val = -max.val
-    
-    color.breaks = seq( min.val, max.val, length.out=12 )
-    color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
-    
-    
-   
-    try(pheatmap(mat.filt, cluster_cols = F, cluster_rows=T, clustering_distance_rows = dist.row, col=color.hm, breaks = color.breaks, filename = fn.out, ...))
-  
+  ## fdr
+  fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
+  keep.idx <- c()
+  for(i in 1:ncol(fdr)){
+    f <- fdr[, i]
+    s <- mat[, i]
+    idx=which(f < fdr.max)
+    keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
   }
   
-  #debug(plothm)
+  fdr.filt <- fdr[keep.idx, ]
+  mat.filt <- mat[keep.idx, ]
   
-  if(ptmsigdb){
-    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
-    for(rt in rid.type){
-      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-      idx <- grep(glue("^{rt}"), rid)
-      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out)
-    }
-  } else {
-    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-    plothm(rdesc, mat, fdr.max, n.max, fn.out)
-  }
+  dist.row <- dist(mat.filt, method = 'euclidean')
   
- 
+  mat.filt[fdr.filt > fdr.max] <- NA
+  
+  max.val = ceiling( max( abs(mat.filt), na.rm=T) )
+  min.val = -max.val
+  
+  color.breaks = seq( min.val, max.val, length.out=12 )
+  color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
+  
+
+  fn.out=glue("heatmap_{output.prefix}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
+  pheatmap(mat.filt, cluster_cols = F, cluster_rows=T, clustering_distance_rows = dist.row, col=color.hm, breaks = color.breaks, filename = fn.out, ...)
+      
+
 }
 
 
