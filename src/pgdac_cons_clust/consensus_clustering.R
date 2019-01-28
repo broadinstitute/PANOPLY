@@ -276,7 +276,7 @@ consensus_clustering <- function(m,                 ## data matrix p x n
   
   method <- match.arg(method)
   
-  
+  #cat('\n\ntest1\n')
   ## ################################
   ## loop over cluster numbers  
   cons.res <- lapply( k.min:k.max, function(k) 
@@ -284,12 +284,14 @@ consensus_clustering <- function(m,                 ## data matrix p x n
                                   make.nn=make.nn, ncore=ncore, plot=F, ...) 
   )
   names(cons.res) <- k.min:k.max
-  
+  #cat('test2\n\n')
+  #save(cons.res, m, plot, prefix, file='cons_res.RData')
   
   ## #################################
   ## select best number of clusters  
   k_opt <- select_best_k(cons.res, data=m, plot=plot, prefix=prefix)
   K <- k_opt$k.opt[1]
+  #cat('test3\n\n')
   
   ## #################################
   ## extract results for optimal K
@@ -340,7 +342,8 @@ consensus_clustering <- function(m,                 ## data matrix p x n
       cl=cons.res[[k]]
       hm.consensus(cl$M, cl$cluster.results$membership, cdesc=cdesc, 
                    show_rownames=F, show_colnames=F, 
-                   filename=glue('{prefix}_consensus_matrix_k{k}.png'))
+                   filename=glue('{prefix}_consensus_matrix_k{k}.png'),
+                   main=glue("{nrow(m)} most variable features"))
       })
   }
   
@@ -486,37 +489,72 @@ hm.consensus <- function(M,
                          cdesc=NULL,
                          method='ward.D2',
                          ...){
+  
+  ## number of clusters
   k <- membership %>% as.character %>% as.numeric %>% max
 
-  
+  ## cluster assignment as annotation track
   anno <- data.frame(cluster=as.factor(membership))
   if(!is.null(cdesc))
     anno <- data.frame(anno, cdesc)
   
-    
+  ## colors for cluster assigment  
   clust.col <- RColorBrewer::brewer.pal(max(k, 3), "Dark2")[1:k]
   names(clust.col) <- unique(anno$cluster)
   
+  ## colors fro annotation tracks
   anno.col <- list(cluster=clust.col)
+  
+  ## if other annotation tracks were specified
   if(!is.null(cdesc)){
-    n.class <- length(unique(cdesc[, 1]))
-    if(n.class <= 8){
-      col.cdesc <- unlist( brewer.pal( max(n.class, 3), "Set1") )[1:n.class]
-      names(col.cdesc) <- unique( cdesc[, 1] )
     
-    anno.col[[2]] <- col.cdesc
-    names(anno.col)[2] <- colnames(cdesc)[1]
-    }
+    # COLORS for annotation tracks
+    # all brewer.pals
+    all.brews <- brewer.pal.info
+    
+    anno.track.names <- colnames(cdesc)
+    for(i in  1:length(anno.track.names)){
+      
+      # track name
+      anno.track.tmp <- anno.track.names[i]
+      
+      ## track categories
+      cats <- unique(cdesc[, anno.track.tmp])
+      
+      # number of category levels
+      n.cat <- length(cats)
+      
+      
+      # brewer palette
+      brew.tmp <- all.brews[ min(i, nrow(all.brews)), ]
+      brew.tmp.name <- rownames(all.brews)[min(i, nrow(all.brews)) ]
+      
+      
+      if(n.cat > brew.tmp[['maxcolors']]){
+        brew.tmp <-  colorRampPalette(c('grey90', 'grey10'))(n.cat)
+      } else {
+        # list of color palettes
+        brew.tmp <- brewer.pal(n.cat, brew.tmp.name)
+        brew.tmp <- brew.tmp[1:n.cat]
+      }
+      #names(brew.tmp) <- unique(cdesc[, anno.track.tmp])
+      names(brew.tmp) <- cats
+      
+      anno.col <- append(anno.col, list( brew.tmp))
+      names(anno.col)[ length(anno.col) ] <- anno.track.tmp
+    }   
   }
+
+  ## heatmap colors  
+  #hm.col <- colorRampPalette(rev(brewer.pal(7, "RdYlBu")))(100)
+    hm.col <- colorRampPalette(c('darkblue', 'yellow'))(100)
+    breaks <- seq(0, 1, length.out = length(hm.col) + 1)
   
-  hm.col <- colorRampPalette(rev(brewer.pal(7, "RdYlBu")))(100)
-  breaks <- seq(0, 1, length.out = length(hm.col) + 1)
-  
-  pheatmap(M, symm=T, 
+    pheatmap(M, symm=T, 
            col=hm.col,
            breaks=breaks,
            annotation_col = anno,
-           annotation_row = anno,
+           #annotation_row = anno,
            annotation_colors = anno.col,
            clustering_method=method,
            clustering_distance_row=as.dist(1 - M),
@@ -524,6 +562,7 @@ hm.consensus <- function(M,
                       ...)
 
 }
+
 ## ##################################################################
 ## pca cluster plot
 fviz_cluster_plot <- function(data, membership){
