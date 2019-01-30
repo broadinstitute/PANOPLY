@@ -1,0 +1,8 @@
+{
+  "pgdac_harmonize_workflow.analysisDir": "hydrant_test",
+  "pgdac_harmonize_workflow.cnaExpr": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/medullo-cna-data.gct",
+  "pgdac_harmonize_workflow.dataType": "proteome",
+  "pgdac_harmonize_workflow.inputTarOrFiltered": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/hydrant/tasks/pgdac_normalize_ms_data/latest/outputs/pgdac_normalize_ms_data_workflow/a6ccfe4d-ec5f-49ae-9c34-6fcac9960b11/call-pgdac_normalize_ms_data_sep/execution/hydrant_test/normalized-data/proteome-ratio-norm-NArm.gct",
+  "pgdac_harmonize_workflow.isPiped": false,
+  "pgdac_harmonize_workflow.rnaExpr": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/medullo-rna.gct"
+}

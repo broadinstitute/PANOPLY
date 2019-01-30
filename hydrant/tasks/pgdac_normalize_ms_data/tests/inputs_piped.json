@@ -1,0 +1,5 @@
+{
+  "pgdac_normalize_ms_data_workflow.dataType": "proteome",
+  "pgdac_normalize_ms_data_workflow.inputTarOrParsed": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/hydrant/tasks/pgdac_parse_sm_table/latest/outputs/pgdac_parse_sm_table_workflow/6317d442-c81a-45fe-97c6-7e2d1ff3cd47/call-pgdac_parse_sm_table/execution/pgdac_parse_sm_table-output.tar",
+  "pgdac_normalize_ms_data_workflow.isPiped": true
+}
