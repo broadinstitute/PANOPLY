@@ -170,7 +170,7 @@ task pgdac_cons_clust {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cons_clust:2"
+    docker : "broadcptac/pgdac_cons_clust:3"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 8]) + ""

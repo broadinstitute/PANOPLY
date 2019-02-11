@@ -602,14 +602,23 @@ case $op in
                  # extract 'label'  from 'analysis_dir'
                  label=`echo $analysis_dir | sed -E 's,.*/(.*).*,\1,'`
                  tmpdir='.' ## temp-folder
-                  
+                   
                  ## extract sd threshold from 'config.r'   
                  sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | awk -F' ' '{print $3}'`
+                 
+                 ## extract class vectors from 'groups'-files
+                 ## used as annotation tracks in heatmap
+                 anno=''
+                 if [ "$groups" != "" ]; then
+                    anno=`head -n 1 $groups`
+                    anno=`echo ${anno//,/;}`
+                    anno=`echo $anno | perl -p -e 's|.*?;(.*)|\1|'`
+                 fi
                  
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
                  # number of bootstrap iterations are fixed
-                 Rscript pgdac_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
+                 Rscript pgdac_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir -a $anno
                  
                  # run association analysis on clusters to determine markers
                  R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;

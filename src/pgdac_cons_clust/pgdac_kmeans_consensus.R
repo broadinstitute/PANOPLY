@@ -1,4 +1,4 @@
-# #!/usr/bin/env Rscript
+#!/usr/bin/env Rscript
 #options( warn = -1 )
 library(optparse)
 
@@ -14,12 +14,12 @@ option.list <- list(
   make_option(c("-u", "--k_min"), action="store", dest='k_min', type="numeric", help="Minimal cluster number.", default=2),
   make_option(c("-v", "--k_max"), action="store", dest='k_max', type="numeric", help="Maximal cluster number.", default=10),
   make_option(c("-s", "--sdfilter"), action="store", dest='clustering.sd.threshold', type="numeric", help="Minmal standard deviation acreoss samples required for clustering.", default=1.5),
-  make_option(c("-m", "--method"), action="store", dest='method', type="character", help="clustering method. hclust, kmeans, nmf", default='kmeans'),
+  make_option(c("-e", "--min_features_sd"), action="store", dest='min.feat.sd', type="numeric", help="Minmal standard deviation across samples required for clustering.", default=500),
+  make_option(c("-m", "--method"), action="store", dest='method', type="character", help="clustering method. hclust, kmeans", default='kmeans'),
   make_option(c("-b", "--bootstrapiter"), action="store", dest='bs.nrun', type="numeric", help="Number of bootstrap iterations.", default=20),
-  make_option(c("-a", "--annotation"), action="store", dest='class.var', type="character", help="Name of column annotation field of GCT file used to plot as heatmap track.", default=''),
+  make_option(c("-a", "--annotation"), action="store", dest='class.var', type="character", help="Name of column annotation fields in GCT file used to plot as consensus heatmap tracks.", default=''),
   #make_option(c("-x", "--firecloud"), action="store", dest='firecloud', type="logical", help="Running in FireCloud?", default=TRUE)
   make_option(c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='.')
-  
   )
 opt  <- parse_args(OptionParser(option_list=option.list, usage = "Rscript %prog [options]"), print_help_and_exit=TRUE)
 
@@ -117,27 +117,53 @@ main <- function(opt) {
   rdesc <- gct@rdesc
   cdesc <- gct@cdesc
   
+  ## #########################################
   ## eliminate features with not enough variation
+  cat('\n## eliminating features with not enough variation ( standard deviation <', opt$clustering.sd.threshold, ')\n')
   cat('\n## eliminating features with not enough variation ( standard deviation <', opt$clustering.sd.threshold, ')\n', file=logfile, append=T)
+  
   feature.sd <- apply (mat, 1, sd, na.rm=TRUE)
   keep <- which( feature.sd > opt$clustering.sd.threshold )
+  
+  cat(glue( '\nRemaining features used for clustering: {length(keep)}\n\n'))
+  cat(glue( '\nRemaining features used for clustering: {length(keep)}\n\n'), file=logfile, append=T)
+  
+  ## #########################################
+  ## require at least 200 features for clustering
+  ## if fewer passing the SD threshold use the top 10%
+  if(length(keep) < opt$min.feat.sd){
+    
+    upper.decile <- quantile(feature.sd, c(.9))
+    cat('\n## WARNING! SD filtering returned to few features for clustering. Switching to upper decile mode keeping the top 10 percent (equivalent to SD of', upper.decile, ')\n')
+    cat('\n## WARNING! SD filtering returned to few features for clustering. Switching to upper decile mode keeping the top 10 percent (equivalent to SD of', upper.decile, ')\n', file=logfile, append=T)
+    
+    keep <- which( feature.sd >  upper.decile)
+    cat(glue( '\nRemaining features used for clustering: {length(keep)}\n\n'))
+    cat(glue( '\nRemaining features used for clustering: {length(keep)}\n\n'), file=logfile, append=T)
+  } 
   mat <- mat[keep, ]
   rdesc <- rdesc[keep, ]
-  cat(glue( '\nRemaining features used for clustering: {length(keep)}\n'))
-  cat(glue( '\nRemaining features used for clustering: {length(keep)}\n'), file=logfile, append=T)
-  
-  
-  
-  ## class variable of interest
-  if( nchar(opt$class.var) == 0 | !(opt$class.var %in% colnames(cdesc))){
+ 
+
+  ## #########################################
+  ## class variables of interest
+  ## - used as annotation tracks in consensus heatmaps
+  if( nchar(opt$class.var) == 0){ # | !(opt$class.var %in% colnames(cdesc))){
     cdesc.plot <- NULL
   } else {
+    class.var <- strsplit( opt$class.var, ';') %>% unlist
+    class.var <- class.var[which(class.var %in% colnames(cdesc))]
     
-    class.var <- opt$class.var
-    cdesc.plot <- data.frame(cdesc[, class.var])
-    colnames(cdesc.plot) <- class.var
+    if(length(class.var) > 0){
+      
+      cdesc.plot <- data.frame(cdesc[, class.var])
+      colnames(cdesc.plot) <- class.var
+    } else {
+      cdesc.plot <- NULL
+    }
   }
   
+  ## #########################################
   ## run clustering
   setwd(cluster.path.full  )
   cons.clust <- consensus_clustering(mat,
@@ -157,7 +183,9 @@ main <- function(opt) {
   )
   
   setwd(wd)
-  file.copy(logfile, cluster.path.full) 
+  invisible(file.copy(logfile, cluster.path.full) )
+  
+  return(0)
 }
 
 ## ######################################################################

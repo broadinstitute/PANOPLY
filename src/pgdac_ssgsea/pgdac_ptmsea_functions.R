@@ -926,8 +926,8 @@ pw_hm <- function(output.prefix,
       f <- fdr[, i]
       s <- mat[, i]
       idx=which(f < fdr.max)
-      #keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
-      keep.idx <- union(keep.idx, idx)
+      keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
+      #keep.idx <- union(keep.idx, idx)
     }
     
     fdr.filt <- fdr[keep.idx, ]
