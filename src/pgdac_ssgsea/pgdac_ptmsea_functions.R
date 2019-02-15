@@ -25,12 +25,13 @@ preprocessGCT <- function(
   loc=T,                              ## if TRUE only fully localized sites will be considered
   mode=c('mean', 'median', 'sd', 'SGT', 'abs.max'),     ## how should multiple sites per gene be combine; 
                                       ## sd - most variable (standard deviation) across sample columns
-                                      ## SGT - subgroup top: first subgroup in
+                                      ## SGT - subgroup top: first subgroup in protein group (spectrum mill)
+                                      ## for log-transformed, signed p-values
   SGT.col='subgroupNum',              ## column used to collpase to SGT        
   mod.res=c('S|T|Y', 'K'),            ## modified residue(s) 
   mod.type=c('-p', '-ac', '-ub'),     ## modification type
   #map2up=T,                           ## if TRUE, RefSeq and GeneSymbols will be mapped to UniProt 
-  org=c('human', 'mouse', 'rat'),     ## supported organism; parameter not used right now; function 'RefSeq2UniProt' tries to determine organism automatically
+  #org=c('human', 'mouse', 'rat'),     ## supported organism; parameter not used right now; function 'RefSeq2UniProt' tries to determine organism automatically
   appenddim=T,                        ## see cmapR::write.gct()
   do.it=T                             ## flag, if FALSE nothing will be done; probably needed for to make this step optional in a FireCLoud WDL.
 ){
@@ -52,7 +53,7 @@ preprocessGCT <- function(
   mod.res <- match.arg(mod.res)
   mod.type <- match.arg( mod.type )
   acc.type <- match.arg( acc.type )
-  org <- match.arg(org)
+  #org <- match.arg(org)
   id.type <- match.arg(id.type)
   id.type.out<- match.arg(id.type.out)
   
@@ -138,9 +139,14 @@ preprocessGCT <- function(
     rm.idx <- which(is.na(genes) | nchar(genes) == 0)
     if(length(rm.idx) > 0){
       genes <- genes[-rm.idx]
-      mat <- mat[-rm.idx, ]
-      rdesc <- rdesc[-rm.idx,]
       rid <- rid[ -rm.idx ]
+      if(n == 1){
+        mat <- data.frame( matrix(mat[-rm.idx, ], ncol=1, dimnames=list(rid, cid)) )
+      } else {
+        mat <- mat[-rm.idx, ]
+      }
+      rdesc <- rdesc[-rm.idx,]
+     # rid <- rid[ -rm.idx ]
       warning(glue("Removed {length(rm.idx)} rows due to missing gene symbol in column '{gene.col}'\n\n"))
     }
     
@@ -170,8 +176,14 @@ preprocessGCT <- function(
     ## remove empty cells
     rm.idx <- which(is.na(genes) | nchar(genes) == 0)
     if(length(rm.idx) > 0){
-      genes <- genes[-rm.idx]
-      mat <- mat[-rm.idx, ]
+      genes <- genes[-rm.idx ]
+      rid <- rid[ -rm.idx ]
+     # mat <- mat[-rm.idx, ] %>% data.frame
+      if(n == 1){
+        mat <- matrix(mat[-rm.idx, ], ncol=1, dimnames=list(rid, cid))
+      } else {
+        mat <- mat[-rm.idx, ]
+      }
       rdesc <- rdesc[-rm.idx,]
       warning(glue("Removed {length(rm.idx)} rows due to missing gene symbol in column '{gene.col}'\n\n"))
     }
@@ -202,11 +214,18 @@ preprocessGCT <- function(
       mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
       rdesc <- rdesc.sgt
     }
+    if(mode == 'abs.max'){
+      mat.gc <- aggregate(mat, FUN=function(x)x[ which.max(abs(x)) ], by=list(genes))     
+    }
   
     ## non-redundant gene symbols as rid
     rid <- mat.gc[, 1]
-    mat.gc <- mat.gc[, -c(1)]
-      
+    #mat.gc <- mat.gc[, -c(1)] %>% data.frame
+    if(n == 1) {
+      mat.gc <- data.frame( matrix(mat.gc[, -c(1)], ncol=1, dimnames=list(rid, cid)))
+    } else {
+      mat.gc <- mat.gc[, -c(1)]
+    }
     ## aggregate rdesc
     rdesc.gc <- aggregate(rdesc, FUN=function(x) paste(unique(x), collapse='|'), by=list(genes))
     rdesc.gc <- rdesc.gc[, -c(1)]
@@ -576,13 +595,18 @@ preprocessGCT <- function(
   
   fn <- sub('.*/', '', gct.str)
   if(appenddim){
-    if(length(grep('_n[0-9]*x[0-9]*\\.gct$', fn)) > 0){
-      fn <- paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue("_{level}-{id.type.out}{ifelse(loc,'_localized','')}"), fn ))
-    } else {
-      fn <- paste0(sub('\\.gct$', glue("_{level}-{id.type.out}{ifelse(loc,'_localized','')}"), fn ) )
+  
+      if(length(grep('_n[0-9]*x[0-9]*\\.gct$', fn)) > 0){
+      
+      fn <- paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue("_{level}-{id.type.out}{ifelse(loc,'_loc','')}"), fn ))
+    
+      } else {
+      
+        fn <- paste0(sub('\\.gct$', glue("_{level}-{id.type.out}{ifelse(loc,'_loc','')}"), fn ) )
     }
   } else {
-    fn <-  paste0(sub('\\.gct$', glue("_{level}_{id.type.out}{ifelse(loc,'_localized','')}.gct"), sub('.*/', '', gct.str)) )
+    
+    fn <-  paste0(sub('\\.gct$', glue("_{level}_{id.type.out}{ifelse(loc,'_loc','')}.gct"), sub('.*/', '', gct.str)) )
   }
   
   # fn <- ifelse(appenddim,
@@ -897,6 +921,7 @@ gg_volc <- function(output.prefix,
 
 ## ######################################################
 ## pathway heatmap
+## - developed for GSEA/PTM-SEA on NMF results
 pw_hm <- function(output.prefix, 
                   fdr.max = 0.05, ## max. FDR
                   n.max = 10, ## maximal number of signatures to label each side of the volcano plots
@@ -919,14 +944,16 @@ pw_hm <- function(output.prefix,
   
   ## helper function
   plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
+    
     ## fdr
     fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
     keep.idx <- c()
     for(i in 1:ncol(fdr)){
-      f <- fdr[, i]
-      s <- mat[, i]
+      f <- fdr[, i] ## fdr
+      s <- mat[, i] ## score
       idx=which(f < fdr.max)
-      keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
+      if(length(idx) > 0)
+        keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
       #keep.idx <- union(keep.idx, idx)
     }
     
@@ -943,15 +970,17 @@ pw_hm <- function(output.prefix,
     color.breaks = seq( min.val, max.val, length.out=12 )
     color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
     
-    
-   
-    try(pheatmap(mat.filt, cluster_cols = F, cluster_rows=T, clustering_distance_rows = dist.row, col=color.hm, breaks = color.breaks, filename = fn.out, ...))
+    try(pheatmap(mat.filt, 
+                 cluster_cols = F, 
+                 cluster_rows=T, 
+                 clustering_distance_rows = dist.row, col=color.hm, 
+                 breaks = color.breaks, filename = fn.out, cellheight = 6, fontsize_row = 5, ...))
   
   }
   
   #debug(plothm)
   
-  if(ptmsigdb){
+  if(ptmsigdb){ ## split categories
     rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
     for(rt in rid.type){
       fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
@@ -962,8 +991,5 @@ pw_hm <- function(output.prefix,
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
     plothm(rdesc, mat, fdr.max, n.max, fn.out)
   }
-  
- 
+
 }
-
-
