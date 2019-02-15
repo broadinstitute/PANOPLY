@@ -1,0 +1,6 @@
+{
+  "pgdac_rna_protein_correlation_workflow.dataType": "proteome",
+  "pgdac_rna_protein_correlation_workflow.inputTarOrFiltered": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/hydrant/tasks/pgdac_normalize_ms_data/cromwell-executions/pgdac_normalize_ms_data_workflow/9f911e3d-fe1d-4aa1-9596-ddadaabe4191/call-pgdac_normalize_ms_data_piped/execution/pgdac_normalize_ms_data-output.tar",
+  "pgdac_rna_protein_correlation_workflow.isPiped": true,
+  "pgdac_rna_protein_correlation_workflow.rnaExpr": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/medullo-rna.gct"
+}

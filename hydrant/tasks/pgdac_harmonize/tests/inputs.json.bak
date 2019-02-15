@@ -1,0 +1,7 @@
+{
+  "pgdac_harmonize_workflow.cnaExpr": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/medullo-cna-data.gct",
+  "pgdac_harmonize_workflow.dataType": "proteome",
+  "pgdac_harmonize_workflow.inputTarOrFiltered": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/hydrant/tasks/pgdac_rna_protein_correlation/cromwell-executions/pgdac_rna_protein_correlation_workflow/2339a2c0-7645-41e3-8bcb-e1bbd751101b/call-pgdac_rna_protein_correlation_piped/execution/pgdac_rna_protein_correlation-output.tar",
+  "pgdac_harmonize_workflow.isPiped": true,
+  "pgdac_harmonize_workflow.rnaExpr": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/medullo-rna.gct"
+}

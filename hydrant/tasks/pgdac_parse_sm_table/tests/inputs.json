@@ -1,0 +1,6 @@
+{
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.SMtable": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/proteome-medullo-v2-SMout.ssv",
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.analysisDir": "hydrant_test",
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.exptDesign": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/exptdesign.csv",
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.type": "proteome"
+}

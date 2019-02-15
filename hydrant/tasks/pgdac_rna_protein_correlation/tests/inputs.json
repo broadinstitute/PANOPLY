@@ -1,0 +1,7 @@
+{
+  "pgdac_rna_protein_correlation_workflow.analysisDir": "hydrant_test",
+  "pgdac_rna_protein_correlation_workflow.dataType": "proteome",
+  "pgdac_rna_protein_correlation_workflow.inputTarOrFiltered": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/hydrant/tasks/pgdac_normalize_ms_data/latest/pgdac_normalize_ms_data_sep/hydrant_test/normalized-data/proteome-ratio-norm-NArm.gct",
+  "pgdac_rna_protein_correlation_workflow.isPiped": false,
+  "pgdac_rna_protein_correlation_workflow.rnaExpr": "/Users/rkothadi/Documents/Code/GithubClones/PGDAC/test/input/medullo-rna.gct"
+}
