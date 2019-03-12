@@ -13,13 +13,13 @@ task pgdac_mo_nmf {
 	String output_prefix
 	String genes_of_interest
 	String gene_column='geneSymbol'
-  String libdir='/home/pgdac/src/'
+  String lib_dir='/home/pgdac/src/'
 
 	Boolean no_plot
 	Boolean z_score
 	Boolean impute
 	
-	Float sd_min=0.0
+	Float sd_min=0
 
 	Int memory
 	Int disk_space
@@ -29,7 +29,7 @@ task pgdac_mo_nmf {
 	command {
 		set -euo pipefail
 		#Command goes here
-		Rscript /home/pgdac/src/mo-nmf.r -t ${tar_file} -l ${kmin} -m ${kmax} -n ${nrun} -s ${seed} -c ${class_variable} -o ${other_variable} -d ${class_colors} -r ${no_plot} -g ${genes_of_interest} -f ${sd_min} -b ${z_score} -i ${impute} -a ${gene_column} -z ${libdir}
+		Rscript /home/pgdac/src/mo-nmf.r -t ${tar_file} -l ${kmin} -m ${kmax} -n ${nrun} -s ${seed} -c ${class_variable} -o ${other_variable} -d ${class_colors} -r ${no_plot} -g ${genes_of_interest} -f ${sd_min} -b ${z_score} -i ${impute} -a ${gene_column} -z ${lib_dir}
 		find * -type d -name "[0-9]*" -print0 | tar -czvf ${output_prefix}.tar --null -T -
 		}
 

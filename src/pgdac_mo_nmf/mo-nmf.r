@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 options( warn = -1, stringsAsFactors = F )
+#library(optparse)
 suppressPackageStartupMessages(library("optparse"))
 suppressPackageStartupMessages(library("pacman"))
 
@@ -38,11 +39,13 @@ option_list <- list(
   make_option( c("-b", "--z_score"), action='store', type='logical', dest='zscore.all', help='If TRUE, rows in th matrix will be z-scored.', default=TRUE),
   make_option( c("-i", "--impute"), action='store', type='logical', dest='impute', help='If TRUE, the matrix will be first filtered for features present in >70% of samples. The remaining missing values will be imputed via KNN (R packe impute).', default=TRUE),
   make_option( c("-a", "--geneColumn"), action='store', type='character', dest='gene.column', help='Column name in rdesc in the GCT that contains gene names.', default='geneSymbol'),
-  make_option(c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='.')
+  make_option( c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='/home/pgdac/src/')
+  
   )
 # parse command line parameters
 opt <- parse_args( OptionParser(option_list=option_list) )
 
+#save(opt, file='opt.RData')
 ## libraries
 require('pacman')
 p_load(NMF)
@@ -90,9 +93,13 @@ if(dummy){
 }
 
 ## source required files
+#cat('test1:',file.path(opt$lib.dir, 'my_plots.r'))
 source(file.path(opt$lib.dir,  'my_plots.r'))
+#cat('test2')
 source(file.path(opt$lib.dir,  'my_io.r'))
+#cat('test3')
 source(file.path(opt$lib.dir, 'nmf_functions.R'))
+#cat('test4')
 
 ## #############################################
 ## main function
@@ -173,7 +180,7 @@ main <- function(opt){
     param <- c('## NMF parameters:', 
                paste('rank:', paste(ranks, collapse=',')), 
                paste('seed:',seed), paste('nrun:', nrun), 
-               paste('method', method), paste('opts:', opts),
+               paste('method:', method), paste('opts:', opts),
                '',
                '## data filter / normalization / imputation', 
                paste('remove lowest StdDev perc.:', sd.perc.rm), 
@@ -343,13 +350,14 @@ main <- function(opt){
     ## #####################################################
     ## save results needed to 
     fn.ws <- 'workspace_after_NMF.RData'
-    save(opt, res.rank, rank.top, expr.comb, expr, rdesc, cdesc, rank.sil, rank.coph, file=fn.ws)
+    save(opt, res.rank, rank.top, expr.comb, expr, rdesc, cdesc, rank.sil, 
+         rank.coph, fn.ws, gct.comb, file=fn.ws)
     
     
     ## #######################################################
     ##         generate some plots
     if(opt$no.plots == FALSE){ 
-      p <- nmf.plots(fn.ws)
+      p <- try(nmf.plots(fn.ws))
     }
     
     return(0)

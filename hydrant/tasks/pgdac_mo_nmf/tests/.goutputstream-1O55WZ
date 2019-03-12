@@ -1,0 +1,22 @@
+{
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.class_colors": "String",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.class_variable": "String",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.disk_space": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.gene_column": "String (optional, default = "geneSymbol")",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.genes_of_interest": "String",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.impute": "Boolean",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.kmax": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.kmin": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.lib_dir": "String (optional, default = "/home/pgdac/src/")",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.memory": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.no_plot": "Boolean",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.nrun": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.num_preemtions": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.num_threads": "Int",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.other_variable": "String",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.output_prefix": "String",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.sd_min": "Float (optional, default = 0)",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.seed": "String",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.tar_file": "File",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.z_score": "Boolea"
+}

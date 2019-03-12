@@ -1,0 +1,33 @@
+FROM broadcptac/pgdac_ssgsea:5
+
+LABEL maintainer="karsten@broadinstitute.org"
+LABEL description="Docker running gene-centric single-sample Gene Set Enrichment Analysis (ssGSEA) and PTM Signature Enrichment Analysis (PTM-SEA)".
+
+ENV wd /home/pgdac/
+
+COPY . $wd
+#COPY src src/
+
+WORKDIR $wd
+
+RUN apt-get update
+RUN apt-get install -y nano
+
+## install R-packages
+#RUN R -e "install.packages('pacman')"
+RUN R -e "source('http://bioconductor.org/biocLite.R');biocLite('BiocGenerics')"
+RUN R -e "source('http://bioconductor.org/biocLite.R');biocLite('S4Vectors')"
+RUN R -e "library(pacman);p_install('org.Hs.eg.db')"
+RUN R -e "library(pacman);p_install('org.Mm.eg.db')"
+RUN R -e "library(pacman);p_install('org.Rn.eg.db')"
+RUN R -e "library(pacman);p_install('org.Dr.eg.db')"
+
+
+
+
+
+
+
+
+
+

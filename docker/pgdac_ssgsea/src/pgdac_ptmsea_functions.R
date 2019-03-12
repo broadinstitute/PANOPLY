@@ -1,6 +1,13 @@
 ## install pacman and cmapR packages
 if(!require(pacman)){install.packages("pacman");library(pacman)}
-if(!require(cmapR)){p_install('rhdf5');devtools::install_github("cmap/cmapR")}
+
+## make sure 'rhdf5' is loaded BEFORE 'cmapR'
+if(!suppressPackageStartupMessages(require(rhdf5))){
+  source("https://bioconductor.org/biocLite.R")
+  biocLite("rhdf5")
+}
+if(!suppressPackageStartupMessages(require(cmapR)))
+  devtools::install_github("cmap/cmapR")
 
 
 ## ###################################################################
@@ -11,7 +18,7 @@ if(!require(cmapR)){p_install('rhdf5');devtools::install_github("cmap/cmapR")}
 #
 preprocessGCT <- function(
   gct.str='',                         ## path to GCT file 
-  level=c('site', 'gene'),            ## single-site or gene-centric reports
+  level=c('ssc', 'gc', 'gcr'),        ## single-site-centric, gene-centric or gene-centric-redundant reports
   id.type=c('sm', 'wg', 'ph'),        ## notation of site-ids: sm-Spectrum Mill; wg-Web Gestalt; ph-Philosopher
   id.type.out=c('uniprot', 'refseq', 'seqwin', 'psp'), ## type of site id for output; psp not implemented yet
   acc.type=c('uniprot', 'refseq', 'symbol'),  ## accession type of 'rid' object in GCT file
@@ -23,21 +30,22 @@ preprocessGCT <- function(
                                           ## can be used to fix gene names, e.g. description: 'septin-10 isoform 4 GN=SEPT10'
   fix.gene.names.regexpr='.* GN\\=(.*)$', ## regular expression to extract gene names from 'fix.gene.names.column'
   loc=T,                              ## if TRUE only fully localized sites will be considered
-  mode=c('mean', 'median', 'sd', 'SGT'),     ## how should multiple sites per gene be combine; 
+  mode=c('mean', 'median', 'sd', 'SGT', 'abs.max'),     ## how should multiple sites per gene be combine; 
                                       ## sd - most variable (standard deviation) across sample columns
-                                      ## SGT - subgroup top: first subgroup in
+                                      ## SGT - subgroup top: first subgroup in protein group (spectrum mill)
+                                      ## for log-transformed, signed p-values
   SGT.col='subgroupNum',              ## column used to collpase to SGT        
   mod.res=c('S|T|Y', 'K'),            ## modified residue(s) 
-  mod.type=c('-p', '-ac', '-ub'),     ## modification type
-  #map2up=T,                           ## if TRUE, RefSeq and GeneSymbols will be mapped to UniProt 
-  org=c('human', 'mouse', 'rat'),     ## supported organism; parameter not used right now; function 'RefSeq2UniProt' tries to determine organism automatically
+  mod.type=c('p', 'ac', 'ub'),        ## modification type
+  #map2up=T,                          ## if TRUE, RefSeq and GeneSymbols will be mapped to UniProt 
+  #org=c('human', 'mouse', 'rat'),    ## supported organism; parameter not used right now; function 'RefSeq2UniProt' tries to determine organism automatically
   appenddim=T,                        ## see cmapR::write.gct()
-  do.it=T                             ## flag, if FALSE nothing will be done; probably needed for to make this step optional in a FireCLoud WDL.
+  use.as.is=F                         ## flag, if TRUE nothing will be done; probably needed for to make this step optional in a FireCLoud WDL.
 ){
   
   ## imediatly return
-  if(!do.it){
-    return(0)
+  if(use.as.is){
+    return(gct.str)
   }
   
   require(pacman)
@@ -52,14 +60,22 @@ preprocessGCT <- function(
   mod.res <- match.arg(mod.res)
   mod.type <- match.arg( mod.type )
   acc.type <- match.arg( acc.type )
-  org <- match.arg(org)
+  #org <- match.arg(org)
   id.type <- match.arg(id.type)
   id.type.out<- match.arg(id.type.out)
   
   
   #import GCT---------
-  gct <- try(parse.gctx(gct.str))
-  
+  if(file.exists(gct.str)){
+      cat('importing gct file: ', gct.str, ' ...\n')
+      gct <- try(parse.gctx(gct.str))
+      cat(class(gct), '\n')
+      #g <- readLines(gct.str)
+      #cat(g[1:3],'\n')
+  } else {
+    stop(glue("File '{gct.str}' not found!\n"))
+  }
+  cat('\ntest1\n')
   if(class(gct) == 'try-error'){
     
     ## - cmapR functions stop if ids are not unique
@@ -89,10 +105,12 @@ preprocessGCT <- function(
       }
     } #end if 'rid not unique'
   }
+  cat('done\n')
   
   ##############################################
   #parse GCT object
   mat <- gct@mat
+  cat('\ntest2\n')
   n <- ncol(mat) ## number of data colums
   
   ## row ids
@@ -124,10 +142,49 @@ preprocessGCT <- function(
   
   ## #######################################################
   ##
-  ##                   gene-centric
+  ##                 gene-centric-redundant
   ##
   ## #######################################################
-  if(level == 'gene'){
+  if(level == 'gcr'){
+   
+     if(!gene.col %in% colnames(rdesc))
+      stop(glue("Column {gene.col} not found!"))
+    
+    genes <- rdesc[, gene.col]
+    
+    ## remove empty cells
+    rm.idx <- which(is.na(genes) | nchar(genes) == 0)
+    if(length(rm.idx) > 0){
+      genes <- genes[-rm.idx]
+      rid <- rid[ -rm.idx ]
+      if(n == 1){
+        mat <- data.frame( matrix(mat[-rm.idx, ], ncol=1, dimnames=list(rid, cid)) )
+      } else {
+        mat <- mat[-rm.idx, ]
+      }
+      rdesc <- rdesc[-rm.idx,]
+     # rid <- rid[ -rm.idx ]
+      warning(glue("Removed {length(rm.idx)} rows due to missing gene symbol in column '{gene.col}'\n\n"))
+    }
+    
+    ## non-redundant gene symbols as rid
+    rid <- genes
+
+    # GCT
+    gct@mat <- data.matrix(mat)
+    gct@rid <- make.unique(rid, sep = '_')
+    gct@cid <- cid
+    gct@cdesc <- cdesc
+    gct@rdesc <- rdesc
+    
+  }
+  
+  ## #######################################################
+  ##
+  ##                   gene-centric (gc)
+  ##
+  ## #######################################################
+  if(level == 'gc'){
     
     if(!gene.col %in% colnames(rdesc))
       stop(glue("Column {gene.col} not found!"))
@@ -136,8 +193,14 @@ preprocessGCT <- function(
     ## remove empty cells
     rm.idx <- which(is.na(genes) | nchar(genes) == 0)
     if(length(rm.idx) > 0){
-      genes <- genes[-rm.idx]
-      mat <- mat[-rm.idx, ]
+      genes <- genes[-rm.idx ]
+      rid <- rid[ -rm.idx ]
+     # mat <- mat[-rm.idx, ] %>% data.frame
+      if(n == 1){
+        mat <- matrix(mat[-rm.idx, ], ncol=1, dimnames=list(rid, cid))
+      } else {
+        mat <- mat[-rm.idx, ]
+      }
       rdesc <- rdesc[-rm.idx,]
       warning(glue("Removed {length(rm.idx)} rows due to missing gene symbol in column '{gene.col}'\n\n"))
     }
@@ -168,11 +231,18 @@ preprocessGCT <- function(
       mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
       rdesc <- rdesc.sgt
     }
+    if(mode == 'abs.max'){
+      mat.gc <- aggregate(mat, FUN=function(x)x[ which.max(abs(x)) ], by=list(genes))     
+    }
   
     ## non-redundant gene symbols as rid
     rid <- mat.gc[, 1]
-    mat.gc <- mat.gc[, -c(1)]
-      
+    #mat.gc <- mat.gc[, -c(1)] %>% data.frame
+    if(n == 1) {
+      mat.gc <- data.frame( matrix(mat.gc[, -c(1)], ncol=1, dimnames=list(rid, cid)))
+    } else {
+      mat.gc <- mat.gc[, -c(1)]
+    }
     ## aggregate rdesc
     rdesc.gc <- aggregate(rdesc, FUN=function(x) paste(unique(x), collapse='|'), by=list(genes))
     rdesc.gc <- rdesc.gc[, -c(1)]
@@ -185,7 +255,7 @@ preprocessGCT <- function(
     gct@cdesc <- cdesc
     gct@rdesc <- rdesc.gc
     
-  } ## end if level=='gene'
+  } ## end if level=='gc'
   
   
   ## ###################################################################
@@ -193,7 +263,7 @@ preprocessGCT <- function(
   ##                single site-centric table (ssc)
   ##
   ## ###################################################################
-  if(level == 'site'){
+  if(level == 'ssc'){
     
     #row ids are site ids
     site.ids <- rid
@@ -280,7 +350,7 @@ preprocessGCT <- function(
         
         ## create PTM-SEA compatible ids
         #site.ids <- glue("{up};{sub('^(.*?)\\\\.(.*)', '\\\\2', site.ids)}{mod.type}")
-        site.ids <- glue("{up};{sub('^(.*?)-(.*)', '\\\\2', site.ids)}{mod.type}")
+        site.ids <- glue("{up};{sub('^(.*?)-(.*)', '\\\\2', site.ids)}-{mod.type}")
         
         names(site.ids) <- rid
       } ## acc.type == 'symbol'
@@ -299,15 +369,12 @@ preprocessGCT <- function(
     ## ####################################
     
     ## Spectrum Mill VM site ids
-    if(id.type == 'sm' | id.type == 'ph'){
+    if(id.type == 'sm'){
       
       if(loc){
         #localized sites----
         # - index of fully localized sites 
-       if(id.type == 'sm')
-          loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
-       if(id.type == 'ph')
-          loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_{0,1}.*', '\\1', site.ids), '_'), function(x) x[2] > 0 ) )
+        loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_.*', '\\1', site.ids), '_'), function(x)length(unique(x)) ) == 1)
         
         
         # update GCT
@@ -370,8 +437,84 @@ preprocessGCT <- function(
         })
         
       }
+      
+    } # end if Spectrum Mill VM ids
+    
+    ## ###############################
+    ## Michigan pipeline Philosopher
+    if(id.type == 'ph'){
+      
+      ## localized sites
+      loc.idx <- which( sapply (strsplit(sub('^.*_([1-9]_[0-9])_{0,1}.*', '\\1', site.ids), '_'), function(x) x[2] > 0 ) )
+      # update GCT
+      rid <- rid[ loc.idx ]
+      site.ids <- site.ids[ loc.idx ]
+      
+      if(n == 1){
+        mat <- matrix(mat[loc.idx, ], ncol=ncol(mat))
+        dimnames(mat) <- list(rid, cid)
+      } else {
+        mat <- mat[loc.idx, ]
+      }
+      rdesc <- rdesc[loc.idx,]
+      
+      
+      ## RefSeq-centric site ids
+      if(acc.type == 'refseq' & id.type.out %in% c('refseq')){
+        
+        idx <- grep('^(NP_|XP_|YP_|ZP_)', site.ids)
+        site.ids <- site.ids[idx]
+        rdesc <- rdesc[idx, ]
+        
+        site.var <- site.ids %>% sub('.*_', '', .) %>% gsub('([0-9])([A-Z])','\\1 \\2', .)
+        prot.acc <-  site.ids %>% sub('^(.{2}_.*?\\.[0-9]{1,2})_.*','\\1', .)
+        
+        site.var <- paste(prot.acc, site.var, collapse='_')
+        
+        names(site.var) <- names(site.ids)
+        
+        ## accession number plus modified residue
+        all.sites <- lapply( strsplit(site.var, ' '), function(x){
+          
+          prot.acc=sub('^(.{2}_.*?)_.*', '\\1', x[1])
+          x=sub(paste0(prot.acc,'_'), '', x)
+          paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+          
+        })
+        
+        ## sequence windows   
+      } else  if( id.type.out == 'seqwin'){
+        
+        if(!seqwin.col %in% colnames(rdesc)) stop(glue("column '{seqwin.col}' not found!"))
+        
+        site.var <- rdesc[, seqwin.col] %>% toupper %>% gsub('-', '_', .)
+        names(site.var) <- names(site.ids)
+        
+        all.sites <- strsplit(site.var, '\\|')
+        
+        
+      } else {
+        
+        ## UniProt-centric site ids
+        site.var <- sub('^(.*?_.*?)_.*', '\\1', site.ids)
+        names(site.var) <- names(site.ids)
+        
+        ## accession number plus modified residue
+        all.sites <- lapply( strsplit(site.var, tolower(mod.res)), function(x){ 
+          prot.acc=sub('_.*', '', x[1])
+          x=sub('.*?_', '', x)
+          paste(prot.acc, grep( toupper(mod.res), x, value=T), sep=';' )
+          
+        })
+        
+      }
+      
+      
+      
+    } # end if id.type == 'ph'
 
-            ##   create single sites-centric reports
+      ## ###################################################################
+      ##   create single sites-centric reports
       ##
       ##
       ##redundant sites on multiply modified peptides---- 
@@ -436,14 +579,7 @@ preprocessGCT <- function(
       #create site ids-----
       ptm.site.ids <- paste(names(map.idx), mod.type, sep=ifelse(length(grep('^-', mod.type)) > 0, '','-'))
       
-    } else { # end if Spectrum Mill VM ids
-      
-      ## assume input is site centric
-      ptm.site.ids <- site.ids
-      mat.ss <- mat
-      
-    }
-    
+
     ##rid <- ptm.site.ids
     rownames(mat.ss) <- rownames(rdesc) <- rid <- ptm.site.ids
     #export GCT
@@ -453,35 +589,32 @@ preprocessGCT <- function(
     gct@cdesc <- cdesc
     gct@rdesc <- rdesc
    
-  } ## end if level=site
-  
-  
-  
+  } ## end if level=='ssc'
   
   ## ###################################
   ## export GCT
-  #fn <- ifelse(appenddim,
-  #             paste(sub('_n[0-9]*x[0-9]*\\.gct$', paste('_',level, '-centric', sep=''), sub('.*/','',gct.str)), '', sep=''),
-  #             paste(sub('\\.gct$',paste('_',level, '-centric.gct', sep=''), sub('.*/','',gct.str)), '', sep='')
-  
+
+  ## filename
   fn <- sub('.*/', '', gct.str)
-  if(appenddim){
-    if(length(grep('_n[0-9]*x[0-9]*\\.gct$', fn)) > 0){
-      fn <- paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue("_{level}-centric-{id.type.out}{ifelse(loc,'_localized','')}"), fn ))
-    } else {
-      fn <- paste0(sub('\\.gct$', glue("_{level}-centric-{id.type.out}{ifelse(loc,'_localized','')}"), fn ) )
-    }
-  } else {
-    fn <-  paste0(sub('\\.gct$', glue("_{level}-centric_{id.type.out}{ifelse(loc,'_localized','')}.gct"), sub('.*/', '', gct.str)) )
-  }
   
-  # fn <- ifelse(appenddim,
-  #               paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue("_{level}-centric-{id.type.out}{ifelse}"), sub('.*/', '', gct.str)) ),
-  #               paste0(sub('\\.gct$', glue("_{level}-centric_{id.type.out}.gct"), sub('.*/', '', gct.str) ))
-  # ) 
+  ## site-report?
+  sr <- level %in% c('ssc', 'gcr')
+  glue.str <- "_{level}-{ifelse(sr,id.type.out, '')}{ifelse(sr, ifelse(loc,'_loc',''), '') }"
+  if(appenddim){
+      if(length(grep('_n[0-9]*x[0-9]*\\.gct$', fn)) > 0){
+        fn <- paste0(sub('_n[0-9]*x[0-9]*\\.gct$', glue(glue.str), fn ))
+      } else {
+        fn <- paste0(sub('\\.gct$', glue(glue.str), fn ) )
+      }
+  } else {
+    fn <-  paste0(sub('\\.gct$', glue(glue.str, '.gct'), sub('.*/', '', gct.str)) )
+    }
+  fn <- gsub('-\\.', '.', fn) %>% gsub('-$', '', .)
+  
+  ## export
   write.gct(gct, ofile = fn, appenddim = appenddim)
   
-  return(0)
+  return(fn)
 }
 
 
@@ -652,7 +785,8 @@ prepare_mo_nmf_output <- function(w.str,
   
   #rownames(w) <- sub(glue("^{type}-"), '', rownames(w))
   ## check whether 'id.column' contains unique entries
-  ids <- rdesc[, id.column]
+  ids <- rdesc[, id.column] %>% gsub(' ', '', .) %>% sub(glue("^{type}-"), '', .)
+  
   if(sum(duplicated(ids)) > 0){
     w <-  aggregate(w, by=list(ids), FUN=function(x)x[which.max(abs(x))])
     rdesc <- aggregate(rdesc, by=list(ids), FUN=function(x) paste0(unique(x, collapse='|')))
@@ -786,9 +920,11 @@ gg_volc <- function(output.prefix,
 
 ## ######################################################
 ## pathway heatmap
+## - developed for GSEA/PTM-SEA on NMF results
 pw_hm <- function(output.prefix, 
                   fdr.max = 0.05, ## max. FDR
                   n.max = 10, ## maximal number of signatures to label each side of the volcano plots
+                  ptmsigdb=T,
                   ...  ## passed to pheatmap
 ){
   library(pacman)
@@ -805,34 +941,52 @@ pw_hm <- function(output.prefix,
   rdesc <- ptm@rdesc
   rid <- ptm@rid
   
-  ## fdr
-  fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
-  keep.idx <- c()
-  for(i in 1:ncol(fdr)){
-    f <- fdr[, i]
-    s <- mat[, i]
-    idx=which(f < fdr.max)
-    keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
+  ## helper function
+  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
+    
+    ## fdr
+    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
+    keep.idx <- c()
+    for(i in 1:ncol(fdr)){
+      f <- fdr[, i] ## fdr
+      s <- mat[, i] ## score
+      idx=which(f < fdr.max)
+      if(length(idx) > 0)
+        keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
+      #keep.idx <- union(keep.idx, idx)
+    }
+    
+    fdr.filt <- fdr[keep.idx, ]
+    mat.filt <- mat[keep.idx, ]
+    
+    dist.row <- dist(mat.filt, method = 'euclidean')
+    
+    mat.filt[fdr.filt > fdr.max] <- NA
+    
+    max.val = ceiling( max( abs(mat.filt), na.rm=T) )
+    min.val = -max.val
+    
+    color.breaks = seq( min.val, max.val, length.out=12 )
+    color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
+    
+    try(pheatmap(mat.filt, 
+                 cluster_cols = F, 
+                 cluster_rows=T, 
+                 clustering_distance_rows = dist.row, col=color.hm, 
+                 breaks = color.breaks, filename = fn.out, ...))
+  
   }
-  
-  fdr.filt <- fdr[keep.idx, ]
-  mat.filt <- mat[keep.idx, ]
-  
-  dist.row <- dist(mat.filt, method = 'euclidean')
-  
-  mat.filt[fdr.filt > fdr.max] <- NA
-  
-  max.val = ceiling( max( abs(mat.filt), na.rm=T) )
-  min.val = -max.val
-  
-  color.breaks = seq( min.val, max.val, length.out=12 )
-  color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
-  
-
-  fn.out=glue("heatmap_{output.prefix}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-  pheatmap(mat.filt, cluster_cols = F, cluster_rows=T, clustering_distance_rows = dist.row, col=color.hm, breaks = color.breaks, filename = fn.out, ...)
-      
+  #debug(plothm)
+  if(ptmsigdb){ ## split categories
+    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
+    for(rt in rid.type){
+      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
+      idx <- grep(glue("^{rt}"), rid)
+      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out)
+    }
+  } else {
+    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
+    plothm(rdesc, mat, fdr.max, n.max, fn.out)
+  }
 
 }
-
-

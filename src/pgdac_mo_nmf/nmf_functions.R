@@ -1,6 +1,7 @@
 
 ## ##################################################################
 ## function to map NMF cluster to levels in 'class.variable'
+##
 nmf2class <- function(cdesc, 
                       class.variable){
   
@@ -40,6 +41,71 @@ nmf2class <- function(cdesc,
   
 }
 
+## #################################################
+## parse.colors
+## 
+## function that assigns colors to levels of
+## 'class.variable' and 'variable.other'
+## opt        - object returned by function 'parse_args'
+## blank      - character, levels with "" or NA are set to
+##              this string
+## blank.col  - color used for levels set to 'blank'
+## #################################################
+parse.colors <- function(opt, cdesc, blank='N/A', blank.col='white'){
+  
+  class.colors <- opt$class.colors
+  color.all <- class.colors %>% strsplit(., '\\|') %>% unlist
+  
+  ## check dups
+  color.all <- color.all[ !duplicated(sub('^(.*?)=.*', '\\1', color.all)) ]
+  
+  ## put into a format suitable for 'pheatmap'
+  cdesc.color <- vector('list', length(color.all))
+  names(cdesc.color) <- sub('^(.*?)=.*', '\\1', color.all)
+  
+  color.all <- sub('.*?=','', color.all)
+  
+  ## assign levels to colors
+  for(i in 1:length(cdesc.color)){
+    
+    ## cdesc column
+    cdesc.column <- names(cdesc.color)[i]
+    
+    ## present in cdesc?
+    if(!cdesc.column %in% colnames(cdesc)) break;
+    cdesc.levels <- cdesc[, cdesc.column] %>% unique
+    cdesc.levels[ nchar(cdesc.levels) == 0 | is.na(cdesc.levels) ] <- blank
+    
+    ## extract colors specified for levels of cdesc.column
+    color.tmp <- color.all[i] %>% strsplit(., ';') %>% unlist %>% strsplit(. , ':')
+    color.names <- sapply(color.tmp, function(x)x[1])
+    color.tmp <- sapply(color.tmp, function(x)x[2])
+    names(color.tmp) <- color.names
+    color.tmp <- gsub('\\\'', '', color.tmp) 
+    names(color.tmp) <- gsub('\\\'', '', names(color.tmp)) 
+    
+    ## check whether all levels were assigned
+    ## fill with random colors
+    if(sum(!cdesc.levels %in% names(color.tmp)) > 0){
+      color.tmp.bck <- color.tmp
+      color.tmp <- cdesc.levels
+      names(color.tmp) <- cdesc.levels
+      color.tmp[names(color.tmp.bck)] <- color.tmp.bck
+      
+      idx <- which(!cdesc.levels %in% names(color.tmp.bck))
+      color.tmp[idx] <- palette()[1:length(idx)]
+      
+      if(blank %in% names(color.tmp))
+        color.tmp[blank] <- blank.col
+    }
+    
+    cdesc.color[[i]] <- color.tmp
+  }
+  
+  cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
+  
+  return(cdesc.color)
+}
 
 
 ## #############################################
@@ -192,13 +258,19 @@ make.non.negative <- function(m){
 
 ## #############################################
 ## function ...
-nmf.plots <- function(ws){
+nmf.plots <- function(ws, blank.anno = 'N/A', blank.anno.col = 'white'){
   
   ## ############################
   ## import workspace
   cat('loading ws...')
   load(ws)
   cat('done.\n')
+  
+  ## fix blanks in cdesc
+  cdesc <- apply(cdesc, 2, function(x){
+    x[nchar(x) == 0 | is.na(x)] <- blank.anno
+    x
+  })
   
   ## ###################################################
   ## class variable/annotation tracks of interest
@@ -226,31 +298,12 @@ nmf.plots <- function(ws){
   data.omes <- sub('(^.*?)-.*', '\\1', rownames(expr.org)) %>% unique 
   
   
-  ## #################################################
-  ##                  colors
-  ## #################################################
-  class.colors <- opt$class.colors
-  color.all <- class.colors %>% strsplit(., '\\|') %>% unlist
-  
-  ## put into a format suitable for 'pheatmap'
-  cdesc.color <- vector('list', length(color.all))
-  names(cdesc.color) <- sub('^(.*?)=.*', '\\1', color.all)
-  
-  color.all <- sub('.*?=','', color.all)
-  
-  for(i in 1:length(cdesc.color)){
-    color.tmp <- color.all[i] %>% strsplit(., ';') %>% unlist %>% strsplit(. , ':')
-    color.names <- sapply(color.tmp, function(x)x[1])
-    color.tmp <- sapply(color.tmp, function(x)x[2])
-    names(color.tmp) <- color.names
-    color.tmp <- gsub('\\\'', '', color.tmp) 
-    names(color.tmp) <- gsub('\\\'', '', names(color.tmp)) 
-    cdesc.color[[i]] <- color.tmp
-  }
-  cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
+  ## ###############################
+  ## parse colors
+  cdesc.color <- parse.colors(opt, cdesc.org, blank = blank.anno, blank.col = blank.anno.col)
   cdesc.color.org <- cdesc.color
   
-  
+
   ## ################################
   ## parse genes of interest
   gene.column <- opt$gene.column
@@ -319,7 +372,9 @@ nmf.plots <- function(ws){
     ## #######################################################################################################
     ## add NMF to color list for pheatmap
     ## - map NMF classes to levels in 'class.variable'
-    mb.nmf.map <- data.frame(mb=cdesc[, class.variable], nmf_basis=NMF.basis, nmf_cons=NMF.consensus)
+    class.variable.levels <- cdesc[, class.variable]
+    #class.variable.levels[ nchar(class.variable.levels) == 0] <- blank.anno
+    mb.nmf.map <- data.frame(mb=class.variable.levels, nmf_basis=NMF.basis, nmf_cons=NMF.consensus)
     
     ## map consensus to 'class.variable'
     cons.map <- tapply(mb.nmf.map$mb, mb.nmf.map$nmf_cons, table)
@@ -327,7 +382,7 @@ nmf.plots <- function(ws){
     ## relative frequency
     cons.map.rel <- lapply(cons.map, function(x) x/sum(x))
     ## matrix
-    cons.map.rel.mat <- matrix(0, nrow=as.numeric(rank), ncol=length(unique(cdesc[, class.variable])), dimnames = list(1:as.numeric(rank), unique(cdesc[, class.variable])))
+    cons.map.rel.mat <- matrix(0, nrow=as.numeric(rank), ncol=length(unique(class.variable.levels)), dimnames = list(1:as.numeric(rank), unique(class.variable.levels)))
     for(j in 1:nrow(cons.map.rel.mat))
       cons.map.rel.mat[j, names(cons.map.rel[[j]])] <- cons.map.rel[[j]]
     write.table(cons.map.rel.mat, col.names = NA, sep='\t', file=paste('nmf_vs_', class.variable, '.txt', sep=''), quote=F)
@@ -370,71 +425,35 @@ nmf.plots <- function(ws){
     cdesc <- cdesc[nmf.ord, ]
     
     
-    
-    
     ## ########################################
     ## heatmap coefficients
-    #coefmap(res, annCol=cdesc[, c(class.variable, variable.other)], annColors=cdesc.color, filename='1_coefmap.pdf', tracks='consensus', main='Metagenes (consensus)')
-    #coefmap(res, annCol=cdesc[, c(class.variable, variable.other)], annColors=cdesc.color, filename='2.0_coefmap.pdf')
-    
     # pheatmap version
     H <- res@fit@H[ , nmf.ord ]
     H.norm <- apply(H, 2, function(x)x/max(x))
     pheatmap(H.norm, cluster_row=F, annotation_col=cdesc[, rev(c(class.variable, variable.other))],
              annotation_colors = cdesc.color,
              color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), 
-             filename='2.1_coefmap_pheatmap.pdf', cellwidth = cw, cellheight = ch)
+             filename='2.1_coefmap_pheatmap_clustered.pdf', cellwidth = cw, cellheight = ch)
     
     ## disable clustering
-    #pheatmap(H.norm[, order(cdesc[, 'NMF.consensus'])], cluster_row=F, cluster_cols = F, annotation_col=cdesc[order(cdesc[, 'NMF.consensus']), rev(c(class.variable, variable.other) )],
     pheatmap(H.norm, cluster_row=F, cluster_cols = F, annotation_col=cdesc[ , rev(c(class.variable, variable.other) )],
              annotation_colors = cdesc.color,
              color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), 
              filename='2.2_coefmap_pheatmap_sorted.pdf', cellwidth = cw, cellheight = ch)
     
-    
-    #pheatmap(H.norm, cluster_row=F, color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), filename='2_coefmap_pheatmap.pdf')
-    
-    
     ## #######################################
     ## consensus map
     cons <- res@consensus[nmf.ord, nmf.ord]
-    #colnames(cons) <- rownames(cons) <- colnames(H)
     
     res2 <- res
     res2@consensus <- cons
     consensusmap(res2, filename=paste('3.0_consensusmap_nrun_', opt$nrun, '.pdf', sep=''))
     
-    #cons.ord <- order(NMF.consensus)
-    #cons <- cons[cons.ord, cons.ord ]
-    
+    ## pheatmap version
     pheatmap(cons, cluster_row=F, cluster_col=F, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
              annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
              cellwidth = cw, cellheight = ch,
              filename=paste('3.1_consensusmap_nrun_', opt$nrun,'_pheatmap.pdf', sep=''))
-    
-    
-    ## ##########################################
-    ## consensus matrix from bootstrapping
-    #cons.bs <- res.cons[[as.character( rank )]]
-    #try(
-    #  pheatmap(cons.bs, cluster_row=T, cluster_col=T, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-    #         annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
-    #         annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
-    #         cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
-    #         filename=paste('3.2_consensus_matrix_bootstrap_nrun_', nrun.bs,'.pdf', sep=''))
-    #    )
-    
-    ## ordered by NMF cluster assignment
-    #cdesc.bs <- cdesc[ , rev(c(class.variable, variable.other))]
-    #ord.idx <- order(cdesc.bs$NMF.consensus)
-    #cons.bs.ord <- cons.bs[ ord.idx, ord.idx ]
-    
-    #pheatmap(cons.bs.ord, cluster_row=F, cluster_col=F, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
-    #         annotation_row = cdesc[ , rev(c(class.variable, variable.other))],
-    #         annotation_colors=cdesc.color, color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), 
-    #         cellwidth = cw-10, cellheight = ch-10, symm=T, fontsize_row = 5, fontsize_col = 5,
-    #         filename=paste('3.3_consensus_matrix_bootstrap_nrun_', nrun.bs,'_NMF_ordered.pdf', sep=''))
     
     ## ###############################################################
     ##
@@ -473,18 +492,17 @@ nmf.plots <- function(ws){
     # 
     #success <- F
     ## ###############################################################################
-    feature.methods <- list('kim', 'max', 1, 10L)
-    feature.methods.scores <- list('kim', 'max', 'max', 'max')
-    
-    
+      
     ## ##############################################################
     ##
     ##           extract meta feature matrix
     ##
     ## used as ranking for cluster marker selection
     ## ##############################################################
+    
     W <- res@fit@W
     colnames(W) <- 1:ncol(W)
+    
     ## row-normalize
     W.norm <- t(apply(W, 1,  function(x)x/sum(x)))
     
@@ -504,9 +522,6 @@ nmf.plots <- function(ws){
     for(ii in feat.comb){
       idx.tmp <- grep(glue("^{ii}_(up|down)$"), rownames(W.norm))
       
-      #direction.tmp <- sub('.*_(.*)$', '\\1', rownames(W.norm)[idx.tmp])
-      #for(iii in 1:length(idx.tmp))
-      
       W.tmp <- W.norm.dir[ idx.tmp, ]
       if(length(idx.tmp) > 1){
         W.norm.comb[ii, ] <- apply(W.tmp, 2, function(x) x[ which.max(abs(x)) ])
@@ -515,20 +530,27 @@ nmf.plots <- function(ws){
       }
       
     }
-    ## gct
-    #w.comb.rdesc <- data.frame(Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), stringsAsFactors = F)
+    ## create GCT file
     if(opt$gene.column %in% colnames(rdesc)){
       w.comb.rdesc <- data.frame(
         Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), 
         geneSymbol=gct.comb@rdesc[rownames(W.norm.comb), opt$gene.column],
         stringsAsFactors = F)
+      
+      ## if 'opt$gene.column' was not present in all tables
+      ## use rownames to extract gene symbols...
+      if(sum(is.na(w.comb.rdesc$geneSymbol)) > 0){
+        na.idx <- which(is.na(w.comb.rdesc$geneSymbol))
+        w.comb.rdesc$geneSymbol[na.idx] <- sub('^(.*?)-(.*)$','\\2', rownames(W.norm.comb)[ na.idx ])                 
+      }
+
     } else {
       w.comb.rdesc <- data.frame(
         Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)), 
         geneSymbol=rownames(W.norm.comb), 
         stringsAsFactors = F)
-      
     }
+
     rownames(w.comb.rdesc) <- rownames(W.norm.comb)
     w.gct <- new('GCT')
     w.gct@mat <- data.matrix(W.norm.comb)
@@ -537,15 +559,14 @@ nmf.plots <- function(ws){
     w.gct@rdesc <- w.comb.rdesc
     write.gct(w.gct, ofile=glue("matrix_W_combined_signed"))
     
-    ## export
-    #write.table(W.norm.comb, sep='\t', quote=F,  na='', col.names=NA, file=glue("matrix_W_combined.txt"))
-    
-    
-    ## #############################################################
+    ################################################################
     ## 
     ##                      extract features
     ##
     ## ##############################################################
+    feature.methods <- list('kim', 'max', 1, 10L)
+    feature.methods.scores <- list('kim', 'max', 'max', 'max')
+    
     success <- F
     pdf('4.0_histogram_feature_scores.pdf')
     j <- 1
@@ -597,11 +618,6 @@ nmf.plots <- function(ws){
       cons.map <- cons.map[-c(rm.idx)]
       cons.map.max <- cons.map.max[-c(rm.idx)]
     }
-    
-    #pdf('4.0_histogram_feature_scores.pdf')
-    #hist( unlist(s.i), main=paste("Feature scores (method:", feature.methods[[1]],")"), xlab='Feature score' )
-    #dev.off()
-    
     
     ## ####################################
     ##  annotate the features
@@ -658,6 +674,7 @@ nmf.plots <- function(ws){
     
     ## ################################################################
     if(opt$gene.column %in% colnames(rdesc)){
+      
       ## add description and enzyme codes
       s.acc.gn.anno <- lapply( s.acc.gn, function(x)
         AnnotationDbi::select(org.Hs.eg.db, keys=x$SYMBOL , column=c( 'GENENAME',  'ENZYME'), keytype='SYMBOL', multiVals='first')
@@ -696,7 +713,6 @@ nmf.plots <- function(ws){
     ## all features
     list2env(s.acc.gn.anno , envir=.GlobalEnv)
     WriteXLS(names(s.acc.gn.anno), ExcelFileName=paste('NMF_features_N_', length(unique(unlist(s.acc2))),'.xlsx', sep=''), FreezeRow=1, FreezeCol=1, SheetNames=make.unique(substr(names(s.acc.gn.anno), 1, 20)), row.names=F, BoldHeaderRow=T, AutoFilter=T)
-    
     
     
     
@@ -744,7 +760,6 @@ nmf.plots <- function(ws){
     cc <- 1
     for(i in names(s.gn)){
       
-      
       m <- expr[ s.acc[[i]]$Accession, ]
       
       if( !is.null(nrow(m))){
@@ -768,7 +783,6 @@ nmf.plots <- function(ws){
         cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color)
         #hm <- Heatmap(m, col=rev(brewer.pal (11, "RdBu")), 
         hm <- Heatmap(m, col=col.hm, 
-                      
                       cluster_columns = F,
                       top_annotation = cdesc.ha, 
                       split = sub('-.*','',rownames(m)),
@@ -818,9 +832,7 @@ nmf.plots <- function(ws){
       m[m < -m.max] <- -m.max
       
     }
-    #pheatmap(m, scale='none', fontsize_row=0, annotation_row = rdesc.feat, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, 
-    #         clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.0_heatmap_ALL_features.pdf', show_rownames=F, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cellwidth = cw)
-    pheatmap(m, scale='none', fontsize_row=0, annotation_row = rdesc.feat, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, 
+    pheatmap(m, scale='none', annotation_row = rdesc.feat, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, 
              cluster_cols = F, filename='6.0_heatmap_ALL_features.pdf', show_rownames=F, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cellwidth = cw)
     
     
@@ -850,10 +862,8 @@ nmf.plots <- function(ws){
     draw(hm)
     for(an in rev(c(class.variable, variable.other)) ) {
       decorate_annotation(an, {
-        # annotation names on the right
-        grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
         # annotation names on the left
-        #grid.text(an, unit(0, "npc") - unit(2, "mm"), 0.5, default.units = "npc", just = "right")
+        grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
       })
     }
     dev.off()
@@ -887,9 +897,7 @@ nmf.plots <- function(ws){
     #if(length( grep('CNV',names(data.str)) ) > 0 ){
     if(length( grep('^CNV-', rownames(m) )) > 0 ){
       
-      #if('CNV' %in% names(data.str)){
       m.org <- m
-      #m <- expr.org[ unique( unlist(s.acc)[-grep('CNV',  unlist(s.acc))] ), ]
       cnv.idx <- grep('CNV-', rownames(m.org))
       
       if(length(cnv.idx) > 0){
@@ -902,7 +910,6 @@ nmf.plots <- function(ws){
           m[m > m.max] <- m.max
           m[m < -m.max] <- -m.max
         }
-        #pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.2_heatmap_ALL_features_no_CNV.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
         pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], 
                  annotation_colors=cdesc.color, cluster_cols = F, filename='6.2_heatmap_ALL_features_no_CNV.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
         
@@ -924,17 +931,11 @@ nmf.plots <- function(ws){
         draw(hm)
         for(an in rev(c(class.variable, variable.other)) ) {
           decorate_annotation(an, {
-            # annotation names on the right
-            grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
             # annotation names on the left
-            #grid.text(an, unit(0, "npc") - unit(2, "mm"), 0.5, default.units = "npc", just = "right")
+            grid.text(an, unit(1, "npc") + unit(2, "mm"), 0.5, default.units = "npc", just = "left")
           })
         }
         dev.off()
-        
-        
-        
-        
         
         ## ##############################################################################
         ## CNV only
@@ -943,13 +944,9 @@ nmf.plots <- function(ws){
         m[m > 1] <- 1
         m[m < -1] <- -1
         m.max <- ceiling(max(abs(m), na.rm=T))
-        #pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color, clustering_distance_col='euclidean', clustering_method='ward.D2', filename='6.2_heatmap_ALL_features_CNV_only.pdf', show_rownames=F,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
         pheatmap(m, scale='none', fontsize_row=3, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color,
                  cluster_cols = F, filename='6.2_heatmap_ALL_features_CNV_only.pdf', show_rownames=T,breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")))
         
-        
-        
-        #m <- m[, colnames(m)[ord.idx]]
         
         ## #####################################
         ## complexheatmap

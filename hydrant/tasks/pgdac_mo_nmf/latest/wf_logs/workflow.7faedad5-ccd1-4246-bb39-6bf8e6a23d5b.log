@@ -1,0 +1,2 @@
+2019-02-19 14:31:13,412 INFO  - MaterializeWorkflowDescriptorActor [UUID(7faedad5)]: Parsing workflow as WDL draft-2
+2019-02-19 14:31:15,525 INFO  - $a [UUID(7faedad5)]: Copying workflow logs from /media/sf_Dropbox/Devel/PGDAC/hydrant/tasks/pgdac_mo_nmf/cromwell-workflow-logs/workflow.7faedad5-ccd1-4246-bb39-6bf8e6a23d5b.log to running/wf_logs/workflow.7faedad5-ccd1-4246-bb39-6bf8e6a23d5b.log

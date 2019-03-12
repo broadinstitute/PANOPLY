@@ -1,0 +1,15 @@
+{
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.class_colors": "Stage=1:grey90;1A:grey80;1B:grey70;2A:grey60;2B:grey50;3:grey40;3A:grey30|Region.of.Origin=western:red;asian:green|Smoking.Status=smoker:darkred;non-smoker:darkgreen|TP53=0:white;1;black|KRAS=0:white;1:black",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.class_variable": "Stage",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.genes_of_interest": "TP53;KRAS",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.impute": true,
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.kmax": 3,
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.kmin": 4,
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.no_plot": false,
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.nrun": 10,
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.other_variable": "Region.of.Origin;Smoking.Status;TP53;KRAS",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.output_prefix": "test",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.seed": "random",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.tar_file": "/media/sf_Karsten/Projects/CPTAC3/PGDAC/LUAD/20190219_mo-nmf-v1.1/data/luad-v1.1-prot-psty-rna-cnv-500.tar",
+  "pgdac_mo_nmf_workflow.pgdac_mo_nmf.z_score": false
+}

@@ -13,7 +13,7 @@ if(OS == 'Darwin')
   
 
 
-source(paste(url.stem, "misc.r", sep='/') )
+#source(paste(url.stem, "misc.r", sep='/') )
 
 ##source(paste("c:/Users/Karsten/Dropbox/Devel/Code/misc.r", sep='/') )
 
