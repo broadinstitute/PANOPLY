@@ -78,8 +78,7 @@ if [[ ! -z "$recreate_dir" ]]; then
     hydrant init $wf_name -c $wf_name"-config.txt" -n 0
 else
     echo "Copying source files to docker dir..."
-    src_dir="$( cat $wf_name-config.txt | grep "Src" | cut -d'=' -f2 )"
-    cp $src_dir/* $wf_name/$wf_name/src/.
+    cp $wspace/src/$wf_name/* $wf_name/$wf_name/src/.
 fi
 
 # Enter <wf_name>/<wf_name>/ 
@@ -116,8 +115,9 @@ if [[ ! -z "$common_util" ]]; then
 fi
 
 # Edit docker base in dockerfile
-if [[ ! -z "$modify_from_docker" ]]; then
+if [[ ! -z "$modify_docker_from" ]]; then
     sed -i '' "s|broadcptac/r-util:2|broadcptac/$modify_docker_from:1|g" Dockerfile
+    sed -i '' "s|broadcptac/pgdac_common:1|broadcptac/$modify_docker_from:1|g" Dockerfile
 fi
 
 # Build & Push Docker
