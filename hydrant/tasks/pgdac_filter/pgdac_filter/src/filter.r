@@ -1,11 +1,12 @@
 
 source ('config.r')
-library (dplyr)  # transition to dplyr to make data wranging more consistent and bug-free
+pacman::p_load (dplyr)  # transition to dplyr to make data wranging more consistent and bug-free
 
 
 filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
                             na.max=NULL, no.na=TRUE, separate.QC.types=TRUE, cls=NULL,
-                            min.numratio=1, n.min.numratio=NULL, sd.threshold=NULL) {
+                            min.numratio=1, n.min.numratio=NULL, sd.threshold=NULL,
+                            combine.replicates=NULL) {
   ## filter input dataset
   ## separate QC pass/fail by default
   
@@ -68,16 +69,48 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
     # only if numratio file is specified
     numratios <- parse.gctx (numratio.file)
     d.numratios <- numratios@mat
-    if ( is.null (n.min.numratio) ) min.numratio.count <- ifelse (is.null (na.max), ncol (d.numratios), na.max )
-    else min.numratio.count <- n.min.numratio
-    ds <- row.subset.gct (ds, index=unlist (apply (d.numratios, 1, 
-                                                   function (x) sum (x < min.numratio, na.rm=TRUE) < min.numratio.count)))
+    if ( is.null (n.min.numratio) ) {
+      # normally, ALL samples must have num ratio >= min.numratio
+      keep <- unlist (apply (d.numratios, 1, function (x) all (x >= min.numratio, na.rm=TRUE)))
+    } else {
+      # if n.min.numratio is specified, then at least that many samples should have num ratios >= min.numratios
+      if (n.min.numratio < 1) n.min.numratio <- ceiling (ncol(ds@mat) * n.min.numratio)    # convert to integer if a fraction
+      keep <- unlist (apply (d.numratios, 1, 
+                             function (x) sum (x >= min.numratio, na.rm=TRUE) >= n.min.numratio))
+    }
+    ds <- row.subset.gct (ds, index=keep)
   }
   
   if (!is.null (sd.threshold))
     # exclude rows with SD less than sd.threshold
     ds <- row.subset.gct (ds, index=apply (ds@mat, 1, sd, na.rm=TRUE) > sd.threshold)
 
+  if (!is.null (combine.replicates) && input.ver == 3) {
+    # combine replicate samples; possible options -- first, mean, median
+    # replicates are identified by identical (Participant,Type) 
+    # or (Participant) only if Type does not exist
+    # executed only for GCT v1.3 inputs
+    avail.cols <- intersect (colnames (ds@cdesc), c ('Participant', 'Type'))
+    if (length (avail.cols) > 0 && 'Participant' %in% avail.cols) {
+      dup.table <- ds@cdesc %>% mutate (sample.num=row_number()) %>% 
+        mutate (group.num=group_indices (., !!!rlang::syms (avail.cols))) %>%
+        group_by (group.num) %>% filter (n() > 1)
+      for (g in unlist (unique (dup.table [,'group.num']))) {
+        rows <- unlist (dup.table [ dup.table[,'group.num']==g, 'sample.num'])
+        # replace first occurance of replicate with combined value
+        ds@mat[,rows[1]] <- apply (ds@mat[,rows], 1, function (x) { 
+          switch (combine.replicates,
+                  "first"=x[1],
+                  "mean"=mean (x, na.rm=T),
+                  "median"=median (x, na.rm=T)) })
+      }
+      # keep first occurance only, and fix cls
+      keep.samples <- !duplicated (ds@cdesc[, avail.cols])
+      ds <- subset.gct (ds, keep.samples)   
+      cls <- cls [keep.samples]
+    }    
+  }
+  
   if (! is.null (na.max)) {
     # keep rows with no more than na.max missing values
     ds <- row.subset.gct (ds, index=apply (ds@mat, 1, function (x) sum (!is.finite (x)) < na.max))
@@ -105,10 +138,12 @@ if (apply.SM.filter && file.exists(nr.file.path)) {
 # With SD filter
 filter.dataset (paste (type, '-ratio-norm', sep=''), 
                 numratio.file=nr.file,
-                na.max=na.max, min.numratio=min.numratio, sd.threshold=sd.filter.threshold)
+                na.max=na.max, min.numratio=min.numratio, sd.threshold=sd.filter.threshold,
+                combine.replicates='mean', n.min.numratio=min.numratio.fraction)
 # No SD filter (to retain max proteins, for mRNA correlation)
 filter.dataset (paste (type, '-ratio-norm', sep=''), 
                 numratio.file=nr.file,
                 out.prefix=paste (type, '-ratio-norm-nosdfilter', sep=''),
-                na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL)
+                na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL,
+                combine.replicates='mean', n.min.numratio=min.numratio.fraction)
 

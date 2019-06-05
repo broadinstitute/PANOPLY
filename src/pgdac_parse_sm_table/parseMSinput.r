@@ -79,6 +79,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
     }
     n <- n.channels - 1
     ratio.fields <- grep (ratio.pat, header.1 [1:length(header.2)])
+    stddev.fields <- grep (stddev.pat, header.1 [1:length(header.2)])
     intensity.fields <- grep (intensity.pat, header.1 [1:length(header.2)])
     numratio.fields <- grep (numratio.pat, header.1[1:length(header.2)])
     numspectra.fields <- rep (grep (numspectra.pat, header.1[1:length(header.2)]), each=n)
@@ -99,13 +100,14 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
     }
     
     return (list (col.numbers=list (ratio.fields=ratio.fields,
+                                    stddev.fields=stddev.fields,
                                     intensity.fields=intensity.fields,
                                     numratio.fields=numratio.fields, 
                                     numspectra.fields=numspectra.fields,
                                     totalint.fields=totalint.fields,
                                     unique_pep.fields=unique_pep.fields,
                                     refint.fields=refint.fields),
-                  cols.list=c('ratio', 'intensity', 'num-ratio', 'num-spectra',
+                  cols.list=c('ratio', 'stddev', 'intensity', 'num-ratio', 'num-spectra',
                               'precursor-intensity', 'unique-peptides', 'reference-intensity'),
                   col.names=col.names, col.names.all=header.1))
   }

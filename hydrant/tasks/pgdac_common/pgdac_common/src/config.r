@@ -92,6 +92,7 @@ set.label.type <- function (label.type) {
     ## regex patterns for various matching
     assign ("header.pat",  '.*TMT*', envir = .GlobalEnv)
     assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("stddev.pat",  '.*stddev$', envir = .GlobalEnv)
     assign ("intensity.pat",  '^TMT_1[23][67890][NC]*_total$', envir = .GlobalEnv)
     assign ("numratio.pat",  '.*numRatios.*_131$', envir = .GlobalEnv)
     assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
@@ -110,6 +111,7 @@ set.label.type <- function (label.type) {
     ## regex patterns for various matching
     assign ("header.pat",  '.*TMT*', envir = .GlobalEnv)
     assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("stddev.pat",  '.*stddev$', envir = .GlobalEnv)
     assign ("intensity.pat",  '^TMT_1[23][17890][NC]*_total$', envir = .GlobalEnv)
     assign ("numratio.pat",  '.*numRatios.*_126$', envir = .GlobalEnv)
     assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
@@ -128,6 +130,7 @@ set.label.type <- function (label.type) {
     ## regex patterns for various matching
     assign ("header.pat",  '.*iTRAQ*', envir = .GlobalEnv)
     assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("stddev.pat",  '.*stddev$', envir = .GlobalEnv)
     assign ("intensity.pat",  '^iTRAQ_11[456]_total$', envir = .GlobalEnv)
     assign ("numratio.pat",  '.*numRatios.*_117$', envir = .GlobalEnv)
     assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
@@ -179,6 +182,7 @@ ndigits <- 5
 
 ## Missing values and filtering
 na.max <- 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+min.numratio.fraction <- 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
 sample.na.max <- 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
 nmiss.factor <- 0.5            # for some situations, a more stringent condition is needed
 sd.filter.threshold <- 0.5     # SD threshold for SD filtering

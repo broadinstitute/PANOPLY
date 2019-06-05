@@ -16,7 +16,7 @@ create.cls <- function (out.prefix, expt.design, type.cls=NULL) {
     sample.order <- ds@cid
     # create expt.design file for use downstream in the pipeline
     expt.desn <- data.frame (ds@cdesc)
-    write.csv (expt.desn, expt.design.file, row.names=FALSE, quote=FALSE)
+    write.csv (expt.desn, expt.design.file, row.names=FALSE, quote=TRUE)
   } else {
     tumor.info <- read.csv (expt.design)
     rownames (tumor.info) <- tumor.info[,'Sample.ID']
