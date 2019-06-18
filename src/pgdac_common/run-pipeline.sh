@@ -30,10 +30,9 @@ function usage {
   echo "             -p <parameters-file> -t <type>  -m <data>"
   echo "             -rna <rna-expression> -cna <copy-number-data>"
   echo "             -g <groups> -pe <#processors>"
-  echo "             -CMAPgroup <CMAP-group-name>  -CMAPtype <CMAP-data-type>  -CMAPnperm <CMAP # permutations>"
-  echo "             -CMAPscr <CMAP-subset-scores-directory>  -CMAPlog <log-transfrom-CNA-data>" 
-  echo "             -CMAPpmt <CMAP-permutation-scores-directory> -CMAPrpt <CMAP-rank-point-n>"
-  echo "             -CMAPth <CMAP-rankpoint-threshold> -CMAPgenes <CMAP-input-gene-list-file>"
+  echo "             -CMAPgroup <CMAP-group-name>  -CMAPtype <CMAP-data-type>"
+  echo "             -CMAPnperm <CMAP # permutations> -CMAPpmt <CMAP-permutation-scores-directory>"
+  echo "             -CMAPscr <CMAP-subset-scores-directory> -CMAPcfg <CMAP-config-file>" 
   echo "   OPERATIONs allowed are listed below"
   echo "   <input-tarball> is a tar file with the initialized directory structure"
   echo "       if specfied, -s, -r, -c and -d are not required -- allowed only when OPERATION is not input*"
@@ -53,12 +52,9 @@ function usage {
   echo "   <CMAP-group-name> is group name for which CNA analysis was performed; defaults to 'all'"
   echo "   <CMAP-data-type> is data type for CMAP analysis; 'pome' or 'mrna'"
   echo "   <CMAP # permutations> is number of CMAP permutations to derive FDR"
-  echo "   <CMAP-subset-scores-directory> is directory containing CMAP scores for data subsets run in parallel"
-  echo "   <CMAP-permutation-scores-directory> is directory containing CMAP scores for permutation subsets run in parallel"
-  echo "   <CMAP-rank-point-n> determines how many ranks are averaged to opbtain the rank point"
-  echo "   <CMAP-rankpoint-threshold> is the rank point threshold beyond which a query is considered enriched"
-  echo "   <CMAP-input-gene-list-file> is a file containing genes that must be included in CMAP input"
-  echo "   <log-transfrom-CNA-data> whether to log transform CNA data for CMAP analysis; 'TRUE' or 'FALSE'"
+  echo "   <CMAP-subset-scores-directory> is directory containing CMAP scores for data subsets run"
+  echo "   <CMAP-permutation-scores-directory> is directory containing CMAP scores for permutation"
+  echo "   <CMAP-config-file> is file with CMAP analysis parameters to over-ride defaults"
   echo "   Input Requirements:"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
   echo "     OPERATION inputNorm requires (-n, -r, -c)"
@@ -68,8 +64,8 @@ function usage {
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
   echo "     OPERATION CNAcorr requires (-i,); -i is tar output from CNAsetup"
-  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPnperm, -CMAPlog, -CMAPgenes); -i is tar output from CNAcorr"
-  echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPnperm, -CMAPpmt, CMAPrpt, -CMAPth); -i is tar output from CMAPsetup"
+  echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm); -i is tar output from CNAcorr"
+  echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
   echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
   echo "   Use -h to print this message."
@@ -273,13 +269,10 @@ groups=
 pe=
 cmap_group="all"
 cmap_type="pome"
-cmap_nperm="0"
-cmap_log="FALSE"
 cmap_scores=
-cmap_permutation=
-cmap_rankpt_n="4"
-cmap_rankpt_thresh="85"
-cmap_genes_file=
+cmap_nperm="0"
+cmap_permutation="tmp"
+cmap_config_file=
 prefix="proteome"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -320,20 +313,14 @@ while [ "$1" != "" ]; do
 	         shift; cmap_group=$1 ;;
 	-CMAPtype )
 	         shift; cmap_type=$1 ;;
-	-CMAPnperm )
-	         shift; cmap_nperm=$1 ;;
-	-CMAPlog )
-	         shift; cmap_log=$1 ;;
 	-CMAPscr )
 	         shift; cmap_scores=$1 ;;
-	-CMAPpmt )
-	         shift; cmap_permutation=$1 ;;
-	-CMAPrpt )
-	         shift; cmap_rankpt_n=$1 ;;
-	-CMAPth )
-	         shift; cmap_rankpt_thresh=$1 ;;
-	-CMAPgenes )
-	         shift; cmap_genes_file=`readlink -f $1` ;;
+	-CMAPnperm )
+           shift; cmap_nperm=$1 ;;
+  -CMAPpmt )
+           shift; cmap_permutation=$1 ;;
+	-CMAPcfg )
+	         shift; cmap_config_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
 	* )      usage; exit 1
   esac
@@ -557,12 +544,9 @@ case $op in
 #            input must be tar file obtained after CNAcorr
     CMAPsetup ) analysisInit "CMAPsetup"
                 for f in cmap-input.r connectivity.r; do cp $code_dir/cmap-analysis/$f $cmap_dir/$f; done
-                if [ "$cmap_genes_file" != "" ]; then
-                  cp $cmap_genes_file $cmap_dir/cmap-input-genes-list.txt
-                fi
                 (cd $cmap_dir;
                  # generate cmap input genesets
-                 Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm $cmap_log)
+                 Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm $cmap_config_file)
                 # copy output (geneset file) to job wd (parent of $analysis_dir)
                 cp $cmap_dir/$cmap_group-cmap-$cmap_type-updn-genes.gmt ../cmap-trans-genesets.gmt
                 cp $cmap_dir/$cmap_group-cmap-$cmap_type-permuted-genes-*.gmt ../. 2>/dev/null || :    # permuted files may not always exist
@@ -576,7 +560,7 @@ case $op in
                 fi
                 (cd $cmap_dir;
                  # combine subset scores, and calculate connectivity scores
-                 Rscript connectivity.r $cmap_scores $cmap_group $cmap_type $cmap_nperm $cmap_permutation $cmap_rankpt_n $cmap_rankpt_thresh)
+                 Rscript connectivity.r $cmap_scores $cmap_group $cmap_type $cmap_nperm $cmap_permutation $cmap_config_file)
              ;;
 #   sampleQC: sample-level correlation between p'ome, RNA and CNA, with some clustering/fanplots
 #             input must be tar file obtained after harmonize
