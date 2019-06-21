@@ -1,8 +1,9 @@
 task pgdac_cmap_connectivity {
   File tarball
-  Int permutations
-  Int? rankpt_n
-  Int? rankpt_threshold
+  File? cmap_config
+  String? cmap_group
+  String? cmap_type
+  Int? permutations
   Array[File] subset_scores
   Array[File]? permutation_scores
   String scores_dir = "cmap-subset-scores"
@@ -32,7 +33,7 @@ task pgdac_cmap_connectivity {
     fi
     
     # combine shards/gather and run conectivity score calculations
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${permutations} -CMAPpmt ${permutation_dir} -CMAPrpt ${default="4" rankpt_n} -CMAPth ${default="85" rankpt_threshold}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${default="0" permutations} -CMAPpmt ${permutation_dir} ${"-CMAPcfg " + cmap_config} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type}
   }
 
   output {
@@ -55,10 +56,9 @@ task pgdac_cmap_connectivity {
 
 task pgdac_cmap_input {
   File tarball   # output from pgdac_cna_correlation
-  File? cmap_input_genes
+  File? cmap_config
   String? cmap_group
   String? cmap_type
-  String? cmap_log
   Int? cmap_permutations
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "pgdac_cmapsetup-output.tar"
@@ -71,7 +71,7 @@ task pgdac_cmap_input {
   
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} ${"-CMAPlog " + cmap_log} ${"-CMAPgenes " + cmap_input_genes}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} ${"-CMAPcfg " + cmap_config}
   }
   
   output {
