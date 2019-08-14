@@ -41,7 +41,7 @@ task pgdac_cmap_connectivity {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:2"
+    docker : "broadcptac/pgdac_cmap_analysis:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, permutations+1]) + ""
@@ -81,7 +81,7 @@ task pgdac_cmap_input {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_main:2"
+    docker : "broadcptac/pgdac_cmap_analysis:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

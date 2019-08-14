@@ -284,6 +284,7 @@ if (!is.na (args[6])) source (toString (args[6]))
 
 ## calculate connectivity scores and determine significance
 summarize.cmap.results (subset.scores.dir=scores.dir, results.prefix=paste (gr, 'cmap', typ, sep='-'), 
-                        group=gr, dtype=typ, legacy.score=legacy.score, cmap.fdr=cmap.fdr,
+                        group=gr, dtype=typ, legacy.score=legacy.score, 
+                        cis.fdr=cis.fdr, cmap.fdr=cmap.fdr,
                         nperm=n, permuted.scores.dir=perm.dir, 
                         rankpt.n=rankpt.n, mean.rankpt.threshold=mean.rankpt.threshold)

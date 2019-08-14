@@ -16,3 +16,7 @@ To build dockers for tasks, here is a step-by-step:
    -t <docker_tag>  is needed; else docker build/push fails
    -b               to build and push docker
 
+When building pgdac_common, add the -u flag.
+When building a new module, add the -r flag.
+
+For new modules, an appropriate Dockerfile needs to be specified using -i or -o

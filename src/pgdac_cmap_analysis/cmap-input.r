@@ -52,8 +52,8 @@ generate.cmap.input <- function (target.cna.dir,
   # top genes are picked based on (i) number of significant events; and
   # (ii) whether they have been knocked down in the CMAP profiles
   # if provided, genes listed in input.genes are always retained
-  if (file.exists(input.genes)) {
-    must.keep <- as.character (read.delim (input.genes, header=FALSE)[,1])
+  if (!is.null(input.genes)) {
+    must.keep <- input.genes
     sigevents <- rbind (sigevents.all [sigevents.all [,'HGNCsymbol'] %in% must.keep & 
                                          !sigevents.all[,'HGNCsymbol'] %in% sigevents[,'HGNCsymbol'], ],   # avoid duplicates
                         sigevents)
@@ -196,6 +196,28 @@ if (!is.na (args[6])) source (toString (args[6]))
 
 ## execute generator function
 generate.cmap.input (target.cna.dir=cna.dir, cmap.kd.genelist=kd.list, input.genes=must.include.genes,
-                     group=gr, dtype=typ, generate.permuted.genesets=perm, log.transform=log.transform)
+                     group=gr, dtype=typ, generate.permuted.genesets=perm, 
+                     cna.threshold=cna.threshold, cna.effects.threshold=cna.effects.threshold,
+                     min.sigevents=min.sigevents, max.sigevents=max.sigevents,
+                     top.N=top.N, fdr.pvalue=fdr.pvalue,
+                     log.transform=log.transform)
 
+
+
+generate.cmap.input <- function (target.cna.dir,
+                                 cmap.kd.genelist, 
+                                 input.genes=NULL,           # genes listed here will always be included
+                                 group='all',                # subgroup name on which CNA analysis was run
+                                 dtype='pome',               # dtype is either pome or mrna
+                                 generate.permuted.genesets=0,  # number of permuted datasets to generate
+                                 # if >0, generate permuted genesets; else output actual genesets
+                                 cna.threshold=0.3,          # copy number up/down if abs (log2(copy number) - 1) is > 0.3
+                                 cna.effects.threshold=15,   # min number of tumors with up/down copy number to include gene for CMAP analysis
+                                 min.sigevents=20,           # gene must have at least this many significant trans events to be considered  
+                                 max.sigevents=1800,         # if a gene has more then max.sigevents, the top max.sigevents will be chosen
+                                 #  (having >1999 items in a geneset results in a crash -- unix buffer limits?)
+                                 top.N=500,
+                                 fdr.pvalue=0.05,
+                                 exclude.cis=FALSE,
+                                 log.transform=FALSE)
 

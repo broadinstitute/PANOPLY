@@ -543,7 +543,7 @@ case $op in
 #   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creats input files (genesets)
 #            input must be tar file obtained after CNAcorr
     CMAPsetup ) analysisInit "CMAPsetup"
-                for f in cmap-input.r connectivity.r; do cp $code_dir/cmap-analysis/$f $cmap_dir/$f; done
+                for f in cmap-input.r connectivity.r; do cp $code_dir/$f $cmap_dir/$f; done
                 (cd $cmap_dir;
                  # generate cmap input genesets
                  Rscript cmap-input.r "../$cna_dir" "../$data_dir/cmap-knockdown-genes-list.txt" $cmap_group $cmap_type $cmap_nperm $cmap_config_file)
