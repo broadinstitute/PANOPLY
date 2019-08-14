@@ -212,6 +212,8 @@ if (type == "proteome") {
                   'percentCoverage', 
                   'numPepsUnique',
                   'scoreUnique', 
+		  'numPepsUniqueSubgroupSpecificCI',
+		  'scoreUniqueSubgroupSpecificCI',
                   'species', 
                   'orfCategory',
                   'accession_number', 
