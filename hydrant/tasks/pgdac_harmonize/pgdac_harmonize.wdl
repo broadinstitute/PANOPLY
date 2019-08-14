@@ -1,51 +1,13 @@
-task pgdac_harmonize_piped {
-  File tarball
+task pgdac_harmonize {
+  File inputData
   File rnaExpr
   File cnaExpr
   String type
-  String? subType
-  File? params
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-  String outFile = "pgdac_harmonize-output.tar"
-
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
-
-
-  command {
-    set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize -i ${tarball} -t ${type} -c ${codeDir} -d ${dataDir} -rna ${rnaExpr} -cna ${cnaExpr} -o ${outFile} ${"-m " + subType} ${"-p " + params}
-  }
-
-  output {
-    File outputs = "${outFile}"
-  }
-
-  runtime {
-    docker : "broadcptac/pgdac_harmonize:1"
-    memory : select_first ([memory, 12]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
-  }
-
-  meta {
-    author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
-  }
-}
-
-task pgdac_harmonize_sep {
+  String connected
   String? analysisDir
-  File filteredData
-  File rnaExpr
-  File cnaExpr
-  String type
   String? subType
   File? params
+
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
   String outFile = "pgdac_harmonize-output.tar"
@@ -58,7 +20,30 @@ task pgdac_harmonize_sep {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize -f ${filteredData} -r ${analysisDir} -t ${type} -c ${codeDir} -d ${dataDir} -rna ${rnaExpr} -cna ${cnaExpr} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    if [[ ${connected} = true ]]; then
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
+                  -i ${inputData} \
+                  -t ${type} \
+                  -c ${codeDir} \
+                  -d ${dataDir} \
+                  -rna ${rnaExpr} \
+                  -cna ${cnaExpr} \
+                  -o ${outFile} \
+                  ${"-m " + subType} \
+                  ${"-p " + params};
+    else
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
+                  -f ${inputData} \
+                  -r ${analysisDir} \
+                  -t ${type} \
+                  -c ${codeDir} \
+                  -d ${dataDir} \
+                  -rna ${rnaExpr} \
+                  -cna ${cnaExpr} \
+                  -o ${outFile} \
+                  ${"-m " + subType} \
+                  ${"-p " + params};
+    fi
   }
 
   output {
@@ -80,30 +65,20 @@ task pgdac_harmonize_sep {
 }
 
 workflow pgdac_harmonize_workflow {
-    Boolean isPiped
-    File inputTarOrFiltered
+    String connected
+    File inputData
     File rnaExpr
     File cnaExpr
     String dataType
     String? analysisDir
 
-    if(isPiped){
-        call pgdac_harmonize_piped{
-            input:
-                tarball=inputTarOrFiltered,
-                rnaExpr=rnaExpr,
-                cnaExpr=cnaExpr,
-                type=dataType
-        }
-    }
-    if(!isPiped){
-        call pgdac_harmonize_sep{
-            input:
-                analysisDir=analysisDir,
-                filteredData=inputTarOrFiltered,
-                rnaExpr=rnaExpr,
-                cnaExpr=cnaExpr,
-                type=dataType
-        }
-    }
+  call pgdac_harmonize {
+    input:
+      inputData=inputData,
+      rnaExpr=rnaExpr,
+      cnaExpr=cnaExpr,
+      analysisDir=analysisDir,
+      connected=connected,
+      type=dataType
+  }
 }
