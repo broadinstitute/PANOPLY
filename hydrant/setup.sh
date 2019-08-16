@@ -87,7 +87,7 @@ while getopts ":t:c:w:n:m:g:psfybh" opt; do
         s) dockertemplate $secondary;;
         c) docker_custom="$OPTARG"; dockertemplate $docker_custom;;
         w) wdl="$OPTARG"; copywdl $wdl;; 
-        n) docker_npace="$OPTARG";;
+        n) docker_ns="$OPTARG";;
         m) base_task="$OPTARG"; editdockerfile $base_task;;
         g) docker_tag="$OPTARG";;
         f) freshtask;;
