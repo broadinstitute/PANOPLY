@@ -32,14 +32,15 @@ copywdl() {
 }
 
 buildpushdocker() {
-  cd $pgdac/hydrant/tasks/$task/; 
+  echo "Building and pushing $task docker to dockerhub..."
+  ( cd $pgdac/hydrant/tasks/$task/
   if [[ -z "$docker_tag" ]]; then
-    hydrant build -n $docker_ns
-    hydrant push -n $docker_ns
+    hydrant build -n $docker_ns > buildlog.txt 2>&1;
+    hydrant push -n $docker_ns > buildlog.txt 2>&1;
   else
-    docker build -t $docker_ns/$wf_name:$docker_tag .
-    docker push $docker_ns/$wf_name:$docker_tag
-  fi
+    docker build -t $docker_ns/$task:$docker_tag . > buildlog.txt 2>&1;
+    docker push $docker_ns/$task:$docker_tag > buildlog.txt 2>&1;
+  fi )
 }
 
 editdockerfile() {
