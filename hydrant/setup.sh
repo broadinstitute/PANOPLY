@@ -17,6 +17,7 @@ freshtask() {
 
 copysrc() {
   echo "Copying source files to docker dir...";
+  mkdir -p $pgdac/hydrant/tasks/$task/$task/src/;
   cp -R $pgdac/src/$task/* $pgdac/hydrant/tasks/$task/$task/src/.;
 }
 
@@ -36,6 +37,7 @@ buildpushdocker() {
     docker_tag=1
   fi
   echo "Building $task locally...";
+  echo "!data\n!packages\n!R-utilities" > .dockerignore;
   docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . > buildlog.txt 2>&1;
   echo "Pushing $task to dockerhub...";
   docker push $docker_ns/$task:$docker_tag >> buildlog.txt 2>&1;
@@ -43,6 +45,8 @@ buildpushdocker() {
   rm -rf data;
   rm -rf packages;
   rm -rf src;
+  rm .dockerignore;
+  rm buildlog.txt;
 }
 
 editdockerfile() {
