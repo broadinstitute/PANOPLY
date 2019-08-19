@@ -7,7 +7,7 @@
 ;pgdac_parse_sm_table
 ;pgdac_rna_protein_correlation
 ;pgdac_sampleqc
-=r-util
+=r_util
 ;pgdac_common
 =pgdac_filter
 ;pgdac_normalize_ms_data

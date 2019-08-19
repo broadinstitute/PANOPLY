@@ -2,7 +2,6 @@
 
 cd ..
 pgdac=`pwd`
-cd hydrant
 
 primary=$pgdac/hydrant/primary-dockerfile
 secondary=$pgdac/hydrant/secondary-dockerfile
@@ -32,15 +31,18 @@ copywdl() {
 }
 
 buildpushdocker() {
-  echo "Building and pushing $task docker to dockerhub..."
-  ( cd $pgdac/hydrant/tasks/$task/
+  cd $pgdac/hydrant/tasks/$task/$task/;
   if [[ -z "$docker_tag" ]]; then
-    hydrant build -n $docker_ns > buildlog.txt 2>&1;
-    hydrant push -n $docker_ns > buildlog.txt 2>&1;
-  else
-    docker build -t $docker_ns/$task:$docker_tag . > buildlog.txt 2>&1;
-    docker push $docker_ns/$task:$docker_tag > buildlog.txt 2>&1;
-  fi )
+    docker_tag=1
+  fi
+  echo "Building $task locally...";
+  docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . > buildlog.txt 2>&1;
+  echo "Pushing $task to dockerhub...";
+  docker push $docker_ns/$task:$docker_tag >> buildlog.txt 2>&1;
+  rm -rf R-utilities;
+  rm -rf data;
+  rm -rf packages;
+  rm -rf src;
 }
 
 editdockerfile() {
@@ -54,10 +56,13 @@ copycommonutils(){
   ( cd $pgdac/hydrant/tasks/$task/$task/;
     mkdir -p data;
     mkdir -p packages;
-    mkdir -p R-utilities;
+    mkdir -p src
+    rm -rf proteomics-Rutil;
+    rm -rf R-utilities;
+    git clone https://github.com/broadinstitute/proteomics-Rutil.git;
+    mv proteomics-Rutil R-utilities;
     cp $pgdac/data/* data/.;
     cp $pgdac/hydrant/packages/* packages/.;
-    cp $pgdac/hydrant/r-util/* R-utilities/.;
     echo $'!data\n!packages\n!R-utilities' >> .dockerignore )
 }
 

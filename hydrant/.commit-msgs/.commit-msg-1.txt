@@ -1,0 +1,11 @@
+commit-msg-aug-19/hydrant
+- Cleaned and remodelled the setup shell script. Use ./setup.sh -h to display usage.
+- Edited WDLs for :
+  - pgdac_association, 
+  - pgdac_harmonize, 
+  - pgdac_normalize_ms_data, and 
+  - pgdac_rna_protein_correlation 
+  to simplify the "piped" flag usage. The condition check was migrated from the workflow scope to inside the command section of the main task. The two separate tasks - (task_name)_sep and (task_name)_piped  are now reduced to simply (task_name), thus effectively reducing redundant code. The flag is now called `connected`. If `connected` = true, then this implies that the task is being used as a part of the pgdac_main pipeline; connected with other tasks. If it is false, then it is being run individually; disconnected from the other tasks.
+- Config `.txt` files used by hydrant to initialize task directories are now stored in the folder hydrant/configs.
+- Docker template files are now renamed. 
+- Changed WDLs are tested for individual launches. Integration testing by running all tasks together through a combined pgdac_main WDL is not done in this commit. 

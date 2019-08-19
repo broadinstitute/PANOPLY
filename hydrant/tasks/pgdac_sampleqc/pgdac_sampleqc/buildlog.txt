@@ -1,0 +1,116 @@
+Sending build context to Docker daemon  8.704kB
+Step 1/3 : FROM broadcptac/pgdac_common:1
+ ---> 1721abc828e2
+Step 2/3 : MAINTAINER rkothadi@broadinstitute.org
+ ---> Running in 38e3edb23c65
+Removing intermediate container 38e3edb23c65
+ ---> 2f2a5c63cfde
+Step 3/3 : COPY src /prot/proteomics/Projects/PGDAC/src
+ ---> cf5efa5f9a35
+Successfully built cf5efa5f9a35
+Successfully tagged broadcptac/pgdac_sampleqc:1
+The push refers to repository [docker.io/broadcptac/pgdac_sampleqc]
+9a57df1254f6: Preparing
+adfa7987e468: Preparing
+63f820471480: Preparing
+15ced755b593: Preparing
+76fd38361c3b: Preparing
+2d9ba918b7a5: Preparing
+259b5c9fadea: Preparing
+013235d15490: Preparing
+7644fdd45fa8: Preparing
+9eca72a92518: Preparing
+85760ce0aba8: Preparing
+5c0862257bb3: Preparing
+b45be61cf472: Preparing
+0ce1888456e4: Preparing
+35772b5cc272: Preparing
+d2089262fad1: Preparing
+171a8a4caf1a: Preparing
+768feb3a4c86: Preparing
+2b575e0cbc36: Preparing
+b766a4d8c7b1: Preparing
+e81aee37ffc7: Preparing
+5f9e78025663: Preparing
+7b5a10363979: Preparing
+ea90b3d4cddf: Preparing
+60babe436973: Preparing
+c5d059531aed: Preparing
+e0d9fd313f62: Preparing
+90fb161f2e87: Preparing
+ec3d288e1480: Preparing
+00275370b6ca: Preparing
+81f81b006602: Preparing
+5d3bc0e880ab: Preparing
+9e4fdd7ea440: Preparing
+ed60071c4397: Preparing
+7bff78a06cf4: Preparing
+ec56e2ac74f6: Preparing
+e81aee37ffc7: Waiting
+2d9ba918b7a5: Waiting
+259b5c9fadea: Waiting
+013235d15490: Waiting
+7644fdd45fa8: Waiting
+5f9e78025663: Waiting
+7b5a10363979: Waiting
+9eca72a92518: Waiting
+85760ce0aba8: Waiting
+5c0862257bb3: Waiting
+b45be61cf472: Waiting
+0ce1888456e4: Waiting
+35772b5cc272: Waiting
+d2089262fad1: Waiting
+171a8a4caf1a: Waiting
+768feb3a4c86: Waiting
+2b575e0cbc36: Waiting
+b766a4d8c7b1: Waiting
+ea90b3d4cddf: Waiting
+60babe436973: Waiting
+c5d059531aed: Waiting
+e0d9fd313f62: Waiting
+90fb161f2e87: Waiting
+ec3d288e1480: Waiting
+00275370b6ca: Waiting
+81f81b006602: Waiting
+5d3bc0e880ab: Waiting
+9e4fdd7ea440: Waiting
+ed60071c4397: Waiting
+7bff78a06cf4: Waiting
+ec56e2ac74f6: Waiting
+63f820471480: Mounted from broadcptac/pgdac_rna_protein_correlation
+15ced755b593: Mounted from broadcptac/pgdac_rna_protein_correlation
+76fd38361c3b: Mounted from broadcptac/pgdac_rna_protein_correlation
+adfa7987e468: Mounted from broadcptac/pgdac_rna_protein_correlation
+2d9ba918b7a5: Mounted from broadcptac/pgdac_rna_protein_correlation
+259b5c9fadea: Mounted from broadcptac/pgdac_rna_protein_correlation
+013235d15490: Mounted from broadcptac/pgdac_rna_protein_correlation
+9a57df1254f6: Pushed
+7644fdd45fa8: Mounted from broadcptac/pgdac_rna_protein_correlation
+b45be61cf472: Mounted from broadcptac/pgdac_rna_protein_correlation
+9eca72a92518: Mounted from broadcptac/pgdac_rna_protein_correlation
+5c0862257bb3: Mounted from broadcptac/pgdac_rna_protein_correlation
+85760ce0aba8: Mounted from broadcptac/pgdac_rna_protein_correlation
+0ce1888456e4: Mounted from broadcptac/pgdac_rna_protein_correlation
+768feb3a4c86: Layer already exists
+2b575e0cbc36: Layer already exists
+b766a4d8c7b1: Layer already exists
+171a8a4caf1a: Mounted from broadcptac/pgdac_rna_protein_correlation
+d2089262fad1: Mounted from broadcptac/pgdac_rna_protein_correlation
+e81aee37ffc7: Layer already exists
+35772b5cc272: Mounted from broadcptac/pgdac_rna_protein_correlation
+5f9e78025663: Layer already exists
+7b5a10363979: Layer already exists
+ea90b3d4cddf: Layer already exists
+60babe436973: Layer already exists
+c5d059531aed: Layer already exists
+e0d9fd313f62: Layer already exists
+ec3d288e1480: Layer already exists
+90fb161f2e87: Layer already exists
+00275370b6ca: Layer already exists
+81f81b006602: Layer already exists
+ed60071c4397: Layer already exists
+5d3bc0e880ab: Layer already exists
+9e4fdd7ea440: Layer already exists
+ec56e2ac74f6: Layer already exists
+7bff78a06cf4: Layer already exists
+1: digest: sha256:1b978e13ac35f6d2d63c0fd48e4ad02e39ef9836469ae9b81c30c0100a30c63f size: 7896
