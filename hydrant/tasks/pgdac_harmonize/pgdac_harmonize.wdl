@@ -3,7 +3,7 @@ task pgdac_harmonize {
   File rnaExpr
   File cnaExpr
   String type
-  String connected
+  String standalone
   String? analysisDir
   String? subType
   File? params
@@ -20,7 +20,7 @@ task pgdac_harmonize {
 
   command {
     set -euo pipefail
-    if [[ ${connected} = true ]]; then
+    if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -i ${inputData} \
                   -t ${type} \
@@ -65,7 +65,7 @@ task pgdac_harmonize {
 }
 
 workflow pgdac_harmonize_workflow {
-    String connected
+    String standalone
     File inputData
     File rnaExpr
     File cnaExpr
@@ -78,7 +78,7 @@ workflow pgdac_harmonize_workflow {
       rnaExpr=rnaExpr,
       cnaExpr=cnaExpr,
       analysisDir=analysisDir,
-      connected=connected,
+      standalone=standalone,
       type=dataType
   }
 }

@@ -1,7 +1,7 @@
 task pgdac_association {
   File inputData
   String type
-  String connected
+  String standalone
   String? analysisDir
   File? groupsFile
   String? subType
@@ -17,7 +17,7 @@ task pgdac_association {
 
   command {
     set -euo pipefail
-    if [[ ${connected} = true ]]; then
+    if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -i ${inputData} \
                   -t ${type} \
@@ -58,7 +58,7 @@ task pgdac_association {
 }
 
 workflow pgdac_association_workflow {
-  String connected
+  String standalone
   File inputData
   String? analysisDir
   File? groupsFile
@@ -68,7 +68,7 @@ workflow pgdac_association_workflow {
     input:
       inputData=inputData,
       type=dataType,
-      connected=connected,
+      standalone=standalone,
       analysisDir=analysisDir,
       groupsFile=groupsFile
   }

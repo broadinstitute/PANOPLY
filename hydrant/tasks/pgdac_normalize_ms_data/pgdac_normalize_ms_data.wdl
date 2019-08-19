@@ -1,7 +1,7 @@
 task pgdac_normalize_ms_data {
   File inputData
   String type
-  String connected
+  String standalone
   String? analysisDir
   String? subType
   File? params
@@ -17,7 +17,7 @@ task pgdac_normalize_ms_data {
 
   command {
     set -euo pipefail
-    if [[ ${connected} = true ]]; then
+    if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -i ${inputData} \
               -t ${type} \
@@ -59,14 +59,14 @@ task pgdac_normalize_ms_data {
 workflow pgdac_normalize_ms_data_workflow {
   File inputData
   String dataType
-  String connected
+  String standalone
   String? analysisDir
 
   call pgdac_normalize_ms_data {
     input:
       inputData=inputData,
       type=dataType,
-      connected=connected,
+      standalone=standalone,
       analysisDir=analysisDir
   }
 }
