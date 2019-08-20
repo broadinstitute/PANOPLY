@@ -107,3 +107,18 @@ while getopts ":t:c:w:n:m:g:psfybh" opt; do
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
 done
+
+print_log() {
+  echo "Cleaning up..."
+  mkdir -p $pgdac/hydrant/logs
+  stamp=$(date "+%S%M%H%d%m%Y")
+  logfile="$pgdac/hydrant/logs/$task-log-$stamp.txt"
+  echo "Log-File: Parameter List" > $logfile;
+  echo "task=$task" >> $logfile;
+  echo "docker_custom=$docker_custom" >> $logfile;
+  echo "wdl=$wdl" >> $logfile;
+  echo "docker_ns=$docker_ns" >> $logfile;
+  echo "base_task=$base_task" >> $logfile;
+  echo "docker_tag=$docker_tag" >> $logfile;
+}
+print_log
