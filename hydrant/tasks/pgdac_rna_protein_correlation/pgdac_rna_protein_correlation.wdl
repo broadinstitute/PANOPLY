@@ -2,7 +2,7 @@ task pgdac_rna_protein_correlation {
   File inputData
   File rnaExpr
   String type
-  String connected
+  String standalone
   String? subType
   File? params
   String? analysisDir
@@ -18,7 +18,7 @@ task pgdac_rna_protein_correlation {
 
   command {
     set -euo pipefail
-    if [[ ${connected} = true ]]; then
+    if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr \
                   -i ${inputData} \
                   -t ${type} \
@@ -63,7 +63,7 @@ workflow pgdac_rna_protein_correlation_workflow {
   File rnaExpr
   String dataType
   File inputData
-  String connected
+  String standalone
   String? analysisDir
 
   call pgdac_rna_protein_correlation {
@@ -72,6 +72,6 @@ workflow pgdac_rna_protein_correlation_workflow {
       type=dataType,
       rnaExpr=rnaExpr,
       analysisDir=analysisDir,
-      connected=connected
+      standalone=standalone
   } 
 }

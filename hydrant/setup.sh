@@ -2,7 +2,6 @@
 
 cd ..
 pgdac=`pwd`
-cd hydrant
 
 primary=$pgdac/hydrant/primary-dockerfile
 secondary=$pgdac/hydrant/secondary-dockerfile
@@ -18,6 +17,7 @@ freshtask() {
 
 copysrc() {
   echo "Copying source files to docker dir...";
+  mkdir -p $pgdac/hydrant/tasks/$task/$task/src/;
   cp -R $pgdac/src/$task/* $pgdac/hydrant/tasks/$task/$task/src/.;
 }
 
@@ -32,14 +32,21 @@ copywdl() {
 }
 
 buildpushdocker() {
-  cd $pgdac/hydrant/tasks/$task/; 
+  cd $pgdac/hydrant/tasks/$task/$task/;
   if [[ -z "$docker_tag" ]]; then
-    hydrant build -n $docker_ns
-    hydrant push -n $docker_ns
-  else
-    docker build -t $docker_ns/$wf_name:$docker_tag .
-    docker push $docker_ns/$wf_name:$docker_tag
+    docker_tag=1
   fi
+  echo "Building $task locally...";
+  echo "!data\n!packages\n!R-utilities" > .dockerignore;
+  docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . > buildlog.txt 2>&1;
+  echo "Pushing $task to dockerhub...";
+  docker push $docker_ns/$task:$docker_tag >> buildlog.txt 2>&1;
+  rm -rf R-utilities;
+  rm -rf data;
+  rm -rf packages;
+  rm -rf src;
+  rm .dockerignore;
+  rm buildlog.txt;
 }
 
 editdockerfile() {
@@ -53,10 +60,13 @@ copycommonutils(){
   ( cd $pgdac/hydrant/tasks/$task/$task/;
     mkdir -p data;
     mkdir -p packages;
-    mkdir -p R-utilities;
+    mkdir -p src
+    rm -rf proteomics-Rutil;
+    rm -rf R-utilities;
+    git clone https://github.com/broadinstitute/proteomics-Rutil.git;
+    mv proteomics-Rutil R-utilities;
     cp $pgdac/data/* data/.;
     cp $pgdac/hydrant/packages/* packages/.;
-    cp $pgdac/hydrant/r-util/* R-utilities/.;
     echo $'!data\n!packages\n!R-utilities' >> .dockerignore )
 }
 
@@ -97,3 +107,18 @@ while getopts ":t:c:w:n:m:g:psfybh" opt; do
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
 done
+
+print_log() {
+  echo "Cleaning up..."
+  mkdir -p $pgdac/hydrant/logs
+  stamp=$(date "+%S%M%H%d%m%Y")
+  logfile="$pgdac/hydrant/logs/$task-log-$stamp.txt"
+  echo "Log-File: Parameter List" > $logfile;
+  echo "task=$task" >> $logfile;
+  echo "docker_custom=$docker_custom" >> $logfile;
+  echo "wdl=$wdl" >> $logfile;
+  echo "docker_ns=$docker_ns" >> $logfile;
+  echo "base_task=$base_task" >> $logfile;
+  echo "docker_tag=$docker_tag" >> $logfile;
+}
+print_log

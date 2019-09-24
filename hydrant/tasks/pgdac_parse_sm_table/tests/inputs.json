@@ -1,6 +1,0 @@
-{
-  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.SMtable": "/Volumes/proteomics_storage_slow/CPTAC3/PCC_LUAD/SpectrumMill_output/LUAD_BI_01-25_Phosphoproteome_2.02_proteinPeptideComparisonColumnsExport.VM.2.ssv",
-  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.analysisDir": "luad-v2.0-data-freeze-phosphoproteome",
-  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.exptDesign": "/Volumes/proteomics_storage_slow/CPTAC3/PGDAC/luad/v2.0/data-freeze/luad-v2.0-sample-annotation.csv",
-  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.type": "phosphoproteome"
-}
