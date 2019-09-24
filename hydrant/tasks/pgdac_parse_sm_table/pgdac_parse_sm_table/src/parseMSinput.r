@@ -212,12 +212,16 @@ if (type == "proteome") {
                   'percentCoverage', 
                   'numPepsUnique',
                   'scoreUnique', 
+		  'numPepsUniqueSubgroupSpecificCI',
+		  'scoreUniqueSubgroupSpecificCI',
                   'species', 
                   'orfCategory',
                   'accession_number', 
                   'accession_numbers',
                   'subgroupNum', 
-                  'entry_name')
+                  'entry_name',
+		  'scoreUniqueSubgroupSpecificCI',
+		  'numPepsUniqueSubgroupSpecificCI')
   process.dataset (dataset = input.data.file,
                    out.prefix = 'proteome', proteome=TRUE, 
                    id.col = 'accession_number', additional.cols=info.cols,

@@ -82,7 +82,7 @@ display_usage() {
 
 while getopts ":t:c:w:n:m:g:psfybh" opt; do
     case $opt in 
-        t) task="$OPTARG";;
+        t) task="$OPTARG"; wf_name="$task";;
         p) dockertemplate $primary; copycommonutils;;
         s) dockertemplate $secondary;;
         c) docker_custom="$OPTARG"; dockertemplate $docker_custom;;
