@@ -1,0 +1,8 @@
+{
+  "pgdac_download_workflow.pgdac_download.analysisDir": "test-download",
+  "pgdac_download_workflow.pgdac_download.cons_clust_tar": "/Users/rkothadi/Downloads/pgdac_cons_clust_pgdac_cluster-output.tar",
+  "pgdac_download_workflow.pgdac_download.ssgsea_assoc_tars": ["/Users/rkothadi/Downloads/ssgsea_assoc_shard-0_test-pgdac-12.tar", "/Users/rkothadi/Downloads/ssgsea_assoc_shard-1_test-pgdac-12.tar", "/Users/rkothadi/Downloads/ssgsea_assoc_shard-10_test-pgdac-12.tar"],
+  "pgdac_download_workflow.pgdac_download.ssgsea_clust_tars": ["/Users/rkothadi/Downloads/ssgsea_clustering_shard-0_test-pgdac-12.tar", "/Users/rkothadi/Downloads/ssgsea_clustering_shard-1_test-pgdac-12.tar", "/Users/rkothadi/Downloads/ssgsea_clustering_shard-2_test-pgdac-12.tar"],
+  "pgdac_download_workflow.pgdac_download.ssgsea_ome_tar": "/Users/rkothadi/Downloads/ssgsea_ome_test-pgdac-12.tar",
+  "pgdac_download_workflow.pgdac_download.ssgsea_rna_tar": "/Users/rkothadi/Downloads/ssgsea_rna_test-pgdac-12.tar"
+}

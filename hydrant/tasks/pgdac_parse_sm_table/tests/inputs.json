@@ -1,0 +1,6 @@
+{
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.SMtable": "/Users/rkothadi/Documents/code/data/terra-data/test-data/pipeline-input/test-proteome.ssv",
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.analysisDir": "test-proteome",
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.exptDesign": "/Users/rkothadi/Documents/code/data/terra-data/test-data/pipeline-input/test-annotation.csv",
+  "pgdac_parse_sm_table_workflow.pgdac_parse_sm_table.type": "proteome"
+}

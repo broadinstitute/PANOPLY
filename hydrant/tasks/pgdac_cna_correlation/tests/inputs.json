@@ -1,0 +1,12 @@
+{
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.disk_space": "Int? (optional)",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.fdr_cna_corr": "Float",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.memory": "Int? (optional)",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.num_preemptions": "Int? (optional)",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.num_threads": "Int? (optional)",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.outFile": "String (optional, default = "pgdac_cna_correlation-output.tar")",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.params": "File? (optional)",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.subType": "String? (optional)",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.tarball": "File",
+  "pgdac_cna_correlation_workflow.pgdac_cna_correlation.type": "String"
+}
