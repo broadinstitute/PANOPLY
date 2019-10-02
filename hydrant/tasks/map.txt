@@ -1,4 +1,5 @@
 =pgdac_common
+;pgdac_accumulate
 ;pgdac_association
 ;pgdac_cmap_analysis
 ;pgdac_cna_setup

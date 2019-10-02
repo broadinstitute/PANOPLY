@@ -1,6 +1,0 @@
-{
-  "pgdac_normalize_ms_data_workflow.analysisDir": "test_proteome",
-  "pgdac_normalize_ms_data_workflow.dataType": "proteome",
-  "pgdac_normalize_ms_data_workflow.inputData": "/Users/rkothadi/Documents/code/proteomics-projects/PGDAC/hydrant/tasks/pgdac_parse_sm_table/latest/outputs/pgdac_parse_sm_table_workflow/e7704879-b0e9-4c87-af54-e8f867ae2879/call-pgdac_parse_sm_table/execution/pgdac_parse_sm_table-output.tar",
-  "pgdac_normalize_ms_data_workflow.standalone": "false"
-}

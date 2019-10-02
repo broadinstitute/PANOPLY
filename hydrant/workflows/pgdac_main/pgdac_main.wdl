@@ -542,7 +542,7 @@ task pgdac_accumulate {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/pre_ssgsea.sh \
+    /prot/proteomics/Projects/PGDAC/src/accumulate.sh \
       -i ${input_tar} \
       -o ${output_tar} \
       -r ${analysisDir} \
@@ -555,7 +555,7 @@ task pgdac_accumulate {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_pre_ssgsea:1"
+    docker      : "broadcptac/pgdac_accumulate:1"
     memory      : select_first ([memory, 16]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -622,8 +622,8 @@ task pgdac_download
   File ssgsea_rna_tar
   File? ptmsea
   String analysisDir
-  String summary_tar = "pgdac_main_summary.tar.gz"
-  String full_tar = "pgdac_main_full.tar.gz"
+  String summary_tar = "pgdac_main_summary.tar"
+  String full_tar = "pgdac_main_full.tar"
   Array[File] ssgsea_assoc_tars
   Array[File] ssgsea_clust_tars
   String ssgsea_assoc_dir = "ssgsea_assoc"

@@ -1,7 +1,0 @@
-{
-  "pgdac_association_workflow.analysisDir": "proteome_luad_association",
-  "pgdac_association_workflow.dataType": "proteome",
-  "pgdac_association_workflow.groupsFile": "/Users/rkothadi/Documents/code/data/terra-data/luad-2-1/pipeline-input/luad-v2-1-groups.csv",
-  "pgdac_association_workflow.inputData": "/Users/rkothadi/Documents/code/data/terra-data/luad-2-1/pipeline-input/luad-v2-1-proteome.gct",
-  "pgdac_association_workflow.standalone": "true"
-}

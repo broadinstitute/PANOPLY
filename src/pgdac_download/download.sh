@@ -58,8 +58,8 @@ collect()
   cp cons_clust_tar/clustering/*.pdf $dir/clustering/.; 
   cp cons_clust_tar/clustering/*.png $dir/clustering/.;
   
-  mkdir -p $full/cons_clust_tar;
-  cp -r cons_clust_tar/* $full/cons_clust_tar/.;
+  mkdir -p $full;
+  cp -r cons_clust_tar/* $full/.;
   rm -rf cons_clust_tar;
   cp -r ssgsea_ome $full/ssgsea_ome/;
   cp -r ssgsea_rna $full/ssgsea_rna/;
@@ -86,10 +86,10 @@ collect()
 }
 
 src=`pwd`
-dir="$src/$analysis_dir-results"
-full="$src/$analysis_dir-full-output"
+dir="$src/$analysis_dir-summary-results"
+full="$src/$analysis_dir-full-results"
 dir_create
 collect
 cd $src;
-tar -czvf pgdac_main_summary.tar.gz $analysis_dir-results
-tar -czvf pgdac_main_full.tar.gz $analysis_dir-full-output
+tar -cvf pgdac_main_summary.tar $analysis_dir-results
+tar -cvf pgdac_main_full.tar $analysis_dir-full-output
