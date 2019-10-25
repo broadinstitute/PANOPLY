@@ -1,0 +1,7 @@
+Log-File: Parameter List
+task=pgdac_tmt_converter
+docker_custom=
+wdl=
+docker_ns=
+base_task=
+docker_tag=

@@ -1,0 +1,7 @@
+Log-File: Parameter List
+task=pgdac_download
+docker_custom=
+wdl=
+docker_ns=broadcptac
+base_task=
+docker_tag=1

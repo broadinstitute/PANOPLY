@@ -5,8 +5,8 @@ task pgdac_download
   File ssgsea_rna_tar
   File? ptmsea
   String analysisDir
-  String summary_tar = "pgdac_main_summary.tar.gz"
-  String full_tar = "pgdac_main_full.tar.gz"
+  String summary_tar = "pgdac_main_summary.tar"
+  String full_tar = "pgdac_main_full.tar"
   Array[File] ssgsea_assoc_tars
   Array[File] ssgsea_clust_tars
   String ssgsea_assoc_dir = "ssgsea_assoc"

@@ -13,3 +13,5 @@
 ;pgdac_common
 =pgdac_filter
 ;pgdac_normalize_ms_data
+=pgdac_libs
+;pgdac_tedmint

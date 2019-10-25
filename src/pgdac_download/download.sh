@@ -4,7 +4,7 @@ while getopts ":c:o:r:a:s:l:p:" opt; do
         c) cons_clust_tar="$OPTARG";;
         o) ssgsea_ome="$OPTARG";;
         r) ssgsea_rna="$OPTARG";;
-	a) analysis_dir="$OPTARG";;
+	      a) analysis_dir="$OPTARG";;
         s) ssgsea_assoc="$OPTARG";;
         l) ssgsea_clust="$OPTARG";;
         p) ptmsea="$OPTARG";;
@@ -31,7 +31,7 @@ scatter_processing()
 dir_create()
 {
   cd $src;
-  mkdir -p $dir
+  mkdir -p $summ_path
   mkdir -p cons_clust_tar && tar xf $cons_clust_tar -C cons_clust_tar --strip-components 1
   mkdir -p ssgsea_ome && tar xf $ssgsea_ome -C ssgsea_ome
   mkdir -p ssgsea_rna && tar xf $ssgsea_rna -C ssgsea_rna
@@ -46,50 +46,54 @@ dir_create()
 collect()
 {
   cd $src;
-  mkdir -p $dir/rna; 
-  cp cons_clust_tar/rna/*.pdf $dir/rna/.;
-  mkdir -p $dir/cna; 
-  cp cons_clust_tar/cna/*.png $dir/cna/.;
-  mkdir -p $dir/sample-qc; 
-  cp cons_clust_tar/sample-qc/*.pdf $dir/sample-qc/.;
-  mkdir -p $dir/association; 
-  cp cons_clust_tar/association/*.pdf $dir/association/.;
-  mkdir -p $dir/clustering; 
-  cp cons_clust_tar/clustering/*.pdf $dir/clustering/.; 
-  cp cons_clust_tar/clustering/*.png $dir/clustering/.;
+  mkdir -p $summ_path/rna; 
+  cp cons_clust_tar/rna/*.pdf $summ_path/rna/.;
+  mkdir -p $summ_path/cna; 
+  cp cons_clust_tar/cna/*.png $summ_path/cna/.;
+  mkdir -p $summ_path/sample-qc; 
+  cp cons_clust_tar/sample-qc/*.pdf $summ_path/sample-qc/.;
+  mkdir -p $summ_path/association; 
+  cp cons_clust_tar/association/*.pdf $summ_path/association/.;
+  mkdir -p $summ_path/clustering; 
+  cp cons_clust_tar/clustering/*.pdf $summ_path/clustering/.; 
+  cp cons_clust_tar/clustering/*.png $summ_path/clustering/.;
   
-  mkdir -p $full;
-  cp -r cons_clust_tar/* $full/.;
+  mkdir -p $full_path;
+  cp -r cons_clust_tar/* $full_path/.;
   rm -rf cons_clust_tar;
-  cp -r ssgsea_ome $full/ssgsea_ome/;
-  cp -r ssgsea_rna $full/ssgsea_rna/;
-  cp -r $ssgsea_assoc $full/$ssgsea_assoc/;
-  cp -r $ssgsea_clust $full/$ssgsea_clust/;
+  cp -r ssgsea_ome $full_path/ssgsea_ome/;
+  cp -r ssgsea_rna $full_path/ssgsea_rna/;
+  cp -r $ssgsea_assoc $full_path/$ssgsea_assoc/;
+  cp -r $ssgsea_clust $full_path/$ssgsea_clust/;
 
-  mkdir -p $dir/ssgsea_ome;
-  mkdir -p $dir/ssgsea_rna;
-  mkdir -p $dir/$ssgsea_assoc;
-  mkdir -p $dir/$ssgsea_clust;
-  cp -r ssgsea_ome/* $dir/ssgsea_ome/.;
-  cp -r ssgsea_rna/* $dir/ssgsea_rna/.;
-  cp -r $ssgsea_assoc/* $dir/$ssgsea_assoc/.;
-  cp -r $ssgsea_clust/* $dir/$ssgsea_clust/.;
+  mkdir -p $summ_path/ssgsea_ome;
+  mkdir -p $summ_path/ssgsea_rna;
+  mkdir -p $summ_path/$ssgsea_assoc;
+  mkdir -p $summ_path/$ssgsea_clust;
+  cp -r ssgsea_ome/* $summ_path/ssgsea_ome/.;
+  cp -r ssgsea_rna/* $summ_path/ssgsea_rna/.;
+  cp -r $ssgsea_assoc/* $summ_path/$ssgsea_assoc/.;
+  cp -r $ssgsea_clust/* $summ_path/$ssgsea_clust/.;
 
   rm -rf ssgsea_ome ssgsea_rna $ssgsea_assoc $ssgsea_clust;
 
   if [[ ! -z $ptmsea ]]; then
-    cp -r ptmsea $full/ptmsea/;
-    mkdir -p $dir/ptmsea;
-    cp -r ptmsea $dir/ptmsea/.;
+    cp -r ptmsea $full_path/ptmsea/;
+    mkdir -p $summ_path/ptmsea;
+    cp -r ptmsea $summ_path/ptmsea/.;
     rm -rf ptmsea;
   fi
 }
 
 src=`pwd`
-dir="$src/$analysis_dir-summary-results"
-full="$src/$analysis_dir-full-results"
+
+summ="$analysis_dir-summary-results"
+full="$analysis_dir-full-results"
+
+summ_path=$src/$summ
+full_path=$src/$full
 dir_create
 collect
 cd $src;
-tar -cvf pgdac_main_summary.tar $analysis_dir-results
-tar -cvf pgdac_main_full.tar $analysis_dir-full-output
+tar -cvf pgdac_main_summary.tar $summ
+tar -cvf pgdac_main_full.tar $full
