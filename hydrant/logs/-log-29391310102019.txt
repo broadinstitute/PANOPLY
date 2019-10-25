@@ -1,7 +1,0 @@
-Log-File: Parameter List
-task=
-docker_custom=
-wdl=
-docker_ns=
-base_task=
-docker_tag=
