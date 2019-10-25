@@ -1,6 +1,7 @@
 task pgdac_cna_correlation {
   File tarball   # output from pgdac_cna_setup
   String type
+  Float fdr_cna_corr
   String? subType
   File? params
   String outFile = "pgdac_cna_correlation-output.tar"
@@ -13,7 +14,7 @@ task pgdac_cna_correlation {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} ${"-m " + subType} ${"-p " + params} -z ${fdr_cna_corr}
   }
 
   output {

@@ -1,2 +1,0 @@
-unknown shorthand flag: 't' in -t
-See 'docker push --help'.

@@ -59,15 +59,9 @@ copycommonutils(){
   echo "Copying common data, packages, r-utilities to docker dir..."
   ( cd $pgdac/hydrant/tasks/$task/$task/;
     mkdir -p data;
-    mkdir -p packages;
     mkdir -p src
-    rm -rf proteomics-Rutil;
-    rm -rf R-utilities;
-    git clone https://github.com/broadinstitute/proteomics-Rutil.git;
-    mv proteomics-Rutil R-utilities;
     cp $pgdac/data/* data/.;
-    cp $pgdac/hydrant/packages/* packages/.;
-    echo $'!data\n!packages\n!R-utilities' >> .dockerignore )
+    echo $'!data' >> .dockerignore )
 }
 
 display_usage() {

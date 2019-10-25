@@ -307,6 +307,7 @@ while [ "$1" != "" ]; do
 	-s )     shift; sm_file=`readlink -f $1` ;;
 	-t )     shift; prefix=$1 ;;
 	-pe )    shift; pe=$1 ;;
+        -z )     shift; fdr_cna_corr=$1 ;;
 	-rna )   shift; rna_data=`readlink -f $1` ;;
 	-cna )   shift; cna_data=`readlink -f $1` ;;
 	-CMAPgroup )
@@ -525,6 +526,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
+		 echo "fdr_cna_corr <- $fdr_cna_corr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)

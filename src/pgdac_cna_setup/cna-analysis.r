@@ -10,11 +10,11 @@ allowWGCNAThreads()
 # installed manually: BioGenerics, preprocessCore, GO.db, AnnotationDbi
 
 source ('generate-cna-plots.r')
-
+source ('config.r')
 
 args <- commandArgs (TRUE)
-pvalue <- 0.05
-
+#pvalue <- 0.05
+pvalue <- fdr_cna_corr
 
 # id 1-jid.max are for calculating correlations
 # id 0 is for assembing results and plotting
