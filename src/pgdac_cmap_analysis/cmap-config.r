@@ -12,6 +12,7 @@ max.sigevents <- 1800              # if a gene has more then max.sigevents, the 
                                    #  (having >1999 items in a geneset results in a crash -- unix buffer limits?)
 top.N <- 500                       # maximum number of genes to run CMAP enrichment on (default: 500)
 fdr.pvalue <- 0.05                 # FDR for CNA correlations (default: 0.05)
+log.transform <-FALSE		   # if TRUE, log transform input data
 must.include.genes <- NULL         # genes that must be included in the CMAP analysis (vector, default: NULL)
 
 # CMAP connectivity score and statistical significance
@@ -21,3 +22,6 @@ legacy.score <- FALSE              # if TRUE, legacy connectivity score will be 
 rankpt.n <- 4                      # number of CMAP profiles to consider when calculating mean rank point (default: 4)
 mean.rankpt.threshold <- 85        # min value of mean rank point for gene signature to be considered enriched (default: 85)
 cmap.fdr <- 0.25                   # BH-FDR threshold for fisher test of outlier scores, for gene to be considered enriched
+
+# CMAP annotation
+alpha <- fdr.pvalue		   # p-value threshold for cmap profile zscores and enrichments

@@ -162,18 +162,20 @@ summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dt
         del.pval <- ifelse (any(del & g.rows), fisher.test (g.rows, del)$p.value, NA)
         pval.table <- rbind (pval.table, c (g, amp.pval, del.pval))
       }
-      colnames (pval.table) <- c ('gene', 'pval.amplified', 'pval.deleted')
-      # adjust amp and del pvalues for multiple testing
-      amp.adj <- p.adjust (pval.table[,'pval.amplified'], method='BH')
-      del.adj <- p.adjust (pval.table[,'pval.deleted'], method='BH')
-      pval.table <- data.frame (pval.table, adj.pval.amplified=amp.adj, adj.pval.deleted=del.adj)
-      # write out table of pvalues
-      write.table (pval.table, sprintf ("%s-pvalues.txt", results.prefix), sep='\t', row.names=FALSE)
-      
-      # create output variable that match with legacy option
-      sig.amp <- as.character (pval.table [amp.adj < cmap.fdr & !is.na (amp.adj), 1])
-      sig.del <- as.character (pval.table [del.adj < cmap.fdr & !is.na (del.adj), 1])
-      sig.both <- intersect (sig.amp, sig.del)
+      if (!is.null (pval.table)) {  # make sure table is not empty
+        colnames (pval.table) <- c ('gene', 'pval.amplified', 'pval.deleted')
+        # adjust amp and del pvalues for multiple testing
+        amp.adj <- p.adjust (pval.table[,'pval.amplified'], method='BH')
+        del.adj <- p.adjust (pval.table[,'pval.deleted'], method='BH')
+        pval.table <- data.frame (pval.table, adj.pval.amplified=amp.adj, adj.pval.deleted=del.adj)
+        # write out table of pvalues
+        write.table (pval.table, sprintf ("%s-pvalues.txt", results.prefix), sep='\t', row.names=FALSE)
+        
+        # create output variable that match with legacy option
+        sig.amp <- as.character (pval.table [amp.adj < cmap.fdr & !is.na (amp.adj), 1])
+        sig.del <- as.character (pval.table [del.adj < cmap.fdr & !is.na (del.adj), 1])
+        sig.both <- intersect (sig.amp, sig.del)
+      }
     }
     
     # write out results
@@ -221,9 +223,9 @@ summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dt
   ### Main body of summarize.cmap.results
   actual <- cmap.connectivity (scores.dir, paste (group, 'cmap', dtype, sep='-'), group, dtype, ...)
   
-  # permutation p-values needed only for legacy score; 
-  # outlier based scores obtains pvalues from the fisher test + BH correction
-  if (legacy.score) {
+  # permutation FDR values for the entire set of significant genes, if needed (nperm > 0) 
+  # outlier based scores obtains pvalues for each gene from the fisher test + BH correction
+  if (nperm > 0) {
     if (parallel) {
       # process permutations in parallel
       pacman::p_load(doParallel)

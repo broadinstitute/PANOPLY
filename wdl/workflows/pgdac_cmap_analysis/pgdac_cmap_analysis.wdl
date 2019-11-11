@@ -1,8 +1,8 @@
 task pgdac_cmap_connectivity {
   File tarball
   File? cmap_config
-  String? cmap_group
-  String? cmap_type
+  String? cmap_grp
+  String? cmap_typ
   Int? permutations
   Array[File] subset_scores
   Array[File]? permutation_scores
@@ -15,15 +15,18 @@ task pgdac_cmap_connectivity {
   Int? num_threads
   Int? num_preemptions
 
+  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
   command {
     set -euo pipefail
     # setup output scores directory ...
-    if [ ! -d ${scores_dir} ]; then 
-      mkdir ${scores_dir} 
+    if [ ! -d ${scores_dir} ]; then
+      mkdir ${scores_dir}
     fi
     # ... and copy subset scores
     mv ${sep=" " subset_scores} ${scores_dir}
-    
+
     # same for perumations scores ...
     if [ ${permutations} -gt 0 ]; then
       if [ ! -d ${permutation_dir} ]; then
@@ -31,7 +34,7 @@ task pgdac_cmap_connectivity {
       fi
       mv ${sep=" " permutation_scores} ${permutation_dir}
     fi
-    
+
     # combine shards/gather and run conectivity score calculations
     /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${default="0" permutations} -CMAPpmt ${permutation_dir} ${"-CMAPcfg " + cmap_config} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type}
   }
@@ -57,27 +60,71 @@ task pgdac_cmap_connectivity {
 task pgdac_cmap_input {
   File tarball   # output from pgdac_cna_correlation
   File? cmap_config
-  String? cmap_group
-  String? cmap_type
+  String? cmap_grp
+  String? cmap_typ
   Int? cmap_permutations
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "pgdac_cmapsetup-output.tar"
   String outGmtFile = "cmap-trans-genesets.gmt"
-  
+
   Int? memory
   Int? disk_space
   Int? num_threads
   Int? num_preemptions
-  
+
+  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
   command {
     set -euo pipefail
     /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} ${"-CMAPcfg " + cmap_config}
   }
-  
+
   output {
     File outputs = "${outFile}"
     File genesets = "${outGmtFile}"
     Array[File] permuted_genesets = glob ("*-permuted-genes-*.gmt")
+  }
+
+  runtime {
+    docker : "broadcptac/pgdac_cmap_annotate:1"
+    memory : select_first ([memory, 32]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+    preemptible : select_first ([num_preemptions, 0])
+  }
+
+  meta {
+    author : "D. R. Mani"
+    email : "manidr@broadinstitute.org"
+  }
+}
+
+
+task pgdac_cmap_annotate {
+  File tarball                  # output from pgdac_cmap_connectivity
+  File cmap_data_file           # CMAP level 5 geneKD data (gctx)
+  File cmap_enrichment_groups   # groups file (ala experiment design file)
+  File? cmap_config
+  String? cmap_grp
+  String? cmap_typ
+  String outFile = "pgdac_cmap-annotate-output.tar"
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+  Int? num_preemptions
+
+  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
+  command {
+    set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} ${cmap_config}
+  }
+
+  output {
+    File outputs = "${outFile}"
   }
 
   runtime {
@@ -94,13 +141,15 @@ task pgdac_cmap_input {
   }
 }
 
+
+
 task pgdac_cmap_ssgsea {
   # task adapted from pgdac_ssgsea; many inputs are set to specfic values for CMAP analysis
 	File input_ds
 	File gene_set_database
 	Int? permutation_num
 	String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
-	
+
 	# other ssgsea options (below) are fixed for CMAP analysis
 	String sample_norm_type = "rank"
 	String correl_type = "rank"
@@ -119,7 +168,7 @@ task pgdac_cmap_ssgsea {
   Int? disk_space
   Int? num_threads
   Int? num_preemptions
-	
+
 	command {
 		set -euo pipefail
 		/home/pgdac/ssgsea-cli.R -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
@@ -130,7 +179,7 @@ task pgdac_cmap_ssgsea {
 	}
 
 	runtime {
-		docker : "broadcptac/pgdac_ssgsea:3"
+		docker : "broadcptac/pgdac_ssgsea:5"
     memory : select_first ([memory, 60]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 16]) + ""
@@ -143,18 +192,93 @@ task pgdac_cmap_ssgsea {
 	}
 }
 
+
+
+task pgdac_cmap_annotate_ssgsea {
+  # task adapted from pgdac_ssgsea; many inputs are set to specific values for CMAP annotation
+	File input_tar
+	File gene_set_database
+  String? cmap_grp
+  String? cmap_typ
+  String outFile="pgdac_cmap-final.tar"
+
+  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
+	# other ssgsea options (below) are fixed for CMAP analysis
+	String sample_norm_type = "rank"
+	String correl_type = "rank"
+	String statistic = "Kolmogorov-Smirnov"
+	String output_score_type = "NES"
+
+	Float weight = 0.0
+	Int min_overlap = 5
+	Int nperm = 1000
+	String global_fdr = "TRUE"
+	String export_sigs = "FALSE"
+	String ext_output = "FALSE"
+
+
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+  Int? num_preemptions
+
+	command {
+		set -euo pipefail
+
+    analysis_dir=`tar -t -f ${input_tar} | head -1 | sed -e 's/\/.*//'`
+    tar xvf ${input_tar}
+    cd $analysis_dir/cmap
+    input_ds="$analysis_dir/cmap/${cmap_group}-cmap-${cmap_type}-gsea-input.gct"
+    output_prefix=`basename $input_ds '.gct'`
+
+		/home/pgdac/ssgsea-cli.R -i $input_ds -d ${gene_set_database} -o $output_prefix -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
+
+    cd ../..
+    tar cvf ${outFile} $analysis_dir
+	}
+
+	output {
+		File outputs="${outFile}"
+	}
+
+	runtime {
+		docker : "broadcptac/pgdac_ssgsea:5"
+    memory : select_first ([memory, 32]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
+    cpu : select_first ([num_threads, 16]) + ""
+    preemptible : select_first ([num_preemptions, 2])
+	}
+
+	meta {
+		author : "Karsten Krug"
+		email : "karsten@broadinstitute.org"
+	}
+}
+
+
 workflow run_cmap_analysis {
   File CNAcorr_tarball
   File subsetListFile
+  File cmap_level5_data
+  File annotation_pathway_db
   String subset_bucket
   Int n_permutations
   Array[String] subset_files = read_lines ("${subsetListFile}")
+  File? config_file
+  String? group
+  String? data_type
 
-  
+
+
   call pgdac_cmap_input {
     input:
       tarball=CNAcorr_tarball,
-      cmap_permutations=n_permutations
+      cmap_permutations=n_permutations,
+      cmap_config=config_file,
+      cmap_grp=group,
+      cmap_typ=data_type
   }
 
   # run ssGSEA on the geneset
@@ -165,7 +289,7 @@ workflow run_cmap_analysis {
 	      gene_set_database=pgdac_cmap_input.genesets
     }
   }
-  
+
   # run ssGSEA on the permuted genesets (if any)
   if (n_permutations > 0) {
     Array[Pair[String,Int]] fxp = cross (subset_files, range (n_permutations))
@@ -178,17 +302,36 @@ workflow run_cmap_analysis {
       }
     }
   }
-  
+
   call pgdac_cmap_connectivity {
     input:
       tarball=pgdac_cmap_input.outputs,
       subset_scores=pgdac_cmap_ssgsea.scores,
       permutations=n_permutations,
-      permutation_scores=permutation.scores
+      permutation_scores=permutation.scores,
+      cmap_config=config_file,
+      cmap_grp=group,
+      cmap_typ=data_type
+  }
+
+  call pgdac_cmap_annotate {
+    input:
+      tarball=pgdac_cmap_connectivity.outputs,
+      cmap_data_file=cmap_level5_data,
+      cmap_config=config_file,
+      cmap_grp=group,
+      cmap_typ=data_type
+  }
+
+  call pgdac_cmap_annotate_ssgsea {
+    input:
+      input_tar=pgdac_cmap_annotate.outputs,
+  	  gene_set_database=annotation_pathway_db,
+      cmap_grp=group,
+      cmap_typ=data_type
   }
 
   output {
-    File output = pgdac_cmap_connectivity.outputs
+    File output = pgdac_cmap_annotate_ssgsea.outputs
   }
 }
-

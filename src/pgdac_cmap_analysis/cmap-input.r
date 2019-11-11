@@ -203,21 +203,3 @@ generate.cmap.input (target.cna.dir=cna.dir, cmap.kd.genelist=kd.list, input.gen
                      log.transform=log.transform)
 
 
-
-generate.cmap.input <- function (target.cna.dir,
-                                 cmap.kd.genelist, 
-                                 input.genes=NULL,           # genes listed here will always be included
-                                 group='all',                # subgroup name on which CNA analysis was run
-                                 dtype='pome',               # dtype is either pome or mrna
-                                 generate.permuted.genesets=0,  # number of permuted datasets to generate
-                                 # if >0, generate permuted genesets; else output actual genesets
-                                 cna.threshold=0.3,          # copy number up/down if abs (log2(copy number) - 1) is > 0.3
-                                 cna.effects.threshold=15,   # min number of tumors with up/down copy number to include gene for CMAP analysis
-                                 min.sigevents=20,           # gene must have at least this many significant trans events to be considered  
-                                 max.sigevents=1800,         # if a gene has more then max.sigevents, the top max.sigevents will be chosen
-                                 #  (having >1999 items in a geneset results in a crash -- unix buffer limits?)
-                                 top.N=500,
-                                 fdr.pvalue=0.05,
-                                 exclude.cis=FALSE,
-                                 log.transform=FALSE)
-
