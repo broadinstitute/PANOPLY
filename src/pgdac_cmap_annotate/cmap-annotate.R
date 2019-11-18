@@ -228,7 +228,7 @@ create.ssgsea.dataset <- function (analysis.dir, grp, typ) {
   # set up GCT v1.3 object
   all.genes <- rownames (sig.subset)
   sig.genes <- colnames (sig.subset)
-  file.prefix <- sprintf ('%s/%s-cmap-%s-gsea', cmap, grp, typ)
+  file.prefix <- sprintf ('%s-cmap-%s-gsea', grp, typ)   # write file to analysis.dir (for Terra integration)
   gct <- new ('GCT')
   gct@mat <- as.matrix (sig.subset)
   gct@rid <- all.genes
@@ -240,31 +240,6 @@ create.ssgsea.dataset <- function (analysis.dir, grp, typ) {
   # write output file
   write.gct (gct, gct@src, ver=3, precision=4, appenddim=FALSE)
 }
-
-# 
-#   ## run ssGSEA
-#   out.prefix <- sprintf ('%s-output', file.prefix)
-#   ssGSEA2 (gct@src, out.prefix, db,
-#            sample.norm.type='rank',
-#            weight=0,
-#            statistic='area.under.RES',
-#            output.score.type='NES',
-#            nperm=1000,
-#            combine.mode='combine.off',
-#            min.overlap=10,
-#            correl.type='rank',
-#            global.fdr=FALSE,
-#            extended.output=FALSE,
-#            export.signat.gct=FALSE)
-#   
-#   
-#   ## print enrichments
-#   p <- parse.gctx ( sprintf ("%s-fdr-pvalues.gct", out.prefix) )
-#   e <- apply (p@mat, 2, function (x) p@rid [which (x < FDR)])
-#   sink (sprintf ('%s-enrichments.txt', out.prefix))
-#   print (e)
-#   sink ()
-# 
 
 
 ##

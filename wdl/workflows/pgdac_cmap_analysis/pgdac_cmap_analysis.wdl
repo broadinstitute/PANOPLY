@@ -87,7 +87,7 @@ task pgdac_cmap_input {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cmap_annotate:1"
+    docker : "broadcptac/pgdac_cmap_analysis:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -118,6 +118,7 @@ task pgdac_cmap_annotate {
   String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
   String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
 
+
   command {
     set -euo pipefail
     Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} ${cmap_config}
@@ -125,10 +126,11 @@ task pgdac_cmap_annotate {
 
   output {
     File outputs = "${outFile}"
+    File gsea_input = "${cmap_group}-cmap-${cmap_type}-gsea-input.gct"
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cmap_analysis:1"
+    docker : "broadcptac/pgdac_cmap_annotate:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -196,14 +198,10 @@ task pgdac_cmap_ssgsea {
 
 task pgdac_cmap_annotate_ssgsea {
   # task adapted from pgdac_ssgsea; many inputs are set to specific values for CMAP annotation
-	File input_tar
+	File input_ds
 	File gene_set_database
-  String? cmap_grp
-  String? cmap_typ
-  String outFile="pgdac_cmap-final.tar"
-
-  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+  String outFile="pgdac_cmap_annotate-ssgsea.tar"
+  String output_prefix = "${basename (input_ds, '.gct')}"
 
 	# other ssgsea options (below) are fixed for CMAP analysis
 	String sample_norm_type = "rank"
@@ -227,16 +225,10 @@ task pgdac_cmap_annotate_ssgsea {
 	command {
 		set -euo pipefail
 
-    analysis_dir=`tar -t -f ${input_tar} | head -1 | sed -e 's/\/.*//'`
-    tar xvf ${input_tar}
-    cd $analysis_dir/cmap
-    input_ds="$analysis_dir/cmap/${cmap_group}-cmap-${cmap_type}-gsea-input.gct"
-    output_prefix=`basename $input_ds '.gct'`
+		/home/pgdac/ssgsea-cli.R -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
 
-		/home/pgdac/ssgsea-cli.R -i $input_ds -d ${gene_set_database} -o $output_prefix -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
-
-    cd ../..
-    tar cvf ${outFile} $analysis_dir
+    # assemble results into tar file
+    find * -regextype posix-extended -regex "^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^.*.log.txt$|^.*parameters.txt$" -print0 | tar -cvf ${outFile} --null -T -
 	}
 
 	output {
@@ -325,13 +317,12 @@ workflow run_cmap_analysis {
 
   call pgdac_cmap_annotate_ssgsea {
     input:
-      input_tar=pgdac_cmap_annotate.outputs,
-  	  gene_set_database=annotation_pathway_db,
-      cmap_grp=group,
-      cmap_typ=data_type
+      input_ds=pgdac_cmap_annotate.gsea_input,
+  	  gene_set_database=annotation_pathway_db
   }
 
   output {
-    File output = pgdac_cmap_annotate_ssgsea.outputs
+    File output = pgdac_cmap_annotate.outputs
+    File ssgseaOutput = pgdac_cmap_annotate_ssgsea.outputs
   }
 }
