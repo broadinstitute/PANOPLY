@@ -135,15 +135,22 @@ if (apply.SM.filter && file.exists(nr.file.path)) {
 } else {
   nr.file <- NULL
 }
-# With SD filter
-filter.dataset (paste (type, '-ratio-norm', sep=''), 
+
+## Change default to No SD filter -- filter removes very few items
+filter.dataset (paste (type, '-ratio-norm', sep=''),
                 numratio.file=nr.file,
-                na.max=na.max, min.numratio=min.numratio, sd.threshold=sd.filter.threshold,
+                na.max=na.max, min.numratio=min.numratio, sd.threshold=NULL,
                 combine.replicates='mean', n.min.numratio=min.numratio.fraction)
-# No SD filter (to retain max proteins, for mRNA correlation)
-filter.dataset (paste (type, '-ratio-norm', sep=''), 
-                numratio.file=nr.file,
-                out.prefix=paste (type, '-ratio-norm-nosdfilter', sep=''),
-                na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL,
-                combine.replicates='mean', n.min.numratio=min.numratio.fraction)
+
+# # With SD filter
+# filter.dataset (paste (type, '-ratio-norm', sep=''), 
+#                 numratio.file=nr.file,
+#                 na.max=na.max, min.numratio=min.numratio, sd.threshold=sd.filter.threshold,
+#                 combine.replicates='mean', n.min.numratio=min.numratio.fraction)
+# # No SD filter (to retain max proteins, for mRNA correlation)
+# filter.dataset (paste (type, '-ratio-norm', sep=''), 
+#                 numratio.file=nr.file,
+#                 out.prefix=paste (type, '-ratio-norm-nosdfilter', sep=''),
+#                 na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL,
+#                 combine.replicates='mean', n.min.numratio=min.numratio.fraction)
 
