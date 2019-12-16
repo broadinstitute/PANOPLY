@@ -101,6 +101,25 @@ set.label.type <- function (label.type) {
     assign ("refint.pat",  '^TMT_131_total$', envir = .GlobalEnv)
   }
 
+  ## TMT-11 (default reference channel in 131C)
+  if (label.type == 'TMT11') {
+    assign ("n.channels",  11, envir = .GlobalEnv)   # number of columns per experiment
+    # match the following channel names in the experiment design file to find sample names
+    assign ("plex.channels",  c('126C','127N','127C','128N','128C','129N','129C','130N','130C','131N'), envir = .GlobalEnv)
+    # the above does not contain the reference channel:
+    assign ("ref.channel",  '131C', envir = .GlobalEnv)
+    ## regex patterns for various matching
+    assign ("header.pat",  '.*TMT*', envir = .GlobalEnv)
+    assign ("ratio.pat",  '.*median$', envir = .GlobalEnv)
+    assign ("stddev.pat",  '.*stddev$', envir = .GlobalEnv)
+    assign ("intensity.pat",  '^TMT_1[23][678901][NC]*_total$', envir = .GlobalEnv)
+    assign ("numratio.pat",  '.*numRatios.*_131C$', envir = .GlobalEnv)
+    assign ("numspectra.pat", '^num_?Spectra$', envir = .GlobalEnv)
+    assign ("totalint.pat",  '^totalIntensity$', envir = .GlobalEnv)
+    assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
+    assign ("refint.pat",  '^TMT_131C_total$', envir = .GlobalEnv)
+  }
+
   ## TMT-10 with 126 as reference channel
   if (label.type == 'TMT10.126') {
     assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
@@ -158,7 +177,7 @@ cna.data.file <- file.path (data.dir, 'cna-data.gct')
 
 
 ## Label type for MS experiment (set.label.type must be called to initialize variables)
-label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126
+label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126, TMT11
 set.label.type (label.type) 
 
 ## Sample replicate indicator

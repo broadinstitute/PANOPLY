@@ -2,6 +2,7 @@
 ;pgdac_accumulate
 ;pgdac_association
 ;pgdac_cmap_analysis
+;pgdac_cmap_annotate
 ;pgdac_cna_setup
 ;pgdac_download
 ;pgdac_filter
