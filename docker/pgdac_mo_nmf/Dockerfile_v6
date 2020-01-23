@@ -1,0 +1,18 @@
+FROM broadcptac/pgdac_mo_nmf:5
+
+LABEL maintainer="karsten@broadinstitute.org"
+LABEL description="Docker for multi-omic NMF clustering."
+
+ENV wd /home/pgdac/
+
+RUN rm -R src
+
+COPY . $wd
+
+RUN R -e "library(pacman);p_install('doParallel')"
+RUN R -e "library(pacman);p_install('foreach')"
+RUN R -e "library(pacman);p_install('readxl')"
+RUN R -e "library(pacman);p_install('ccfindR')"
+
+RUN R -e "library(pacman);p_install('tibble')"
+RUN R -e "library(pacman);p_install('magrittr')"

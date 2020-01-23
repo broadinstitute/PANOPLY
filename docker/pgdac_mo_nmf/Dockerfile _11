@@ -1,0 +1,20 @@
+FROM broadcptac/pgdac_mo_nmf:10
+
+LABEL maintainer="karsten@broadinstitute.org"
+LABEL description="Docker for multi-omic NMF clustering."
+
+ENV wd /home/pgdac/
+
+RUN rm -R src
+
+COPY . $wd
+
+RUN R -e "library(pacman);p_install('limma')"
+RUN R -e "pacman::p_install('statmod')"
+RUN R -e "pacman::p_install('BiocManager')"
+
+## update ComplexHeatmap
+RUN wget https://bioconductor.org/packages/release/bioc/src/contrib/ComplexHeatmap_2.2.0.tar.gz
+RUN R -e "pacman::p_install(c(clue, png))"
+RUN R -e "install.packages('circlize')"
+RUN R -e "install.packages('ComplexHeatmap_2.2.0.tar.gz', repos = NULL, type='source')"

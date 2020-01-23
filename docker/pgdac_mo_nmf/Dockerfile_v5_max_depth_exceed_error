@@ -1,4 +1,4 @@
-FROM broadcptac/pgdac_mo_nmf:11
+FROM broadcptac/pgdac_mo_nmf:6
 
 LABEL maintainer="karsten@broadinstitute.org"
 LABEL description="Docker for multi-omic NMF clustering."
@@ -9,5 +9,5 @@ RUN rm -R src
 
 COPY . $wd
 
-RUN R -e "pacman::p_install('ggpubr')"
-
+RUN R -e "library(pacman);p_install('tibble')"
+RUN R -e "library(pacman);p_install('magrittr')"

@@ -1,19 +1,19 @@
 ## 20151013 collection of plotting functions
 library(pacman)
 
-
-OS <- Sys.info()['sysname']
-if(OS == 'Windows')
-  url.stem <- 'C:/Users/karsten/Dropbox/Devel/R-code/'
-  ##  url.stem <- '//flynn-cifs/prot_proteomics/'
-if(OS == 'Linux')
-  url.stem <- '~/karsten/'
-if(OS == 'Darwin')
-  url.stem <- '/Volumes/prot_proteomics/'
-  
-
-
-#source(paste(url.stem, "misc.r", sep='/') )
+# 
+# OS <- Sys.info()['sysname']
+# if(OS == 'Windows')
+#   url.stem <- 'C:/Users/karsten/Dropbox/Devel/R-code/'
+#   ##  url.stem <- '//flynn-cifs/prot_proteomics/'
+# if(OS == 'Linux')
+#   url.stem <- '~/karsten/'
+# if(OS == 'Darwin')
+#   url.stem <- '/Volumes/prot_proteomics/'
+#   
+# 
+# 
+# source(paste(url.stem, "misc.r", sep='/') )
 
 ##source(paste("c:/Users/Karsten/Dropbox/Devel/Code/misc.r", sep='/') )
 
@@ -333,6 +333,7 @@ fancyBarplot <- function(x, space=0.2,
   }
 }
 
+
 ############################################################################################
 ## code written by mani dr
 ##
@@ -540,7 +541,10 @@ scatterhist.ci <- function (x, y, id=NULL, xlab="", ylab="", title="",
 ##              - loess regression plottted as lines
 ##
 ############################################################################
-fancyPlot <- function(x, y, rug=F, grid=T, reg=c("none", "linear", "loess"), reg.col="darkred", reg.legend=T, cor=T, cor.method = c( "pearson", "spearman", "kendall"), pch=19, col="black", alpha=60, boxplots=c("xy","x", "y", "n"), groups=1, cex.text=1, reset.par=F, cex.pch=1, ...)
+fancyPlot <- function(x, y, rug=F, grid=T, reg=c("none", "linear", "loess"), 
+                      reg.col="darkred", reg.legend=T, cor=T, 
+                      cor.method = c( "pearson", "spearman", "kendall"), pch=19, col="black", 
+                      alpha=60, boxplots=c("xy","x", "y", "n"), groups=1, cex.text=1, reset.par=F, cex.pch=1, ...)
 {
   p_load(car)
   
@@ -751,7 +755,7 @@ fancyBoxplot <- function(x,
                          grid.lwd=1,
                          grid.lty='dotted',
                          vio.wex=1.2, 
-                         show.numb=c('none', 'median', 'mean', 'median.top', 'median.bottom'), 
+                         show.numb=c('none', 'median', 'mean', 'median.top', 'median.bottom', 'numb.top', 'numb.bottom'), 
                          numb.cex=.6, 
                          numb.col='black', 
                          numb.pos=3, 
@@ -843,6 +847,10 @@ fancyBoxplot <- function(x,
           text(at[i], ylim[2], round(median(x[[i]]),2), pos=1, cex=numb.cex, offset=0.1, col=numb.col )
         if(show.numb=='median.bottom')
           text(at[i], ylim[1], round(median(x[[i]]),2), pos=3, cex=numb.cex, offset=0.1, col=numb.col )
+        if(show.numb=='numb.top')
+          text(at[i], ylim[2], length(x[[i]]), pos=1, cex=numb.cex, offset=0.1, col=numb.col )
+        if(show.numb=='numb.bottom')
+          text(at[i], ylim[1], length(x[[i]]), pos=3, cex=numb.cex, offset=0.1, col=numb.col )
         
         ##text(at[i], mean(x[[i]]), "*", adj=c(0,0) )
       }
@@ -897,9 +905,20 @@ ba.plot <- function( x, y, type=c("BA", "MA"), ylim=NULL, xlim=NULL, main="", ..
         legend("bottomright", legend=c(paste("Median:", round(median(M, na.rm=T), 3)), paste("IQR:", round(IQR(M, na.rm=T), 3)) ) )
 
         abline(h=mean(M, na.rm=T), lwd=2, lty="dashed", col="darkred")
-        abline(h=mean(M, na.rm=T)+1.96*sd(M, na.rm=T), lwd=2, lty="dashed", col="darkred")
-        abline(h=mean(M, na.rm=T)-1.96*sd(M, na.rm=T), lwd=2, lty="dashed", col="darkred")
+        
+        upper.sd <- mean(M, na.rm=T)+1.96*sd(M, na.rm=T)
+        lower.sd <- mean(M, na.rm=T)-1.96*sd(M, na.rm=T)
+        
+        abline(h=upper.sd, lwd=2, lty="dashed", col="darkred")
+        abline(h=lower.sd, lwd=2, lty="dashed", col="darkred")
         legend("bottomleft", legend=c(paste("+/- 1.96 StdDev")), col="darkred", lty="dashed", lwd=2)
+        
+        out <- list()
+        out[[1]] <- names(M)[which(M > upper.sd)]
+        out[[2]] <- names(M)[which(M < lower.sd)]
+        names(out) <- c('upper.bound', 'lower.bound')
+    
+        return(out)    
 
     }
 
@@ -2147,6 +2166,7 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
   p_load(magrittr)
   p_load(pheatmap)
   p_load(dichromat)
+  p_load(RColorBrewer)
   
   hm_color_scheme <- match.arg(hm_color_scheme)
   
@@ -2211,6 +2231,7 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
     score <- score[, cvl.idx] 
     fdr <- fdr[, cvl.idx]
     cdesc <- cdesc[cvl.idx, ]
+  
   }
   
   ##############################################
@@ -2230,8 +2251,11 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
   #extract significant signatures
   colnames(fdr) <- paste(cdesc[, class_vector], colnames(fdr))
   #gs.signif <- which(apply(fdr, 1, function(x) { sapply( cdesc[, class_vector] %>% unique , function(xx) ifelse( sum(x[grep(paste('^',xx, ' ', sep=''), names(x))] < fdr.max, na.rm=T) >= fdr.rep, 1, 0 )) }) %>% t %>% apply(., 1, sum) > 0) %>% names
-  gs.signif <- which( apply(fdr, 1, function(x) { 
+ # gs.signif <- which( apply(fdr, 1, function(x) { 
+  gs.signif <- apply(fdr, 1, function(x) { 
+    
     sapply( 
+      
       cdesc[, class_vector] %>% unique ,
       function(class){
         # extract FDRs of current class
@@ -2247,9 +2271,13 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
         ifelse( length( class.fdrs.sig)  >= fdr.rep & prod(range( class.fdrs.sig[ class.fdrs.sig != 0] )) > 0, 1, 0 ) 
         #ifelse( length( class.fdrs.sig)  >= fdr.rep, 1, 0 ) 
       })
-    }) %>% t %>% apply(., 1, sum) > 0) %>% names
+    }) ## %>% t %>% apply(., 1, sum) > 0) %>% names
   
-  #gs.signif %>% t %>% apply(., 1, sum)
+  if( !is.null(dim(gs.signif)) ){
+    gs.signif <- which(t(gs.signif) %>% apply(., 1, sum) > 0) %>% names
+  } else {
+    gs.signif <- which(gs.signif > 0)
+  }
   
   ##gs.signif <- which(apply(fdr, 1, function(x) { sapply( cdesc[, class_vector] %>% unique , function(xx) ifelse( sum( abs(x[grep(paste('^',xx, ' ', sep=''), names(x))]) < fdr.max & prod(range( x[grep(paste('^',xx, ' ', sep=''), names(x))]  )) > 0, na.rm=T) >= fdr.rep, 1, 0 )) }) %>% t %>% apply(., 1, sum) > 0) %>% names
   
@@ -2257,7 +2285,7 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
     stop(paste('\n\nNo gene sets meeting the criteria: FDR <', fdr.max, ' in min.', fdr.rep, 'samples in "', class_vector,'"\n\n' ))
   
   score.signif <- score[gs.signif, ]
-  fdr.signif <- abs(fdr[gs.signif, ])
+  fdr.signif <- data.frame(abs(fdr[gs.signif, ]))
   
   ## use cell notes to mark significant signatures
   cellnote <- apply( fdr.signif, 1, function(x){xx=x;xx[x >= fdr.max]='';xx[x < fdr.max]=cellnote_pch;xx[is.na(x)]='';xx }) %>% t %>% data.frame
@@ -2281,6 +2309,8 @@ gene.set.hm <- function(gct.str,             ## path ssGSEA/ssPSEA GCT file (com
     color.breaks = seq( min.val, max.val, length.out=9 )
     color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
   }
+  
+  
   if(!is.null( exclude.from.cdesc)){
     
     rm.idx <- which(colnames(cdesc)  %in% exclude.from.cdesc)
