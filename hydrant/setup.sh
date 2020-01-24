@@ -2,21 +2,27 @@
 
 cd ..
 pgdac=`pwd`
+red='\033[0;31m'
+grn='\033[0;32m'
+reg='\033[0m'
+err="${red}error.${reg}"
+not="${grn}----->${reg}" ## notification
 
 primary=$pgdac/hydrant/primary-dockerfile
 secondary=$pgdac/hydrant/secondary-dockerfile
 
 freshtask() {
- echo "Creating fresh task...";
+ echo -e "$not Creating fresh task...";
  ( cd $pgdac/hydrant/tasks/;
-   rm -r $task;
+   if [ -d "$task" ]; then rm -r $task; fi
    mkdir -p configs;
-   echo -e "[Task $task]\nSrc=$pgdac/src/$task" > configs/$task"-config.txt";
-   hydrant init $task -c configs/$task"-config.txt" -n 0 )
+   echo -e "[Task $task]" > configs/$task"-config.txt";
+   hydrant init $task -c configs/$task"-config.txt" -n 0
+   rm -rf $task/$task/src; )
 }
 
 copysrc() {
-  echo "Copying source files to docker dir...";
+  echo -e "$not Copying source files to docker dir...";
   mkdir -p $pgdac/hydrant/tasks/$task/$task/src/;
   cp -R $pgdac/src/$task/* $pgdac/hydrant/tasks/$task/$task/src/.;
 }
@@ -31,88 +37,171 @@ copywdl() {
   cp $wdl $pgdac/hydrant/tasks/$task/$task/pgdac_$task.wdl
 }
 
-buildpushdocker() {
+builddocker() {
   cd $pgdac/hydrant/tasks/$task/$task/;
   if [[ -z "$docker_tag" ]]; then
     docker_tag=1
   fi
-  echo "Building $task locally...";
+  if [[ $x_flag != "true" ]]; then
+    echo -e "$not Pruning docker images on this system to ensure new build..."
+    yes | docker system prune --all;
+  fi
+  echo -e "$not Building $task locally...";
   echo "!data\n!packages\n!R-utilities" > .dockerignore;
-  docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . > buildlog.txt 2>&1;
-  echo "Pushing $task to dockerhub...";
-  docker push $docker_ns/$task:$docker_tag >> buildlog.txt 2>&1;
-  rm -rf R-utilities;
-  rm -rf data;
-  rm -rf packages;
-  rm -rf src;
-  rm .dockerignore;
-  rm buildlog.txt;
+  if [[ $task == "pgdac_utils" ]]; then
+    git clone https://github.com/broadinstitute/proteomics-Rutil.git
+    mv proteomics-Rutil R-utilities
+  fi
+  docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . ;
+  docker images | grep "$task"
+}
+
+pushdocker()
+{
+  cd $pgdac/hydrant/tasks/$task/$task/;
+  if [[ -z "$docker_tag" ]]; then
+    docker_tag=1
+  fi
+  echo -e "$not Pushing $task:$docker_tag to dockerhub...";
+  docker push $docker_ns/$task:$docker_tag;
+  open https://hub.docker.com/repository/docker/$docker_ns/$task
 }
 
 editdockerfile() {
   ( cd $pgdac/hydrant/tasks/$task/$task;
-    sed -i '' "s|broadcptac/r-util:2|broadcptac/$base_task:1|g" Dockerfile;
-    sed -i '' "s|broadcptac/pgdac_common:1|broadcptac/$base_task:1|g" Dockerfile; )
-}
-
-copycommonutils(){
-  echo "Copying common data, packages, r-utilities to docker dir..."
-  ( cd $pgdac/hydrant/tasks/$task/$task/;
-    mkdir -p data;
-    mkdir -p src
-    cp $pgdac/data/* data/.;
-    echo $'!data' >> .dockerignore )
+    sed -i '' "s|broadcptac/pgdac_common:.*|broadcptac/$base_task_with_tag|g" Dockerfile; )
 }
 
 display_usage() {
   echo "usage: ./setup.sh -t [task_name] [-f] [-p] [-s] [-c [custom_docker_file]] "
-  echo "                      [-w [wdl]] [-m [base_task]] [-n [docker_namespace]] "
-  echo "                      [-g [docker_tag_num]] [-y] [-b] [-h]"
-  echo -e "\nNOTE: If using -f, use it after -t and before all other options.\n\n"
+  echo "                      [-w [wdl]] [-m [base_task]:[tag]] [-n [docker_namespace]] "
+  echo "                      [-g [docker_tag_num]] [-y] [-b] [-h] [-x] [-z]"
+  echo ""
   echo "-t | string | task name"
   echo "-f | flag   | Erase task directory if exists; Initialize a new task directory space"
-  echo "-p | flag   | Use the primary-dockerfile template which builds on top of r-util docker; "
-  echo "            | Copy common utilities to the docker as well"
-  echo "-s | flag   | Use the secondary-dockerfile which builds on top of pgdac_common docker"
+  echo "-p | flag   | Use the primary-dockerfile template"
+  echo "-s | flag   | Use the secondary-dockerfile template"
   echo "-c | string | Use the custom dockerfile with its full path specified in the argument"
   echo "-w | string | Copy the wdl with its full path specified in the argument"
-  echo "-m | string | Edit the dockerfile to replace pgdac_common with the task specified in the argument"
-  echo "-n | string | Docker namespace for building and pushing"
-  echo "-g | string | Docker tag number for building and pushing"
-  echo "-y | flag   | Copy source files from the PGDAC src directory to the hydrant's docker src directory"
-  echo "-b | flag   | Build and push the docker to dockerhub with the specified docker namespace"
+  echo "-m | string | Replace pgdac_common:<ver> with argument"
+  echo "            | Note: 'broadcptac' is the default namespace. ( Uncustomizable for now )"
+  echo "-n | string | Docker namespace"
+  echo "-g | string | Docker tag number"
+  echo "-y | flag   | Add PGDAC/src/task/ files to docker or update them"
+  echo "-b | flag   | Build docker"
+  echo "-u | flag   | Push docker to dockerhub with the specified docker namespace"
+  echo "-x | flag   | Do not prune dockers from local system before building"
+  echo "-z | flag   | Cleanup children directories before Github commit"
   echo "-h | flag   | Print Usage"
+  exit
 }
 
-while getopts ":t:c:w:n:m:g:psfybh" opt; do
-    case $opt in 
+while getopts ":t:c:w:n:m:g:psfybuxzh" opt; do
+    case $opt in
         t) task="$OPTARG"; wf_name="$task";;
-        p) dockertemplate $primary; copycommonutils;;
-        s) dockertemplate $secondary;;
+        p) p_flag="true";;
+        s) s_flag="true";;
         c) docker_custom="$OPTARG"; dockertemplate $docker_custom;;
-        w) wdl="$OPTARG"; copywdl $wdl;; 
+        w) wdl="$OPTARG"; copywdl $wdl;;
         n) docker_ns="$OPTARG";;
-        m) base_task="$OPTARG"; editdockerfile $base_task;;
+        m) base_task_with_tag="$OPTARG";;
         g) docker_tag="$OPTARG";;
-        f) freshtask;;
-        y) copysrc;;
-        b) buildpushdocker;;
+        f) f_flag="true";;
+        y) y_flag="true";;
+        b) b_flag="true";;
+        u) u_flag="true";;
+        x) x_flag="true";; ##if calling from update.sh
+        z) z_flag="true";;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
 done
 
-print_log() {
-  echo "Cleaning up..."
-  mkdir -p $pgdac/hydrant/logs
-  stamp=$(date "+%S%M%H%d%m%Y")
-  logfile="$pgdac/hydrant/logs/$task-log-$stamp.txt"
-  echo "Log-File: Parameter List" > $logfile;
-  echo "task=$task" >> $logfile;
-  echo "docker_custom=$docker_custom" >> $logfile;
-  echo "wdl=$wdl" >> $logfile;
-  echo "docker_ns=$docker_ns" >> $logfile;
-  echo "base_task=$base_task" >> $logfile;
-  echo "docker_tag=$docker_tag" >> $logfile;
+rmdata()
+{
+  cd $pgdac/hydrant/tasks/$task/$task/;
+  if [ -d "data" ]; then
+    rm -rf data;
+  fi
 }
-print_log
+
+cleanup()
+{
+  cd $pgdac/hydrant;
+  find . -name "tests" -type d -exec rm -rf {} \;
+  find . -name "src" -type d -exec rm -rf {} \;
+  find . -name "hydrant.cfg" -exec rm {} \;
+  find . -name "R-utilities" -type d -exec rm {} \;
+  rm *.Rout
+}
+
+
+main()
+{
+
+  if [[ $z_flag == "true" ]]; then
+    cleanup
+    exit
+  fi
+
+  if [[ -z "$task" ]]; then
+    echo -e "$err Task name not entered. Exiting."
+    exit
+  fi
+
+  ## fresh task
+  if [[ $f_flag == "true" ]]; then
+    freshtask;
+  fi 
+
+  ## dockerfile copy
+  if [[ $p_flag == "true" ]]; then
+    dockertemplate $primary;
+  fi
+
+  if [[ $s_flag == "true" ]]; then
+    dockertemplate $secondary;
+    rmdata;  
+  fi
+
+  if [[ ! -z "$docker_custom" ]]; then
+    dockertemplate $docker_custom;
+    rmdata;
+  fi
+
+  if [[ ! -z "$wdl" ]]; then
+    copywdl $wdl;
+  fi
+
+  ## edit dockerfile
+  if [[ ! -z "$base_task_with_tag" ]]; then
+    editdockerfile $base_task_with_tag;
+  fi
+
+  ## copy source
+  if [[ $y_flag == "true" ]]; then
+    copysrc;
+  fi 
+
+  ## build docker
+  if [[ $b_flag == "true" ]]; then
+    if [[ ! -z "$docker_ns" ]]; then
+      builddocker;
+    elif [[ -z "$docker_ns" ]]; then
+      echo -e "$err Docker namespace not entered. Exiting."
+      exit
+    fi
+  fi 
+
+  ## push docker
+  if [[ $u_flag == "true" ]]; then
+    if [[ ! -z "$docker_ns" ]]; then
+      pushdocker;
+    elif [[ -z "$docker_ns" ]]; then
+      echo -e "$err Docker namespace not entered. Exiting."
+      exit
+    fi
+  fi 
+}
+
+main
