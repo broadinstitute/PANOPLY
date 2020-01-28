@@ -33,21 +33,21 @@ preprocessGCT <- function(
   mode=c('mean', 'median', 'sd', 'SGT', 'abs.max'),     ## how should multiple sites per gene be combine; 
                                       ## sd - most variable (standard deviation) across sample columns
                                       ## SGT - subgroup top: first subgroup in protein group (spectrum mill)
-                                      ## for log-transformed, signed p-values
+                                      ## abs.max - for log-transformed, signed p-values
   SGT.col='subgroupNum',              ## column used to collpase to SGT        
   mod.res=c('S|T|Y', 'K'),            ## modified residue(s) 
   mod.type=c('p', 'ac', 'ub'),        ## modification type
-  #map2up=T,                          ## if TRUE, RefSeq and GeneSymbols will be mapped to UniProt 
+  #map2up=T,                          ## if TRUE, RefSeq and gene symbols will be mapped to UniProt 
   #org=c('human', 'mouse', 'rat'),    ## supported organism; parameter not used right now; function 'RefSeq2UniProt' tries to determine organism automatically
   appenddim=T,                        ## see cmapR::write.gct()
-  use.as.is=F                         ## flag, if TRUE nothing will be done; probably needed for to make this step optional in a FireCLoud WDL.
+  preprocess.gct=T                    ## flag, if FALSE nothing will be done; probably needed for to make this step optional in a FireCLoud WDL.
 ){
   
   ## imediatly return
-  if(use.as.is){
+  if(!preprocess.gct){
     return(gct.str)
   }
-  
+ 
   require(pacman)
   p_load(cmapR)
   p_load(magrittr)
@@ -69,13 +69,13 @@ preprocessGCT <- function(
   if(file.exists(gct.str)){
       cat('importing gct file: ', gct.str, ' ...\n')
       gct <- try(parse.gctx(gct.str))
-      cat(class(gct), '\n')
+      #cat(class(gct), '\n')
       #g <- readLines(gct.str)
       #cat(g[1:3],'\n')
   } else {
     stop(glue("File '{gct.str}' not found!\n"))
   }
-  cat('\ntest1\n')
+  #cat('\ntest1\n')
   if(class(gct) == 'try-error'){
     
     ## - cmapR functions stop if ids are not unique
@@ -105,12 +105,12 @@ preprocessGCT <- function(
       }
     } #end if 'rid not unique'
   }
-  cat('done\n')
+  #cat('done\n')
   
   ##############################################
   #parse GCT object
   mat <- gct@mat
-  cat('\ntest2\n')
+  #cat('\ntest2\n')
   n <- ncol(mat) ## number of data colums
   
   ## row ids
@@ -413,8 +413,9 @@ preprocessGCT <- function(
         })
       ## sequence windows   
       } else  if( id.type.out == 'seqwin'){
+       # cat("seqwin.col:", seqwin.col, '\n')
         
-        if(!seqwin.col %in% colnames(rdesc)) stop(glue("column '{seqwin.col}' not found!"))
+        if(!(seqwin.col %in% colnames(rdesc))) stop(glue("column '{seqwin.col}' not found!"))
         
         site.var <- rdesc[, seqwin.col] %>% toupper %>% gsub('-', '_', .)
         names(site.var) <- names(site.ids)
@@ -552,13 +553,30 @@ preprocessGCT <- function(
       
       #combine expression of duplicated sites, e.g. sites detected on multiple versions of multiply phosphorylated peptides
       for(s in sites.dup){
-        #cat(s, '\n')
+      #  cat(s, '\n')
         if(n == 1){
           mat.tmp <- matrix(mat[map.idx[[s]], ], ncol=n)
         } else{
+          
           mat.tmp <- mat[map.idx[[s]], ]
         }
-        mat.ss[s, ] <- apply(mat.tmp, 2, eval(parse(text=mode)), na.rm=T)
+        #cat(s, '\n')
+       # View(mat.tmp)
+        if(mode != 'abs.max'){
+          mat.tmp2 <- apply(mat.tmp, 2, eval(parse(text=mode)), na.rm=T)
+          #mat.ss[s, ] <- unlist(apply(mat.tmp, 2, eval(parse(text=mode)), na.rm=T))
+        } else{
+          #mat.ss[s, ] <- unlist(apply(mat.tmp, 2, function(x) x[which.max(abs(x))]))
+          mat.tmp2 <- apply(mat.tmp, 2, function(x) x[which.max(abs(x))])
+        }
+        ## check whether all entries
+        mat.tmp2.idx <- sapply(mat.tmp2, length)
+        mat.tmp2.idx <- which(mat.tmp2.idx == 0)
+        if(length(mat.tmp2.idx) > 0){
+          mat.tmp2[mat.tmp2.idx] <- NA
+        }
+          
+        mat.ss[s, ] <- unlist(mat.tmp2)
       }
       
       
@@ -756,11 +774,11 @@ prepare_sam_output <- function( csv.str,  ## path to input csv
 ## prepare nmf results for PTM-SEA
 prepare_mo_nmf_output <- function(w.str, 
                                   type=c('pSTY', 'Prot'),
-                                  id.column='geneSymbol',
+                                  id.column=c('rid', 'geneSymbol'),
                                   ofile='out'){
   library(pacman)
   p_load(glue)
-  
+  id.column <- match.arg(id.column)
   type <- match.arg(type)
   
   
@@ -769,9 +787,10 @@ prepare_mo_nmf_output <- function(w.str,
   w <- w.gct@mat
   rdesc <- w.gct@rdesc
   
-  if( !id.column %in% colnames(rdesc ))
-    stop(glue("Column '{id.column}' not found in!!"))
-    
+  if(id.column != 'rid'){
+    if( !id.column %in% colnames(rdesc ))
+      stop(glue("Column '{id.column}' not found in!!"))
+  }
   
   ## extract p-sites/proteins
   idx <- which(rdesc$Type == type)
@@ -783,10 +802,11 @@ prepare_mo_nmf_output <- function(w.str,
   cdesc <- data.frame(Dummy=rep('NMF.cluster', ncol(w)), Dummy2=rep('NMF.cluster', ncol(w)))
   rownames(cdesc) <- colnames(w)
   
-  #rownames(w) <- sub(glue("^{type}-"), '', rownames(w))
-  ## check whether 'id.column' contains unique entries
-  ids <- rdesc[, id.column] %>% gsub(' ', '', .) %>% sub(glue("^{type}-"), '', .)
-  
+  if(id.column == 'rid'){
+    ids <- sub(glue("^{type}-"), '', rownames(w))
+  } else { ## check whether 'id.column' contains unique entries
+    ids <- rdesc[, id.column] %>% gsub(' ', '', .) %>% sub(glue("^{type}-"), '', .)
+  }
   if(sum(duplicated(ids)) > 0){
     w <-  aggregate(w, by=list(ids), FUN=function(x)x[which.max(abs(x))])
     rdesc <- aggregate(rdesc, by=list(ids), FUN=function(x) paste0(unique(x, collapse='|')))
@@ -818,11 +838,18 @@ prepare_mo_nmf_output <- function(w.str,
 gg_volc <- function(output.prefix, 
                     fdr.max = 0.05, ## max. FDR
                     n.max = 5, ## maximal number of signatures to label each side of the volcano plots
+                    ncol=3,    ## number of plots per row
+                    alpha=100,
+                    #show=c('KINASE-PSP_mTOR/MTOR', 'KINASE-PSP_PKCA/PRKCA', 'KINASE-PSP_PKACA/PRKACA', 'KINASE-PSP_CDK2', 'KINASE-PSP_CDK1'),
+                    show=NULL, ## signatures to show in all plots
                     ...  ## passed to ggsave
                     ){
     #fdr.max <- 0.05 
     #n.max <- 5 
-    
+    if(!require(pacman)) install.packages("pacman")
+    p_load(ggpubr)
+    p_load(ggrepel)
+  
     ## import ptm-sea results
     fn3 <- glue('{output.prefix}-combined.gct')
     ptm <- parse.gctx(fn3)
@@ -838,10 +865,11 @@ gg_volc <- function(output.prefix,
     
     for(s in cid){
       
-      pval.tmp <- rdesc[ , glue("pvalue.{sub('^X','',make.names(s))}")]
-      fdr.tmp <- rdesc[ , glue("fdr.pvalue.{sub('^X','',make.names(s))}")]
-      ol.tmp <- rdesc[, glue("Signature.set.overlap.percent.{sub('^X','',make.names(s))}")]
-      score.tmp <- mat[ , glue('{s}')]
+      pval.tmp <- rdesc[ , glue("pvalue.{sub('^X','',make.names(s))}")] %>% as.numeric
+      fdr.tmp <- rdesc[ , glue("fdr.pvalue.{sub('^X','',make.names(s))}")] %>% as.numeric
+      ol.tmp <- rdesc[, glue("Signature.set.overlap.percent.{sub('^X','',make.names(s))}")] %>% as.numeric
+      score.tmp <- mat[ , glue('{s}')] %>% as.numeric
+      
       
       Enrichment.Score <- score.tmp
       P.Value <- -10*log(pval.tmp, 10)
@@ -852,6 +880,10 @@ gg_volc <- function(output.prefix,
       if(length(sig.idx) > 0)
         Significant[sig.idx] <- 'y'
       
+      col <- Significant
+      col[col == 'y'] <- 'red'
+      col[col == 'n'] <- 'grey'
+      
       ## used for ranking
       Rank <- P.Value * Enrichment.Score
       
@@ -860,24 +892,39 @@ gg_volc <- function(output.prefix,
                               Significant,
                               Signature=rid,
                               Overlap.Percent=ol.tmp,
-                              Rank=Rank)
+                              Rank=Rank,
+                              col)
+      if(!is.null(show)){
+        highlight <- rep('n', nrow(data.plot))
+        highlight[ which(data.plot$Signature %in% show )] <- 'y'
+        data.plot <- data.frame(data.plot, highlight)
+      }
       
       xlim=max(abs(data.plot$Enrichment.Score))
       ymax=max(abs(data.plot$P.Value))
       
-      data.sig.dn <- data.plot %>% 
-        filter(Significant == 'y' & Enrichment.Score < 0) %>% 
-        arrange(Rank) 
-      if(nrow(data.sig.dn) > n.max)
-        data.sig.dn <- data.sig.dn[1:(min( n.max, nrow(data.sig.dn))), ]
-        #data.sig.dn <- data.sig.dn %>% slice(1:(min( n.max, nrow(data.sig.dn))))
-      
-      data.sig.up <- data.plot %>% 
-        filter(Significant == 'y' & Enrichment.Score > 0) %>% 
-        arrange(desc(Rank)) 
-      if(nrow(data.sig.up) > n.max)
-        data.sig.up <- data.sig.up[1:(min( n.max, nrow(data.sig.up))), ]
-      
+      if(is.null(show)){
+          data.sig.dn <- data.plot %>% 
+            filter(Significant == 'y' & Enrichment.Score < 0) %>% 
+            arrange(Rank) 
+          if(nrow(data.sig.dn) > n.max)
+            data.sig.dn <- data.sig.dn[1:(min( n.max, nrow(data.sig.dn))), ]
+            #data.sig.dn <- data.sig.dn %>% slice(1:(min( n.max, nrow(data.sig.dn))))
+          
+          data.sig.up <- data.plot %>% 
+            filter(Significant == 'y' & Enrichment.Score > 0) %>% 
+            arrange(desc(Rank)) 
+          if(nrow(data.sig.up) > n.max)
+            data.sig.up <- data.sig.up[1:(min( n.max, nrow(data.sig.up))), ]
+      } else {
+        
+        data.sig.up <- data.plot %>% 
+          filter(highlight == 'y' & Enrichment.Score > 0) %>% 
+          arrange(desc(Rank)) 
+        data.sig.dn <- data.plot %>% 
+          filter(highlight == 'y' & Enrichment.Score < 0) %>% 
+          arrange(Rank) 
+      }
       #  data.sig.up <- data.sig.up %>% slice(1:(min( n.max, nrow(data.sig.up))))
       
       
@@ -886,7 +933,8 @@ gg_volc <- function(output.prefix,
         xlim(-xlim, xlim) +
         geom_vline(xintercept=0, linetype=3) +
         labs(title=glue('{s}'), y='-10log10(P-value)') +
-        
+        scale_colour_manual(name="", values = c("y"=my.col2rgb("darkred", alpha = alpha), 
+                                                "n"=my.col2rgb("grey", alpha = alpha))) +
         geom_label_repel( aes(label=Signature),
                           #nudge_x=data.sig.dn$Enrichment.Score,
                           nudge_x=-5,
@@ -911,17 +959,31 @@ gg_volc <- function(output.prefix,
     }
     
     ## plot and save
-    pp <- ggarrange(plotlist= plot.list, common.legend=T)
-    annotate_figure(pp, top=glue("class vector: {output.prefix}"))
-    ggsave(glue("volcano_{output.prefix}.pdf"), device='pdf', ...)
+    if(length(plot.list) > 9){
+      
+      pdf(glue("volcano_{output.prefix}.pdf"), ...)
+      for(s in names(plot.list)){
+        plot(plot.list[[s]])
+      }
+      dev.off()
+      
+    } else {
+      pp <- ggarrange(plotlist= plot.list, common.legend=T, ncol = ncol)
+      ggsave(glue("volcano_{output.prefix}.pdf"),  device='pdf', ...)
+    }
+    #save(pp, file='debug.RData')
+    #annotate_figure(pp, top=glue("class vector: {output.prefix}"))
     
-    return(0)
+    
+   # return(data.plot)
+   return(0)
 }
+
 
 ## ######################################################
 ## pathway heatmap
 ## - developed for GSEA/PTM-SEA on NMF results
-pw_hm <- function(output.prefix, 
+pw_hm2 <- function(output.prefix, 
                   fdr.max = 0.05, ## max. FDR
                   n.max = 10, ## maximal number of signatures to label each side of the volcano plots
                   ptmsigdb=T,
@@ -944,18 +1006,33 @@ pw_hm <- function(output.prefix,
   ## helper function
   plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
     
-    ## fdr
+    ## fdr & score
     fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
-    keep.idx <- c()
-    for(i in 1:ncol(fdr)){
-      f <- fdr[, i] ## fdr
-      s <- mat[, i] ## score
+    keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
+      cat(i)
+      f=fdr[, i] ## fdr
+      s=mat[, i] ## score
       idx=which(f < fdr.max)
       if(length(idx) > 0)
-        keep.idx <- union(keep.idx, idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
-      #keep.idx <- union(keep.idx, idx)
-    }
+        idx=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]]
+      idx
+    }, fdr, mat )
+    save(keep.idx.list, file='debug.RData')
+    keep.idx <- unique(unlist(keep.idx.list)) 
     
+    
+    
+    #keep.idx <- c()
+    # for(i in 1:ncol(fdr)){
+    #   f <- fdr[, i] ## fdr
+    #   s <- mat[, i] ## score
+    #   idx=which(f < fdr.max)
+    #   if(length(idx) > 0)
+    #     keep.idx <- union(keep.idx, 
+    #                       idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
+    #   #keep.idx <- union(keep.idx, idx)
+    # }
+    # 
     fdr.filt <- fdr[keep.idx, ]
     mat.filt <- mat[keep.idx, ]
     
@@ -986,7 +1063,114 @@ pw_hm <- function(output.prefix,
     }
   } else {
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
+    fn.out=NA
     plothm(rdesc, mat, fdr.max, n.max, fn.out)
   }
 
+}
+
+
+## ######################################################
+## pathway heatmap
+## - developed for GSEA/PTM-SEA on NMF results
+pw_hm <- function(output.prefix, 
+                  fdr.max = 0.05, ## max. FDR
+                  n.max = 10, ## maximal number of signatures to label each side of the volcano plots
+                  ptmsigdb=T,
+                  ser.meth='',
+                  ...  ## passed to pheatmap
+){
+  library(pacman)
+  p_load(RColorBrewer)
+  p_load(pheatmap)
+  #fdr.max <- 0.05 
+  #n.max <- 5 
+  
+  ## import ptm-sea results
+  fn3 <- glue('{output.prefix}-combined.gct')
+  gct <- parse.gctx(fn3)
+  mat <- gct@mat
+  cid <- gct@cid
+  rdesc <- gct@rdesc
+  rid <- gct@rid
+  
+  ## helper function
+  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
+    
+    ## fdr & score
+    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
+    keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
+     # cat(i)
+      f=fdr[, i] ## fdr
+      s=mat[, i] ## score
+      idx=which(f < fdr.max)
+      if(length(idx) > 0)
+        idx=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]]
+      rownames(mat)[idx]
+    }, fdr, mat )
+    #save(keep.idx.list, file='debug.RData')
+    keep.idx <- unique(unlist(keep.idx.list)) 
+    
+    fdr.filt <- fdr[keep.idx, ]
+    mat.filt <- mat[keep.idx, ]
+    
+    colnames(mat.filt) <- paste0('C', colnames(mat.filt))
+    
+    anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
+    for(i in 1:ncol(mat.filt))
+      anno.row[keep.idx.list[[i]], i] <- '*'
+    
+    
+    
+    dist.row <- dist(mat.filt, method = 'euclidean')
+    dist.row <- seriate(dist.row, method = ser.meth)
+    
+    
+    #mat.filt[fdr.filt > fdr.max] <- NA
+    
+    max.val = ceiling( max( abs(mat.filt), na.rm=T) )
+    min.val = -max.val
+    
+    color.breaks = seq( min.val, max.val, length.out=100 )
+    
+    ## heatmap color
+    #color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
+    color.hm <- colorRampPalette(c('cyan','darkblue', 'white', 'orange', 'yellow'))(99)
+    #color.hm <- colorRampPalette(c('blue', 'yellow'))(11)
+    #color.hm <- colorRampPalette(c('cyan', 'darkblue', 'yellow'))(99)
+    #color.hm <- viridis(99)
+    
+    
+    
+    # try(pheatmap(mat.filt, 
+    #              cluster_cols = F, 
+    #              cluster_rows=T, 
+    #              clustering_distance_rows = dist.row, col=color.hm, 
+    #              breaks = color.breaks, filename = fn.out, display_numbers = anno.row, na_col = 'white', ...))
+    # 
+    mat.filt <- mat.filt[get_order(dist.row), ]
+    anno.row <- anno.row[get_order(dist.row),]
+    try(pheatmap(mat.filt, 
+                 cluster_cols = F, 
+                 cluster_rows=F, 
+                 col=color.hm, 
+                 breaks = color.breaks, filename = fn.out, display_numbers = anno.row, na_col = 'white', ...))
+    
+    
+  }
+  
+  #debug(plothm)
+  if(ptmsigdb){ ## split categories
+    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
+    for(rt in rid.type){
+      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}-blue-yellow.pdf")  
+      idx <- grep(glue("^{rt}"), rid)
+      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out)
+    }
+  } else {
+    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}-{ser.meth}.pdf")  
+   # fn.out=NA
+    plothm(rdesc, mat, fdr.max, n.max, fn.out)
+  }
+  
 }

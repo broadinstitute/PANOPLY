@@ -1,6 +1,6 @@
 #!/bin/bash
 
-ver=5
+ver=12
 name=`basename $PWD`
 docker_tag=broadcptac/$name:$ver
 

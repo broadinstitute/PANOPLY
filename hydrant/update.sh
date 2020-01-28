@@ -3,6 +3,11 @@
 cd ..
 pgdac=`pwd`
 cd hydrant
+red='\033[0;31m'
+grn='\033[0;32m'
+reg='\033[0m'
+err="${red}error.${reg}"
+not="${grn}----->${reg}" ## notification
 
 display_usage() {
   echo "usage: ./update.sh -t [task_name] -n [docker_namespace] [-h]"
@@ -23,23 +28,28 @@ while getopts ":t:n:g:h" opt; do
     esac
 done
 
-if [[ -z "$task" ]] || [[ -z "$docker_ns" ]]; then
-  display_usage
+if [[ -z "$task" ]]; then
+  echo -e "$err Task not entered. Exiting."
   exit
 fi
+if [[ -z "$docker_ns" ]]; then
+  echo -e "$err Docker namespace not entered. Exiting."
+  exit
+fi
+if [[ -z "$docker_tag" ]]; then
+  echo -e "$err Docker new tag not entered. Exiting."
+  exit
+fi
+
+
 
 R CMD BATCH --vanilla "--args -p $pgdac -t $task" map_dependency.r
 ftarget=$pgdac/hydrant/tasks/targets/$task-targets.txt
 targets=`head -n 1 $ftarget`
 IFS=';' read -ra tasks <<< "$targets"
+echo -e "$not Pruning docker images on this system to ensure new build..."
+yes | docker system prune --all;
 for task in "${tasks[@]}"
 do
-  if [[ $task = r_util ]]; then
-    #echo "here $docker_tag"
-    ./setup.sh -t $task -n $docker_ns -g $docker_tag -b
-  elif [[ $task = pgdac_common ]]; then
-    ./setup.sh -t $task -p -n $docker_ns -y -b
-  else
-    ./setup.sh -t $task -n $docker_ns -y -b
-  fi
+  ./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x # -u
 done
