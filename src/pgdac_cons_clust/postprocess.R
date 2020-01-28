@@ -31,13 +31,13 @@ if (exists ("cluster.enrichment.subgroups")) {
   if (length (cls.list) > 0) {
     cluster.cls <- factor (best.clus [,'Cluster'])
     for (cl in levels (cluster.cls)) {
-      cl.cls <- ifelse (cluster.cls == cl, cl, "rest")
-      cl.cls <- factor (cl.cls, levels=c(cl, 'rest'))   # class of interest must be first level
+      cl.cls <- ifelse (cluster.cls == cl, cl, "_rest_")
+      cl.cls <- factor (cl.cls, levels=c(cl, '_rest_'))   # class of interest must be first level
       for (g in cls.list) {
         gl <- factor (subgroup.table [,g])
         for (gx in levels (gl)) {
-          gx.cls <- ifelse (gl == gx, gx, "other")
-          gx.cls <- factor (gx.cls, levels=c(gx, 'other'))   # class of interest must be first level
+          gx.cls <- ifelse (gl == gx, gx, "_other_")
+          gx.cls <- factor (gx.cls, levels=c(gx, '_other_'))   # class of interest must be first level
           pval <- fisher.test (cl.cls, gx.cls, alternative='greater')$p.value
           enrich <- rbind (enrich, c (cl, g, gx, pval))
         }

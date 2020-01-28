@@ -188,9 +188,9 @@ cmap.annot.enrich <- function (analysis.dir,
       for (g in cls.list) {
         gl <- factor (subgroup.table [,g])
         for (gx in levels (gl)) {
-          gx.cls <- ifelse (gl == gx, gx, "other")
+          gx.cls <- ifelse (gl == gx, gx, "_other_")
           if (any (gx.cls == "", na.rm=T)) next    # skip blank classes
-          gx.cls <- factor (gx.cls, levels=c(gx, 'other'))   # class of interest must be first level
+          gx.cls <- factor (gx.cls, levels=c(gx, '_other_'))   # class of interest must be first level
           pval <- fisher.test (cmapg.data, gx.cls, alternative='greater')$p.value
           enrich <- rbind (enrich, c (cmap.g, g, gx, pval))
         }
