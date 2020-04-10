@@ -20,10 +20,11 @@ config_r_parameters:
 
   ## Input data location
   # input files are copies to this location so that the tarball has all the data
-  input.data.file: file.path (data.dir, paste (type, '-SMout.ssv', sep=''))
-  expt.design.file: file.path (data.dir, 'exptdesign.csv')
-  rna.data.file: file.path (data.dir, 'rna-data.gct')
-  cna.data.file: file.path (data.dir, 'cna-data.gct')
+  # Please note changes in these parameters will only reflect the file name and not its path:
+  input.data.file: '-SMout.ssv'
+  expt.design.file: 'exptdesign.csv'
+  rna.data.file: 'rna-data.gct'
+  cna.data.file: 'cna-data.gct'
 
 ####### END OF PARAMETERS THAT REQUIRE CORRESPONDING CHANGES IN run-pipeline.sh PARAMETERS
 
@@ -94,16 +95,16 @@ config_r_parameters:
 #  [all current options listed below -- uncomment only one]
 # use project.name to manage project specific processing and options
   project:
-    project.name: default
-# project.name: cptac2.tcga
+    project.name: default # other values: cptac2.tcga
+
 
 ## Disease
 # disease setting is used to set disease specific options and
 # run appropriate CNA subsets by creating run-cna-analysis-<disease>.r;
-# uncomment one (or none) below:
-  # disease:
-    # disease: MEDULLO
-    # disease: BRCA
+# replace '' with the disease of choice if applicable:
+  disease:
+    disease: NULL  # Other options: BRCA, MEDULLO
+    
 
 ############################################## End of config.r parameters
 
@@ -132,24 +133,28 @@ run_pipeline_parameters:
   cna_data: ''
   groups: ''
   pe: ''
-  cmap_group: "all"
-  cmap_type: "pome"
+  cmap_group: 'all'
+  cmap_type: 'pome'
   cmap_scores: ''
-  cmap_nperm: "0"
-  cmap_permutation: "tmp"
+  cmap_nperm: '0'
+  cmap_permutation: 'tmp'
   cmap_config_file: ''
-  prefix: "proteome"
-  data_source: "default"
-  log_file: "RUN-LOG.txt"
+  prefix: 'proteome'
+  data_source: 'default'
+  log_file: 'RUN-LOG.txt'
 
 
 ## Parameters with corresponding config.r values:
 ## some definitions to more easily coordinate with config.r
 
-  data_dir: "data"                  # data.dir in config.r
-  parse_dir: "parsed-data"          # pre.dir in config.r
-  norm_dir: "normalized-data"       # norm.dir in config.r
-  harmonize_dir: "harmonized-data"  # harmonize.dir in config.r
+  # data.dir in config.r
+  data_dir: "data" 
+  # pre.dir in config.r                 
+  parse_dir: "parsed-data" 
+  # norm.dir in config.r         
+  norm_dir: "normalized-data" 
+  # harmonize.dir in config.r      
+  harmonize_dir: "harmonized-data"  
   rna_dir: "rna"
   cna_dir: "cna"
   cmap_dir: "cmap"
@@ -158,15 +163,13 @@ run_pipeline_parameters:
   assoc_dir: "association"
   cluster_dir: "clustering"
 
-  expt_design_file: "exptdesign.csv"  # affects expt.design.file in config.r
+  # affects expt.design.file in config.r
+  expt_design_file: "exptdesign.csv"  
   parsed_output: "$prefix-ratio.gct"
   normalized_output: "$prefix-ratio-norm.gct"
   filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
-  rna_data_file: "rna-data.gct"       # affects rna.data.file in config.r
-  cna_data_file: "cna-data.gct"       # affects cna.data.file in config.r
-
-
-
-
-
-
+  # affects rna.data.file in config.r
+  rna_data_file: "rna-data.gct" 
+  # affects cna.data.file in config.r      
+  cna_data_file: "cna-data.gct"       
+  

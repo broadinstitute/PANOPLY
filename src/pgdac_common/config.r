@@ -28,17 +28,20 @@ Source <- function (f) {
 Source ('gct-io.r')
 Source ('io.r')
 
-
+# Load 'yaml' package with pacman to read in master parameter file:
+if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
+p_load('yaml')
+master.parameters <- read_yaml('master-parameters.yml')
 
 ## Directory structure
 # directories with raw, pre-processed and normalized data
 # also includes other analysis directories
 # directory structure is created by appropriate options in run-pipeline.sh
 # (changes to this will require corresponding changes in run-pipeline.sh)
-data.dir <- '../data'
-pre.dir <- '../parsed-data'
-norm.dir <- '../normalized-data'
-harmonize.dir <- '../harmonized-data'
+data.dir <- master.parameters$config_r_parameters$data.dir #'../data'
+pre.dir <- master.parameters$config_r_parameters$pre.dir #'../parsed-data'
+norm.dir <- master.parameters$config_r_parameters$norm.dir #'../normalized-data'
+harmonize.dir <- master.parameters$config_r_parameters$harmonize.dir #'../harmonized-data'
 
 
 ## Command line arguments
@@ -162,10 +165,10 @@ set.label.type <- function (label.type) {
 
 ## Input data location
 # input files are copies to this location so that the tarball has all the data
-input.data.file <- file.path (data.dir, paste (type, '-SMout.ssv', sep=''))
-expt.design.file <- file.path (data.dir, 'exptdesign.csv')
-rna.data.file <- file.path (data.dir, 'rna-data.gct')
-cna.data.file <- file.path (data.dir, 'cna-data.gct')
+input.data.file <- file.path (data.dir, paste (type, master.parameters$config_r_parameters$input.data.file, sep=''))
+expt.design.file <- file.path (data.dir, master.parameters$config_r_parameters$expt.design.file)
+rna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$rna.data.file)
+cna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$cna.data.file)
 
 
 
@@ -177,72 +180,73 @@ cna.data.file <- file.path (data.dir, 'cna-data.gct')
 
 
 ## Label type for MS experiment (set.label.type must be called to initialize variables)
-label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126, TMT11
+label.type <- master.parameters$config_r_parameters$label_type_for_MS_exp$label.type   # default TMT10, alternatives: iTRAQ4, TMT10.126, TMT11
 set.label.type (label.type) 
 
 ## Sample replicate indicator
 # Sample.IDs MUST be unique in the expt.design.file; duplicate samples should have the same 
 # sample names, but include this replicate.indicator, followed by a unique suffix: <name>REP1)
-replicate.indicator <- '.REP'
+replicate.indicator <- master.parameters$config_r_parameters$sample_replicate_indicator$replicate.indicator
 
 ## QC
 # QC status can be indiated using a separate cls file,
 # or included in the experiment design file with column name qc.col;
 # if neither is found, all samples are marked as qc.pass.label
 # if both exist, the experiment design file supercedes
-sampleQC.cls <- NULL
-qc.col <- 'QC.status'
-qc.pass.label <- 'QC.pass'
+sampleQC.cls <- master.parameters$config_r_parameters$QC$sampleQC.cls
+qc.col <- master.parameters$config_r_parameters$QC$qc.col
+qc.pass.label <- master.parameters$config_r_parameters$QC$qc.pass.label
 
 
 ## Output precision for gct tables
-ndigits <- 5    
+ndigits <- master.parameters$config_r_parameters$output_precision$ndigits   
 
 
 ## Missing values and filtering
-na.max <- 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
-min.numratio.fraction <- 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
-sample.na.max <- 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
-nmiss.factor <- 0.5            # for some situations, a more stringent condition is needed
-sd.filter.threshold <- 0.5     # SD threshold for SD filtering
-clustering.sd.threshold <- 2   # threshold for filtering data before consensus clustering
-clustering.na.threshold <- 0.5 # max fraction of missing values for clustering; rest are imputed
-apply.SM.filter <- TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$na.max                 # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+min.numratio.fraction <- master.parameters$config_r_parameters$missing_values_and_filtering$min.numratio.fraction  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
+sample.na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$sample.na.max           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+nmiss.factor <- master.parameters$config_r_parameters$missing_values_and_filtering$nmiss.factor            # for some situations, a more stringent condition is needed
+sd.filter.threshold <-master.parameters$config_r_parameters$missing_values_and_filtering$sd.filter.threshold     # SD threshold for SD filtering
+clustering.sd.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering.sd.threshold   # threshold for filtering data before consensus clustering
+clustering.na.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering.na.threshold # max fraction of missing values for clustering; rest are imputed
+apply.SM.filter <- master.parameters$config_r_parameters$missing_values_and_filtering$apply.SM.filter        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
 
 
 ## Normalization
-norm.method <- '2comp'         # options: 2comp (default), median, mean
-alt.method <- 'median'         # alt.method for comparison -- filtered datasets not generated
+norm.method <- master.parameters$config_r_parameters$normalization$norm.method         # options: 2comp (default), median, mean
+alt.method <- master.parameters$config_r_parameters$normalization$alt.method         # alt.method for comparison -- filtered datasets not generated
 if (norm.method == alt.method) alt.method <- NULL
                                # ignored if alt.method is NULL, or is identical to norm.method
 
 
 ## Gene mapping
 # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
-official.genesyms <- 'gene-symbol-map.csv'
-gene.id.col <- 'geneSymbol'
-protein.gene.map <- 'RefSeq-GeneName-Map-20170701.txt'
+official.genesyms <- master.parameters$config_r_parameters$gene_mapping$official.genesyms
+gene.id.col <- master.parameters$config_r_parameters$gene_mapping$gene.id.col
+protein.gene.map <- master.parameters$config_r_parameters$gene_mapping$protein.gene.map
 # policy for combining/collapsing duplicate gene names -- uncomment appropriate line to use
 # duplicate.gene.policy <- ifelse (type == 'phosphoproteome', 'median', 'maxvar')  
-duplicate.gene.policy <- 'maxvar'
+duplicate.gene.policy <- master.parameters$config_r_parameters$gene_mapping$duplicate.gene.policy
 
 ## RNA related
-rna.output.prefix <- 'rna-seq'  # output prefix for tables creates during RNA analysis
-rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
+rna.output.prefix <- master.parameters$config_r_parameters$rna$rna.output.prefix  # output prefix for tables creates during RNA analysis
+rna.sd.threshold <- master.parameters$config_r_parameters$rna$rna.sd.threshold   # for variation filter (set to NA to disable)
 
 ## CNA/parallelism related
-pe.max.default <- 250           # default maximum processors/jobs
+pe.max.default <- master.parameters$config_r_parameters$CNA_parallelism$pe.max.default     # default maximum processors/jobs
 
 ## Project
 # data source -- for managing some operations (esp related to sample IDs and names)
 #  [all current options listed below -- uncomment only one]
 # use project.name to manage project specific processing and options
-project.name <- 'default'
+project.name <- master.parameters$config_r_parameters$project$project.name
 # project.name <- 'cptac2.tcga'
 
 ## Disease
 # disease setting is used to set disease specific options and
 # run appropriate CNA subsets by creating run-cna-analysis-<disease>.r;
-# uncomment one (or none) below
-# disease <- 'MEDULLO'
-# disease <- 'BRCA'
+# by default disease is empty ('') this will check and only define it if the parameter is changed in the yaml file
+if (!is.null(master.parameters$config_r_parameters$disease$disease)){
+  disease <- master.parameters$config_r_parameters$disease$disease
+}

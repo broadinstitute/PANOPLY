@@ -18,6 +18,23 @@
 ##   to pass as input to subsequent OPERATIONs
 ##
 
+#function to parse yaml parameter file:
+function parse_yaml {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\):|\1|" \
+        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
 
 ## Utility functions
 
@@ -250,32 +267,35 @@ function analysisInit {
 
 
 ## set defaults
+# pull in parameters from yaml file
+eval $(parse_yaml master-parameters.yml)
+
 #  work with absolute paths for file/dir links/names
-sm_file=
-norm_data=
-parsed_data=
-filt_data=
-expt_file=
-input_tar=
-output_tar=
-analysis_dir=
-code_dir=
-common_data=
-param_file=
-data=
-rna_data=
-cna_data=
-groups=
-pe=
-cmap_group="all"
-cmap_type="pome"
-cmap_scores=
-cmap_nperm="0"
-cmap_permutation="tmp"
-cmap_config_file=
-prefix="proteome"
-data_source="default"
-log_file="RUN-LOG.txt"
+sm_file=$run_pipeline_parameters_sm_file
+norm_data=$run_pipeline_parameters_norm_data
+parsed_data=$run_pipeline_parameters_parsed_data
+filt_data=$run_pipeline_parameters_filt_data
+expt_file=$run_pipeline_parameters_expt_file
+input_tar=$run_pipeline_parameters_input_tar
+output_tar=$run_pipeline_parameters_output_tar
+analysis_dir=$run_pipeline_parameters_analysis_dir
+code_dir=$run_pipeline_parameters_code_dir
+common_data=$run_pipeline_parameters_common_data
+param_file=$run_pipeline_parameters_param_file
+data=$run_pipeline_parameters_data
+rna_data=$run_pipeline_parameters_rna_data
+cna_data=$run_pipeline_parameters_cna_data
+groups=$run_pipeline_parameters_groups
+pe=$run_pipeline_parameters_pe
+cmap_group=$run_pipeline_parameters_cmap_group
+cmap_type=$run_pipeline_parameters_cmap_type
+cmap_scores=$run_pipeline_parameters_cmap_scores
+cmap_nperm=$run_pipeline_parameters_cmap_nperm
+cmap_permutation=$run_pipeline_parameters_cmap_permutation
+cmap_config_file=$run_pipeline_parameters_cmap_config_file
+prefix=$run_pipeline_parameters_prefix
+data_source=$run_pipeline_parameters_data_source
+log_file=$run_pipeline_parameters_log_file
 all_args=$@
 
 op=$1
@@ -403,28 +423,28 @@ esac
   
 
 ## some definitions to more easily coordinate with config.r
-data_dir="data"
-parse_dir="parsed-data"
-norm_dir="normalized-data"
-harmonize_dir="harmonized-data"
-rna_dir="rna"
-cna_dir="cna"
-cmap_dir="cmap"
-cmap_prefix="$cmap_group-$cmap_type"
-qc_dir="sample-qc"
-assoc_dir="association"
-cluster_dir="clustering"
+data_dir=$run_pipeline_parameters_data_dir
+parse_dir=$run_pipeline_parameters_parse_dir
+norm_dir=$run_pipeline_parameters_norm_dir
+harmonize_dir=$run_pipeline_parameters_harmonize_dir
+rna_dir=$run_pipeline_parameters_rna_dir
+cna_dir=$run_pipeline_parameters_cna_dir
+cmap_dir=$run_pipeline_parameters_cmap_dir
+cmap_prefix=$run_pipeline_parameters_cmap_prefix
+qc_dir=$run_pipeline_parameters_qc_dir
+assoc_dir=$run_pipeline_parameters_assoc_dir
+cluster_dir=$run_pipeline_parameters_cluster_dir
 if [ "$data" = "" ]; then
   subset_str=""
 else 
   subset_str="-$data"
 fi
-expt_design_file="exptdesign.csv"
-parsed_output="$prefix-ratio.gct"
-normalized_output="$prefix-ratio-norm.gct"
-filtered_output="$prefix-ratio-norm-NArm$subset_str.gct"
-rna_data_file="rna-data.gct"
-cna_data_file="cna-data.gct"
+expt_design_file=$run_pipeline_parameters_expt_design_file
+parsed_output=$run_pipeline_parameters_parsed_output
+normalized_output=$run_pipeline_parameters_normalized_output
+filtered_output=$run_pipeline_parameters_filtered_output
+rna_data_file=$run_pipeline_parameters_rna_data_file
+cna_data_file=$run_pipeline_parameters_cna_data_file
 
 
 ## INITIALIZATION 
