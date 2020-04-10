@@ -31,7 +31,9 @@ Source ('io.r')
 # Load 'yaml' package with pacman to read in master parameter file:
 if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
 p_load('yaml')
-master.parameters <- read_yaml('master-parameters.yml')
+yml_dir <- getwd() # find the parameters file directory
+yml_dir <- file.path(yml_dir, "master_parameters.yml") # path to file
+master.parameters <- read_yaml(yml_dir)
 
 ## Directory structure
 # directories with raw, pre-processed and normalized data

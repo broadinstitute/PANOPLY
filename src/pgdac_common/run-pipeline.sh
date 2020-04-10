@@ -268,7 +268,10 @@ function analysisInit {
 
 ## set defaults
 # pull in parameters from yaml file
-eval $(parse_yaml master-parameters.yml)
+cwd=$(pwd) #get working directory
+par='/master-parameters.yml'
+cwd=$cwd$par
+eval $(parse_yaml $cwd)
 
 #  work with absolute paths for file/dir links/names
 sm_file=$run_pipeline_parameters_sm_file
