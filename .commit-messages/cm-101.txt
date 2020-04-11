@@ -1,0 +1,3 @@
+Renamed tasks from pgdac_* to pnaoply_*
+- Location : PANOPLY/src/
+- Mop Code : PANOPLY/mop-code
