@@ -51,5 +51,5 @@ echo -e "$not Pruning docker images on this system to ensure new build..."
 yes | docker system prune --all;
 for task in "${tasks[@]}"
 do
-  ./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x # -u
+  ./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x -u
 done

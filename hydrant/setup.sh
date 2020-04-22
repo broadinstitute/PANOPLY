@@ -11,6 +11,9 @@ not="${grn}----->${reg}" ## notification
 primary=$pgdac/hydrant/primary-dockerfile
 secondary=$pgdac/hydrant/secondary-dockerfile
 
+# deletes existing folder if present, 
+# creates a config file for hydrant, 
+# and creates a new task with hydrant
 freshtask() {
  echo -e "$not Creating fresh task...";
  ( cd $pgdac/hydrant/tasks/;
@@ -21,27 +24,31 @@ freshtask() {
    rm -rf $task/$task/src; )
 }
 
+# copies source code from ../src/ location to the 
+# docker location
 copysrc() {
   echo -e "$not Copying source files to docker dir...";
   mkdir -p $pgdac/hydrant/tasks/$task/$task/src/;
   cp -R $pgdac/src/$task/* $pgdac/hydrant/tasks/$task/$task/src/.;
 }
 
+
+# copies appropriate dockerfile to the task
 dockertemplate() {
   dockerfile=$1;
   cp $dockerfile $pgdac/hydrant/tasks/$task/$task/Dockerfile;
 }
 
+# copies appropriate WDL to the task
 copywdl() {
   wdl=$1
   cp $wdl $pgdac/hydrant/tasks/$task/$task/pgdac_$task.wdl
 }
 
+# builds a new docker with the default docker tag set to 
+# the latest commit hash from github
 builddocker() {
   cd $pgdac/hydrant/tasks/$task/$task/;
-  if [[ -z "$docker_tag" ]]; then
-    docker_tag=1
-  fi
   if [[ $x_flag != "true" ]]; then
     echo -e "$not Pruning docker images on this system to ensure new build..."
     yes | docker system prune --all;
@@ -52,16 +59,19 @@ builddocker() {
     git clone https://github.com/broadinstitute/proteomics-Rutil.git
     mv proteomics-Rutil R-utilities
   fi
+  if [[ $task == "pgdac_common" ]]; then
+    mkdir -p data
+    cp -r $pgdac/data/* data/.
+  fi
   docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . ;
   docker images | grep "$task"
 }
 
+# login into dockerhub and push the built docker
 pushdocker()
 {
+  docker login
   cd $pgdac/hydrant/tasks/$task/$task/;
-  if [[ -z "$docker_tag" ]]; then
-    docker_tag=1
-  fi
   echo -e "$not Pushing $task:$docker_tag to dockerhub...";
   docker push $docker_ns/$task:$docker_tag;
   open https://hub.docker.com/repository/docker/$docker_ns/$task
@@ -86,7 +96,8 @@ display_usage() {
   echo "-m | string | Replace pgdac_common:<ver> with argument"
   echo "            | Note: 'broadcptac' is the default namespace. ( Uncustomizable for now )"
   echo "-n | string | Docker namespace"
-  echo "-g | string | Docker tag number"
+  echo "-g | string | Manually overrides docker tag number which is set by default to the "
+  echo "            | latest commit hash in the repository."
   echo "-y | flag   | Add PGDAC/src/task/ files to docker or update them"
   echo "-b | flag   | Build docker"
   echo "-u | flag   | Push docker to dockerhub with the specified docker namespace"
@@ -182,6 +193,11 @@ main()
   if [[ $y_flag == "true" ]]; then
     copysrc;
   fi 
+
+  ## docker tag
+  if [[ -z $docker_tag ]]; then
+    docker_tag=`git log -1 --pretty=%h`
+  fi
 
   ## build docker
   if [[ $b_flag == "true" ]]; then

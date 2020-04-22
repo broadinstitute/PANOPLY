@@ -1,0 +1,8 @@
+Docker versioning
+- builds docker with latest commit hash as the tag number
+- logs into docker before pushing to dockerhub
+- bug fix: copies the data directory into the pgdac_common docker build location
+- bug fix: uncomment the -u in the hydrant/update.sh, 
+  to automatically push the newly built dockers
+- new comments in the hydrant/setup.sh
+- META: this commit message
