@@ -77,37 +77,54 @@ pushdocker()
   open https://hub.docker.com/repository/docker/$docker_ns/$task
 }
 
+# replace the docker namespace and docker tag in the existing WDL
+# to the current docker namespace and docker tag
+replaceinwdl(){
+  ( cd $pgdac/hydrant/tasks/$task;
+    wdl_dns=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d'/' -f 1`
+    wdl_tag=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d':' -f 2`
+    sed -i '' "s|$wdl_dns/$task:$wdl_tag|$docker_ns/$task:$docker_tag|g" $task.wdl; )
+}
+
 editdockerfile() {
   ( cd $pgdac/hydrant/tasks/$task/$task;
     sed -i '' "s|broadcptac/pgdac_common:.*|broadcptac/$base_task_with_tag|g" Dockerfile; )
 }
 
 display_usage() {
-  echo "usage: ./setup.sh -t [task_name] [-f] [-p] [-s] [-c [custom_docker_file]] "
-  echo "                      [-w [wdl]] [-m [base_task]:[tag]] [-n [docker_namespace]] "
-  echo "                      [-g [docker_tag_num]] [-y] [-b] [-h] [-x] [-z]"
   echo ""
-  echo "-t | string | task name"
-  echo "-f | flag   | Erase task directory if exists; Initialize a new task directory space"
-  echo "-p | flag   | Use the primary-dockerfile template"
-  echo "-s | flag   | Use the secondary-dockerfile template"
-  echo "-c | string | Use the custom dockerfile with its full path specified in the argument"
-  echo "-w | string | Copy the wdl with its full path specified in the argument"
-  echo "-m | string | Replace pgdac_common:<ver> with argument"
-  echo "            | Note: 'broadcptac' is the default namespace. ( Uncustomizable for now )"
-  echo "-n | string | Docker namespace"
-  echo "-g | string | Manually overrides docker tag number which is set by default to the "
-  echo "            | latest commit hash in the repository."
-  echo "-y | flag   | Add PGDAC/src/task/ files to docker or update them"
-  echo "-b | flag   | Build docker"
-  echo "-u | flag   | Push docker to dockerhub with the specified docker namespace"
-  echo "-x | flag   | Do not prune dockers from local system before building"
-  echo "-z | flag   | Cleanup children directories before Github commit"
-  echo "-h | flag   | Print Usage"
+  echo "usage: ./setup.sh -t [task_name] " 
+  echo "                     [-f] [-p] [-s] "
+  echo "                     [-c [custom_docker_file]] "
+  echo "                     [-w [wdl]] "
+  echo "                     [-m [base_task]:[tag]] "
+  echo "                     [-n [docker_namespace]] "
+  echo "                     [-g [docker_tag_num]] "
+  echo "                     [-y] [-b] [-h] [-x] [-z]"
+  echo ""
+  echo "==============================================="
+  echo "| -t | string | Task name"
+  echo "| -f | flag   | Erase task directory if exists; Initialize a new task directory space"
+  echo "| -p | flag   | Use the primary-dockerfile template"
+  echo "| -s | flag   | Use the secondary-dockerfile template"
+  echo "| -c | string | Use the custom dockerfile with its full path specified in the argument"
+  echo "| -w | string | Copy the wdl with its full path specified in the argument"
+  echo "| -m | string | Replace pgdac_common:<ver> with argument"
+  echo "|    |        | Note: 'broadcptac' is the default namespace. ( Uncustomizable for now )"
+  echo "| -n | string | Docker namespace"
+  echo "| -g | string | Manually overrides docker tag number which is set by default to the "
+  echo "|    |        | latest commit hash in the repository."
+  echo "| -y | flag   | Add PGDAC/src/task/ files to docker or update them"
+  echo "| -b | flag   | Build docker"
+  echo "| -u | flag   | Push docker to dockerhub with the specified docker namespace"
+  echo "| -x | flag   | Do not prune dockers from local system before building"
+  echo "| -z | flag   | Cleanup children directories before Github commit"
+  echo "| -h | flag   | Print Usage"
+  echo "==============================================="
   exit
 }
 
-while getopts ":t:c:w:n:m:g:psfybuxzh" opt; do
+while getopts ":t:c:w:n:m:g:prsfybuxzh" opt; do
     case $opt in
         t) task="$OPTARG"; wf_name="$task";;
         p) p_flag="true";;
@@ -121,6 +138,7 @@ while getopts ":t:c:w:n:m:g:psfybuxzh" opt; do
         y) y_flag="true";;
         b) b_flag="true";;
         u) u_flag="true";;
+        r) r_flag="true";;
         x) x_flag="true";; ##if calling from update.sh
         z) z_flag="true";;
         h) display_usage;;
@@ -218,6 +236,11 @@ main()
       exit
     fi
   fi 
+
+  if [[ $r_flag == "true"]]; then
+    replaceinwdl;
+  fi
+
 }
 
 main
