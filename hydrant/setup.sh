@@ -237,7 +237,8 @@ main()
     fi
   fi 
 
-  if [[ $r_flag == "true"]]; then
+  # replace docker reference in the WDL
+  if [[ $r_flag == "true" ]]; then
     replaceinwdl;
   fi
 

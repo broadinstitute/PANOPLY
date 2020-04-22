@@ -1,0 +1,4 @@
+Bug Fix: setup.sh
+- added space before the if bracket in main
+  * r_flag
+- META: this commit message
