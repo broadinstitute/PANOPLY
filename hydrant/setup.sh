@@ -92,12 +92,8 @@ editDockerfile() {
 }
 
 updateWdlOnTerra(){
-  if [[ -z $wdl_snapshot_comment ]]; then
-    wdl_snapshot_comment="Docker tag: $docker_tag"
-  fi
   hydrant install -m $task -n $docker_ns \
-    -d $pgdac/hydrant/tasks/$task/$task.wdl \
-    -c $wdl_snapshot_comment
+    -d $pgdac/hydrant/tasks/$task/$task.wdl
 }
 
 displayUsage() {

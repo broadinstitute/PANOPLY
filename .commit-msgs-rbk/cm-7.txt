@@ -1,0 +1,3 @@
+Bug Fix: Update WDL on Terra
+- Removed functionality to add snapshot comment on Terra
+- META: this commit message
