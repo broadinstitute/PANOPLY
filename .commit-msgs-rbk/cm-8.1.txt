@@ -1,0 +1,15 @@
+Renaming pgdac to panoply
+- Branched off of issue-versioning
+- Replaced pgdac to panoply in the following:
+  * tasks/pgdac_*
+  * tasks/pgdac_*/pgdac_*
+  * tasks/pgdac_*/pgdac_*.wdl
+- Removed the following files from the tasks folder:
+  * Dockerfile (pgdac_common): redundant
+  * map.txt
+  * targets/
+  * configs/
+- Recreating Dockers, WDLs, and Terra Workflows with new semantic versioning will
+  create new map.txt, targets/, and configs/ (upcoming)
+- rebrand.sh (the script that does all the above)
+- META: this commit message
