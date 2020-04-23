@@ -1,4 +1,4 @@
-task pgdac_philosopher {
+task panoply_philosopher {
   Boolean package
   String null_file
   File package_archive
@@ -80,7 +80,7 @@ task pgdac_philosopher {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_ms_philosopher:1"
+    docker : "broadcptac/panoply_ms_philosopher:1"
     memory: "${if defined(ram_gb) then ram_gb else '26'}GB"
     disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '120'} HDD"
     preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -93,7 +93,7 @@ task pgdac_philosopher {
   }
 }
 
-workflow pgdac_ms_philosopher {
+workflow panoply_ms_philosopher {
   Boolean package
   String null_file="gs://broad-institute-gdac/GDAC_FC_NULL"
   String package_name="philosopher_pipeline"
@@ -102,7 +102,7 @@ workflow pgdac_ms_philosopher {
   File pepXML_archive
   File package_archive
 
-  call pgdac_philosopher {
+  call panoply_philosopher {
     input: package=package,
            null_file=null_file,
            package_archive=package_archive,

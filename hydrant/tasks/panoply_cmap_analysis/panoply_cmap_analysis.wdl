@@ -1,4 +1,4 @@
-task pgdac_cmap_connectivity {
+task panoply_cmap_connectivity {
   File tarball
   File? cmap_config
   String? cmap_grp
@@ -8,7 +8,7 @@ task pgdac_cmap_connectivity {
   Array[File]? permutation_scores
   String scores_dir = "cmap-subset-scores"
   String permutation_dir = "cmap-permutation-scores"
-  String outFile = "pgdac_cmap-output.tar"
+  String outFile = "panoply_cmap-output.tar"
 
   Int? memory
   Int? disk_space
@@ -44,7 +44,7 @@ task pgdac_cmap_connectivity {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cmap_analysis:1"
+    docker : "broadcptac/panoply_cmap_analysis:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, permutations+1]) + ""
@@ -57,14 +57,14 @@ task pgdac_cmap_connectivity {
   }
 }
 
-task pgdac_cmap_input {
-  File tarball   # output from pgdac_cna_correlation
+task panoply_cmap_input {
+  File tarball   # output from panoply_cna_correlation
   File? cmap_config
   String? cmap_grp
   String? cmap_typ
   Int? cmap_permutations
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_cmapsetup-output.tar"
+  String outFile = "panoply_cmapsetup-output.tar"
   String outGmtFile = "cmap-trans-genesets.gmt"
 
   Int? memory
@@ -87,7 +87,7 @@ task pgdac_cmap_input {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cmap_analysis:1"
+    docker : "broadcptac/panoply_cmap_analysis:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -101,14 +101,14 @@ task pgdac_cmap_input {
 }
 
 
-task pgdac_cmap_annotate {
-  File tarball                  # output from pgdac_cmap_connectivity
+task panoply_cmap_annotate {
+  File tarball                  # output from panoply_cmap_connectivity
   File cmap_data_file           # CMAP level 5 geneKD data (gctx)
   File cmap_enrichment_groups   # groups file (ala experiment design file)
   File? cmap_config
   String? cmap_grp
   String? cmap_typ
-  String outFile = "pgdac_cmap-annotate-output.tar"
+  String outFile = "panoply_cmap-annotate-output.tar"
 
   Int? memory
   Int? disk_space
@@ -130,7 +130,7 @@ task pgdac_cmap_annotate {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cmap_annotate:1"
+    docker : "broadcptac/panoply_cmap_annotate:1"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -145,8 +145,8 @@ task pgdac_cmap_annotate {
 
 
 
-task pgdac_cmap_ssgsea {
-  # task adapted from pgdac_ssgsea; many inputs are set to specfic values for CMAP analysis
+task panoply_cmap_ssgsea {
+  # task adapted from panoply_ssgsea; many inputs are set to specfic values for CMAP analysis
 	File input_ds
 	File gene_set_database
 	Int? permutation_num
@@ -181,7 +181,7 @@ task pgdac_cmap_ssgsea {
 	}
 
 	runtime {
-		docker : "broadcptac/pgdac_ssgsea:5"
+		docker : "broadcptac/panoply_ssgsea:5"
     memory : select_first ([memory, 60]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 16]) + ""
@@ -196,11 +196,11 @@ task pgdac_cmap_ssgsea {
 
 
 
-task pgdac_cmap_annotate_ssgsea {
-  # task adapted from pgdac_ssgsea; many inputs are set to specific values for CMAP annotation
+task panoply_cmap_annotate_ssgsea {
+  # task adapted from panoply_ssgsea; many inputs are set to specific values for CMAP annotation
 	File input_ds
 	File gene_set_database
-  String outFile="pgdac_cmap_annotate-ssgsea.tar"
+  String outFile="panoply_cmap_annotate-ssgsea.tar"
   String output_prefix = "${basename (input_ds, '.gct')}"
 
 	# other ssgsea options (below) are fixed for CMAP analysis
@@ -236,7 +236,7 @@ task pgdac_cmap_annotate_ssgsea {
 	}
 
 	runtime {
-		docker : "broadcptac/pgdac_ssgsea:5"
+		docker : "broadcptac/panoply_ssgsea:5"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 16]) + ""
@@ -264,7 +264,7 @@ workflow run_cmap_analysis {
 
 
 
-  call pgdac_cmap_input {
+  call panoply_cmap_input {
     input:
       tarball=CNAcorr_tarball,
       cmap_permutations=n_permutations,
@@ -275,10 +275,10 @@ workflow run_cmap_analysis {
 
   # run ssGSEA on the geneset
   scatter (f in subset_files) {
-    call pgdac_cmap_ssgsea {
+    call panoply_cmap_ssgsea {
       input:
 	      input_ds="${subset_bucket}/${f}",
-	      gene_set_database=pgdac_cmap_input.genesets
+	      gene_set_database=panoply_cmap_input.genesets
     }
   }
 
@@ -286,19 +286,19 @@ workflow run_cmap_analysis {
   if (n_permutations > 0) {
     Array[Pair[String,Int]] fxp = cross (subset_files, range (n_permutations))
     scatter (x in fxp) {
-      call pgdac_cmap_ssgsea as permutation {
+      call panoply_cmap_ssgsea as permutation {
         input:
           input_ds="${subset_bucket}/${x.left}",
-	        gene_set_database=pgdac_cmap_input.permuted_genesets[x.right],
+	        gene_set_database=panoply_cmap_input.permuted_genesets[x.right],
 	        permutation_num=x.right
       }
     }
   }
 
-  call pgdac_cmap_connectivity {
+  call panoply_cmap_connectivity {
     input:
-      tarball=pgdac_cmap_input.outputs,
-      subset_scores=pgdac_cmap_ssgsea.scores,
+      tarball=panoply_cmap_input.outputs,
+      subset_scores=panoply_cmap_ssgsea.scores,
       permutations=n_permutations,
       permutation_scores=permutation.scores,
       cmap_config=config_file,
@@ -306,23 +306,23 @@ workflow run_cmap_analysis {
       cmap_typ=data_type
   }
 
-  call pgdac_cmap_annotate {
+  call panoply_cmap_annotate {
     input:
-      tarball=pgdac_cmap_connectivity.outputs,
+      tarball=panoply_cmap_connectivity.outputs,
       cmap_data_file=cmap_level5_data,
       cmap_config=config_file,
       cmap_grp=group,
       cmap_typ=data_type
   }
 
-  call pgdac_cmap_annotate_ssgsea {
+  call panoply_cmap_annotate_ssgsea {
     input:
-      input_ds=pgdac_cmap_annotate.gsea_input,
+      input_ds=panoply_cmap_annotate.gsea_input,
   	  gene_set_database=annotation_pathway_db
   }
 
   output {
-    File output = pgdac_cmap_annotate.outputs
-    File ssgseaOutput = pgdac_cmap_annotate_ssgsea.outputs
+    File output = panoply_cmap_annotate.outputs
+    File ssgseaOutput = panoply_cmap_annotate_ssgsea.outputs
   }
 }

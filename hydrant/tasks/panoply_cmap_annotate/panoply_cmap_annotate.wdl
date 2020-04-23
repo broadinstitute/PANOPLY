@@ -1,4 +1,4 @@
-task pgdac_cmap_annotate {
+task panoply_cmap_annotate {
     Float? ram_gb
     Int? local_disk_gb
     Int? num_preemptions
@@ -16,7 +16,7 @@ task pgdac_cmap_annotate {
     }
 
     runtime {
-        docker : "<namespace>/pgdac_cmap_annotate:1"
+        docker : "<namespace>/panoply_cmap_annotate:1"
         memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -28,10 +28,10 @@ task pgdac_cmap_annotate {
     }
 }
 
-workflow pgdac_cmap_annotate {
+workflow panoply_cmap_annotate {
 
-    call pgdac_cmap_annotate {
-        input: #**Define call inputs for pgdac_cmap_annotate here**
+    call panoply_cmap_annotate {
+        input: #**Define call inputs for panoply_cmap_annotate here**
     }
 
     output {

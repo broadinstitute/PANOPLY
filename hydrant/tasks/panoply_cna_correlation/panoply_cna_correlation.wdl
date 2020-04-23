@@ -1,10 +1,10 @@
-task pgdac_cna_correlation {
-  File tarball   # output from pgdac_cna_setup
+task panoply_cna_correlation {
+  File tarball   # output from panoply_cna_setup
   String type
   Float fdr_cna_corr
   String? subType
   File? params
-  String outFile = "pgdac_cna_correlation-output.tar"
+  String outFile = "panoply_cna_correlation-output.tar"
 
   Int? memory
   Int? disk_space
@@ -22,7 +22,7 @@ task pgdac_cna_correlation {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cna_setup:1"
+    docker : "broadcptac/panoply_cna_setup:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -36,6 +36,6 @@ task pgdac_cna_correlation {
 }
 
 
-workflow pgdac_cna_correlation_workflow {
-	call pgdac_cna_correlation
+workflow panoply_cna_correlation_workflow {
+	call panoply_cna_correlation
 }

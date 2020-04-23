@@ -1,4 +1,4 @@
-task pgdac_mo_nmf {
+task panoply_mo_nmf {
 	#Inputs defined here
 	File tar_file
 	
@@ -39,7 +39,7 @@ task pgdac_mo_nmf {
 		}
 
 	runtime {
-		docker : "broadcptac/pgdac_mo_nmf:5"
+		docker : "broadcptac/panoply_mo_nmf:5"
 		memory : select_first ([memory, 7]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
 		cpu : select_first ([num_threads, 12]) + ""
@@ -53,6 +53,6 @@ task pgdac_mo_nmf {
 
 }
 
-workflow pgdac_mo_nmf_workflow {
-	call pgdac_mo_nmf
+workflow panoply_mo_nmf_workflow {
+	call panoply_mo_nmf
 }

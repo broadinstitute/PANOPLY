@@ -1,4 +1,4 @@
-task pgdac_harmonize {
+task panoply_harmonize {
   File inputData
   File rnaExpr
   File cnaExpr
@@ -10,7 +10,7 @@ task pgdac_harmonize {
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-  String outFile = "pgdac_harmonize-output.tar"
+  String outFile = "panoply_harmonize-output.tar"
 
   Int? memory
   Int? disk_space
@@ -51,7 +51,7 @@ task pgdac_harmonize {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_harmonize:1"
+    docker : "broadcptac/panoply_harmonize:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -64,7 +64,7 @@ task pgdac_harmonize {
   }
 }
 
-workflow pgdac_harmonize_workflow {
+workflow panoply_harmonize_workflow {
     String standalone
     File inputData
     File rnaExpr
@@ -72,7 +72,7 @@ workflow pgdac_harmonize_workflow {
     String dataType
     String? analysisDir
 
-  call pgdac_harmonize {
+  call panoply_harmonize {
     input:
       inputData=inputData,
       rnaExpr=rnaExpr,

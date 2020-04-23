@@ -1,6 +1,6 @@
-task pgdac_accumulate {
+task panoply_accumulate {
   File input_tar
-  String? output_tar = "pgdac_contrasts.tar"
+  String? output_tar = "panoply_contrasts.tar"
   String module
   String? analysisDir = "input_tarball"
 
@@ -24,7 +24,7 @@ task pgdac_accumulate {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_accumulate:1"
+    docker      : "broadcptac/panoply_accumulate:1"
     memory      : select_first ([memory, 16]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -37,7 +37,7 @@ task pgdac_accumulate {
   }
 }
 
-workflow pgdac_accumulate_workflow {
-  call pgdac_accumulate
+workflow panoply_accumulate_workflow {
+  call panoply_accumulate
 }
 

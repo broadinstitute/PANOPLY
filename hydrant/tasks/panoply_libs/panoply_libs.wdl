@@ -1,4 +1,4 @@
-task pgdac_libs {
+task panoply_libs {
     Float? ram_gb
     Int? local_disk_gb
     Int? num_preemptions
@@ -16,7 +16,7 @@ task pgdac_libs {
     }
 
     runtime {
-        docker : "<namespace>/pgdac_libs:1"
+        docker : "<namespace>/panoply_libs:1"
         memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -28,10 +28,10 @@ task pgdac_libs {
     }
 }
 
-workflow pgdac_libs {
+workflow panoply_libs {
 
-    call pgdac_libs {
-        input: #**Define call inputs for pgdac_libs here**
+    call panoply_libs {
+        input: #**Define call inputs for panoply_libs here**
     }
 
     output {

@@ -1,4 +1,4 @@
-task pgdac_normalize_ms_data {
+task panoply_normalize_ms_data {
   File inputData
   String type
   String standalone
@@ -7,7 +7,7 @@ task pgdac_normalize_ms_data {
   File? params
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_normalize_ms_data-output.tar"
+  String outFile = "panoply_normalize_ms_data-output.tar"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
   Int? memory
@@ -43,7 +43,7 @@ task pgdac_normalize_ms_data {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_normalize_ms_data:1"
+    docker : "broadcptac/panoply_normalize_ms_data:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -56,13 +56,13 @@ task pgdac_normalize_ms_data {
   }
 }
 
-workflow pgdac_normalize_ms_data_workflow {
+workflow panoply_normalize_ms_data_workflow {
   File inputData
   String dataType
   String standalone
   String? analysisDir
 
-  call pgdac_normalize_ms_data {
+  call panoply_normalize_ms_data {
     input:
       inputData=inputData,
       type=dataType,

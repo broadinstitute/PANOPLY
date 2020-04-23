@@ -1,4 +1,4 @@
-task pgdac_association {
+task panoply_association {
   File inputData
   String type
   String standalone
@@ -8,7 +8,7 @@ task pgdac_association {
   File? params
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_association-output.tar"
+  String outFile = "panoply_association-output.tar"
 
   Int? memory
   Int? disk_space
@@ -44,7 +44,7 @@ task pgdac_association {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_association:1"
+    docker : "broadcptac/panoply_association:1"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -57,14 +57,14 @@ task pgdac_association {
   }
 }
 
-workflow pgdac_association_workflow {
+workflow panoply_association_workflow {
   String standalone
   File inputData
   String? analysisDir
   File? groupsFile
   String dataType
     
-  call pgdac_association {
+  call panoply_association {
     input:
       inputData=inputData,
       type=dataType,

@@ -1,0 +1,8 @@
+Replacing pgdac_ with panoply_ in files
+- Replaced all occurences in the following files:
+  * primary-dockerfile
+  * secondary-dockerfile
+  * all WDLs
+  * all Dockerfiles
+- Moved all hydrant commit messages into this commit folder
+- META: this commit message

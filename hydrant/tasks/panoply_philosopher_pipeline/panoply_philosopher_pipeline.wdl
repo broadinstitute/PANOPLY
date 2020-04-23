@@ -1,4 +1,4 @@
-task pgdac_msfragger 
+task panoply_msfragger 
 {
   Boolean package
   String package_name
@@ -47,7 +47,7 @@ task pgdac_msfragger
 
   runtime 
   {
-    docker      : "broadcptac/pgdac_ms_fragger:1"
+    docker      : "broadcptac/panoply_ms_fragger:1"
     memory      : "${if defined(ram_gb) then ram_gb else '60'}GB"
     disks       : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '100'} HDD"
     preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -61,7 +61,7 @@ task pgdac_msfragger
   }
 }
 
-task pgdac_philosopher 
+task panoply_philosopher 
 {
   Boolean package
   String null_file
@@ -146,7 +146,7 @@ task pgdac_philosopher
 
   runtime 
   {
-    docker : "broadcptac/pgdac_ms_philosopher:1"
+    docker : "broadcptac/panoply_ms_philosopher:1"
     memory: "${if defined(ram_gb) then ram_gb else '26'}GB"
     disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '120'} HDD"
     preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -160,7 +160,7 @@ task pgdac_philosopher
   }
 }
 
-task pgdac_tmt_integrator 
+task panoply_tmt_integrator 
 {
   File philosopher_output
   Float? ram_gb
@@ -193,7 +193,7 @@ task pgdac_tmt_integrator
 
   runtime 
   {
-    docker      : "broadcptac/pgdac_tmt_integrator:1"
+    docker      : "broadcptac/panoply_tmt_integrator:1"
     memory      : "${if defined(ram_gb) then ram_gb else '60'}GB"
     disks       : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '100'} HDD"
     preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -207,7 +207,7 @@ task pgdac_tmt_integrator
   }
 }
 
-workflow pgdac_philosopher_pipeline_workflow
+workflow panoply_philosopher_pipeline_workflow
 { 
   Boolean package
   String null_file="gs://broad-institute-gdac/GDAC_FC_NULL"
@@ -219,7 +219,7 @@ workflow pgdac_philosopher_pipeline_workflow
   File file_of_files
   Array[File] array_of_files = read_lines(file_of_files)
   
-  call pgdac_msfragger
+  call panoply_msfragger
   {
     input: 
       package=package,
@@ -233,14 +233,14 @@ workflow pgdac_philosopher_pipeline_workflow
   #pepXML_archive=this.fragger_pepXML
   #philsosopher_pipeline_pkg=this.fragger_package
 
-  call pgdac_philosopher 
+  call panoply_philosopher 
   {
     input: 
       package=package,
       null_file=null_file,
-      package_archive=pgdac_msfragger.philosopher_pipeline_pkg,
+      package_archive=panoply_msfragger.philosopher_pipeline_pkg,
       mzML_files=array_of_files,
-      pepXML_archive=pgdac_msfragger.pepXML_archive,
+      pepXML_archive=panoply_msfragger.pepXML_archive,
       database=database,
       params=philosopher_params
   }
@@ -248,17 +248,17 @@ workflow pgdac_philosopher_pipeline_workflow
   #philosopher_pipeline_pkg=this.philo_package
   #philosopher_results=this.philo_results
 
-  call pgdac_tmt_integrator 
+  call panoply_tmt_integrator 
   {
     input: 
       database=database,
-      philosopher_output=pgdac_philosopher.philosopher_results,
+      philosopher_output=panoply_philosopher.philosopher_results,
       params=tmt_integrator_params,
       database=database
   }
   
   output
   {
-    File tmt_results=pgdac_tmt_integrator.results
+    File tmt_results=panoply_tmt_integrator.results
   }
 }

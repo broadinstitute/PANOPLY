@@ -48,6 +48,18 @@ mergeToTasks(){
   mv tasks-panoply tasks
 }
 
-createCopy
-renameFilesFolders
-mergeToTasks
+replaceInFiles(){
+  files1=( primary-dockerfile secondary-dockerfile )
+  files2=($(find . -name \*.wdl))
+  files3=($(find . -name Dockerfile))
+  files=( "${files1[@]}" "${files2[@]}" "${files3[@]}" )
+  for file in "${files[@]}"; 
+  do
+    sed -i '' "s|pgdac_|panoply_|g" $file;
+  done
+}
+
+#createCopy
+#renameFilesFolders
+#mergeToTasks
+replaceInFiles

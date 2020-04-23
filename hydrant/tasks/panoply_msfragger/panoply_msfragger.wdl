@@ -1,4 +1,4 @@
-task pgdac_msfragger {
+task panoply_msfragger {
   Boolean package
   String package_name
   String null_file
@@ -45,7 +45,7 @@ task pgdac_msfragger {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_ms_fragger:1"
+    docker      : "broadcptac/panoply_ms_fragger:1"
     memory      : "${if defined(ram_gb) then ram_gb else '60'}GB"
     disks       : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '100'} HDD"
     preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -58,9 +58,9 @@ task pgdac_msfragger {
   }
 }
 
-workflow pgdac_msfragger_workflow
+workflow panoply_msfragger_workflow
 {
-  call pgdac_msfragger
+  call panoply_msfragger
   {
     input: 
       package_name="test-msfragger",

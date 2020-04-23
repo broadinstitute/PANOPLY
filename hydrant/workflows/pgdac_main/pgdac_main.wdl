@@ -1,4 +1,4 @@
-task pgdac_rna_protein_correlation {
+task panoply_rna_protein_correlation {
   File inputData
   File rnaExpr
   String type
@@ -7,7 +7,7 @@ task pgdac_rna_protein_correlation {
   File? params
   String? analysisDir
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_rna_protein_correlation-output.tar"
+  String outFile = "panoply_rna_protein_correlation-output.tar"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
   Int? memory
@@ -46,7 +46,7 @@ task pgdac_rna_protein_correlation {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_rna_protein_correlation:1"
+    docker      : "broadcptac/panoply_rna_protein_correlation:1"
     memory      : select_first ([memory, 12]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -59,7 +59,7 @@ task pgdac_rna_protein_correlation {
   }
 }
 
-task pgdac_ssgsea {
+task panoply_ssgsea {
   File input_ds
   ## parameters to create gene-centric or single-site-centric 
   ## GCT files for ssGSEA / PTM-SEA
@@ -149,7 +149,7 @@ task pgdac_ssgsea {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_ssgsea:5"
+    docker : "broadcptac/panoply_ssgsea:5"
     memory : select_first([memory, 4]) + " GB"
     disks  : "local-disk " + select_first([disk_space, 15]) + " HDD"
     cpu    : select_first([num_threads, 2])
@@ -162,7 +162,7 @@ task pgdac_ssgsea {
 
 }
 
-task pgdac_rna_protein_correlation_report {
+task panoply_rna_protein_correlation_report {
   File tarball
   String label
   String type
@@ -188,7 +188,7 @@ task pgdac_rna_protein_correlation_report {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_rmd:3"
+    docker : "broadcptac/panoply_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
     disks  : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu    : select_first ([num_threads, 1]) + ""
@@ -200,7 +200,7 @@ task pgdac_rna_protein_correlation_report {
   }
 }
 
-task pgdac_harmonize {
+task panoply_harmonize {
   File inputData
   File rnaExpr
   File cnaExpr
@@ -212,7 +212,7 @@ task pgdac_harmonize {
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-  String outFile = "pgdac_harmonize-output.tar"
+  String outFile = "panoply_harmonize-output.tar"
 
   Int? memory
   Int? disk_space
@@ -253,7 +253,7 @@ task pgdac_harmonize {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_harmonize:1"
+    docker      : "broadcptac/panoply_harmonize:1"
     memory      : select_first ([memory, 12]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -266,13 +266,13 @@ task pgdac_harmonize {
   }
 }
 
-task pgdac_sampleqc {
-  File tarball   # output from pgdac_harmonize
+task panoply_sampleqc {
+  File tarball   # output from panoply_harmonize
   String type
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_sampleqc-output.tar"
+  String outFile = "panoply_sampleqc-output.tar"
 
   Int? memory
   Int? disk_space
@@ -295,7 +295,7 @@ task pgdac_sampleqc {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_sampleqc:1"
+    docker      : "broadcptac/panoply_sampleqc:1"
     memory      : select_first ([memory, 12]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -308,7 +308,7 @@ task pgdac_sampleqc {
   }
 }
 
-task pgdac_sampleqc_report {
+task panoply_sampleqc_report {
   File tarball
   String label
   String type
@@ -332,7 +332,7 @@ task pgdac_sampleqc_report {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_rmd:3"
+    docker : "broadcptac/panoply_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
     disks  : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu    : select_first ([num_threads, 1]) + ""
@@ -344,14 +344,14 @@ task pgdac_sampleqc_report {
   }
 }
 
-task pgdac_cna_setup {
-  File tarball   # output from pgdac_harmonize
+task panoply_cna_setup {
+  File tarball   # output from panoply_harmonize
   File? groupsFile
   String type
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_cna_setup-output.tar"
+  String outFile = "panoply_cna_setup-output.tar"
 
   Int? memory
   Int? disk_space
@@ -376,7 +376,7 @@ task pgdac_cna_setup {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_cna_setup:1"
+    docker      : "broadcptac/panoply_cna_setup:1"
     memory      : select_first ([memory, 12]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -389,13 +389,13 @@ task pgdac_cna_setup {
   }
 }
 
-task pgdac_cna_correlation {
-  File tarball   # output from pgdac_cna_setup
+task panoply_cna_correlation {
+  File tarball   # output from panoply_cna_setup
   String type
   String? subType
   File? params
   Float fdr_cna_corr = 0.05
-  String outFile = "pgdac_cna_correlation-output.tar"
+  String outFile = "panoply_cna_correlation-output.tar"
 
   Int? memory
   Int? disk_space
@@ -419,7 +419,7 @@ task pgdac_cna_correlation {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_cna_setup:1"
+    docker      : "broadcptac/panoply_cna_setup:1"
     memory      : select_first ([memory, 12]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -432,7 +432,7 @@ task pgdac_cna_correlation {
   }
 }
 
-task pgdac_cna_correlation_report {
+task panoply_cna_correlation_report {
   File tarball
   String label
   String type
@@ -458,7 +458,7 @@ task pgdac_cna_correlation_report {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_rmd:3"
+    docker : "broadcptac/panoply_rmd:3"
     memory : select_first ([memory, 8]) + "GB"
     disks  : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu    : select_first ([num_threads, 1]) + ""
@@ -470,7 +470,7 @@ task pgdac_cna_correlation_report {
   }
 }
 
-task pgdac_association {
+task panoply_association {
   File inputData
   String type
   String standalone
@@ -480,7 +480,7 @@ task pgdac_association {
   File? params
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_association-output.tar"
+  String outFile = "panoply_association-output.tar"
 
   Int? memory
   Int? disk_space
@@ -516,7 +516,7 @@ task pgdac_association {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_association:1"
+    docker      : "broadcptac/panoply_association:1"
     memory      : select_first ([memory, 16]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -529,9 +529,9 @@ task pgdac_association {
   }
 }
 
-task pgdac_accumulate {
+task panoply_accumulate {
   File input_tar
-  String? output_tar = "pgdac_contrasts.tar"
+  String? output_tar = "panoply_contrasts.tar"
   String module
   String? analysisDir = "input_tarball"
 
@@ -555,7 +555,7 @@ task pgdac_accumulate {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_accumulate:1"
+    docker      : "broadcptac/panoply_accumulate:1"
     memory      : select_first ([memory, 16]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""
@@ -568,14 +568,14 @@ task pgdac_accumulate {
   }
 }
 
-task pgdac_cons_clust {
-  File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
+task panoply_cons_clust {
+  File tarball   # output from panoply_harmonize or panoply_normalize_ms_data
   String type
   File? groupsFile
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_cluster-output.tar"
+  String outFile = "panoply_cluster-output.tar"
 
   Int? memory
   Int? disk_space
@@ -601,7 +601,7 @@ task pgdac_cons_clust {
   }
 
   runtime {
-    docker      : "broadcptac/pgdac_cons_clust:3"
+    docker      : "broadcptac/panoply_cons_clust:3"
     memory      : select_first ([memory, 16]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu         : select_first ([num_threads, 8]) + ""
@@ -615,15 +615,15 @@ task pgdac_cons_clust {
 }
 
 
-task pgdac_download
+task panoply_download
 {
   File cons_clust_tar
   File ssgsea_ome_tar
   File ssgsea_rna_tar
   File? ptmsea
   String analysisDir
-  String summary_tar = "pgdac_main_summary.tar"
-  String full_tar = "pgdac_main_full.tar"
+  String summary_tar = "panoply_main_summary.tar"
+  String full_tar = "panoply_main_full.tar"
   Array[File] ssgsea_assoc_tars
   Array[File] ssgsea_clust_tars
   String ssgsea_assoc_dir = "ssgsea_assoc"
@@ -675,7 +675,7 @@ task pgdac_download
   }
 
   runtime {
-    docker : "broadcptac/pgdac_download:1"
+    docker : "broadcptac/panoply_download:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -688,7 +688,7 @@ task pgdac_download
   }
 }
 
-workflow pgdac_main {
+workflow panoply_main {
   File inputData
   File exptDesign
   File rnaExpr
@@ -706,7 +706,7 @@ workflow pgdac_main {
   Float fdr_cna_corr
   String run_ptmsea
 
-  call pgdac_rna_protein_correlation {
+  call panoply_rna_protein_correlation {
     input:
       inputData=inputData,
       type=dataType,
@@ -716,37 +716,37 @@ workflow pgdac_main {
       params=additionalParameters
   }
 
-  call pgdac_ssgsea as ssgsea_rna {
+  call panoply_ssgsea as ssgsea_rna {
     input:
       input_ds = rnaExpr_v3
   }
 
-  call pgdac_ssgsea as ssgsea_ome {
+  call panoply_ssgsea as ssgsea_ome {
     input:
       input_ds = inputData
   }
   
   if ( run_ptmsea == "true" ){
     if ( dataType == "phosphoproteome" ){
-      call pgdac_ssgsea as ptmsea_ome {
+      call panoply_ssgsea as ptmsea_ome {
         input:
           input_ds = inputData
       }
     }
   } 
 
-  call pgdac_rna_protein_correlation_report {
+  call panoply_rna_protein_correlation_report {
     input:
-      tarball=pgdac_rna_protein_correlation.outputs,
+      tarball=panoply_rna_protein_correlation.outputs,
       label=analysisDir,
       fdr=corr_fdr,
       type=dataType,
       tmpDir="tmp"
   }
 
-  call pgdac_harmonize {
+  call panoply_harmonize {
     input:
-      inputData=pgdac_rna_protein_correlation.outputs,
+      inputData=panoply_rna_protein_correlation.outputs,
       rnaExpr=rnaExpr,
       cnaExpr=cnaExpr,
       standalone=standalone,
@@ -755,52 +755,52 @@ workflow pgdac_main {
       params=additionalParameters
   }
 
-  call pgdac_sampleqc {
+  call panoply_sampleqc {
     input:
-      tarball=pgdac_harmonize.outputs,
+      tarball=panoply_harmonize.outputs,
       type=dataType,
       subType=dataSubType,
       params=additionalParameters
   }
 
-  call pgdac_sampleqc_report {
+  call panoply_sampleqc_report {
     input:
-      tarball=pgdac_sampleqc.outputs,
+      tarball=panoply_sampleqc.outputs,
       type=dataType,
       label=analysisDir,
       tmpDir="tmp"
   }
 
-  call pgdac_cna_setup {
+  call panoply_cna_setup {
     input:
-      tarball=pgdac_sampleqc.outputs,
+      tarball=panoply_sampleqc.outputs,
       groupsFile=cna_groups,
       type=dataType,
       subType=dataSubType,
       params=additionalParameters
   }
 
-  call pgdac_cna_correlation {
+  call panoply_cna_correlation {
     input:
-      tarball=pgdac_cna_setup.outputs,
+      tarball=panoply_cna_setup.outputs,
       type=dataType,
       subType=dataSubType,
       fdr_cna_corr=fdr_cna_corr,
       params=additionalParameters
   }
 
-  call pgdac_cna_correlation_report {
+  call panoply_cna_correlation_report {
     input:
-      tarball=pgdac_cna_correlation.outputs,
+      tarball=panoply_cna_correlation.outputs,
       type=dataType,
       label=analysisDir,
       fdr=corr_fdr,
       tmpDir="tmp"
   }
   
-  call pgdac_association {
+  call panoply_association {
     input: 
-      inputData=pgdac_cna_correlation.outputs, 
+      inputData=panoply_cna_correlation.outputs, 
       groupsFile=association_groups,
       type=dataType,
       subType=dataSubType,
@@ -808,46 +808,46 @@ workflow pgdac_main {
       standalone=standalone
   }
 
-  call pgdac_accumulate as accumulate_assoc {
+  call panoply_accumulate as accumulate_assoc {
     input:
-      input_tar=pgdac_association.outputs,
+      input_tar=panoply_association.outputs,
       module="association"
   } 
 
   Array[File] list_gct_assoc = accumulate_assoc.list_gct
   scatter (f in list_gct_assoc){
-    call pgdac_ssgsea as ssgsea_assoc {
+    call panoply_ssgsea as ssgsea_assoc {
       input:
         input_ds="${f}"
     }
   }
 
-  call pgdac_cons_clust {
+  call panoply_cons_clust {
     input:
-      tarball=pgdac_association.outputs,
+      tarball=panoply_association.outputs,
       type=dataType,
       groupsFile=cluster_enrichment_groups,
       subType=dataSubType,
       params=additionalParameters
   }
 
-  call pgdac_accumulate as accumulate_clustering {
+  call panoply_accumulate as accumulate_clustering {
     input:
-      input_tar=pgdac_cons_clust.outputs,
+      input_tar=panoply_cons_clust.outputs,
       module="clustering"
   }
 
   Array[File] list_gct_clustering = accumulate_clustering.list_gct
   scatter (f in list_gct_clustering){
-    call pgdac_ssgsea as ssgsea_clustering {
+    call panoply_ssgsea as ssgsea_clustering {
       input:
         input_ds="${f}"
     }
   }
 
-  call pgdac_download {
+  call panoply_download {
     input:
-      cons_clust_tar=pgdac_cons_clust.outputs,
+      cons_clust_tar=panoply_cons_clust.outputs,
       ssgsea_ome_tar=ssgsea_ome.results,
       ssgsea_rna_tar=ssgsea_rna.results,
       analysisDir=analysisDir,
@@ -857,9 +857,9 @@ workflow pgdac_main {
   }
 
   output {
-    File summary_and_ssgsea=pgdac_download.summary
-    File pgdac_full=pgdac_download.full
-    File rna_corr_report=pgdac_rna_protein_correlation_report.report
-    File cna_corr_report=pgdac_cna_correlation_report.report
-    File sample_qc_report=pgdac_sampleqc_report.report
+    File summary_and_ssgsea=panoply_download.summary
+    File panoply_full=panoply_download.full
+    File rna_corr_report=panoply_rna_protein_correlation_report.report
+    File cna_corr_report=panoply_cna_correlation_report.report
+    File sample_qc_report=panoply_sampleqc_report.report
   }}

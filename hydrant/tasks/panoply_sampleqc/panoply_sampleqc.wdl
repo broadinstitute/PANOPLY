@@ -1,10 +1,10 @@
-task pgdac_sampleqc {
-  File tarball   # output from pgdac_harmonize
+task panoply_sampleqc {
+  File tarball   # output from panoply_harmonize
   String type
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_sampleqc-output.tar"
+  String outFile = "panoply_sampleqc-output.tar"
 
   Int? memory
   Int? disk_space
@@ -22,7 +22,7 @@ task pgdac_sampleqc {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_sampleqc:1"
+    docker : "broadcptac/panoply_sampleqc:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -36,6 +36,6 @@ task pgdac_sampleqc {
 }
 
 
-workflow pgdac_sampleqc_workflow {
-	call pgdac_sampleqc
+workflow panoply_sampleqc_workflow {
+	call panoply_sampleqc
 }

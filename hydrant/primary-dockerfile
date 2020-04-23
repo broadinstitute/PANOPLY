@@ -1,4 +1,4 @@
-FROM broadcptac/pgdac_utils:1
+FROM broadcptac/panoply_utils:1
 MAINTAINER rkothadi@broadinstitute.org
 
 COPY src /prot/proteomics/Projects/PGDAC/src

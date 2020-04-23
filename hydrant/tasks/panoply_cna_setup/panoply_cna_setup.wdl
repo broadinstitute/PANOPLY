@@ -1,11 +1,11 @@
-task pgdac_cna_setup {
-  File tarball   # output from pgdac_harmonize
+task panoply_cna_setup {
+  File tarball   # output from panoply_harmonize
   File? groupsFile
   String type
   String? subType
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_cna_setup-output.tar"
+  String outFile = "panoply_cna_setup-output.tar"
 
   Int? memory
   Int? disk_space
@@ -23,7 +23,7 @@ task pgdac_cna_setup {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cna_setup:1"
+    docker : "broadcptac/panoply_cna_setup:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -37,6 +37,6 @@ task pgdac_cna_setup {
 }
 
 
-workflow pgdac_cna_setup_workflow {
-	call pgdac_cna_setup
+workflow panoply_cna_setup_workflow {
+	call panoply_cna_setup
 }

@@ -1,4 +1,4 @@
-task pgdac_rna_protein_correlation {
+task panoply_rna_protein_correlation {
   File inputData
   File rnaExpr
   String type
@@ -7,7 +7,7 @@ task pgdac_rna_protein_correlation {
   File? params
   String? analysisDir
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_rna_protein_correlation-output.tar"
+  String outFile = "panoply_rna_protein_correlation-output.tar"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
   Int? memory
@@ -46,7 +46,7 @@ task pgdac_rna_protein_correlation {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_rna_protein_correlation:1"
+    docker : "broadcptac/panoply_rna_protein_correlation:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -59,14 +59,14 @@ task pgdac_rna_protein_correlation {
   }
 }
 
-workflow pgdac_rna_protein_correlation_workflow {
+workflow panoply_rna_protein_correlation_workflow {
   File rnaExpr
   String dataType
   File inputData
   String standalone
   String? analysisDir
 
-  call pgdac_rna_protein_correlation {
+  call panoply_rna_protein_correlation {
     input:
       inputData=inputData,
       type=dataType,

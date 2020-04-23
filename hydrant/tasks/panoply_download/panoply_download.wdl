@@ -1,12 +1,12 @@
-task pgdac_download
+task panoply_download
 {
   File cons_clust_tar
   File ssgsea_ome_tar
   File ssgsea_rna_tar
   File? ptmsea
   String analysisDir
-  String summary_tar = "pgdac_main_summary.tar"
-  String full_tar = "pgdac_main_full.tar"
+  String summary_tar = "panoply_main_summary.tar"
+  String full_tar = "panoply_main_full.tar"
   Array[File] ssgsea_assoc_tars
   Array[File] ssgsea_clust_tars
   String ssgsea_assoc_dir = "ssgsea_assoc"
@@ -58,7 +58,7 @@ task pgdac_download
   } 
 
   runtime {
-    docker : "broadcptac/pgdac_download:1"
+    docker : "broadcptac/panoply_download:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -71,6 +71,6 @@ task pgdac_download
   }
 }
 
-workflow pgdac_download_workflow {
-	call pgdac_download
+workflow panoply_download_workflow {
+	call panoply_download
 }

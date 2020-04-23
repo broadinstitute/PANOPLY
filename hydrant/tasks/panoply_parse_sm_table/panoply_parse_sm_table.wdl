@@ -1,4 +1,4 @@
-task pgdac_parse_sm_table {
+task panoply_parse_sm_table {
   File SMtable
   File exptDesign
   String analysisDir
@@ -7,7 +7,7 @@ task pgdac_parse_sm_table {
   File? params
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
-  String outFile = "pgdac_parse_sm_table-output.tar"
+  String outFile = "panoply_parse_sm_table-output.tar"
 
   Int? memory
   Int? disk_space
@@ -24,7 +24,7 @@ task pgdac_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_parse_sm_table:1"
+    docker : "broadcptac/panoply_parse_sm_table:1"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -38,6 +38,6 @@ task pgdac_parse_sm_table {
 }
 
 
-workflow pgdac_parse_sm_table_workflow {
-	call pgdac_parse_sm_table
+workflow panoply_parse_sm_table_workflow {
+	call panoply_parse_sm_table
 }
