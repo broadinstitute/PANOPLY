@@ -14,7 +14,7 @@ secondary=$pgdac/hydrant/secondary-dockerfile
 # deletes existing folder if present, 
 # creates a config file for hydrant, 
 # and creates a new task with hydrant
-freshtask() {
+freshTask() {
  echo -e "$not Creating fresh task...";
  ( cd $pgdac/hydrant/tasks/;
    if [ -d "$task" ]; then rm -r $task; fi
@@ -26,7 +26,7 @@ freshtask() {
 
 # copies source code from ../src/ location to the 
 # docker location
-copysrc() {
+copySrc() {
   echo -e "$not Copying source files to docker dir...";
   mkdir -p $pgdac/hydrant/tasks/$task/$task/src/;
   cp -R $pgdac/src/$task/* $pgdac/hydrant/tasks/$task/$task/src/.;
@@ -34,20 +34,20 @@ copysrc() {
 
 
 # copies appropriate dockerfile to the task
-dockertemplate() {
+dockerTemplate() {
   dockerfile=$1;
   cp $dockerfile $pgdac/hydrant/tasks/$task/$task/Dockerfile;
 }
 
 # copies appropriate WDL to the task
-copywdl() {
+copyWdl() {
   wdl=$1
   cp $wdl $pgdac/hydrant/tasks/$task/$task/pgdac_$task.wdl
 }
 
 # builds a new docker with the default docker tag set to 
 # the latest commit hash from github
-builddocker() {
+buildDocker() {
   cd $pgdac/hydrant/tasks/$task/$task/;
   if [[ $x_flag != "true" ]]; then
     echo -e "$not Pruning docker images on this system to ensure new build..."
@@ -68,7 +68,7 @@ builddocker() {
 }
 
 # login into dockerhub and push the built docker
-pushdocker()
+pushDocker()
 {
   docker login
   cd $pgdac/hydrant/tasks/$task/$task/;
@@ -79,19 +79,28 @@ pushdocker()
 
 # replace the docker namespace and docker tag in the existing WDL
 # to the current docker namespace and docker tag
-replaceinwdl(){
+replaceDockerInWdl(){
   ( cd $pgdac/hydrant/tasks/$task;
     wdl_dns=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d'/' -f 1`
     wdl_tag=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d':' -f 2`
     sed -i '' "s|$wdl_dns/$task:$wdl_tag|$docker_ns/$task:$docker_tag|g" $task.wdl; )
 }
 
-editdockerfile() {
+editDockerfile() {
   ( cd $pgdac/hydrant/tasks/$task/$task;
     sed -i '' "s|broadcptac/pgdac_common:.*|broadcptac/$base_task_with_tag|g" Dockerfile; )
 }
 
-display_usage() {
+updateWdlOnTerra(){
+  if [[ -z $wdl_snapshot_comment ]]; then
+    wdl_snapshot_comment="Docker tag: $docker_tag"
+  fi
+  hydrant install -m $task -n $docker_ns \
+    -d $pgdac/hydrant/tasks/$task/$task.wdl \
+    -c $wdl_snapshot_comment
+}
+
+displayUsage() {
   echo ""
   echo "usage: ./setup.sh -t [task_name] " 
   echo "                     [-f] [-p] [-s] "
@@ -116,6 +125,9 @@ display_usage() {
   echo "|    |        | latest commit hash in the repository."
   echo "| -y | flag   | Add PGDAC/src/task/ files to docker or update them"
   echo "| -b | flag   | Build docker"
+  echo "| -r | flag   | Replace Docker Namespace and Tag in WDL"
+  echo "| -a | flag   | Update WDL on terra"
+  echo "| -d | string | WDL Snapshot Comment which is set by default to the docker tag ID"
   echo "| -u | flag   | Push docker to dockerhub with the specified docker namespace"
   echo "| -x | flag   | Do not prune dockers from local system before building"
   echo "| -z | flag   | Cleanup children directories before Github commit"
@@ -124,29 +136,31 @@ display_usage() {
   exit
 }
 
-while getopts ":t:c:w:n:m:g:prsfybuxzh" opt; do
+while getopts ":t:c:w:n:m:g:d:prasfybuxzh" opt; do
     case $opt in
         t) task="$OPTARG"; wf_name="$task";;
         p) p_flag="true";;
         s) s_flag="true";;
-        c) docker_custom="$OPTARG"; dockertemplate $docker_custom;;
-        w) wdl="$OPTARG"; copywdl $wdl;;
+        c) docker_custom="$OPTARG"; dockerTemplate $docker_custom;;
+        w) wdl="$OPTARG"; copyWdl $wdl;;
         n) docker_ns="$OPTARG";;
         m) base_task_with_tag="$OPTARG";;
         g) docker_tag="$OPTARG";;
+        d) wdl_snapshot_comment="$OPTARG";;
         f) f_flag="true";;
         y) y_flag="true";;
         b) b_flag="true";;
         u) u_flag="true";;
         r) r_flag="true";;
+        a) a_flag="true";;
         x) x_flag="true";; ##if calling from update.sh
         z) z_flag="true";;
-        h) display_usage;;
+        h) displayUsage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
 done
 
-rmdata()
+rmData()
 {
   cd $pgdac/hydrant/tasks/$task/$task/;
   if [ -d "data" ]; then
@@ -180,36 +194,36 @@ main()
 
   ## fresh task
   if [[ $f_flag == "true" ]]; then
-    freshtask;
+    freshTask;
   fi 
 
   ## dockerfile copy
   if [[ $p_flag == "true" ]]; then
-    dockertemplate $primary;
+    dockerTemplate $primary;
   fi
 
   if [[ $s_flag == "true" ]]; then
-    dockertemplate $secondary;
-    rmdata;  
+    dockerTemplate $secondary;
+    rmData;  
   fi
 
   if [[ ! -z "$docker_custom" ]]; then
-    dockertemplate $docker_custom;
-    rmdata;
+    dockerTemplate $docker_custom;
+    rmData;
   fi
 
   if [[ ! -z "$wdl" ]]; then
-    copywdl $wdl;
+    copyWdl $wdl;
   fi
 
   ## edit dockerfile
   if [[ ! -z "$base_task_with_tag" ]]; then
-    editdockerfile $base_task_with_tag;
+    editDockerfile $base_task_with_tag;
   fi
 
   ## copy source
   if [[ $y_flag == "true" ]]; then
-    copysrc;
+    copySrc;
   fi 
 
   ## docker tag
@@ -220,7 +234,7 @@ main()
   ## build docker
   if [[ $b_flag == "true" ]]; then
     if [[ ! -z "$docker_ns" ]]; then
-      builddocker;
+      buildDocker;
     elif [[ -z "$docker_ns" ]]; then
       echo -e "$err Docker namespace not entered. Exiting."
       exit
@@ -230,16 +244,21 @@ main()
   ## push docker
   if [[ $u_flag == "true" ]]; then
     if [[ ! -z "$docker_ns" ]]; then
-      pushdocker;
+      pushDocker;
     elif [[ -z "$docker_ns" ]]; then
       echo -e "$err Docker namespace not entered. Exiting."
       exit
     fi
   fi 
 
-  # replace docker reference in the WDL
+  ## replace docker reference in the WDL
   if [[ $r_flag == "true" ]]; then
-    replaceinwdl;
+    replaceDockerInWdl;
+  fi
+
+  ## update the WDL on Terra
+  if [[ $a_flag == "true" ]]; then
+    updateWdlOnTerra;
   fi
 
 }

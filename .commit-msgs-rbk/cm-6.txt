@@ -1,0 +1,5 @@
+Update WDL on Terra
+- Install new WDL on Terra with comment
+- Renamed functions to lowerCamelCase
+- Added display messages for new options
+- META: this message
