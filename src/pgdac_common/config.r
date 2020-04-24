@@ -31,19 +31,19 @@ Source ('io.r')
 # Load 'yaml' package with pacman to read in master parameter file:
 if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
 p_load('yaml')
-yml_dir <- getwd() # find the parameters file directory
-yml_dir <- file.path(yml_dir, "master_parameters.yml") # path to file
-master.parameters <- read_yaml(yml_dir)
+#yml_dir <- getwd() # find the parameters file directory
+#yml_dir <- file.path("master_parameters.yml") # path to file
+master.parameters <- read_yaml("master-parameters.yml")
 
 ## Directory structure
 # directories with raw, pre-processed and normalized data
 # also includes other analysis directories
 # directory structure is created by appropriate options in run-pipeline.sh
 # (changes to this will require corresponding changes in run-pipeline.sh)
-data.dir <- master.parameters$config_r_parameters$data.dir #'../data'
-pre.dir <- master.parameters$config_r_parameters$pre.dir #'../parsed-data'
-norm.dir <- master.parameters$config_r_parameters$norm.dir #'../normalized-data'
-harmonize.dir <- master.parameters$config_r_parameters$harmonize.dir #'../harmonized-data'
+data.dir <- master.parameters$config_r_parameters$data_dir #'../data'
+pre.dir <- master.parameters$config_r_parameters$pre_dir #'../parsed-data'
+norm.dir <- master.parameters$config_r_parameters$norm_dir #'../normalized-data'
+harmonize.dir <- master.parameters$config_r_parameters$harmonize_dir #'../harmonized-data'
 
 
 ## Command line arguments
@@ -167,10 +167,10 @@ set.label.type <- function (label.type) {
 
 ## Input data location
 # input files are copies to this location so that the tarball has all the data
-input.data.file <- file.path (data.dir, paste (type, master.parameters$config_r_parameters$input.data.file, sep=''))
-expt.design.file <- file.path (data.dir, master.parameters$config_r_parameters$expt.design.file)
-rna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$rna.data.file)
-cna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$cna.data.file)
+input.data.file <- file.path (data.dir, paste (type, master.parameters$config_r_parameters$input_data_file, sep=''))
+expt.design.file <- file.path (data.dir, master.parameters$config_r_parameters$expt_design_file)
+rna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$rna_data_file)
+cna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$cna_data_file)
 
 
 
@@ -182,22 +182,22 @@ cna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$cna.
 
 
 ## Label type for MS experiment (set.label.type must be called to initialize variables)
-label.type <- master.parameters$config_r_parameters$label_type_for_MS_exp$label.type   # default TMT10, alternatives: iTRAQ4, TMT10.126, TMT11
+label.type <- master.parameters$config_r_parameters$label_type_for_MS_exp$label_type   # default TMT10, alternatives: iTRAQ4, TMT10.126, TMT11
 set.label.type (label.type) 
 
 ## Sample replicate indicator
 # Sample.IDs MUST be unique in the expt.design.file; duplicate samples should have the same 
 # sample names, but include this replicate.indicator, followed by a unique suffix: <name>REP1)
-replicate.indicator <- master.parameters$config_r_parameters$sample_replicate_indicator$replicate.indicator
+replicate.indicator <- master.parameters$config_r_parameters$sample_replicate_indicator$replicate_indicator
 
 ## QC
 # QC status can be indiated using a separate cls file,
 # or included in the experiment design file with column name qc.col;
 # if neither is found, all samples are marked as qc.pass.label
 # if both exist, the experiment design file supercedes
-sampleQC.cls <- master.parameters$config_r_parameters$QC$sampleQC.cls
-qc.col <- master.parameters$config_r_parameters$QC$qc.col
-qc.pass.label <- master.parameters$config_r_parameters$QC$qc.pass.label
+sampleQC.cls <- master.parameters$config_r_parameters$QC$sampleQC_cls
+qc.col <- master.parameters$config_r_parameters$QC$qc_col
+qc.pass.label <- master.parameters$config_r_parameters$QC$qc_pass_label
 
 
 ## Output precision for gct tables
@@ -205,44 +205,44 @@ ndigits <- master.parameters$config_r_parameters$output_precision$ndigits
 
 
 ## Missing values and filtering
-na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$na.max                 # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
-min.numratio.fraction <- master.parameters$config_r_parameters$missing_values_and_filtering$min.numratio.fraction  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
-sample.na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$sample.na.max           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
-nmiss.factor <- master.parameters$config_r_parameters$missing_values_and_filtering$nmiss.factor            # for some situations, a more stringent condition is needed
-sd.filter.threshold <-master.parameters$config_r_parameters$missing_values_and_filtering$sd.filter.threshold     # SD threshold for SD filtering
-clustering.sd.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering.sd.threshold   # threshold for filtering data before consensus clustering
-clustering.na.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering.na.threshold # max fraction of missing values for clustering; rest are imputed
-apply.SM.filter <- master.parameters$config_r_parameters$missing_values_and_filtering$apply.SM.filter        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$na_max                 # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+min.numratio.fraction <- master.parameters$config_r_parameters$missing_values_and_filtering$min_numratio_fraction  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
+sample.na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$sample_na_max           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+nmiss.factor <- master.parameters$config_r_parameters$missing_values_and_filtering$nmiss_factor            # for some situations, a more stringent condition is needed
+sd.filter.threshold <-master.parameters$config_r_parameters$missing_values_and_filtering$sd_filter_threshold     # SD threshold for SD filtering
+clustering.sd.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering_sd_threshold   # threshold for filtering data before consensus clustering
+clustering.na.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering_na_threshold # max fraction of missing values for clustering; rest are imputed
+apply.SM.filter <- master.parameters$config_r_parameters$missing_values_and_filtering$apply_SM_filter        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
 
 
 ## Normalization
-norm.method <- master.parameters$config_r_parameters$normalization$norm.method         # options: 2comp (default), median, mean
-alt.method <- master.parameters$config_r_parameters$normalization$alt.method         # alt.method for comparison -- filtered datasets not generated
+norm.method <- master.parameters$config_r_parameters$normalization$norm_method         # options: 2comp (default), median, mean
+alt.method <- master.parameters$config_r_parameters$normalization$alt_method         # alt.method for comparison -- filtered datasets not generated
 if (norm.method == alt.method) alt.method <- NULL
                                # ignored if alt.method is NULL, or is identical to norm.method
 
 
 ## Gene mapping
 # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
-official.genesyms <- master.parameters$config_r_parameters$gene_mapping$official.genesyms
-gene.id.col <- master.parameters$config_r_parameters$gene_mapping$gene.id.col
-protein.gene.map <- master.parameters$config_r_parameters$gene_mapping$protein.gene.map
+official.genesyms <- master.parameters$config_r_parameters$gene_mapping$official_genesyms
+gene.id.col <- master.parameters$config_r_parameters$gene_mapping$gene_id_col
+protein.gene.map <- master.parameters$config_r_parameters$gene_mapping$protein_gene_map
 # policy for combining/collapsing duplicate gene names -- uncomment appropriate line to use
 # duplicate.gene.policy <- ifelse (type == 'phosphoproteome', 'median', 'maxvar')  
-duplicate.gene.policy <- master.parameters$config_r_parameters$gene_mapping$duplicate.gene.policy
+duplicate.gene.policy <- master.parameters$config_r_parameters$gene_mapping$duplicate_gene_policy
 
 ## RNA related
-rna.output.prefix <- master.parameters$config_r_parameters$rna$rna.output.prefix  # output prefix for tables creates during RNA analysis
-rna.sd.threshold <- master.parameters$config_r_parameters$rna$rna.sd.threshold   # for variation filter (set to NA to disable)
+rna.output.prefix <- master.parameters$config_r_parameters$rna$rna_output_prefix  # output prefix for tables creates during RNA analysis
+rna.sd.threshold <- master.parameters$config_r_parameters$rna$rna_sd_threshold   # for variation filter (set to NA to disable)
 
 ## CNA/parallelism related
-pe.max.default <- master.parameters$config_r_parameters$CNA_parallelism$pe.max.default     # default maximum processors/jobs
+pe.max.default <- master.parameters$config_r_parameters$CNA_parallelism$pe_max_default     # default maximum processors/jobs
 
 ## Project
 # data source -- for managing some operations (esp related to sample IDs and names)
 #  [all current options listed below -- uncomment only one]
 # use project.name to manage project specific processing and options
-project.name <- master.parameters$config_r_parameters$project$project.name
+project.name <- master.parameters$config_r_parameters$project$project_name
 # project.name <- 'cptac2.tcga'
 
 ## Disease

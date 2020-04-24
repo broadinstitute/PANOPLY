@@ -1,0 +1,730 @@
+###
+### Master Panoply Parameters YAML
+###
+
+---
+
+##############################################
+
+###
+### Parameters from config.r
+###
+
+config_r_parameters:
+
+###### THESE PARAMETERS REQUIRE CORRESPONDING CHANGES IN run-pipeline.sh PARAMETERS:
+  data_dir: '../data'
+  pre_dir: '../parsed-data'
+  norm_dir: '../normalized-data'
+  harmonize_dir: '../harmonized-data'
+
+  ## Input data location
+  # input files are copies to this location so that the tarball has all the data
+  # Please note changes in these parameters will only reflect the file name and not its path:
+  input_data_file: '-SMout.ssv'
+  expt_design_file: 'exptdesign.csv'
+  rna_data_file: 'rna-data.gct'
+  cna_data_file: 'cna-data.gct'
+
+####### END OF PARAMETERS THAT REQUIRE CORRESPONDING CHANGES IN run-pipeline.sh PARAMETERS
+
+###
+### These Parameters can be freely changed and will only affect config.r:
+###
+
+### Label type for MS experiment (set.label.type must be called to initialize variables)
+  label_type_for_MS_exp:
+    label_type: TMT10  # alternatives: iTRAQ4, TMT10.126, TMT11
+
+### Sample replicate indicator
+# Sample.IDs MUST be unique in the expt.design.file; duplicate samples should have the same 
+# sample names, but include this replicate.indicator, followed by a unique suffix: <name>REP1) 
+  sample_replicate_indicator:
+    replicate_indicator: .REP
+
+### QC
+# QC status can be indiated using a separate cls file,
+# or included in the experiment design file with column name qc.col;
+# if neither is found, all samples are marked as qc.pass.label
+# if both exist, the experiment design file supercedes
+  QC:  
+    sampleQC_cls: NULL
+    qc_col: QC.status
+    qc_pass_label: QC.pass
+
+### Output precision for gct tables
+  output_precision:
+    ndigits: 5
+
+### Missing values and filtering
+  missing_values_and_filtering:
+    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+    min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
+    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed
+    sd_filter_threshold: 0.5     # SD threshold for SD filtering
+    
+    : 2   # threshold for filtering data before consensus clustering
+    clustering_na_threshold: 0.5 # max fraction of missing values for clustering; rest are imputed
+    apply_SM_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+
+### Normalization
+  normalization:
+    norm_method: Zcomp           # options: 2comp (default), median, mean
+    alt_method: median           # alt.method for comparison -- filtered datasets not generated
+
+### Gene mapping
+# gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
+  gene_mapping:
+    official_genesyms: gene-symbol-map.csv
+    gene_id_col: geneSymbol
+    protein_gene_map: RefSeq-GeneName-Map-20170701.txt
+    # Policy for combining/collapsing duplicate gene names:
+    duplicate_gene_policy: maxvar
+
+### RNA related
+  rna:
+    rna_output_prefix: rna-seq     # output prefix for tables creates during RNA analysis
+    rna_sd_threshold: 1            # for variation filter (set to NA to disable)
+
+### CNA/parallelism related
+  CNA_parallelism:
+    pe_max_default: 250            # default maximum processors/jobs
+
+### Project
+# data source -- for managing some operations (esp related to sample IDs and names)
+#  [all current options listed below -- uncomment only one]
+# use project.name to manage project specific processing and options
+  project:
+    project_name: default # other values: cptac2.tcga
+
+
+## Disease
+# disease setting is used to set disease specific options and
+# run appropriate CNA subsets by creating run-cna-analysis-<disease>.r;
+# replace '' with the disease of choice if applicable:
+  disease:
+    disease: NULL  # Other options: BRCA, MEDULLO
+    
+
+############################################## End of config.r parameters
+
+###
+### run-pipeline.sh parameters
+###
+
+# These parameters generally stay as defaults. Make sure any dependent parameters in config.r have been changed (and vice versa):
+run_pipeline_parameters:
+
+  # default parameters
+  # work with absolute paths for file/dir links/names
+  sm_file: ''
+  norm_data: ''
+  parsed_data: ''
+  filt_data: ''
+  expt_file: ''
+  input_tar: ''
+  output_tar: ''
+  analysis_dir: ''
+  code_dir: ''
+  common_data: ''
+  param_file: ''
+  data: ''
+  rna_data: ''
+  cna_data: ''
+  groups: ''
+  pe: ''
+  cmap_group: 'all'
+  cmap_type: 'pome'
+  cmap_scores: ''
+  cmap_nperm: '0'
+  cmap_permutation: 'tmp'
+  cmap_config_file: ''
+  prefix: 'proteome'
+  data_source: 'default'
+  log_file: 'RUN-LOG.txt'
+
+
+## Parameters with corresponding config.r values:
+## some definitions to more easily coordinate with config.r
+
+  # data.dir in config.r
+  data_dir: "data" 
+  # pre.dir in config.r                 
+  parse_dir: "parsed-data" 
+  # norm.dir in config.r         
+  norm_dir: "normalized-data" 
+  # harmonize.dir in config.r      
+  harmonize_dir: "harmonized-data"  
+  rna_dir: "rna"
+  cna_dir: "cna"
+  cmap_dir: "cmap"
+  cmap_prefix: "$cmap_group-$cmap_type"
+  qc_dir: "sample-qc"
+  assoc_dir: "association"
+  cluster_dir: "clustering"
+
+  # affects expt.design.file in config.r
+  expt_design_file: "exptdesign.csv"  
+  parsed_output: "$prefix-ratio.gct"
+  normalized_output: "$prefix-ratio-norm.gct"
+  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
+  # affects rna.data.file in config.r
+  rna_data_file: "rna-data.gct" 
+  # affects cna.data.file in config.r      
+  cna_data_file: "cna-data.gct"       
+
+######################################################### COMMANDLINE ARGUMENTS ################################################
+commandline_parameters:
+
+###
+### Panoply accumulate
+###
+
+  panoply_accumulate:
+    input_tar: ''
+    output_tar: "panoply_contrasts.tar" #file?
+    module: ''
+    analysisDir: "input_tarball"        #string?
+  
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply association
+###
+
+  panoply_association:
+    inpuData: ''
+    type: ''
+    standalone: ''
+    analysisDir: '' #string?
+    groupsFile: ''  #file?
+    subType: ''     #string?
+    params: ''      #file?
+
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile: "panoply_association-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply cons clust
+###
+
+  panoply_cons_clust:
+    tarball: ''    #output from panoply_harmonize or panoply_normalize_ms_data
+    type: ''
+    groupsFile: '' #File?
+    subType: ''    #String?
+    params: ''     #File?
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile: "panoply_cluster-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+
+###
+### Panoply cmap analysis
+###
+
+  panoply_cmap_connectivity:
+    tarball: ''
+    cmap_config: ''       #file?
+    cmap_grp: ''          #string?
+    cmap_typ: ''          #string?
+    permutations: ''      #int?
+    subset_scores: '' 
+    permutation_scores: '' #arrayFile?
+    scores_dir: "cmap-subset-scores"
+    permutation_dir: "cmap-permutation-scores"
+    outFile: "panoply_cmap-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+    cmap_group: "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    cmap_type: "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
+  panoply_cmap_input:
+    tarball: ''           #output from panoply_cna_correlation
+    cmap_config: ''       #File?
+    cmap_grp: ''          #String?
+    cmap_typ: ''          #String?
+    cmap_permutations: '' #Int?
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile : "panoply_cmapsetup-output.tar"
+    outGmtFile: "cmap-trans-genesets.gmt"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+    cmap_group: "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    cmap_type: "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
+  panoply_cmap_annotate:
+    tarball: ''                 # output from panoply_cmap_connectivity
+    cmap_data_file: ''          # CMAP level 5 geneKD data (gctx)
+    cmap_enrichment_groups: ''  # groups file (ala experiment design file)
+    cmap_config: ''             #File?
+    cmap_grp: ''                #String?
+    cmap_typ: ''                #String?
+    outFile: "panoply_cmap-annotate-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+    cmap_group: "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    cmap_type: "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+
+  panoply_cmap_ssgsea:
+    # task adapted from panoply_ssgsea; many inputs are set to specfic values for CMAP analysis
+    input_ds: ''
+    gene_set_database: ''
+    permutation_num: '' #Int?
+    output_prefix: "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
+
+    # other ssgsea options (below) are fixed for CMAP analysis
+    sample_norm_type: "rank"
+    correl_type: "rank"
+    statistic: "Kolmogorov-Smirnov"
+    output_score_type: "NES"
+
+    weight: 0.0
+    min_overlap: 5
+    nperm: 0
+    global_fdr: "TRUE"
+    export_sigs: "FALSE"
+    ext_output: "FALSE"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+  panoply_cmap_annotate_ssgsea:
+    # task adapted from panoply_ssgsea; many inputs are set to specific values for CMAP annotation
+    input_ds: ''
+    gene_set_database: ''
+    outFile: "panoply_cmap_annotate-ssgsea.tar"
+    output_prefix: "${basename (input_ds, '.gct')}"
+
+    # other ssgsea options (below) are fixed for CMAP analysis
+    sample_norm_type: "rank"
+    correl_type: "rank"
+    statistic: "Kolmogorov-Smirnov"
+    output_score_type: "NES"
+
+    weight: 0.0
+    min_overlap: 5
+    nperm: 1000
+    global_fdr: "TRUE"
+    export_sigs: "FALSE"
+    ext_output: "FALSE"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+### 
+### Panoply cna correlation 
+### 
+
+  panoply_cna_correlation:
+    tarball: ''   # output from panoply_cna_setup
+    type: ''
+    fdr_cna_corr: 0.05
+    subType: ''   #String?
+    params: ''    #File?
+    outFile: "panoply_cna_correlation-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply cna correlation report
+###
+
+  panoply_cna_correlation_report:
+    tarball: ''
+    label: ''
+    type: ''
+    tmpDir: ''
+    fdr: ''
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+
+###
+### Panoply cna setup
+###
+
+  panoply_cna_setup:
+    tarball: ''         # output from panoply_harmonize
+    groupsFile: ''
+    type: ''
+    subType: ''         #String?
+    params: ''          #File?
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile: "panoply_cna_setup-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply Download
+###
+
+  panoply_download:
+    cons_clust_tar: ''
+    ssgsea_ome_tar: ''
+    ssgsea_rna_tar: ''
+    ptmsea: '' #File?
+    analysisDir: ''
+    summary_tar: "panoply_main_summary.tar"
+    full_tar: "panoply_main_full.tar"
+    ssgsea_assoc_tars: ''
+    ssgsea_clust_tars: ''
+    ssgsea_assoc_dir: "ssgsea_assoc"
+    ssgsea_clust_dir: "ssgsea_clust"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply Harmonize
+###
+
+  panoply_harmonize:
+    inputData: ''
+    rnaExpr: ''
+    cnaExpr: ''
+    type: ''
+    standalone: ''
+    analysisDir: '' #String?
+    subType: '' #String?
+    params: '' #File?
+
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    dataDir: "/prot/proteomics/Projects/PGDAC/data"
+    outFile: "panoply_harmonize-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply libs
+###
+
+  panoply_libs:
+    ram_gb: ''           #Float?
+    local_disk_gb: ''    #Int?
+    num_preemptions: ''  #Int?
+
+###
+### Panoply mo nmf
+###
+
+  panoply_mo_nmf:
+    #Inputs defined here
+    tar_file: ''
+  
+    kmin: ''  #int
+    kmax: ''  #int
+    nrun: ''  #int
+  
+    seed: ''
+    class_variable: ''
+    other_variable: ''
+    class_colors: ''
+    output_prefix: ''
+    genes_of_interest: ''
+    gene_column: 'geneSymbol'
+    lib_dir: '/home/pgdac/src/'
+
+    no_plot: '' #Boolean 
+    z_score: '' #Boolean
+    impute: ''  #Boolean
+  
+    sd_min: 0
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply ms philospher
+###
+
+  panoply_ms_philosopher:
+    Boolean package: ''
+    null_file: ''
+    package_archive: ''
+    package_name: basename(package_archive)
+    ram_gb: ''          #Float?
+    local_disk_gb: ''   #Int?
+    num_preemptions: '' #Int?
+    num_cpus: ''        #Int?
+
+    params: ''
+    database: ''
+    mzML_files: ''
+    pepXML_archive: ''
+    mapping_table: ''
+    output_prefix: ''
+
+###
+### Panoply msfragger
+###
+
+  panoply_msfragger:
+    package: ''
+    package_name: ''
+    null_file: ''
+    package_archive: "${package_name}.zip"
+    ram_gb: ''          #Float?
+    local_disk_gb: ''   #Int?
+    num_preemptions: '' #Int?
+    num_cpus: ''        #Int?
+
+    params: ''
+    database: ''
+    mzML_files: ''
+    heap_fraction: 0.875
+
+###
+### Panoply normalize ms data
+###
+
+  panoply_normalize_ms_data:
+    inputData: ''
+    type: ''
+    standalone: ''
+    analysisDir: '' #String?
+    subType: ''     #String?
+    params: ''      #File?
+
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile: "panoply_normalize_ms_data-output.tar"
+    dataDir: "/prot/proteomics/Projects/PGDAC/data"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply parse sm table
+###
+
+  panoply_parse_sm_table:
+    SMtable: ''
+    exptDesign: ''
+    analysisDir: ''
+    type: ''
+    subType: ''       #String?
+    params: ''        #File?
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    dataDir: "/prot/proteomics/Projects/PGDAC/data"
+    outFile: "panoply_parse_sm_table-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply rna protein correlation
+###
+
+  panoply_rna_protein_correlation:
+    inputData: ''
+    rnaExpr: ''
+    type: ''
+    standalone: ''
+    subType: ''       #String?
+    params: ''        #File?
+    analysisDir: ''   #String?
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile: "panoply_rna_protein_correlation-output.tar"
+    dataDir: "/prot/proteomics/Projects/PGDAC/data"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply rna protein correlation
+###
+
+  panoply_rna_protein_correlation_report:
+    tarball: ''
+    label: ''
+    type: ''
+    tmpDir: ''
+    fdr: ''
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+
+
+
+###
+### Panoply sample qc
+###
+
+  panoply_sampleqc:
+    tarball: ''   #output from panoply_harmonize
+    type: ''
+    subType: ''   #String?
+    params: ''    #File?
+    codeDir: "/prot/proteomics/Projects/PGDAC/src"
+    outFile: "panoply_sampleqc-output.tar"
+
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+    num_preemptions: '' #int?
+
+###
+### Panoply sample qc report
+###
+
+  panoply_sampleqc_report:
+    tarball: ''
+    label: ''
+    type: ''
+    tmpDir: ''
+
+    memory: ''      #Int?
+    disk_space: ''  #Int?
+    num_threads: '' #Int?
+
+###
+### Panoply ssgsea
+###
+
+  panoply_ssgsea:
+    input_ds: ''
+  ## parameters to create gene-centric or single-site-centric 
+  ## GCT files for ssGSEA / PTM-SEA
+    level: ''
+    id_type: ''        #String?
+    id_type_out: ''    #String?
+    acc_type: ''       #String?
+    seqwin_col: ''     #String?
+    gene_col: ''       #String?
+    SGT_col: ''        #String?
+    loc: ''            #Boolean?
+    mode: ''           #String?
+    mod_res: ''        #String?
+    mod_type: ''       #String?
+    preprocess_gct: '' #Boolean?
+
+  ## ssGSEA / PTM-SEA parameters below
+    gene_set_database: ''
+    output_prefix: '' 
+    sample_norm_type: ''  #String?
+    correl_type: ''       #String?
+    statistic: ''         #String?
+    output_score_type: '' #String?
+    weight: ''            #Float? 
+    min_overlap: ''       #Int? 
+    nperm: ''             #Int? 
+    global_fdr: ''        #Boolean?
+
+  ## VM parameters
+    memory: ''          #int?
+    disk_space: ''      #int?
+    num_threads: ''     #int?
+
+
+###
+### Panoply tmt integrator task
+###
+
+  panoply_tmt_integrator_task:
+    philosopher_output: ''
+    ram_gb: ''          #Float?
+    local_disk_gb: ''   #Int?
+    num_preemptions: '' #Int?
+    num_cpus: ''        #Int?
+
+    params: ''
+    database: ''
+
+###
+### Panoply utils
+###
+
+  panoply_utils:
+    ram_gb: ''           #Float?
+    local_disk_gb: ''    #Int?
+    num_preemptions: ''  #Int?
+   
+########### Workflows #############
+
+###
+### Panoply main
+###
+
+  panoply_main:
+    inputData: ''
+    exptDesign: ''
+    rnaExpr: ''
+    rnaExpr_v3: ''
+    cnaExpr: ''
+    analysisDir: ''
+    corr_fdr: ''
+    dataType: ''
+    dataSubType: ''
+    additionalParameters: ''
+    cna_groups: ''
+    association_groups: ''
+    cluster_enrichment_groups: ''
+    standalone: "false"
+    fdr_cna_corr: ''
+    run_ptmsea: ''
+
+###
+### Panoply run cmap analysis
+###
+
+  panoply_run_cmap_analysis:
+    CNAcorr_tarball: ''
+    subsetListFile: ''
+    cmap_level5_data: ''
+    annotation_pathway_db: ''
+    subset_bucket: ''
+    n_permutations: ''
+    subset_files: read_lines ("${subsetListFile}")
+    config_file: '' #File?
+    group: ''       #String?
+    data_type: ''   #String? 

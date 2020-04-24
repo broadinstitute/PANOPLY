@@ -18,6 +18,7 @@
 ##   to pass as input to subsequent OPERATIONs
 ##
 
+
 #function to parse yaml parameter file:
 function parse_yaml {
    local prefix=$2
@@ -97,7 +98,7 @@ Command line: $0 $all_args
 Analysis directory: $analysis_dir
 Input SM data file: $sm_file
 Input nomalized data: $norm_data
-Input filtered data: $filt_data
+Input filtered data: $filt_dat
 Input tar file: $input_tar
 Code directory: $code_dir
 Common data directory: $common_data
@@ -143,6 +144,8 @@ function createConfig {
   # copy config and concat parameters
   if [ "$param_file" = "" ]; then
     cp $code_dir/config.r config.r
+    # copy over parameters file too?
+    cp $code_dir/master-parameters.yml master-parameters.yml 
   else
     cat $code_dir/config.r $param_file > config.r
   fi
@@ -150,12 +153,12 @@ function createConfig {
 
 
 function createSubdirs {
-  # create subdirectories (if they do not exisit) and copy config file
+  # create subdirectories (if they do not exist) and copy config file and parameters
   for d in $1; do
     if [ ! -d $d ]; then
       mkdir $d
     fi
-    (cd $d; cp ../config.r config.r)
+    (cd $d; cp ../config.r config.r; cp ../master-parameters.yml master-parameters.yml)
   done
 }
 
@@ -266,13 +269,13 @@ function analysisInit {
 
 
 
-## set defaults
-# pull in parameters from yaml file
-cwd=$(pwd) #get working directory
-par='/master-parameters.yml'
-cwd=$cwd$par
-eval $(parse_yaml $cwd)
 
+# pull in parameters from yaml file
+code_dir='/prot/proteomics/Projects/PGDAC/src'
+par='/master-parameters.yaml'
+eval $(parse_yaml $code_dir$par)
+
+## set defaults
 #  work with absolute paths for file/dir links/names
 sm_file=$run_pipeline_parameters_sm_file
 norm_data=$run_pipeline_parameters_norm_data
@@ -612,8 +615,8 @@ case $op in
                  label=`echo $analysis_dir | sed -E 's,.*/(.*).*,\1,'`
                  tmpdir='.' ## temp-folder
                   
-                 ## extract sd threshold from 'config.r'   
-                 sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | awk -F' ' '{print $3}'`
+                 ## extract sd threshold from 'master-parameters.yml'   
+                 sdclust=$config_r_parameters_missing_values_and_filtering_clustering_sd_threshold
                  
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 

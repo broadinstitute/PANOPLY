@@ -24,7 +24,7 @@ task pgdac_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_parse_sm_table:1"
+    docker : "broadcptac/pgdac_parse_sm_table:dev"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
