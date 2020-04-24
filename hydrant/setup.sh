@@ -55,6 +55,10 @@ buildDocker() {
   fi
   echo -e "$not Building $task locally...";
   echo "!data\n!packages\n!R-utilities" > .dockerignore;
+  if [[ $task == "panoply_libs" ]]; then
+    mkdir -p packages
+    cp -r $panoply/hydrant/packages/* packages/.
+  fi
   if [[ $task == "panoply_utils" ]]; then
     git clone https://github.com/broadinstitute/proteomics-Rutil.git
     mv proteomics-Rutil R-utilities
