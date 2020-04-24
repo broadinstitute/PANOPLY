@@ -1,0 +1,8 @@
+Replace pgdac in scripts
+- Replace pgdac with panoply in the follwoing:
+  * update.sh
+  * setup.sh
+  * tests.sh
+  * fire_install.sh
+- Updated scripts from the above list
+- META: this commit message

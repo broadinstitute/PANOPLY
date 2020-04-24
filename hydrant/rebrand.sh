@@ -53,13 +53,23 @@ replaceInFiles(){
   files2=($(find . -name \*.wdl))
   files3=($(find . -name Dockerfile))
   files=( "${files1[@]}" "${files2[@]}" "${files3[@]}" )
+
   for file in "${files[@]}"; 
   do
     sed -i '' "s|pgdac_|panoply_|g" $file;
   done
 }
 
+replaceInScripts(){
+  for file in fire_install.sh setup.sh tests.sh update.sh;
+  do
+    #grep "pgdac" $file;
+    sed -i '' "s|pgdac|panoply|g" $file;
+  done
+}
+
 #createCopy
 #renameFilesFolders
 #mergeToTasks
-replaceInFiles
+#replaceInFiles
+replaceInScripts

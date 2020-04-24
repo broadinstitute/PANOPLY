@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ..
-pgdac=`pwd`
+panoply=`pwd`
 cd hydrant
 red='\033[0;31m'
 grn='\033[0;32m'
@@ -43,8 +43,8 @@ fi
 
 
 
-R CMD BATCH --vanilla "--args -p $pgdac -t $task" map_dependency.r
-ftarget=$pgdac/hydrant/tasks/targets/$task-targets.txt
+R CMD BATCH --vanilla "--args -p $panoply -t $task" map_dependency.r
+ftarget=$panoply/hydrant/tasks/targets/$task-targets.txt
 targets=`head -n 1 $ftarget`
 IFS=';' read -ra tasks <<< "$targets"
 echo -e "$not Pruning docker images on this system to ensure new build..."

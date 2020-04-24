@@ -1,22 +1,22 @@
 #!/bin/bash
 
 cd ..
-pgdac=`pwd`
+panoply=`pwd`
 red='\033[0;31m'
 grn='\033[0;32m'
 reg='\033[0m'
 err="${red}error.${reg}"
 not="${grn}----->${reg}" ## notification
 
-primary=$pgdac/hydrant/primary-dockerfile
-secondary=$pgdac/hydrant/secondary-dockerfile
+primary=$panoply/hydrant/primary-dockerfile
+secondary=$panoply/hydrant/secondary-dockerfile
 
 # deletes existing folder if present, 
 # creates a config file for hydrant, 
 # and creates a new task with hydrant
 freshTask() {
  echo -e "$not Creating fresh task...";
- ( cd $pgdac/hydrant/tasks/;
+ ( cd $panoply/hydrant/tasks/;
    if [ -d "$task" ]; then rm -r $task; fi
    mkdir -p configs;
    echo -e "[Task $task]" > configs/$task"-config.txt";
@@ -28,40 +28,40 @@ freshTask() {
 # docker location
 copySrc() {
   echo -e "$not Copying source files to docker dir...";
-  mkdir -p $pgdac/hydrant/tasks/$task/$task/src/;
-  cp -R $pgdac/src/$task/* $pgdac/hydrant/tasks/$task/$task/src/.;
+  mkdir -p $panoply/hydrant/tasks/$task/$task/src/;
+  cp -R $panoply/src/$task/* $panoply/hydrant/tasks/$task/$task/src/.;
 }
 
 
 # copies appropriate dockerfile to the task
 dockerTemplate() {
   dockerfile=$1;
-  cp $dockerfile $pgdac/hydrant/tasks/$task/$task/Dockerfile;
+  cp $dockerfile $panoply/hydrant/tasks/$task/$task/Dockerfile;
 }
 
 # copies appropriate WDL to the task
 copyWdl() {
   wdl=$1
-  cp $wdl $pgdac/hydrant/tasks/$task/$task/pgdac_$task.wdl
+  cp $wdl $panoply/hydrant/tasks/$task/$task/panoply_$task.wdl
 }
 
 # builds a new docker with the default docker tag set to 
 # the latest commit hash from github
 buildDocker() {
-  cd $pgdac/hydrant/tasks/$task/$task/;
+  cd $panoply/hydrant/tasks/$task/$task/;
   if [[ $x_flag != "true" ]]; then
     echo -e "$not Pruning docker images on this system to ensure new build..."
     yes | docker system prune --all;
   fi
   echo -e "$not Building $task locally...";
   echo "!data\n!packages\n!R-utilities" > .dockerignore;
-  if [[ $task == "pgdac_utils" ]]; then
+  if [[ $task == "panoply_utils" ]]; then
     git clone https://github.com/broadinstitute/proteomics-Rutil.git
     mv proteomics-Rutil R-utilities
   fi
-  if [[ $task == "pgdac_common" ]]; then
+  if [[ $task == "panoply_common" ]]; then
     mkdir -p data
-    cp -r $pgdac/data/* data/.
+    cp -r $panoply/data/* data/.
   fi
   docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . ;
   docker images | grep "$task"
@@ -71,7 +71,7 @@ buildDocker() {
 pushDocker()
 {
   docker login
-  cd $pgdac/hydrant/tasks/$task/$task/;
+  cd $panoply/hydrant/tasks/$task/$task/;
   echo -e "$not Pushing $task:$docker_tag to dockerhub...";
   docker push $docker_ns/$task:$docker_tag;
   open https://hub.docker.com/repository/docker/$docker_ns/$task
@@ -80,20 +80,20 @@ pushDocker()
 # replace the docker namespace and docker tag in the existing WDL
 # to the current docker namespace and docker tag
 replaceDockerInWdl(){
-  ( cd $pgdac/hydrant/tasks/$task;
+  ( cd $panoply/hydrant/tasks/$task;
     wdl_dns=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d'/' -f 1`
     wdl_tag=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d':' -f 2`
     sed -i '' "s|$wdl_dns/$task:$wdl_tag|$docker_ns/$task:$docker_tag|g" $task.wdl; )
 }
 
 editDockerfile() {
-  ( cd $pgdac/hydrant/tasks/$task/$task;
-    sed -i '' "s|broadcptac/pgdac_common:.*|broadcptac/$base_task_with_tag|g" Dockerfile; )
+  ( cd $panoply/hydrant/tasks/$task/$task;
+    sed -i '' "s|broadcptac/panoply_common:.*|broadcptac/$base_task_with_tag|g" Dockerfile; )
 }
 
 updateWdlOnTerra(){
   hydrant install -m $task -n $docker_ns \
-    -d $pgdac/hydrant/tasks/$task/$task.wdl
+    -d $panoply/hydrant/tasks/$task/$task.wdl
 }
 
 displayUsage() {
@@ -114,7 +114,7 @@ displayUsage() {
   echo "| -s | flag   | Use the secondary-dockerfile template"
   echo "| -c | string | Use the custom dockerfile with its full path specified in the argument"
   echo "| -w | string | Copy the wdl with its full path specified in the argument"
-  echo "| -m | string | Replace pgdac_common:<ver> with argument"
+  echo "| -m | string | Replace panoply_common:<ver> with argument"
   echo "|    |        | Note: 'broadcptac' is the default namespace. ( Uncustomizable for now )"
   echo "| -n | string | Docker namespace"
   echo "| -g | string | Manually overrides docker tag number which is set by default to the "
@@ -158,7 +158,7 @@ done
 
 rmData()
 {
-  cd $pgdac/hydrant/tasks/$task/$task/;
+  cd $panoply/hydrant/tasks/$task/$task/;
   if [ -d "data" ]; then
     rm -rf data;
   fi
@@ -166,7 +166,7 @@ rmData()
 
 cleanup()
 {
-  cd $pgdac/hydrant;
+  cd $panoply/hydrant;
   find . -name "tests" -type d -exec rm -rf {} \;
   find . -name "src" -type d -exec rm -rf {} \;
   find . -name "hydrant.cfg" -exec rm {} \;
