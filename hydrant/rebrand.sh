@@ -68,8 +68,17 @@ replaceInScripts(){
   done
 }
 
+renameSrc(){
+  cd $src/../src/
+  find . -name "pgdac_*" -type d -print0 | xargs -0 -n1 \
+    bash -c 'mv "$0" "${0/pgdac_/panoply_}"'
+  find . -name "pgdac_*" -print0 | xargs -0 -n1 \
+    bash -c 'mv "$0" "${0/pgdac_/panoply_}"'
+}
+
 #createCopy
 #renameFilesFolders
 #mergeToTasks
 #replaceInFiles
-replaceInScripts
+#replaceInScripts
+renameSrc
