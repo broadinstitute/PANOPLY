@@ -76,9 +76,23 @@ renameSrc(){
     bash -c 'mv "$0" "${0/pgdac_/panoply_}"'
 }
 
-#createCopy
-#renameFilesFolders
-#mergeToTasks
-#replaceInFiles
-#replaceInScripts
-renameSrc
+replaceInDockerfiles(){
+  dns=$1; task=$2; tag=$3
+  files=($(grep -rl "$task" tasks/))
+  for file in "${files[@]}";
+  do 
+    old_dns=`grep "/$task:" $file | cut -d'"' -f2 | cut -d'/' -f 1`
+    old_tag=`grep "/$task:" $file | cut -d'"' -f2 | cut -d':' -f 2`
+    sed -i '' "s|$old_dns/$task:$old_tag|$dns/$task:$tag|g" $file;
+  done
+}
+
+# createCopy
+# renameFilesFolders
+# mergeToTasks
+# replaceInFiles
+# replaceInScripts
+# renameSrc
+
+# replaceInDockerfiles broadcptacdev panoply_common c98762c
+replaceInDockerfiles broadcptacdev panoply_utils 60dd03b
