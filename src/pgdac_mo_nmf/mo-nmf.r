@@ -2,114 +2,108 @@
 rm(list=ls())
 options( warn = -1, stringsAsFactors = F )
 suppressPackageStartupMessages(library("optparse"))
-suppressPackageStartupMessages(library("pacman"))
 
 # specify command line arguments
 option_list <- list(
-  make_option( c("-t", "--tar"), action='store', type='character',  dest='tar.file', help='tar file containing data tables in GCT v1.3 format.'),
-  make_option( c("-l", "--lowrank"), action='store', type='numeric',  dest='rank.low', help='Minimal factorization rank.', default = 2),
-  make_option( c("-m", "--maxrank"), action='store', type='numeric',  dest='rank.high', help='Maximal factorization rank.', default = 4),
-  make_option( c("-n", "--nrun"), action='store', type='numeric',  dest='nrun', help='Number of NMF runs with different starting seeds.', default = 5),
-  #make_option( c("-b", "--bootstrap"), action='store', type='numeric',  dest='nrun.bs', help='Number of bootstrap iterations for consensus clustering.', default = 100),
+  make_option( c("-t", "--tar"), action='store', type='character',  dest='tar_file', help='tar file containing data tables in GCT v1.3 format.'),
+  make_option( c("-l", "--lowrank"), action='store', type='numeric',  dest='kmin', help='Minimal factorization rank.'),  # default = 2),
+  make_option( c("-m", "--maxrank"), action='store', type='numeric',  dest='kmax', help='Maximal factorization rank.'), # default = 4),
+  make_option( c("-n", "--nrun"), action='store', type='numeric',  dest='nrun', help='Number of NMF runs with different starting seeds.'), # default = 5),
   make_option( c("-b", "--bayesian"), action='store', type='logical',  dest='bnmf', help='If TRUE Bayesian NMF to determine optimal rank will be used (package ccfindR).', default = FALSE),
-  make_option( c("-s", "--seed"), action='store', type='character',  dest='seed', help='Seed method for NMF factorization.', default = 'random'),
-  #make_option( c("-c", "--classvariable"), action='store', type='character', dest='class.variable', help='Class variable of interest, NMF results will be mapped to levels of that variable. Must be present in the cdesc object of the GCT 1.3 file.'),
-  make_option( c("-o", "--categorial_annotation"), action='store', type='character', dest='cat.anno', help='Categorial annotations used in enrichemnt analysis and annotation tracks. If multiple variables are of interest, separate by semicolon, e.g. -o "var1;var2;varN". First entry will be used as class variable. NMF results will be mapped to levels of that variable and thus is required.'),
-  make_option( c("-c", "--continuous_annotation"), action='store', type='character', dest='cont.anno', help='Continuous annotations used in enrichment analysis and annotation tracks (optional).', default=NA),
-  make_option( c("-d", "--define_colors"), action='store', type='character', dest='class.colors', help='Specifiy colors for each level in "categorial_annotation". Example: "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"', default = NA),
-  make_option( c("-r", "--runonly"), action='store', type='logical', dest='no.plots', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.', default=FALSE),
- # make_option( c("-g", "--genesofinterest"), action='store', type='character', dest='genes.of.interest', help='Character vector of gene symbols separated by semicolon. Example: "^PTPN1$;ERBB2;CDK5"', default=''),
-  make_option( c("-f", "--sdfilter"), action='store', type='numeric', dest='sd.perc.rm', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed. Will be applied before z-scoring (optional)', default=0),
-  make_option( c("-g", "--filt_mode"), action='store', type='character', dest='filt.mode', help='determines how the dataset will be filtered. XX', default='global'),
-  make_option( c("-u", "--z_score"), action='store', type='logical', dest='zscore.all', help='If TRUE, rows in th matrix will be z-scored.', default=TRUE),
-  make_option( c("-i", "--impute"), action='store', type='logical', dest='impute', help='If TRUE, the matrix will be first filtered for features present in >70% of samples. The remaining missing values will be imputed via KNN (R packe impute).', default=TRUE),
-  make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene.column', help='Column name in rdesc in the GCT that contains gene names.', default='geneSymbol'),
-  make_option( c("-e", "--exclude_2"), action="store", dest='exclude.2', type="logical", help="If TRUE, a number of clusters of will be excluded from calculation of the optimal rank.", default=TRUE),
-  make_option( c("-z", "--libdir"), action="store", dest='lib.dir', type="character", help="the src directory.", default='/home/pgdac/src/'),
-  make_option( c("-y", "--yaml"), action="store", dest='yaml.file', type="character", help="Path to .yaml file with parameters.", default=NA)
+  make_option( c("-s", "--seed"), action='store', type='character',  dest='seed', help='Seed method for NMF factorization.'), # default = 'random'),
+  make_option( c("-o", "--categorial_annotation"), action='store', type='character', dest='cat_anno', help='Categorial annotations used in enrichemnt analysis and annotation tracks. If multiple variables are of interest, separate by semicolon, e.g. -o "var1;var2;varN". First entry will be used as class variable. NMF results will be mapped to levels of that variable and thus is required.'),
+  make_option( c("-c", "--continuous_annotation"), action='store', type='character', dest='cont_anno', help='Continuous annotations used in enrichment analysis and annotation tracks (optional).') , # default=NA),
+  make_option( c("-d", "--define_colors"), action='store', type='character', dest='cat_colors', help='Specifiy colors for each level in "categorial_annotation". Example: "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"'), # default = NA),
+  make_option( c("-r", "--runonly"), action='store', type='logical', dest='nmf_only', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.'), # default=FALSE),
+  make_option( c("-f", "--sdfilter"), action='store', type='numeric', dest='sd_filt', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed. Will be applied before z-scoring (optional)') , ## default=0),
+  make_option( c("-g", "--filt_mode"), action='store', type='character', dest='filt_mode', help='determines how the dataset will be filtered. XX'), # default='global'),
+  make_option( c("-u", "--z_score"), action='store', type='logical', dest='z_score', help='If TRUE, rows in th matrix will be z-scored.'), # default=TRUE),
+  make_option( c("-i", "--impute"), action='store', type='logical', dest='impute', help='If TRUE, the matrix will be first filtered for features present in >70% of samples. The remaining missing values will be imputed via KNN (R packe impute).'), # default=TRUE),
+  make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
+  make_option( c("-e", "--exclude_2"), action="store", dest='exclude_2', type="logical", help="If TRUE, a '2' will be excluded from calculation of the optimal rank."), #default=TRUE),
+  make_option( c("-z", "--libdir"), action="store", dest='lib_dir', type="character", help="the src directory.", default='/home/pgdac/src/'),
+  make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters.", default=NA)
 )
 
 ## #########################################################
 # parse command line parameters
-opt <- parse_args( OptionParser(option_list=option_list) )
+# - do it here already to speed up the USAGE message
+# - the actual parsing of parameters happens in 
+#   function 'parse_param'
+opt_cmd <- parse_args( OptionParser(option_list=option_list) )
+
+###########################################################
+## load libraries requires to parse and update parameters
+library("pacman")
+p_load("yaml")
+p_load("magrittr")
 
 ################################################
-## funtion to parse yaml file  if specified 
-## and update parameters
-parse_param_yaml <- function(opt){
+## funtion to parse parse and update parameters
+## - cmd line
+## - yaml file
+## parameters in yaml file will be updated with 
+## parameters specified on cmd
+parse_param <- function(cmd_option_list){
   
-  if(!is.na(opt$yaml.file) > 0 & file.exists(opt$yaml.file)){
-    require(pacman)
-    p_load(yaml)
-    p_load(magrittr)
-    
-    cat('\n\nFound yaml paramater file.\n - Updating parameters....')
-    
-    ##################################
-    ## parse parameter file
-    param <- try(read_yaml(opt$yaml.file))
-    if(class(param) == 'try-error'){
-      warning(paste0("Error parsing '",opt$yaml.file,"':\n", param, '\n\n'))
-      return(opt)
-    }
-    param <- param$mo_nmf
-    
-    ##################################
-    ## update parameters
-    if(!is.null(param$tar_file)) opt$tar.file <- param$tar_file
-    if(!is.null(param$kmin)) opt$rank.low <- param$kmin
-    if(!is.null(param$kmax)) opt$rank.high <- param$kmax
-    if(!is.null(param$exclude_2)) opt$exclude.2 <- param$exclude_2
-    if(!is.null(param$core_membership)) opt$core.membership <- param$core_membership
-    ## NMF specific
-    if(!is.null(param$nrun)) opt$nrun <- param$nrun
-    if(!is.null(param$method)) opt$nmf.method <- param$method
-    if(!is.null(param$bnmf)) opt$bnmf <- param$bnmf
-    if(!is.null(param$seed)) opt$seed <- param$seed
-    ## annotations
-    if(!is.null(param$cat_anno))  opt$cat.anno <- param$cat_anno %>% unlist %>% paste(., collapse=';')
-    if(!is.null(param$cont_anno))  opt$cont.anno <- param$cont_anno %>% unlist %>% paste(., collapse=';')
-    ## colors
-    if(!is.null(param$colors)){
-      colors.tmp <- sapply(param$colors, function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
-      class.colors <- paste(paste(names(colors.tmp), colors.tmp, sep='='), collapse='|')
-      opt$class.colors <- class.colors
-    }
-    if(!is.null(param$sd_filt)) opt$sd.perc.rm <- param$sd_filt
-    if(!is.null(param$filt_mode)) opt$filt.mode <- param$filt_mode
-    if(!is.null(param$z_score)) opt$zscore.all <- param$z_score
-    ## imputation
-    if(!is.null(param$impute)) opt$impute <- param$impute
-    if(!is.null(param$max_na_row)) opt$max.na.row <- param$max_na_row
-    if(!is.null(param$max_na_col)) opt$max.na.col <- param$max_na_col
-    ## heatmap parameters
-    if(!is.null(param$hm_cw)) opt$hm.cw <- param$hm_cw
-    if(!is.null(param$hm_ch)) opt$hm.ch <- param$hm_ch
-    if(!is.null(param$hm_max_val)) opt$hm.max.val <- param$hm_max_val
-    if(!is.null(param$hm_max_val_z)) opt$hm.max.val.z <- param$hm_max_val_z
-    ## misc
-    if(!is.null(param$gene_col)) opt$gene.column <- param$gene_col
-    if(!is.null(param$nmf_only)) opt$no.plots <- param$nmf_only
-    if(!is.null(param$lib_dir)) opt$lib.dir <- param$lib_dir
-    cat('done\n\n')
-  } 
+  ## #########################################################
+  # parse command line parameters
+  opt_cmd <- parse_args( OptionParser(option_list=cmd_option_list) )
   
+  ############################################################
+  ## parse yaml file
+  if(!is.na(opt_cmd$yaml_file) & file.exists(opt_cmd$yaml_file)){
+    
+    ## import yaml
+    opt_yaml <- read_yaml(opt_cmd$yaml_file)
+    
+    ## extract relevant section
+    opt_yaml <- opt_yaml[['mo_nmf']]
+    
+    ## convert vectors and lists to single strings
+    opt_yaml[['cat_anno']] <- opt_yaml[['cat_anno']] %>% unlist %>% paste(., collapse=';')
+    opt_yaml[['cont_anno']] <- opt_yaml[['cont_anno']] %>% unlist %>% paste(., collapse=';')
+    colors.tmp <- sapply(opt_yaml[["cat_colors"]], function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
+    opt_yaml[["cat_colors"]] <- paste(paste(names(colors.tmp), colors.tmp, sep='='), collapse='|')
+    
+    ## update yaml with parameters specified on cmd line 
+    cat('\n\nUpdating parameter file with command line parameters:\n')
+    
+    ## cmd parameters
+    cmd_to_update <- intersect( names(opt_cmd), names(opt_yaml) )
+    cmd_to_add <- setdiff( names(opt_cmd), names(opt_yaml) )
+    
+    ## update yaml by cmd 
+    opt_yaml[cmd_to_update] <- opt_cmd[cmd_to_update]
+    sapply(cmd_to_update, function(x) cat(x, '\n'))
+    
+    ## add parameters only specified on cmd
+    if(length(cmd_to_add) > 0){
+      opt_cmd_to_add <- opt_cmd[cmd_to_add]
+      opt_yaml <- append(opt_yaml, opt_cmd_to_add)
+    }
+    
+    ## updated params
+    opt <- opt_yaml
+    
+  } else {
+    ## no yaml file
+    opt <- opt_cmd
+  }
   return(opt)
 } 
-
-############################################################
-## parse yaml
-p_load(yaml)
-#opt$yaml.file <- 'param.yaml'
-opt <- parse_param_yaml(opt)
-save(opt, file='options.RData')
 
 ########################
 ## import libraries
 p_load(NMF)
 p_load(ccfindR)
 p_load(RSQLite)
+
+## annotation packages
 p_load(org.Hs.eg.db)
+p_load(org.Rn.eg.db)
+p_load(org.Mm.eg.db)
+
 p_load(pheatmap)
 p_load(WriteXLS)
 p_load(RColorBrewer)
@@ -136,35 +130,45 @@ p_load(magrittr)
 
 p_load(limma)
 
-#opt$lib.dir <- 'c:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
+## parse parameters
+opt <- parse_param(option_list) 
+#opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
+
 
 ################################################
 ## source required files
-cat('Sourcing files...')
-source(file.path(opt$lib.dir, 'my_plots.r'))
-source(file.path(opt$lib.dir, 'my_io.r'))
-source(file.path(opt$lib.dir, 'nmf_functions.R'))
-source(file.path(opt$lib.dir, 'modT.r'))
+cat('\nSourcing files...')
+source(file.path(opt$lib_dir, 'my_plots.r'))
+source(file.path(opt$lib_dir, 'my_io.r'))
+source(file.path(opt$lib_dir, 'nmf_functions.R'))
+source(file.path(opt$lib_dir, 'modT.r'))
 cat('done!\n')
 
 ## #############################################
 ## main function
 main <- function(opt){
 
-    opt$sd.perc.rm <- as.numeric(opt$sd.perc.rm)
+    ## for backwards compatibility
+    if(is.null(opt$organism))
+      opt$organism <- 'human'
+    
+    #opt$sd_filt <- as.numeric(unlist(opt$sd_filt))
     
     ## ##################################################
     ##           parse parameters
     ## ###################################################
-    tar.file <- opt$tar.file
-  
+    tar_file <- opt$tar_file
+    
     ## percentile of stddev to remove from the data
-    sd.perc.rm <- opt$sd.perc.rm
+    sd_filt <- as.numeric( opt$sd_filt )
+#    cat(sd_filt, '\n')
+#    cat(mode(sd_filt), '\n')
+    
     ## filter mode: global, sepaarte, equal
-    filt.mode <- opt$filt.mode
+    filt_mode <- opt$filt_mode
       
      ## apply z-score to all data types?
-    zscore.all <- opt$zscore.all
+    z_score <- opt$z_score
     
     ## #############################
     ## imputation parameters (KNN)
@@ -175,11 +179,11 @@ main <- function(opt){
      
     ## ################################
     ##            NMF parameters
-    ranks <- sort(opt$rank.low:opt$rank.high)
+    ranks <- sort(opt$kmin:opt$kmax)
     seed <- opt$seed
     nrun <- opt$nrun
     #nrun.bs <- opt$nrun.bs ## bootstrap iterations
-    method <- ifelse(opt$bnmf, 'bnmf', 'nmf')
+    nmf_method <- ifelse(opt$bnmf, 'bnmf', 'nmf')
       
     cores <- detectCores()
     opts <- paste('vp', cores,'t', sep='')
@@ -203,7 +207,7 @@ main <- function(opt){
    
     ## ##################################################
     ## import data files
-    data.imported <- import.data.sets(tar.file, tmp.dir, zscore.cnv)
+    data.imported <- import.data.sets(tar_file, tmp.dir, zscore.cnv)
     
     expr <- data.imported$expr
     cdesc <- data.imported$cdesc
@@ -217,14 +221,14 @@ main <- function(opt){
     ##     prepare output folder
     label <- paste(names(data.str), collapse='_')
     
-    date.str <- glue("{sub(' .*', '', Sys.time())}_{label}_{nrun}_{method}{ifelse(impute,'_knn_','_')}sd_{sd.perc.rm}{ifelse(zscore.all,'_zcore','')}")
+    date.str <- glue("{sub(' .*', '', Sys.time())}_{label}_{nrun}_{nmf_method}{ifelse(impute,'_knn_','_')}sd_{sd_filt}{ifelse(z_score,'_zcore','')}")
     dir.create(date.str)
     setwd(date.str)
     
     ## ###############################
     ##     generate parameter file
     param <- c('## NMF parameters:', 
-               paste('method:', method), 
+               paste('nmf_method:', nmf_method), 
                
                paste('rank:', paste(ranks, collapse=',')), 
                paste('seed:',seed), paste('nrun:', nrun), 
@@ -232,10 +236,10 @@ main <- function(opt){
                paste('opts:', opts),
                '',
                '## data filter / normalization / imputation', 
-               paste('filter mode:', filt.mode),
-               paste('remove lowest StdDev perc.:', sd.perc.rm),
+               paste('filter mode:', filt_mode),
+               paste('remove lowest StdDev perc.:', sd_filt),
                
-               paste('z-score rows:', zscore.all), 
+               paste('z-score rows:', z_score), 
                paste('imputation (KNN):', impute),
                paste('imputation: no. neighbors (K)', impute.k),
                paste('imputation: max.missing row', na.max.row),
@@ -279,7 +283,7 @@ main <- function(opt){
     
     ## ####################################################
     ##    sd filter
-    gct.filt <- filter.datasets(gct.comb, sd.perc.rm, mode=filt.mode )
+    gct.filt <- filter.datasets(gct.comb, sd_filt, mode=filt_mode )
     write.gct(gct.filt, ofile = 'mo-data-matrix-sd-filt')
     
     ## update
@@ -288,7 +292,7 @@ main <- function(opt){
     ## ###################################################
     ## Z-score
     ## ###################################################
-    if(zscore.all)
+    if(z_score)
       expr <- scale(expr)
    
     # ## #########################
@@ -316,17 +320,17 @@ main <- function(opt){
     # ####################################################
     # ## filter dataset
     # 
-    # if(sd.perc.rm > 0){
+    # if(sd_filt > 0){
     #   
     #     cat("\napplying SD-filter: ")
-    #     sd.perc <- quantile(sd.expr, c(sd.perc.rm))
+    #     sd.perc <- quantile(sd.expr, c(sd_filt))
     #     sd.keep <- which( sd.expr > sd.perc)
     #     cat("removed", nrow(expr)-length(sd.keep), "features with SD<=", round(sd.perc, 2), "(", names(sd.perc),"-tile)\n\n")
     #     expr <- expr[sd.keep,]
     #     
     #     ## add line to plot
     #     abline(v=sd.perc, lty='dashed', lwd=2, col='grey')
-    #     text(sd.perc, ymax, paste(100*sd.perc.rm, 'th percentile', sep=''), pos=4, col='grey')
+    #     text(sd.perc, ymax, paste(100*sd_filt, 'th percentile', sep=''), pos=4, col='grey')
     #     
     #     ## export filtered GCT
     #     gct.filt <- gct.comb
@@ -391,9 +395,9 @@ main <- function(opt){
         
         ## extract top N ranks based on maximum evidence
         topn.rank <- 1
-        exclude.2 <- F ## should rank=2 be excluded?
+        exclude_2 <- F ## should rank=2 be excluded?
         
-        rank.top <- GetBestRank(rank.mev, topn.rank=topn.rank, exclude.2=exclude.2)
+        rank.top <- GetBestRank(rank.mev, topn.rank=topn.rank, exclude_2=exclude_2)
         rank.sil <- rank.sil.avg <- rank.coph <- NULL
         
         ###########################################################   
@@ -445,8 +449,8 @@ main <- function(opt){
       ## extract top N ranks based on cophentic correlation
       topn.rank <- 1
       
-      #rank.top <- GetBestRank(rank.coph, topn.rank=topn.rank, exclude.2=opt$exclude.2)
-      rank.top <- GetBestRank(rank.coph.disp, topn.rank=topn.rank, exclude.2=opt$exclude.2)
+      #rank.top <- GetBestRank(rank.coph, topn.rank=topn.rank, exclude_2=opt$exclude_2)
+      rank.top <- GetBestRank(rank.coph.disp, topn.rank=topn.rank, exclude_2=opt$exclude_2)
       rank.mev  <- NULL
       
       #########################################
@@ -510,13 +514,13 @@ main <- function(opt){
     ## save results needed to 
     fn.ws <- 'workspace_after_NMF.RData'
     save(opt, res.rank, rank.top, expr.comb, expr, rdesc, cdesc, rank.sil, rank.sil.avg, 
-         rank.coph, rank.mev, fn.ws, gct.comb, zscore.all, file=fn.ws)
+         rank.coph, rank.mev, fn.ws, gct.comb, z_score, file=fn.ws)
     
     
     ## #######################################################
     ##         generate some plots
-    if(opt$no.plots == FALSE){ 
-      p <- try(nmf.post.processing(fn.ws))
+    if(opt$nmf_only == FALSE){ 
+      p <- try(nmf.post.processing(fn.ws, core_membership=opt$core_membership, organism=opt$organism))
     }
     
     return(0)

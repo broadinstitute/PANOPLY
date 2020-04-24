@@ -4,7 +4,7 @@
 ## with max. 'metric'-scores
 GetBestRank <- function(metric,      ## vector of a metric to assess clustering
                         topn.rank=1, ## No. of topN ranks
-                        exclude.2=F,  ## should rank=2 be excluded?
+                        exclude_2=F,  ## should rank=2 be excluded?
                         rel.inc=1e-3
                         ){
 
@@ -23,7 +23,7 @@ GetBestRank <- function(metric,      ## vector of a metric to assess clustering
   # }
   #
 
-  if(exclude.2){
+  if(exclude_2){
      if('2' %in% names(metric))
        metric <- metric[-which(names(metric) == '2')]
   }
@@ -198,9 +198,9 @@ MapCalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
 parse.colors <- function(opt, cdesc, blank='N/A', blank.col='white'){
 
   ## user defined colors
-  if(!is.na(opt$class.colors)){
-        class.colors <- opt$class.colors
-        color.all <- class.colors %>% strsplit(., '\\|') %>% unlist
+  if(!is.na(opt$cat_colors)){
+        cat_colors <- opt$cat_colors
+        color.all <- cat_colors %>% strsplit(., '\\|') %>% unlist
       
         ## check dups
         color.all <- color.all[ !duplicated(sub('^(.*?)=.*', '\\1', color.all)) ]
@@ -267,13 +267,13 @@ parse.colors <- function(opt, cdesc, blank='N/A', blank.col='white'){
         
         cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
         
-        } else { ## end !is.na(opt$class.colors) (user defined colors)
+        } else { ## end !is.na(opt$cat_colors) (user defined colors)
           
         ###################################
         ## pick colors automatically
           
           ## categories specified
-          cdesc.cat <- opt$cat.anno %>% strsplit(., ';') %>% unlist %>% unique
+          cdesc.cat <- opt$cat_anno %>% strsplit(., ';') %>% unlist %>% unique
           cdesc.cat <- cdesc.cat[cdesc.cat %in% colnames(cdesc) ]
           
           ## color palettes to pick from
@@ -458,15 +458,11 @@ import.data.sets <- function(tar.file, tmp.dir, zscore.cnv=F){
 ## ##############################################
 ## filter datasets
 filter.datasets <- function(gct.comb,
-                            sd.perc.rm,
+                            sd_filt,
                             mode=c('global', 'separate', 'equal')
                             ){
 
   mode <- match.arg(mode)
-  
-  ## parse gct
-  #expr <- gct.comb@mat
-  #rdesc <- gct.comb@rdesc
  
   ## ###################
   ## calculate SD accross samples
@@ -478,7 +474,7 @@ filter.datasets <- function(gct.comb,
     
   #######################
   ## helper function
-  sd_filt <- function(sd.vec, perc){
+  sd_filt_func <- function(sd.vec, perc){
     sd.perc <- quantile(sd.vec, c(perc))
     keep <- which( sd.vec > sd.perc)
     return(names(keep))
@@ -488,10 +484,10 @@ filter.datasets <- function(gct.comb,
   ## global filter
   if(mode == 'global'){
     
-    if(sd.perc.rm > 0){
+    if(sd_filt > 0){
       
       cat("\napplying SD-filter:", mode, '\n')
-      sd.keep <- sd_filt(sd.expr, sd.perc.rm)
+      sd.keep <- sd_filt_func(sd.expr, sd_filt)
       
       #cat("removed", nrow(gct.comb@mat)-length(sd.keep), "features with SD<=", round(sd.perc, 2), "(", names(sd.perc),"-tile)\n\n")
      
@@ -506,7 +502,7 @@ filter.datasets <- function(gct.comb,
     cat("\napplying SD-filter:", mode, '\n')
       
     ## filter each type separetely
-    sd.keep <- base::tapply(sd.expr, data.type, sd_filt, sd.perc.rm) %>% unlist
+    sd.keep <- base::tapply(sd.expr, data.type, sd_filt_func, sd_filt) %>% unlist
   }
   
   ## ######################
@@ -519,7 +515,7 @@ filter.datasets <- function(gct.comb,
     expr <- gct.comb@mat
     
     ## apply global filter first
-    sd.keep <- sd_filt(sd.expr, sd.perc.rm)
+    sd.keep <- sd_filt_func(sd.expr, sd_filt)
     ## update
     rdesc <- rdesc[sd.keep, ]
     sd.expr <- sd.expr[sd.keep]
@@ -726,8 +722,8 @@ MyPheatMap <- function(m, cdesc, cdesc.color, rdesc=NULL, class.variable, variab
 ##
 boxplotPerCluster <- function(cdesc,   ## clin.anno
                               nmf2col,     ## vector af length k mapping colors to clusters
-                              cont.anno,     ## continous variables to include
-                              core.membership=0.5,
+                              cont_anno,     ## continous variables to include
+                              core_membership=0.5,
                               blank.anno = 'N/A'
                               ){
   
@@ -737,12 +733,12 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
   names(nmf2col) <- glue("{1:nclust}")
   
   ## continuous variable to plot
-  keep.idx <- which(cont.anno %in% colnames(cdesc))
-  if(length(cont.anno) == 0){
+  keep.idx <- which(cont_anno %in% colnames(cdesc))
+  if(length(cont_anno) == 0){
     warning('The specified variables could not be found. Skipping boxplots...\n')
     return()
   }
-  cont.anno <- cont.anno[keep.idx]
+  cont_anno <- cont_anno[keep.idx]
   
   ## pairwise comparisons
   comps <- list()
@@ -756,17 +752,17 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
   
   ###############################
   ## loop over variables
-  pdf(paste0('7.0_boxplots_cluster-continuous-clinical-variables-min-membership-',core.membership,'.pdf'), 5, 5)
-  for(var in cont.anno){
+  pdf(paste0('7.0_boxplots_cluster-continuous-clinical-variables-min-membership-',core_membership,'.pdf'), 5, 5)
+  for(var in cont_anno){
     
     
     cdesc.filt <- cdesc[!grepl(blank.anno, cdesc[, var]), ]
     cdesc.filt[, var] <- as.numeric(cdesc.filt[, var])
     
-    cdesc.filt <- cdesc.filt %>% filter(NMF.cluster.membership > core.membership) 
+    cdesc.filt <- cdesc.filt %>% filter(NMF.cluster.membership > core_membership) 
     #cdesc.filt <- 
       
-    #p <-# cdesc %>% filter(NMF.cluster.membership > core.membership) %>%
+    #p <-# cdesc %>% filter(NMF.cluster.membership > core_membership) %>%
         #filter(!grepl('N/A', `var`)) %>%
       
     p <-  ggboxplot(cdesc.filt, x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
@@ -777,7 +773,7 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
     plot(p)
     
     # p <- try(
-    #   cdesc %>% filter(NMF.cluster.membership > core.membership) %>%
+    #   cdesc %>% filter(NMF.cluster.membership > core_membership) %>%
     #            filter(!grepl('N/A', var)) %>%
     #       ggboxplot(., x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
     #       ggtitle(var) +
@@ -797,9 +793,10 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
 nmf.post.processing <- function(ws,                       ## filename of R-workspace
                                 blank.anno = 'N/A',       ## used to replace blanks/NAs in meta data
                                 blank.anno.col = 'white', ## color for blanks/NAs usind in heatmap annotation tracks
-                                core.membership=0.5,      ## NMF.cluster.membership score to define core memebrship
+                                core_membership=0.5,      ## NMF.cluster.membership score to define core memebrship
                                                           ## cluster enrichment of clinical variables will be done on the core set 
-                                feature.fdr=0.01          ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                feature.fdr=0.01,          ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
 
     ## ############################
@@ -808,17 +805,17 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     load(ws)
     cat('done.\n')
 
-    ## pheatmap parameters
-    # cw <- 15
-    # ch <- 15
-    # if(zscore.all){
-    #   max.val <- 3
-    # } else {
-    #   max.val <- 10
-    # }
-    cw <- opt$hm.cw
-    ch <- opt$hm.ch
-    if(opt$zscore.all){
+    ###############################
+    ## organism
+    organism <- match.arg(organism)
+    if(organism == 'human') org.id <- 'Hs'
+    if(organism == 'mouse') org.id <- 'Mm'
+    if(organism == 'rat') org.id <- 'Rn'
+    
+    ## heatmap aesthetics
+    cw <- opt$hm_cw
+    ch <- opt$hm_ch
+    if(opt$z_score){
       max.val <- opt$hm.max.val.z
     } else {
       max.val <- opt$hm.max.val
@@ -858,13 +855,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
   ## ###################################################
   ## class variable/annotation tracks of interest
-  cat.anno <- strsplit( opt$cat.anno, ';' ) %>% unlist
-  class.variable <- cat.anno[1]
+  cat_anno <- strsplit( opt$cat_anno, ';' ) %>% unlist
+  class.variable <- cat_anno[1]
   class.variable <- gsub('\\\'', '', class.variable)
   
   ## other categorial variables of interest
-  if(length(cat.anno) > 1){
-    variable.other <- cat.anno[2:length(cat.anno)]
+  if(length(cat_anno) > 1){
+    variable.other <- cat_anno[2:length(cat_anno)]
     variable.other <- gsub('\\\'', '', variable.other)
     keep.idx <- variable.other %in% colnames(cdesc)
     variable.other <- variable.other[ keep.idx ]
@@ -872,11 +869,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     variable.other <- c()
   }
   ## continous variables
-  if(!is.na(opt$cont.anno)){
-    cont.anno <- strsplit( opt$cont.anno, ';' ) %>% unlist
-    cont.anno <- gsub('\\\'', '', cont.anno)
+  if(!is.na(opt$cont_anno)){
+    cont_anno <- strsplit( opt$cont_anno, ';' ) %>% unlist
+    cont_anno <- gsub('\\\'', '', cont_anno)
   } else{
-    cont.anno <- NA
+    cont_anno <- NA
   }
   
 
@@ -894,17 +891,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
   ## ###############################
   ## parse colors
- # if(!is.na(opt$class.colors)){
-    cdesc.color <- parse.colors(opt, data.frame(cdesc.org), blank = blank.anno, blank.col = blank.anno.col)
-  #} else {
-    #cdesc.color <- NULL
-  #} 
+  cdesc.color <- parse.colors(opt, data.frame(cdesc.org), blank = blank.anno, blank.col = blank.anno.col)
   ## keep a copy
   cdesc.color.org <- cdesc.color
 
   ## ################################
   ## parse genes of interest
-  gene.column <- opt$gene.column
+  gene_col <- opt$gene_col
 
   ## ####################################################
   ##              loop over ranks
@@ -973,7 +966,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ##########################################
     ## define core membership
     NMF.consensus.core <- NMF.consensus
-    NMF.consensus.core[ which(NMF.cluster.membership.alldigits < core.membership) ] <- NA
+    NMF.consensus.core[ which(NMF.cluster.membership.alldigits < core_membership) ] <- NA
     
     ## add to cdesc
     cdesc <- data.frame(cdesc, 
@@ -1061,11 +1054,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ##
     ##     boxplots comparing continuous variables
     ##
-    if(!is.na(cont.anno)){
+    if(!is.na(cont_anno)){
           boxplotPerCluster(cdesc=cdesc,   ## clin.anno
                             nmf2col=cdesc.color$NMF.consensus.mapped,     ## vector af length k mapping colors to clusters
-                            cont.anno=cont.anno,     ## continuous variables to include
-                            core.membership=core.membership)
+                            cont_anno=cont_anno,     ## continuous variables to include
+                            core_membership=core_membership)
     }
     
 
@@ -1176,13 +1169,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     dimnames(W.norm.comb) <- list(feat.comb, colnames(W))
 
     ## create GCT file
-    if(opt$gene.column %in% colnames(rdesc)){
+    if(opt$gene_col %in% colnames(rdesc)){
       w.comb.rdesc <- data.frame(
         Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)),
-        geneSymbol=gct.comb@rdesc[rownames(W.norm.comb), opt$gene.column],
+        geneSymbol=gct.comb@rdesc[rownames(W.norm.comb), opt$gene_col],
         stringsAsFactors = F)
 
-      ## if 'opt$gene.column' was not present in all tables
+      ## if 'opt$gene_col' was not present in all tables
       ## use rownames to extract gene symbols...
       if(sum(is.na(w.comb.rdesc$geneSymbol)) > 0){
         na.idx <- which(is.na(w.comb.rdesc$geneSymbol))
@@ -1263,8 +1256,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
     ## ####################################
     ## gene names
-    if(opt$gene.column %in% colnames(rdesc)){
-      s.gn <- lapply(s.acc, function(x) rdesc[x$Accession, opt$gene.column] )
+    if(opt$gene_col %in% colnames(rdesc)){
+      s.gn <- lapply(s.acc, function(x) rdesc[x$Accession, opt$gene_col] )
       s.gn.red <- s.gn
 
     } else {
@@ -1301,11 +1294,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     s.acc.gn.anno <- s.acc.gn
 
     ## ################################################################
-    if(opt$gene.column %in% colnames(rdesc)){
+    if(opt$gene_col %in% colnames(rdesc)){
 
       ## add description and enzyme codes
       s.acc.gn.anno <- lapply( s.acc.gn, function(x)
-        AnnotationDbi::select(org.Hs.eg.db, keys=x$SYMBOL , column=c( 'GENENAME',  'ENZYME'), keytype='SYMBOL', multiVals='first')
+        AnnotationDbi::select(eval(parse(text=paste0("org.",org.id,".eg.db"))), keys=x$SYMBOL , column=c( 'GENENAME',  'ENZYME'), keytype='SYMBOL', multiVals='first')
       )
 
       ## add cytoband
@@ -1315,7 +1308,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       
       s.acc.gn.anno.cyto <- lapply( s.acc.gn.anno, function(x){
         
-        entrez.id <- mapIds(org.Hs.eg.db, keys = x$SYMBOL, keytype = 'SYMBOL', column = 'ENTREZID')
+        entrez.id <- mapIds(eval(parse(text=paste0("org.",org.id,".eg.db"))), keys = x$SYMBOL, keytype = 'SYMBOL', column = 'ENTREZID')
         
         ## check for NULL
         null.idx <- sapply(entrez.id, is.null)
@@ -1360,7 +1353,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
         s.acc.gn.anno[[i]] <- tmp
       }
 
-    } ## end if(opt$gene.column %in% colnames(rdesc))
+    } ## end if(opt$gene_col %in% colnames(rdesc))
 
     ## sort
     s.acc.gn.anno <- lapply(s.acc.gn.anno, function(x)x[order(x$NMF.Score, decreasing=T), ])
@@ -1715,7 +1708,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                         clust.str=dir('../', pattern='^clin_anno_nmf.txt', full.names = T),
                         nmf.res.dir='../',
                         K=as.numeric(rank),
-                        gene.col=opt$gene.column))
+                        gene_col=opt$gene_col))
       
       setwd('..')
     }
@@ -1886,7 +1879,7 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
                               clust.str,      ## path to 'clin_anno_nmf.txt'
                               K,              ## number of clusters
                               nmf.res.dir,    ##
-                              gene.col        ## column name containing gene symbols
+                              gene_col        ## column name containing gene symbols
                               ){
 
   p.clust.enrich <- 0.01
@@ -1945,7 +1938,7 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
   for(g in goi){
 
     ## goi in data set?
-    g.mo.idx <- grep(glue("^{g}$"), mo.rdesc[, gene.col])
+    g.mo.idx <- grep(glue("^{g}$"), mo.rdesc[, gene_col])
     
     if( length( g.mo.idx ) > 0 ){
 
