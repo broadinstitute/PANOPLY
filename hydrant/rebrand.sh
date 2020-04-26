@@ -81,9 +81,9 @@ replaceInDockerfiles(){
   files=($(grep -rl "$task" tasks/))
   for file in "${files[@]}";
   do 
-    old_dns=`grep "/$task:" $file | cut -d'"' -f2 | cut -d'/' -f 1`
-    old_tag=`grep "/$task:" $file | cut -d'"' -f2 | cut -d':' -f 2`
-    sed -i '' "s|$old_dns/$task:$old_tag|$dns/$task:$tag|g" $file;
+    old_dns=`grep "/$task:" $file | cut -d'"' -f2 | cut -d'/' -f1 | cut -d' ' -f2`
+    old_tag=`grep "/$task:" $file | cut -d'"' -f2 | cut -d':' -f2`
+    sed -i '' "s|$old_dns/$task:$old_tag|FROM $dns/$task:$tag|g" $file;
   done
 }
 
@@ -95,4 +95,4 @@ replaceInDockerfiles(){
 # renameSrc
 
 # replaceInDockerfiles broadcptacdev panoply_common c98762c
-replaceInDockerfiles broadcptacdev panoply_utils 60dd03b
+# replaceInDockerfiles broadcptacdev panoply_utils 60dd03b
