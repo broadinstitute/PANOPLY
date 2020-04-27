@@ -152,8 +152,6 @@ main <- function(opt){
     if(is.null(opt$organism))
       opt$organism <- 'human'
     
-    #opt$sd_filt <- as.numeric(unlist(opt$sd_filt))
-    
     ## ##################################################
     ##           parse parameters
     ## ###################################################
@@ -161,9 +159,7 @@ main <- function(opt){
     
     ## percentile of stddev to remove from the data
     sd_filt <- as.numeric( opt$sd_filt )
-#    cat(sd_filt, '\n')
-#    cat(mode(sd_filt), '\n')
-    
+
     ## filter mode: global, sepaarte, equal
     filt_mode <- opt$filt_mode
       
@@ -173,9 +169,9 @@ main <- function(opt){
     ## #############################
     ## imputation parameters (KNN)
     impute <- opt$impute
-    impute.k <- 5
-    na.max.row <- 0.3
-    na.max.col <- 0.9
+    impute.k <- opt$impute_k
+    na.max.row <- opt$max_na_row ##0.3
+    na.max.col <- opt$min_na_row ## 0.9
      
     ## ################################
     ##            NMF parameters
@@ -192,7 +188,6 @@ main <- function(opt){
     ## ###################################################
     ##      other parmaters
     ## ###################################################
-   # tmp.dir <- 'tmp'
     tmp.dir <- tempdir()
     
     ## data filtering / normalization
@@ -249,6 +244,9 @@ main <- function(opt){
                paste(data.str) )
     
     writeLines(param, con='parameters.txt')
+    
+    ## export yaml
+    write_yaml(opt, 'parameters.yaml')
     
     ## ####################################################
     ## KNN imputation
