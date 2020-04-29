@@ -71,6 +71,6 @@ do
                     sed -n 1p | cut -d'"' -f2 ) )
   sed -i '' "s|$tag|$latest_tag|g" $dockerfile;
   ./setup.sh -t $target -n $docker_ns -y -b -g $docker_tag -x -u
-  ./setup.sh -t $target -n $docker_ns -e
+  ./setup.sh -t $target -n $docker_ns -z
   sleep 60
 done
