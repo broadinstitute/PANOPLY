@@ -1,3 +1,0 @@
-Minor changes to update.sh
-- Add wait period after each target build and push
-- Do a cleanup with -z of setup.sh

@@ -1,1 +1,0 @@
-Do "cleanup" only in the current task dir

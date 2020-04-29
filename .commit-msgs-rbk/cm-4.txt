@@ -1,5 +1,0 @@
-Replace Docker in WDL
-- Update the following in your current workspace WDL
-  * docker namespace
-  * docker tag
-- META: this commit message

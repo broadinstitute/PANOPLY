@@ -1,7 +1,0 @@
-Remove modules
-- MS-Philosopher
-- Philosopher Pipeline
-- MS Fragger
-- TMT Integrator
-- (add them later, since they are not compatible with setup and update right now)
-- META: this commit message

@@ -1,5 +1,0 @@
-Rename PANOPLY/src
-- rename folders from pgdac_ to panoply_
-- rename script files from pgdac_ to panoply_
-- add the code that does the above: rebrand.sh
-- META: this commit message

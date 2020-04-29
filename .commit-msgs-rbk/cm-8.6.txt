@@ -1,5 +1,0 @@
-Rebrand base images in Dockerfiles
-- Updated Dockerfiles with base images:
-  * panoply_utils
-  * panoply_common
-- META: this commit message

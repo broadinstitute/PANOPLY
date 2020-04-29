@@ -1,9 +1,0 @@
-Update Docker panoply_libs
-- Remove automatically generated files:
-  * panoply_libs.wdl
-  * panoply_utils.wdl
-  * panoply_utils/panoply_utils/build.sh
-- Added an if conditional for panoply_libs in setup.sh
-- Edited panoply_utils/panoply_utils/Dockerfile with latest
-  broadcptacdev/panoply_libs:a2bba47
-- META: this commit message

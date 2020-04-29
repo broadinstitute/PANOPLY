@@ -1,6 +1,0 @@
-commit-msg-oct-2/hydrant;src
-- Added pgdac_accumulate module to the Github.
-  * This module is updated with directionality annotation for fold change and contrast columns
-- Updates to the pgdac_download src files to update 
-  * Output format from .tar.gz to .tar
-  * Collect cons_clust at one level removed for easy and immediate access

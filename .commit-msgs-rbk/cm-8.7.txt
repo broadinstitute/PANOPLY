@@ -1,5 +1,0 @@
-Bug Fix: Replace in Dockerfile
-- Correct Behavior: Replace "old_namespace" to "new_namespace"
-- Buggy Behavior: Replaced "FROM old_namespace" to "new_namespace"
-- Corrected buggy Dockerfiles
-- META: this commit message

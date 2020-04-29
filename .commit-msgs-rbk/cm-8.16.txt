@@ -1,6 +1,0 @@
-Latest broadcptacdev Dockerfiles
-- ./update.sh -t panoply_common -n broadcptacdev
-- Error building panoply_cmap_annotate: 
-  The command '/bin/sh -c Rscript -e 
-  "source('https://bioconductor.org/biocLite.R'); 
-  biocLite('rhdf5')"' returned a non-zero code: 1
