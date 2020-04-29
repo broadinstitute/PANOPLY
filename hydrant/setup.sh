@@ -130,13 +130,14 @@ displayUsage() {
   echo "| -d | string | WDL Snapshot Comment which is set by default to the docker tag ID"
   echo "| -u | flag   | Push docker to dockerhub with the specified docker namespace"
   echo "| -x | flag   | Do not prune dockers from local system before building"
-  echo "| -z | flag   | Cleanup children directories before Github commit"
+  echo "| -z | flag   | Cleanup task directory"
+  echo "| -e | falg   | Cleanup hydrant and 'tasks' directory"
   echo "| -h | flag   | Print Usage"
   echo "==============================================="
   exit
 }
 
-while getopts ":t:c:w:n:m:g:d:prasfybuxzh" opt; do
+while getopts ":t:c:w:n:m:g:d:praesfybuxzh" opt; do
     case $opt in
         t) task="$OPTARG"; wf_name="$task";;
         p) p_flag="true";;
@@ -151,6 +152,7 @@ while getopts ":t:c:w:n:m:g:d:prasfybuxzh" opt; do
         y) y_flag="true";;
         b) b_flag="true";;
         u) u_flag="true";;
+        e) e_flag="true";;
         r) r_flag="true";;
         a) a_flag="true";;
         x) x_flag="true";; ##if calling from update.sh
@@ -171,11 +173,16 @@ rmData()
 cleanup()
 {
   cd $panoply/hydrant/tasks/$task/;
-  find . -name "tests" -type d -exec rm -rf {} \;
-  find . -name "src" -type d -exec rm -rf {} \;
-  find . -name "hydrant.cfg" -exec rm {} \;
-  find . -name "R-utilities" -type d -exec rm {} \;
+  rm -rf tests
+  rm -rf $task/src
+  rm -rf hydrant.cfg $task/hydrant.cfg
+  rm -rf $task/R-utilities
+}
+
+cleanup_hydrant(){
+  cd $panoply/hydrant;
   rm *.Rout
+  rm -rf tasks/targets;
 }
 
 
@@ -184,6 +191,11 @@ main()
 
   if [[ $z_flag == "true" ]]; then
     cleanup
+    exit
+  fi
+
+  if [[ $e_flag == "true" ]]; then
+    cleanup_hydrant
     exit
   fi
 
