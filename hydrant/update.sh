@@ -44,26 +44,19 @@ fi
 ## create maps 
 R CMD BATCH --vanilla "--args -p $panoply -t $task" map_dependency.r
 
-<<"comment"
 ## prune local docker images
 echo -e "$not Pruning local docker images to ensure new build..."
 yes | docker system prune --all;
-comment
 
-## <<"comment"
 ## read targets for current task
 ftarget=$panoply/hydrant/tasks/targets/$task-targets.txt
 targets=`head -n 1 $ftarget`
 IFS=';' read -ra targets <<< "$targets"
-## comment
 
-<<"comment"
 ## Build and push current parent task
 ./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x -u
 sleep 60
-comment
 
-## <<"comment"
 ## build and push targets
 base_url="https://registry.hub.docker.com/v2/repositories/"
 for target in "${targets[@]}"
@@ -76,8 +69,6 @@ do
   url=$base_url$dns/$par/tags
   latest_tag=( $( curl -s -S "$url" | jq '."results"[]["name"]' | \
                     sed -n 1p | cut -d'"' -f2 ) )
-  echo -e "dns:$dns,par:$par,tag:$tag,lat:$latest_tag,task:$target"
-  #sed -i '' "s|$tag|$latest_tag|g" $dockerfile;
-  ## ./setup.sh -t $target -n $docker_ns -y -b -g $docker_tag -x -u
+  sed -i '' "s|$tag|$latest_tag|g" $dockerfile;
+  ./setup.sh -t $target -n $docker_ns -y -b -g $docker_tag -x -u
 done
-## comment
