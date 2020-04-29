@@ -170,7 +170,7 @@ rmData()
 
 cleanup()
 {
-  cd $panoply/hydrant;
+  cd $panoply/hydrant/tasks/$task/;
   find . -name "tests" -type d -exec rm -rf {} \;
   find . -name "src" -type d -exec rm -rf {} \;
   find . -name "hydrant.cfg" -exec rm {} \;
