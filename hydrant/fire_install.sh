@@ -1,13 +1,13 @@
 #!/bin/bash
 ns="broadcptac"
-hydrant install -m pgdac_main -n $ns -d workflows/pgdac_main/pgdac_main.wdl
-#hydrant install -m pgdac_download -n $ns -d tasks/pgdac_download/pgdac_download.wdl
-#hydrant install -m pgdac_parse_sm_table -n broadcptac -d tasks/pgdac_parse_sm_table/pgdac_parse_sm_table.wdl
-#hydrant install -m pgdac_normalize_ms_data -n $ns -d tasks/pgdac_normalize_ms_data/pgdac_normalize_ms_data.wdl
-#hydrant install -m pgdac_rna_protein_correlation -n $ns -d tasks/pgdac_rna_protein_correlation/pgdac_rna_protein_correlation.wdl
-#hydrant install -m pgdac_harmonize -n $ns -d tasks/pgdac_harmonize/pgdac_harmonize.wdl
-#hydrant install -m pgdac_sampleqc -n $ns -d tasks/pgdac_sampleqc/pgdac_sampleqc.wdl
-#hydrant install -m pgdac_cna_setup -n $ns -d tasks/pgdac_cna_setup/pgdac_cna_setup.wdl
-#hydrant install -m pgdac_cna_correlation -n $ns -d tasks/pgdac_cna_correlation/pgdac_cna_correlation.wdl
-#hydrant install -m pgdac_association -n $ns -d tasks/pgdac_association/pgdac_association.wdl
+hydrant install -m panoply_main -n $ns -d workflows/panoply_main/panoply_main.wdl
+#hydrant install -m panoply_download -n $ns -d tasks/panoply_download/panoply_download.wdl
+#hydrant install -m panoply_parse_sm_table -n broadcptac -d tasks/panoply_parse_sm_table/panoply_parse_sm_table.wdl
+#hydrant install -m panoply_normalize_ms_data -n $ns -d tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl
+#hydrant install -m panoply_rna_protein_correlation -n $ns -d tasks/panoply_rna_protein_correlation/panoply_rna_protein_correlation.wdl
+#hydrant install -m panoply_harmonize -n $ns -d tasks/panoply_harmonize/panoply_harmonize.wdl
+#hydrant install -m panoply_sampleqc -n $ns -d tasks/panoply_sampleqc/panoply_sampleqc.wdl
+#hydrant install -m panoply_cna_setup -n $ns -d tasks/panoply_cna_setup/panoply_cna_setup.wdl
+#hydrant install -m panoply_cna_correlation -n $ns -d tasks/panoply_cna_correlation/panoply_cna_correlation.wdl
+#hydrant install -m panoply_association -n $ns -d tasks/panoply_association/panoply_association.wdl
 

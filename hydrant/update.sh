@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd ..
-pgdac=`pwd`
+panoply=`pwd`
 cd hydrant
 red='\033[0;31m'
 grn='\033[0;32m'
@@ -37,19 +37,43 @@ if [[ -z "$docker_ns" ]]; then
   exit
 fi
 if [[ -z "$docker_tag" ]]; then
-  echo -e "$err Docker new tag not entered. Exiting."
-  exit
+  docker_tag=`git log -1 --pretty=%h`
 fi
 
 
+## create maps 
+R CMD BATCH --vanilla "--args -p $panoply -t $task" map_dependency.r
 
-R CMD BATCH --vanilla "--args -p $pgdac -t $task" map_dependency.r
-ftarget=$pgdac/hydrant/tasks/targets/$task-targets.txt
-targets=`head -n 1 $ftarget`
-IFS=';' read -ra tasks <<< "$targets"
-echo -e "$not Pruning docker images on this system to ensure new build..."
+## prune local docker images
+echo -e "$not Pruning local docker images to ensure new build..."
 yes | docker system prune --all;
-for task in "${tasks[@]}"
+
+## read targets for current task
+ftarget=$panoply/hydrant/tasks/targets/$task-targets.txt
+targets=`head -n 1 $ftarget`
+IFS=';' read -ra targets <<< "$targets"
+
+## Build and push current parent task
+./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x -u
+./setup.sh -t $task -n $docker_ns -z
+sleep 60
+
+
+## build and push targets
+base_url="https://registry.hub.docker.com/v2/repositories/"
+for target in "${targets[@]}"
 do
-  ./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x # -u
+  dockerfile="tasks/$target/$target/dockerfile"
+  str=( $( grep "FROM" $dockerfile | cut -d' ' -f2 ) )
+  dns=( $( echo -e $str | cut -d'/' -f1 ) )
+  par=( $( echo -e $str | cut -d'/' -f2 | cut -d':' -f1 ) )
+  tag=( $( echo -e $str | cut -d'/' -f2 | cut -d':' -f2 ) )
+  url=$base_url$dns/$par/tags
+  latest_tag=( $( curl -s -S "$url" | jq '."results"[]["name"]' | \
+                    sed -n 1p | cut -d'"' -f2 ) )
+  sed -i '' "s|$tag|$latest_tag|g" $dockerfile;
+  ./setup.sh -t $target -n $docker_ns -y -b -g $docker_tag -x -u
+  ./setup.sh -t $target -n $docker_ns -z
+  sleep 60
 done
+./setup.sh -t $task -n $docker_ns -e

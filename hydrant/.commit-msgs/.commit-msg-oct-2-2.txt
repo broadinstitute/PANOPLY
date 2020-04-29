@@ -1,3 +1,0 @@
-commit-msg-oct-2/hydrant;src
-- Added the pgdac_tedmint module to the hydrant dir. 
-  * NOTE: Due to the interactive nature of the main_ss.sh, Terra workflow integration is pending...
