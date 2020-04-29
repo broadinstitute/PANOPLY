@@ -74,3 +74,4 @@ do
   ./setup.sh -t $target -n $docker_ns -z
   sleep 60
 done
+./setup.sh -t $task -n $docker_ns -e
