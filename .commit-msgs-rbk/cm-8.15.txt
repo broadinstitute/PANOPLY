@@ -1,0 +1,4 @@
+Additional Cleanup Changes
+- cleanup after main task in update.sh
+- cleanup data and dockerignore files in each task cleanup in setup.sh
+- META: this commit message

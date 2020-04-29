@@ -173,16 +173,15 @@ rmData()
 cleanup()
 {
   cd $panoply/hydrant/tasks/$task/;
-  rm -rf tests
-  rm -rf $task/src
-  rm -rf hydrant.cfg $task/hydrant.cfg
-  rm -rf $task/R-utilities
+  rm -rf tests hydrant.cfg
+
+  cd $task;
+  rm -rf src .dockerignore data hydrant.cfg R-utilities
 }
 
 cleanup_hydrant(){
   cd $panoply/hydrant;
-  rm *.Rout
-  rm -rf tasks/targets;
+  rm -rf *.Rout tasks/targets
 }
 
 

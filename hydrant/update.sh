@@ -55,7 +55,9 @@ IFS=';' read -ra targets <<< "$targets"
 
 ## Build and push current parent task
 ./setup.sh -t $task -n $docker_ns -y -b -g $docker_tag -x -u
+./setup.sh -t $task -n $docker_ns -z
 sleep 60
+
 
 ## build and push targets
 base_url="https://registry.hub.docker.com/v2/repositories/"
