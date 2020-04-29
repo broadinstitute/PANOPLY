@@ -1,0 +1,12 @@
+Update Modules with latest commit tag
+- map-dependency.r
+  * remove main task from target list
+  * compatibility with dockers without namespace or tags (ex.: r-base). store it as r.base (use make.names)
+- update.sh
+  * build and push current task separately, before targets
+  * wait for a minute for Dockerhub to reflect it
+  * collect targets written by the above R script
+  * iterate over targets
+    - collect parent task's old information from dockerfile
+    - replace old tag with latest build tag
+    - build and push with new docker namespace and tag (latest git commit)
