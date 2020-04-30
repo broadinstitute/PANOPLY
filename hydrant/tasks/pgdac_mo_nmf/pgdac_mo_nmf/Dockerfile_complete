@@ -8,25 +8,29 @@ ENV wd /home/pgdac/
 COPY . $wd
 WORKDIR $wd
 
-RUN apt-get update
-RUN apt-get install -y apt-utils
+RUN apt-get update && apt-get install -y apt-utils
 ## required for R-pacakge 'XML'
-RUN apt-get install -y libxml2-dev
+RUN apt-get update && apt-get install -y libxml2-dev
 
 ## rmarkdown
-RUN apt-get install -y libc6-dev
-RUN apt-get install -y perl
-RUN apt-get install -y pandoc
+RUN apt-get update && apt-get install -y libc6-dev
+RUN apt-get update && apt-get install -y perl
+RUN apt-get update && apt-get install -y pandoc
 
 ## ssl
-RUN apt-get install -y libssl-dev
+RUN apt-get update && apt-get install -y libssl-dev
 ## libcurl
-RUN apt-get install -y libcurl4-openssl-dev
+RUN apt-get update && apt-get install -y libcurl4-openssl-dev
 
-RUN apt-get install zlib1g-dev
+## rhd5
+RUN apt-get update && apt-get install zlib1g-dev
 
 ## install R-packages
 RUN R -e "install.packages('pacman')"
+
+## ComplexHeatmap
+RUN apt-get update && apt-get -y install tcl8.6-dev tk8.6-dev
+RUN apt-get update && apt-get -y install libpng-dev
 
 ## Bioconductor
 RUN R -e "pacman::p_install('BiocManager')"
@@ -82,7 +86,7 @@ RUN R -e "pacman::p_install('RColorBrewer')"
 
 ## NMF
 RUN R -e "pacman::p_install('NMF')"
-RUN R -e "pacman::p_install('ccfindR')"
+##RUN R -e "pacman::p_install('ccfindR')"
 
 ## annotation packages
 RUN R -e "pacman::p_install('IRanges')"

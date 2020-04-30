@@ -1,0 +1,95 @@
+##############################################
+##  multi-omics NMF
+##
+mo_nmf:
+ #tar_file: ../data/pbt-v1.1-prot-psty-rna-cnv.tar
+ 
+ ## clustering
+ kmin: 6
+ kmax: 12
+ exclude_2: TRUE
+ core_membership: 0.5 ## not working yet
+ 
+ #########################
+ ## NMF parameters
+ nrun: 50
+ seed: random
+ #method: brunet
+ bnmf: FALSE
+ 
+ ###############################
+ ## annotations to include in heatmaps
+ ## and enrichment 
+ 
+ ## categorial
+ cat_anno: [diagnosis, updated.grade, gender, Clinical.Status.at.Collection.Event, CTNNB1.status, BRAF.status]
+ ## continuous
+ cont_anno: [Age.at.Specimen.Diagnosis, Progression_Free_Survival]
+ 
+ ###############################
+ ## aestehtics
+ 
+ ## colors for 'cat_anno'
+ cat_colors:
+   diagnosis:
+     LGG: purple
+     ATRT: darkred
+     Craniopharyngioma: orange
+     Ependymoma: green
+     Ganglioglioma: cyan
+     Medulloblastoma: magenta
+     HGG: blue
+   updated.grade:
+     Unavailable: white
+     I: grey80
+     I/II: grey70
+     II: grey60
+     III: grey50
+     III/IV: grey40
+     IV: grey30
+   gender:
+     Male: '#FAEE6C'
+     Female: '#CCE7A7'
+   Clinical.Status.at.Collection.Event:
+     Alive: green
+     Deceased: red
+   CTNNB1.status:
+     WT: grey70
+     Mut: black
+     N/A: white
+   BRAF.status:
+     WT: grey70
+     Mut: black
+     
+ ## heatmap parameters
+ hm_cw: 4      ## cell width
+ hm_ch: 5      ## cell height 
+ hm_max_val: 10   ## max value at which the data will be capped in heatmap 
+ hm_max_val_z: 4  ## max value if z-scored 
+
+ #########################
+ ## filtering
+ filt_mode: global   ## global, separate, equal
+ sd_filt: 0.05
+ z_score: TRUE
+ 
+ #########################
+ ## imputation
+ impute: FALSE
+ max_na_row: 0.3 ## (not working yet)
+ max_na_col: 0.9 ## (not working yet)
+ 
+ #########################
+ ## misc
+ gene_col: geneSymbol     ##   
+ nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
+ #lib_dir: 'C:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
+
+####################################
+## ssgsea 
+mo_nmf_ssgsea: ## (not working yet)
+ nperm: 1000
+ weight: 1
+ db: ''
+ 
+ 
