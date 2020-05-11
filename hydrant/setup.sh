@@ -54,7 +54,7 @@ buildDocker() {
     yes | docker system prune --all;
   fi
   echo -e "$not Building $task locally...";
-  echo "!data\n!packages\n!R-utilities" > .dockerignore;
+  echo -e "!data\n!packages\n!R-utilities\n!src" > .dockerignore;
   if [[ $task == "panoply_libs" ]]; then
     mkdir -p packages
     cp -r $panoply/hydrant/packages/* packages/.
