@@ -8,39 +8,22 @@
 source ('config.r')
 
 
-process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclude=NULL,
+process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, 
                              additional.cols=NULL, species.filter=TRUE, expt.design=NULL) {
   # the input dataset is an ssv file that is output from Spectrum Mill
-  # that has a 2-line header -- the header is parsed to get sample and run # info
+  # if proteome=FALSE, ssv is treated as a site-level PTM report
   #
-  # exclude is a vector of TRUE/FALSE values that indicate which data columns (in order, ala cls)
-  # should be excluded from the data processing
   # additional.cols specifies extra columns to keep in the output table (and will result
   # in a gct3 file, since gct2 cannot support >2 info columns)
   # species.filter if TRUE will discard all proteins/peptides not from homo sapiens
   #
   # expt.design file should contain at least Sample.ID, Experiment and Channel columns
-  # (Sample.IDs MUST be unique, valid R names; duplicate samples should have the same sample names, 
-  #  but include a replicate.indicator, eg .REP, followed by a unique suffix: <name>.REP1)
-  # additional columns in the file will be treated as sample annotations; could be
-  # derived from Spectrum Mill reporter_sample_template (converted to long from)
-  
+  # (Sample.IDs MUST be unique, valid R names)
+  # duplicate samples can be indicated by including a Participant (+ optional Type) column
+
   
   parse.info <- function (str) {
-    # extract sample id and run number from the str
-    # used only when the experiment design file is not specified
-    if (project.name == 'cptac2.tcga') {
-      # specific to the CPTAC2 TCGA (retrospective) sample analysis
-      pieces <- strsplit (toString (str), split='/')[[1]]
-      parts <- strsplit (pieces[length(pieces)], split='_')[[1]]
-      run <- parts[1]
-      samples <- parts[2:(n.channel-1)]
-      
-      samples.run <- paste (samples, run, sep='.')
-      return (samples.run)
-    }
-    
-    # for other project.names, write appropriate sample/run extraction code
+    # if needed, write appropriate additional code to extract annotation/info from str
     return (str)
   }
 
@@ -94,11 +77,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
       ed <- read.csv (expt.design)
       col.names <- unlist (lapply (1:length(first.in.run), get.sample.names, ed))
     }
-        
-    if (project.name == 'default') {
-      # use this section to perform alternative processing based on sample.source
-    }
-    
+
     return (list (col.numbers=list (ratio.fields=ratio.fields,
                                     stddev.fields=stddev.fields,
                                     intensity.fields=intensity.fields,
@@ -183,13 +162,6 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, exclud
   for (i in 1:length (header.info$cols.list)) {
     fields <- header.info$col.numbers[[i]]
     if (length(fields) == 0) next
-    
-    if (! is.null (exclude)) {
-      # exclude requested columns from the rest of the data processing
-      keep <- !exclude
-      fields <- fields [keep]
-      header.info$col.names <- header.info$col.names [keep]
-    }
     
     data <- d [ , fields]
     colnames (data) <-  header.info$col.names
