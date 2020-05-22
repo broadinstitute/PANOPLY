@@ -292,38 +292,38 @@ esac
 ## read in arguments
 while [ "$1" != "" ]; do
   case $1 in
-  -a )     shift; parsed_data=`readlink -f $1` ;;
-  -c )     shift; code_dir=`readlink -f $1` ;;
-  -d )     shift; common_data=`readlink -f $1` ;;
-  -e )     shift; expt_file=`readlink -f $1` ;;
-  -f )     shift; filt_data=`readlink -f $1` ;;
-  -g )     shift; groups=`readlink -f $1` ;;
-  -i )     shift; input_tar=`readlink -f $1` ;;
-  -o )     shift; output_tar=`readlink -f $1` ;;
-  -m )     shift; data=$1 ;;
-  -n )     shift; norm_data=`readlink -f $1` ;;
-  -p )     shift; param_file=`readlink -f $1` ;;
-  -r )     shift; analysis_dir=`readlink -f $1` ;;
-  -s )     shift; sm_file=`readlink -f $1` ;;
-  -t )     shift; prefix=$1 ;;
-  -pe )    shift; pe=$1 ;;
+	-a )     shift; parsed_data=`readlink -f $1` ;;
+	-c )     shift; code_dir=`readlink -f $1` ;;
+	-d )     shift; common_data=`readlink -f $1` ;;
+	-e )     shift; expt_file=`readlink -f $1` ;;
+	-f )     shift; filt_data=`readlink -f $1` ;;
+	-g )     shift; groups=`readlink -f $1` ;;
+	-i )     shift; input_tar=`readlink -f $1` ;;
+	-o )     shift; output_tar=`readlink -f $1` ;;
+	-m )     shift; data=$1 ;;
+	-n )     shift; norm_data=`readlink -f $1` ;;
+	-p )     shift; param_file=`readlink -f $1` ;;
+	-r )     shift; analysis_dir=`readlink -f $1` ;;
+	-s )     shift; sm_file=`readlink -f $1` ;;
+	-t )     shift; prefix=$1 ;;
+	-pe )    shift; pe=$1 ;;
         -z )     shift; fdr_cna_corr=$1 ;;
-  -rna )   shift; rna_data=`readlink -f $1` ;;
-  -cna )   shift; cna_data=`readlink -f $1` ;;
-  -CMAPgroup )
-           shift; cmap_group=$1 ;;
-  -CMAPtype )
-           shift; cmap_type=$1 ;;
-  -CMAPscr )
-           shift; cmap_scores=$1 ;;
-  -CMAPnperm )
+	-rna )   shift; rna_data=`readlink -f $1` ;;
+	-cna )   shift; cna_data=`readlink -f $1` ;;
+	-CMAPgroup )
+	         shift; cmap_group=$1 ;;
+	-CMAPtype )
+	         shift; cmap_type=$1 ;;
+	-CMAPscr )
+	         shift; cmap_scores=$1 ;;
+	-CMAPnperm )
            shift; cmap_nperm=$1 ;;
   -CMAPpmt )
            shift; cmap_permutation=$1 ;;
-  -CMAPcfg )
-           shift; cmap_config_file=`readlink -f $1` ;;
+	-CMAPcfg )
+	         shift; cmap_config_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
-  * )      usage; exit 1
+	* )      usage; exit 1
   esac
   shift
 done
@@ -526,7 +526,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-     echo "fdr_cna_corr <- $fdr_cna_corr" >> config.r;
+		 echo "fdr_cna_corr <- $fdr_cna_corr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
@@ -629,3 +629,4 @@ fi
 # (cd correlation;
 #  R CMD BATCH --vanilla "--args $prefix $data" run-correlation.r)
 # 
+

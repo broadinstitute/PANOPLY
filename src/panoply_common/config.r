@@ -1,3 +1,5 @@
+
+
 ### Broad Institute PGDAC PIPELINE
 ### configuration and default parameters  
 
@@ -25,8 +27,9 @@ Source <- function (f) {
 
 Source ('gct-io.r')
 Source ('io.r')
-
-
+#install.packages('yaml') # Manage with Pacman?
+library(yaml)
+master_parameters <- read_yaml('')
 
 ## Directory structure
 # directories with raw, pre-processed and normalized data
@@ -98,7 +101,7 @@ set.label.type <- function (label.type) {
     assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
     assign ("refint.pat",  '^TMT_131_total$', envir = .GlobalEnv)
   }
-  
+
   ## TMT-11 (default reference channel in 131C)
   if (label.type == 'TMT11') {
     assign ("n.channels",  11, envir = .GlobalEnv)   # number of columns per experiment
@@ -117,7 +120,7 @@ set.label.type <- function (label.type) {
     assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
     assign ("refint.pat",  '^TMT_131C_total$', envir = .GlobalEnv)
   }
-  
+
   ## TMT-10 with 126 as reference channel
   if (label.type == 'TMT10.126') {
     assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
@@ -178,6 +181,11 @@ cna.data.file <- file.path (data.dir, 'cna-data.gct')
 label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126, TMT11
 set.label.type (label.type) 
 
+## Sample replicate indicator
+# Sample.IDs MUST be unique in the expt.design.file; duplicate samples should have the same 
+# sample names, but include this replicate.indicator, followed by a unique suffix: <name>REP1)
+replicate.indicator <- '.REP'
+
 ## QC
 # QC status can be indiated using a separate cls file,
 # or included in the experiment design file with column name qc.col;
@@ -207,7 +215,7 @@ apply.SM.filter <- TRUE        # if TRUE, apply numRatio based filter (use TRUE 
 norm.method <- '2comp'         # options: 2comp (default), median, mean
 alt.method <- 'median'         # alt.method for comparison -- filtered datasets not generated
 if (norm.method == alt.method) alt.method <- NULL
-# ignored if alt.method is NULL, or is identical to norm.method
+                               # ignored if alt.method is NULL, or is identical to norm.method
 
 
 ## Gene mapping
@@ -225,3 +233,17 @@ rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
 
 ## CNA/parallelism related
 pe.max.default <- 250           # default maximum processors/jobs
+
+## Project
+# data source -- for managing some operations (esp related to sample IDs and names)
+#  [all current options listed below -- uncomment only one]
+# use project.name to manage project specific processing and options
+project.name <- 'default'
+# project.name <- 'cptac2.tcga'
+
+## Disease
+# disease setting is used to set disease specific options and
+# run appropriate CNA subsets by creating run-cna-analysis-<disease>.r;
+# uncomment one (or none) below
+# disease <- 'MEDULLO'
+# disease <- 'BRCA'
