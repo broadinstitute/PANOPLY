@@ -3,8 +3,11 @@ task panoply_parse_sm_table {
   File exptDesign
   String analysisDir
   String type
+  File yaml
   String? subType
-  File? params
+  String? labelType
+  String? applySMfilter
+  String? speciesFilter
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
   String outFile = "panoply_parse_sm_table-output.tar"
@@ -16,7 +19,8 @@ task panoply_parse_sm_table {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -t ${type} -r ${analysisDir} -c ${codeDir} -d ${dataDir} -e ${exptDesign} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r --module parse_sm_table --master_yaml ${yaml} ${"--label_type" + labelType} ${"--apply_sm_filter" + applySMfilter} ${"--species_filter" + speciesFilter}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -t ${type} -r ${analysisDir} -c ${codeDir} -d ${dataDir} -e ${exptDesign} -o ${outFile} ${"-m " + subType} -p "config-custom.r"
   }
 
   output {
@@ -24,7 +28,7 @@ task panoply_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/panoply_parse_sm_table:1"
+    docker : "broadcptac/panoply_parse_sm_table:dev"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
