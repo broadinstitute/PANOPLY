@@ -19,24 +19,6 @@
 ##
 
 
-#function to parse yaml parameter file:
-function parse_yaml {
-   local prefix=$2
-   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
-   sed -ne "s|^\($s\):|\1|" \
-        -e "s|^\($s\)\($w\)$s:$s[\"']\(.*\)[\"']$s\$|\1$fs\2$fs\3|p" \
-        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
-   awk -F$fs '{
-      indent = length($1)/2;
-      vname[indent] = $2;
-      for (i in vname) {if (i > indent) {delete vname[i]}}
-      if (length($3) > 0) {
-         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
-         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
-      }
-   }'
-}
-
 ## Utility functions
 
 function usage {
@@ -98,7 +80,7 @@ Command line: $0 $all_args
 Analysis directory: $analysis_dir
 Input SM data file: $sm_file
 Input nomalized data: $norm_data
-Input filtered data: $filt_dat
+Input filtered data: $filt_data
 Input tar file: $input_tar
 Code directory: $code_dir
 Common data directory: $common_data
@@ -144,8 +126,6 @@ function createConfig {
   # copy config and concat parameters
   if [ "$param_file" = "" ]; then
     cp $code_dir/config.r config.r
-    # copy over parameters file too?
-    cp $code_dir/master-parameters.yml master-parameters.yml 
   else
     cat $code_dir/config.r $param_file > config.r
   fi
@@ -153,12 +133,12 @@ function createConfig {
 
 
 function createSubdirs {
-  # create subdirectories (if they do not exist) and copy config file and parameters
+  # create subdirectories (if they do not exisit) and copy config file
   for d in $1; do
     if [ ! -d $d ]; then
       mkdir $d
     fi
-    (cd $d; cp ../config.r config.r; cp ../master-parameters.yml master-parameters.yml)
+    (cd $d; cp ../config.r config.r)
   done
 }
 
@@ -269,39 +249,33 @@ function analysisInit {
 
 
 
-
-# pull in parameters from yaml file
-code_dir='/prot/proteomics/Projects/PGDAC/src'
-par='/master-parameters.yaml'
-eval $(parse_yaml $code_dir$par)
-
 ## set defaults
 #  work with absolute paths for file/dir links/names
-sm_file=$run_pipeline_parameters_sm_file
-norm_data=$run_pipeline_parameters_norm_data
-parsed_data=$run_pipeline_parameters_parsed_data
-filt_data=$run_pipeline_parameters_filt_data
-expt_file=$run_pipeline_parameters_expt_file
-input_tar=$run_pipeline_parameters_input_tar
-output_tar=$run_pipeline_parameters_output_tar
-analysis_dir=$run_pipeline_parameters_analysis_dir
-code_dir=$run_pipeline_parameters_code_dir
-common_data=$run_pipeline_parameters_common_data
-param_file=$run_pipeline_parameters_param_file
-data=$run_pipeline_parameters_data
-rna_data=$run_pipeline_parameters_rna_data
-cna_data=$run_pipeline_parameters_cna_data
-groups=$run_pipeline_parameters_groups
-pe=$run_pipeline_parameters_pe
-cmap_group=$run_pipeline_parameters_cmap_group
-cmap_type=$run_pipeline_parameters_cmap_type
-cmap_scores=$run_pipeline_parameters_cmap_scores
-cmap_nperm=$run_pipeline_parameters_cmap_nperm
-cmap_permutation=$run_pipeline_parameters_cmap_permutation
-cmap_config_file=$run_pipeline_parameters_cmap_config_file
-prefix=$run_pipeline_parameters_prefix
-data_source=$run_pipeline_parameters_data_source
-log_file=$run_pipeline_parameters_log_file
+sm_file=
+norm_data=
+parsed_data=
+filt_data=
+expt_file=
+input_tar=
+output_tar=
+analysis_dir=
+code_dir=
+common_data=
+param_file=
+data=
+rna_data=
+cna_data=
+groups=
+pe=
+cmap_group="all"
+cmap_type="pome"
+cmap_scores=
+cmap_nperm="0"
+cmap_permutation="tmp"
+cmap_config_file=
+prefix="proteome"
+data_source="default"
+log_file="RUN-LOG.txt"
 all_args=$@
 
 op=$1
@@ -318,38 +292,38 @@ esac
 ## read in arguments
 while [ "$1" != "" ]; do
   case $1 in
-	-a )     shift; parsed_data=`readlink -f $1` ;;
-	-c )     shift; code_dir=`readlink -f $1` ;;
-	-d )     shift; common_data=`readlink -f $1` ;;
-	-e )     shift; expt_file=`readlink -f $1` ;;
-	-f )     shift; filt_data=`readlink -f $1` ;;
-	-g )     shift; groups=`readlink -f $1` ;;
-	-i )     shift; input_tar=`readlink -f $1` ;;
-	-o )     shift; output_tar=`readlink -f $1` ;;
-	-m )     shift; data=$1 ;;
-	-n )     shift; norm_data=`readlink -f $1` ;;
-	-p )     shift; param_file=`readlink -f $1` ;;
-	-r )     shift; analysis_dir=`readlink -f $1` ;;
-	-s )     shift; sm_file=`readlink -f $1` ;;
-	-t )     shift; prefix=$1 ;;
-	-pe )    shift; pe=$1 ;;
+  -a )     shift; parsed_data=`readlink -f $1` ;;
+  -c )     shift; code_dir=`readlink -f $1` ;;
+  -d )     shift; common_data=`readlink -f $1` ;;
+  -e )     shift; expt_file=`readlink -f $1` ;;
+  -f )     shift; filt_data=`readlink -f $1` ;;
+  -g )     shift; groups=`readlink -f $1` ;;
+  -i )     shift; input_tar=`readlink -f $1` ;;
+  -o )     shift; output_tar=`readlink -f $1` ;;
+  -m )     shift; data=$1 ;;
+  -n )     shift; norm_data=`readlink -f $1` ;;
+  -p )     shift; param_file=`readlink -f $1` ;;
+  -r )     shift; analysis_dir=`readlink -f $1` ;;
+  -s )     shift; sm_file=`readlink -f $1` ;;
+  -t )     shift; prefix=$1 ;;
+  -pe )    shift; pe=$1 ;;
         -z )     shift; fdr_cna_corr=$1 ;;
-	-rna )   shift; rna_data=`readlink -f $1` ;;
-	-cna )   shift; cna_data=`readlink -f $1` ;;
-	-CMAPgroup )
-	         shift; cmap_group=$1 ;;
-	-CMAPtype )
-	         shift; cmap_type=$1 ;;
-	-CMAPscr )
-	         shift; cmap_scores=$1 ;;
-	-CMAPnperm )
+  -rna )   shift; rna_data=`readlink -f $1` ;;
+  -cna )   shift; cna_data=`readlink -f $1` ;;
+  -CMAPgroup )
+           shift; cmap_group=$1 ;;
+  -CMAPtype )
+           shift; cmap_type=$1 ;;
+  -CMAPscr )
+           shift; cmap_scores=$1 ;;
+  -CMAPnperm )
            shift; cmap_nperm=$1 ;;
   -CMAPpmt )
            shift; cmap_permutation=$1 ;;
-	-CMAPcfg )
-	         shift; cmap_config_file=`readlink -f $1` ;;
+  -CMAPcfg )
+           shift; cmap_config_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
-	* )      usage; exit 1
+  * )      usage; exit 1
   esac
   shift
 done
@@ -429,28 +403,28 @@ esac
   
 
 ## some definitions to more easily coordinate with config.r
-data_dir=$run_pipeline_parameters_data_dir
-parse_dir=$run_pipeline_parameters_parse_dir
-norm_dir=$run_pipeline_parameters_norm_dir
-harmonize_dir=$run_pipeline_parameters_harmonize_dir
-rna_dir=$run_pipeline_parameters_rna_dir
-cna_dir=$run_pipeline_parameters_cna_dir
-cmap_dir=$run_pipeline_parameters_cmap_dir
-cmap_prefix=$run_pipeline_parameters_cmap_prefix
-qc_dir=$run_pipeline_parameters_qc_dir
-assoc_dir=$run_pipeline_parameters_assoc_dir
-cluster_dir=$run_pipeline_parameters_cluster_dir
+data_dir="data"
+parse_dir="parsed-data"
+norm_dir="normalized-data"
+harmonize_dir="harmonized-data"
+rna_dir="rna"
+cna_dir="cna"
+cmap_dir="cmap"
+cmap_prefix="$cmap_group-$cmap_type"
+qc_dir="sample-qc"
+assoc_dir="association"
+cluster_dir="clustering"
 if [ "$data" = "" ]; then
   subset_str=""
 else 
   subset_str="-$data"
 fi
-expt_design_file=$run_pipeline_parameters_expt_design_file
-parsed_output=$run_pipeline_parameters_parsed_output
-normalized_output=$run_pipeline_parameters_normalized_output
-filtered_output=$run_pipeline_parameters_filtered_output
-rna_data_file=$run_pipeline_parameters_rna_data_file
-cna_data_file=$run_pipeline_parameters_cna_data_file
+expt_design_file="exptdesign.csv"
+parsed_output="$prefix-ratio.gct"
+normalized_output="$prefix-ratio-norm.gct"
+filtered_output="$prefix-ratio-norm-NArm$subset_str.gct"
+rna_data_file="rna-data.gct"
+cna_data_file="cna-data.gct"
 
 
 ## INITIALIZATION 
@@ -552,7 +526,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-		 echo "fdr_cna_corr <- $fdr_cna_corr" >> config.r;
+     echo "fdr_cna_corr <- $fdr_cna_corr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
@@ -615,8 +589,8 @@ case $op in
                  label=`echo $analysis_dir | sed -E 's,.*/(.*).*,\1,'`
                  tmpdir='.' ## temp-folder
                   
-                 ## extract sd threshold from 'master-parameters.yml'   
-                 sdclust=$config_r_parameters_missing_values_and_filtering_clustering_sd_threshold
+                 ## extract sd threshold from 'config.r'   
+                 sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | awk -F' ' '{print $3}'`
                  
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
@@ -655,4 +629,3 @@ fi
 # (cd correlation;
 #  R CMD BATCH --vanilla "--args $prefix $data" run-correlation.r)
 # 
-

@@ -1,5 +1,3 @@
-
-
 ### Broad Institute PGDAC PIPELINE
 ### configuration and default parameters  
 
@@ -28,22 +26,17 @@ Source <- function (f) {
 Source ('gct-io.r')
 Source ('io.r')
 
-# Load 'yaml' package with pacman to read in master parameter file:
-if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
-p_load('yaml')
-#yml_dir <- getwd() # find the parameters file directory
-#yml_dir <- file.path("master_parameters.yml") # path to file
-master.parameters <- read_yaml("master-parameters.yml")
+
 
 ## Directory structure
 # directories with raw, pre-processed and normalized data
 # also includes other analysis directories
 # directory structure is created by appropriate options in run-pipeline.sh
 # (changes to this will require corresponding changes in run-pipeline.sh)
-data.dir <- master.parameters$config_r_parameters$data_dir #'../data'
-pre.dir <- master.parameters$config_r_parameters$pre_dir #'../parsed-data'
-norm.dir <- master.parameters$config_r_parameters$norm_dir #'../normalized-data'
-harmonize.dir <- master.parameters$config_r_parameters$harmonize_dir #'../harmonized-data'
+data.dir <- '../data'
+pre.dir <- '../parsed-data'
+norm.dir <- '../normalized-data'
+harmonize.dir <- '../harmonized-data'
 
 
 ## Command line arguments
@@ -105,7 +98,7 @@ set.label.type <- function (label.type) {
     assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
     assign ("refint.pat",  '^TMT_131_total$', envir = .GlobalEnv)
   }
-
+  
   ## TMT-11 (default reference channel in 131C)
   if (label.type == 'TMT11') {
     assign ("n.channels",  11, envir = .GlobalEnv)   # number of columns per experiment
@@ -124,7 +117,7 @@ set.label.type <- function (label.type) {
     assign ("unique_pep.pat",  '^unique_peptides$', envir = .GlobalEnv)
     assign ("refint.pat",  '^TMT_131C_total$', envir = .GlobalEnv)
   }
-
+  
   ## TMT-10 with 126 as reference channel
   if (label.type == 'TMT10.126') {
     assign ("n.channels",  10, envir = .GlobalEnv)   # number of columns per experiment
@@ -167,10 +160,10 @@ set.label.type <- function (label.type) {
 
 ## Input data location
 # input files are copies to this location so that the tarball has all the data
-input.data.file <- file.path (data.dir, paste (type, master.parameters$config_r_parameters$input_data_file, sep=''))
-expt.design.file <- file.path (data.dir, master.parameters$config_r_parameters$expt_design_file)
-rna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$rna_data_file)
-cna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$cna_data_file)
+input.data.file <- file.path (data.dir, paste (type, '-SMout.ssv', sep=''))
+expt.design.file <- file.path (data.dir, 'exptdesign.csv')
+rna.data.file <- file.path (data.dir, 'rna-data.gct')
+cna.data.file <- file.path (data.dir, 'cna-data.gct')
 
 
 
@@ -182,7 +175,7 @@ cna.data.file <- file.path (data.dir, master.parameters$config_r_parameters$cna_
 
 
 ## Label type for MS experiment (set.label.type must be called to initialize variables)
-label.type <- master.parameters$config_r_parameters$label_type_for_MS_exp$label_type   # default TMT10, alternatives: iTRAQ4, TMT10.126, TMT11
+label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126, TMT11
 set.label.type (label.type) 
 
 ## QC
@@ -190,45 +183,45 @@ set.label.type (label.type)
 # or included in the experiment design file with column name qc.col;
 # if neither is found, all samples are marked as qc.pass.label
 # if both exist, the experiment design file supercedes
-sampleQC.cls <- master.parameters$config_r_parameters$QC$sampleQC_cls
-qc.col <- master.parameters$config_r_parameters$QC$qc_col
-qc.pass.label <- master.parameters$config_r_parameters$QC$qc_pass_label
+sampleQC.cls <- NULL
+qc.col <- 'QC.status'
+qc.pass.label <- 'QC.pass'
 
 
 ## Output precision for gct tables
-ndigits <- master.parameters$config_r_parameters$output_precision$ndigits   
+ndigits <- 5    
 
 
 ## Missing values and filtering
-na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$na_max                 # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
-min.numratio.fraction <- master.parameters$config_r_parameters$missing_values_and_filtering$min_numratio_fraction  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
-sample.na.max <- master.parameters$config_r_parameters$missing_values_and_filtering$sample_na_max           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
-nmiss.factor <- master.parameters$config_r_parameters$missing_values_and_filtering$nmiss_factor            # for some situations, a more stringent condition is needed
-sd.filter.threshold <-master.parameters$config_r_parameters$missing_values_and_filtering$sd_filter_threshold     # SD threshold for SD filtering
-clustering.sd.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering_sd_threshold   # threshold for filtering data before consensus clustering
-clustering.na.threshold <- master.parameters$config_r_parameters$missing_values_and_filtering$clustering_na_threshold # max fraction of missing values for clustering; rest are imputed
-apply.SM.filter <- master.parameters$config_r_parameters$missing_values_and_filtering$apply_SM_filter        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+na.max <- 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+min.numratio.fraction <- 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
+sample.na.max <- 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+nmiss.factor <- 0.5            # for some situations, a more stringent condition is needed
+sd.filter.threshold <- 0.5     # SD threshold for SD filtering
+clustering.sd.threshold <- 2   # threshold for filtering data before consensus clustering
+clustering.na.threshold <- 0.5 # max fraction of missing values for clustering; rest are imputed
+apply.SM.filter <- TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
 
 
 ## Normalization
-norm.method <- master.parameters$config_r_parameters$normalization$norm_method         # options: 2comp (default), median, mean
-alt.method <- master.parameters$config_r_parameters$normalization$alt_method         # alt.method for comparison -- filtered datasets not generated
+norm.method <- '2comp'         # options: 2comp (default), median, mean
+alt.method <- 'median'         # alt.method for comparison -- filtered datasets not generated
 if (norm.method == alt.method) alt.method <- NULL
-                               # ignored if alt.method is NULL, or is identical to norm.method
+# ignored if alt.method is NULL, or is identical to norm.method
 
 
 ## Gene mapping
 # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
-official.genesyms <- master.parameters$config_r_parameters$gene_mapping$official_genesyms
-gene.id.col <- master.parameters$config_r_parameters$gene_mapping$gene_id_col
-protein.gene.map <- master.parameters$config_r_parameters$gene_mapping$protein_gene_map
+official.genesyms <- 'gene-symbol-map.csv'
+gene.id.col <- 'geneSymbol'
+protein.gene.map <- 'RefSeq-GeneName-Map-20170701.txt'
 # policy for combining/collapsing duplicate gene names -- uncomment appropriate line to use
 # duplicate.gene.policy <- ifelse (type == 'phosphoproteome', 'median', 'maxvar')  
-duplicate.gene.policy <- master.parameters$config_r_parameters$gene_mapping$duplicate_gene_policy
+duplicate.gene.policy <- 'maxvar'
 
 ## RNA related
-rna.output.prefix <- master.parameters$config_r_parameters$rna$rna_output_prefix  # output prefix for tables creates during RNA analysis
-rna.sd.threshold <- master.parameters$config_r_parameters$rna$rna_sd_threshold   # for variation filter (set to NA to disable)
+rna.output.prefix <- 'rna-seq'  # output prefix for tables creates during RNA analysis
+rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
 
 ## CNA/parallelism related
 pe.max.default <- 250           # default maximum processors/jobs
