@@ -57,6 +57,7 @@ function usage {
   echo "   <CMAP-permutation-scores-directory> is directory containing CMAP scores for permutation"
   echo "   <CMAP-config-file> is file with CMAP analysis parameters to over-ride defaults"
   echo "   Input Requirements:"
+  echo "     ALL OPERATIONS require -t, optional (-p), in addition to the following options"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
   echo "     OPERATION inputNorm requires (-n, -r, -c)"
   echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from inputSM "
@@ -636,7 +637,7 @@ case $op in
                  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r
              );;
 #   immune: immune analysis using RNA expression data
-    assoc )     analysisInit "immune"
+    immune )     analysisInit "immune"
                 for f in immune-analysis.r; do cp $code_dir/$f $immune_dir/$f; done
                 (cd $immune_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" immune-analysis.r)

@@ -3,7 +3,7 @@ source ('config.r')
 
 
 if (!require("pacman")) install.packages ("pacman")
-pacman::p_load (RColorBrewer, ComplexHeatmap, circlize, cluster, ape, tidyr, ggplot2, cmapR, dplyr)
+pacman::p_load (RColorBrewer, ComplexHeatmap, circlize, cluster, ape, tidyr, ggplot2, dplyr, devtools)
 if (! require (estimate)) {
   # only available at R forge
   install.packages("estimate", repos="http://r-forge.r-project.org", dependencies=TRUE)
@@ -77,7 +77,6 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
                              'Subtype5.ImmunologicallyQuiet',
                              'Subtype6.TGFBetaDominant')
     write.csv (subtype, paste0 (out.prefix, '.csv'), row.names=FALSE)
-    
     return (subtype)
   }
   rna.subtype <- runImmuneSubtyping (rna@mat, "immune-subtype")
@@ -91,7 +90,8 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
     # (format similar to expt-design-file with Sample.ID and additional columns)
     # enrichement test will be run for each additional column
     
-    subgroup.table <- read.csv (immune.enrichment.subgroups)
+    subgroup.table <- read.csv (groups.file)
+    rownames (subgroup.table) <- subgroup.table[,'Sample.ID']
     cls.list <- setdiff (colnames (subgroup.table), 'Sample.ID')
     
     rownames (rna.subtype) <- rna.subtype[,'Sample.ID']     
@@ -136,11 +136,14 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
   results <- t (rna.XC [, -(1:3 + ncol (rna.XC))])
   if (!is.null (groups.file)) {
     samples <- as.character (subgroup.table[,'Sample.ID'])
-    annot <- subgroup.table}
-  else {
+    samples <- samples [ samples %in% colnames (results) ]
+    annot <- subgroup.table [samples,]
+  } else {
     samples <- colnames (results)
     annot <- data.frame (Sample.ID=samples)
   }
+  rownames (annot) <- samples
+  
   annot <- annot %>%
     mutate_at (names (.[, sapply (., function (x) length(unique(x)) <= 5)]), funs (factor(.))) %>%
     mutate (xCell.ImmuneScore = rna.XC[samples, 'ImmuneScore']) %>%
@@ -149,13 +152,14 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
     mutate (ESTIMATE.TumorPurity = rna.ES[samples, 'TumorPurity']) %>%
     mutate (Immune.Subtype = factor (rna.subtype[samples, 'Immune.Subtype'])) %>%
     select (-Sample.ID)
-  annotation <- HeatmapAnnotation (annot, annotation_height = 0.5, annotation_width = 0.5,
+  annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.5, annotation_width = 0.5,
                                    show_annotation_name=TRUE)
   heatmap <- Heatmap (results, top_annotation=annotation, 
-                      row_names_gp = gpar (fontsize=6), column_names_gp = gpar(fontsize=6),
-                      clustering_distance_columns='pearson', clustering_distance_rows='pearson')
-  pdf ('xcell-scores-heatmap.pdf', width=heatmap.width, height=heatmap.height,
-       pointsize=6)
+                      row_names_gp = gpar (fontsize=8), column_names_gp = gpar(fontsize=8),
+                      clustering_distance_columns='pearson', clustering_distance_rows='pearson',
+                      width=heatmap.width, height=heatmap.height)
+  pdf ('xcell-scores-heatmap.pdf', pointsize=8, 
+       height=heatmap.height+10, width=heatmap.width+10)
   draw (heatmap)
   dev.off()
   
@@ -169,7 +173,7 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
     spread (type, value)
   p <- ggplot (aes (x=ESTIMATE, y=xCell, group=score, color=score), data=scatter.data) + geom_point() +
     facet_wrap(~score, scales='free')
-  ggsave ('xCell-vs-ESTIMATE-plots.pdf')
+  ggsave ('xCell-vs-ESTIMATE-plots.pdf', width=8, height=4)
 }
 
 
@@ -181,7 +185,7 @@ if (!interactive()) {
   heatmap.width <- ifelse (exists ("immune.heatmap.width"), immune.heatmap.width, 10)
   heatmap.height <- ifelse (exists ("immune.heatmap.height"), immune.heatmap.height, 15)
   
-  run.immune.analysis (rna.data=rna.data, groups.file=group.file,
+  run.immune.analysis (rna.data=rna.data, groups.file=groups.file,
                        FDR=FDR, heatmap.width=heatmap.width, heatmap.height=heatmap.height)
 }
 
