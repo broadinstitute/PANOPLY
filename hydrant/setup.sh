@@ -78,7 +78,6 @@ pushDocker()
   cd $panoply/hydrant/tasks/$task/$task/;
   echo -e "$not Pushing $task:$docker_tag to dockerhub...";
   docker push $docker_ns/$task:$docker_tag;
-  open https://hub.docker.com/repository/docker/$docker_ns/$task
 }
 
 # replace the docker namespace and docker tag in the existing WDL
