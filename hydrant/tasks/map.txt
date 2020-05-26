@@ -7,6 +7,7 @@
 ;panoply_download
 ;panoply_filter
 ;panoply_harmonize
+;panoply_immune_analysis
 ;panoply_parse_sm_table
 ;panoply_rna_protein_correlation
 ;panoply_sampleqc

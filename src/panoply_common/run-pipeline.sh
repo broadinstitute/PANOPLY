@@ -23,13 +23,13 @@
 
 function usage {
   echo "Usage: $0 OPERATION -i <input-tarball> -o <output-tarball>"
-  echo "             -s <SM-output-file>  -a <parsed-data>"
+  echo "             -s <SM-output-file>   -a <parsed-data>"
   echo "             -n <normalized-data>  -f <filtered-data>"
   echo "             -e <expt-design-file> -r <analysis_directory>"
-  echo "             -c <common-code-dir> -d <common-data-dir>"
-  echo "             -p <parameters-file> -t <type>  -m <data>"
+  echo "             -c <common-code-dir>  -d <common-data-dir>"
+  echo "             -p <parameters-file>  -t <type>  -z <FDR>"
+  echo "             -m <data> -g <groups> -pe <#processors>"
   echo "             -rna <rna-expression> -cna <copy-number-data>"
-  echo "             -g <groups> -pe <#processors>"
   echo "             -CMAPgroup <CMAP-group-name>  -CMAPtype <CMAP-data-type>"
   echo "             -CMAPnperm <CMAP # permutations> -CMAPpmt <CMAP-permutation-scores-directory>"
   echo "             -CMAPscr <CMAP-subset-scores-directory> -CMAPcfg <CMAP-config-file>" 
@@ -44,6 +44,7 @@ function usage {
   echo "   <analysis_directory> is the directory name where the analysis is performed"
   echo "       if path is specified, only the basename is used; also used as tarfile name"
   echo "   <type> is proteome [default] or phosphoproteome"
+  echo "   <FDR> FDR threshold for operation"
   echo "   <data> is QC.pass [default] (or other subtype)"
   echo "   <rna-expression> GCT file with RNA expression data"
   echo "   <copy-number-data> GCT file with CNA data"
@@ -56,6 +57,7 @@ function usage {
   echo "   <CMAP-permutation-scores-directory> is directory containing CMAP scores for permutation"
   echo "   <CMAP-config-file> is file with CMAP analysis parameters to over-ride defaults"
   echo "   Input Requirements:"
+  echo "     ALL OPERATIONS require -t, optional (-p), in addition to the following options"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
   echo "     OPERATION inputNorm requires (-n, -r, -c)"
   echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from inputSM "
@@ -63,11 +65,12 @@ function usage {
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
-  echo "     OPERATION CNAcorr requires (-i,); -i is tar output from CNAsetup"
+  echo "     OPERATION CNAcorr requires (-i,), optional (-z); -i is tar output from CNAsetup"
   echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
   echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
+  echo "     OPERATION immune required (-i, -c) OR (-rna, -r, -c), optional (-g, -z); -i is tar output from harmonize (with RNA data)"
   echo "   Use -h to print this message."
 }
 
@@ -167,13 +170,16 @@ function analysisInit {
     echo "Directory not found: $analysis_dir/$norm_dir ... abort"
     exit 1
   fi
-  if [ "$filt_data" = "" ]; then
-    if [ ! -f $norm_dir/$filtered_output ]; then
-      echo "Filtered dataset not found: $norm_dir/$filtered_output ... abort"
-      exit 1
+  # immune analysis needs only RNA data -- all others need filtered data
+  if [ "$analysis" != "immune" ]; then 
+    if [ "$filt_data" = "" ]; then
+      if [ ! -f $norm_dir/$filtered_output ]; then
+        echo "Filtered dataset not found: $norm_dir/$filtered_output ... abort"
+        exit 1
+      fi
+    else
+      cp $filt_data $norm_dir/$filtered_output
     fi
-  else
-    cp $filt_data $norm_dir/$filtered_output
   fi
   
   case $analysis in
@@ -211,6 +217,9 @@ function analysisInit {
                   exit 1
                 else
                   createSubdirs $cna_dir
+                  if [ "$fdr" != "" ]; then
+                  	 echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
+                  fi
                 fi ;;
     CMAPsetup ) if [ ! -f $cna_dir/$cmap_prefix-matrix.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-sigevents.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-pval.csv -o ! -f $data_dir/cmap-knockdown-genes-list.txt ]; then
                   echo "Required initialization files not found -- run CNAcorr first ... abort"
@@ -239,9 +248,27 @@ function analysisInit {
     cluster )   createSubdirs $cluster_dir
                 # add to config.r if specified 
                 if [ "$groups" != "" ]; then
-                    # class vectors to determine cluster enrichment
-                    echo "cluster.enrichment.subgroups <- \"$groups\"" >> $cluster_dir/config.r
-                    cp $groups $cluster_dir/.
+                  # class vectors to determine cluster enrichment
+                  echo "cluster.enrichment.subgroups <- \"$groups\"" >> $cluster_dir/config.r
+                  cp $groups $cluster_dir/.
+                fi ;;
+    immune )    if [ "$rna_data" = "" ]; then
+                  if [ ! -f $data_dir/$rna_data_file ]; then
+                    echo "RNA expression data not found ... abort"
+                    exit 1
+                  fi
+                else
+                  cp $rna_data $data_dir/$rna_data_file
+                fi
+                createSubdirs $immune_dir
+                # add to config.r if specified 
+                if [ "$fdr" != "" ]; then
+                	 echo "immune.enrichment.fdr <- $fdr" >> $immune_dir/config.r;
+                fi
+                if [ "$groups" != "" ]; then
+                  # class vectors to determine cluster enrichment
+                  echo "immune.enrichment.subgroups <- \"$groups\"" >> $immune_dir/config.r
+                  cp $groups $immune_dir/.
                 fi ;;
     * )
   esac
@@ -267,6 +294,7 @@ rna_data=
 cna_data=
 groups=
 pe=
+fdr=
 cmap_group="all"
 cmap_type="pome"
 cmap_scores=
@@ -283,7 +311,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster) # OK
+  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -307,7 +335,7 @@ while [ "$1" != "" ]; do
 	-s )     shift; sm_file=`readlink -f $1` ;;
 	-t )     shift; prefix=$1 ;;
 	-pe )    shift; pe=$1 ;;
-        -z )     shift; fdr_cna_corr=$1 ;;
+  -z )     shift; fdr=$1 ;;
 	-rna )   shift; rna_data=`readlink -f $1` ;;
 	-cna )   shift; cna_data=`readlink -f $1` ;;
 	-CMAPgroup )
@@ -396,6 +424,12 @@ case $op in
                 usage
                 exit 1
               fi ;;
+  immune )   if [[ ("$input_tar" = "")  &&  ("rna_data" = "" || "$analysis_dir" = "")   \
+                   || "$code_dir" = "" ]]
+             then
+               usage
+               exit 1
+             fi ;;
 
   * )        usage           # unknown operation
              exit 1
@@ -414,6 +448,7 @@ cmap_prefix="$cmap_group-$cmap_type"
 qc_dir="sample-qc"
 assoc_dir="association"
 cluster_dir="clustering"
+immune_dir="immune-analysis"
 if [ "$data" = "" ]; then
   subset_str=""
 else 
@@ -526,7 +561,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-		 echo "fdr_cna_corr <- $fdr_cna_corr" >> config.r;
+		            echo "fdr_cna_corr <- $fdr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
@@ -601,6 +636,12 @@ case $op in
                  R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
                  R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r
              );;
+#   immune: immune analysis using RNA expression data
+    immune )     analysisInit "immune"
+                for f in immune-analysis.r; do cp $code_dir/$f $immune_dir/$f; done
+                (cd $immune_dir;
+                 R CMD BATCH --vanilla "--args $prefix $data" immune-analysis.r)
+             ;;
 #   Unknown operation
     * )         echo "ERROR: Unknown OPERATION $op"; exit 1 
 esac
