@@ -47,7 +47,7 @@ task panoply_immune_analysis {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_immune_analysis:70df9e7"
+    docker : "broadcptacdev/panoply_immune_analysis:92b3434"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
