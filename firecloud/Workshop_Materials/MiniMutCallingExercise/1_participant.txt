@@ -1,1 +1,0 @@
-entity:participant_id	age	gender	diseaseHCC1143_WE	52	F	"TNM stage IIA, grade 3, primary ductal carcinoma"HCC1954_100_gene	61	F	"TNM stage IIA, grade 3, ductal carcinoma"
