@@ -1,10 +1,10 @@
 
 
 source ('config.r')
-source ('misc.r')
-source ('gct-io.r')
-source ('map-to-genes.r')
-source ('process_duplicate_genes.r')
+Source ('misc.r')
+Source ('gct-io.r')
+Source ('map-to-genes.r')
+Source ('process_duplicate_genes.r')
 
 ##
 ## harmonized RNA, CNA and PTM/proteome data by selecting common
