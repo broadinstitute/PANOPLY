@@ -1,4 +1,4 @@
-FROM broadcptacdev/panoply_common:70df9e7
+FROM broadcptacdev/panoply_common:latest
 MAINTAINER rkothadi@broadinstitute.org
 
 RUN apt-get update \

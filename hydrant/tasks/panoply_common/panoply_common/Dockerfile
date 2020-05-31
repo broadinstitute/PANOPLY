@@ -1,4 +1,4 @@
-FROM broadcptacdev/panoply_utils:60dd03b
+FROM broadcptacdev/panoply_utils:latest
 MAINTAINER rkothadi@broadinstitute.org
 
 COPY src /prot/proteomics/Projects/PGDAC/src

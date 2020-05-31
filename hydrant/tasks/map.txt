@@ -13,7 +13,7 @@
 ;panoply_sampleqc
 =panoply_utils
 ;panoply_common
-=r.base
+=r.base.3.6.3
 ;panoply_libs
 =panoply_filter
 ;panoply_normalize_ms_data
