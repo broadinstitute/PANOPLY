@@ -22,7 +22,7 @@ task panoply_sampleqc {
   }
 
   runtime {
-    docker : "broadcptac/panoply_sampleqc:1"
+    docker : "broadcptacdev/panoply_sampleqc:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

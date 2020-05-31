@@ -1,4 +1,4 @@
-FROM broadcptacdev/panoply_libs:a2bba47
+FROM broadcptacdev/panoply_libs:latest
 MAINTAINER rkothadi@broadinstitute.org
 
 COPY R-utilities/ /prot/proteomics/Projects/R-utilities

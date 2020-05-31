@@ -43,7 +43,7 @@ task panoply_normalize_ms_data {
   }
 
   runtime {
-    docker : "broadcptac/panoply_normalize_ms_data:1"
+    docker : "broadcptacdev/panoply_normalize_ms_data:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

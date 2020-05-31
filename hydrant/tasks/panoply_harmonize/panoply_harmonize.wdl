@@ -51,7 +51,7 @@ task panoply_harmonize {
   }
 
   runtime {
-    docker : "broadcptac/panoply_harmonize:1"
+    docker : "broadcptacdev/panoply_harmonize:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
