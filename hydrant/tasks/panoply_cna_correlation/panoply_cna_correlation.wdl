@@ -1,7 +1,7 @@
 task panoply_cna_correlation {
   File tarball   # output from panoply_cna_setup
   String type
-  Float fdr_cna_corr
+  Float fdr_cna_corr = 0.01
   String? subType
   File? params
   String outFile = "panoply_cna_correlation-output.tar"
