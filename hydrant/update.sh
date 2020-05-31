@@ -58,15 +58,6 @@ IFS=';' read -ra targets <<< "$targets"
 base_url="https://registry.hub.docker.com/v2/repositories/"
 for target in "${targets[@]}"
 do
-  dockerfile="tasks/$target/$target/dockerfile"
-  str=( $( grep "FROM" $dockerfile | cut -d' ' -f2 ) )
-  dns=( $( echo -e $str | cut -d'/' -f1 ) )
-  par=( $( echo -e $str | cut -d'/' -f2 | cut -d':' -f1 ) )
-  tag=( $( echo -e $str | cut -d'/' -f2 | cut -d':' -f2 ) )
-  url=$base_url$dns/$par/tags
-  latest_tag=( $( curl -s -S "$url" | jq '."results"[]["name"]' | \
-                    sed -n 1p | cut -d'"' -f2 ) )
-  sed -i '' "s|$tag|$latest_tag|g" $dockerfile;
   ./setup.sh -t $target -n $docker_ns -y -b -g $docker_tag -x -u
   ./setup.sh -t $target -n $docker_ns -z
   sleep 60
