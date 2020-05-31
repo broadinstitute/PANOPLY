@@ -54,14 +54,16 @@ workflow panoply_main {
     input:
       input_ds = input_rna_v3,
       gene_set_database = geneset_db,
-      output_prefix = job_identifier
+      output_prefix = job_identifier,
+      level = "gc"
   }
 
   call ssgsea_wdl.pgdac_ssgsea as ssgsea_ome {
     input:
       input_ds = input_pome,
       gene_set_database = geneset_db,
-      output_prefix = job_identifier
+      output_prefix = job_identifier,
+      level = "gc"
   }
   
   if ( run_ptmsea == "true" ){
@@ -70,7 +72,8 @@ workflow panoply_main {
         input:
           input_ds = input_pome,
           gene_set_database = ptm_db,
-          output_prefix = job_identifier
+          output_prefix = job_identifier,
+          level = "ssc"
       }
     }
   } 
@@ -160,7 +163,8 @@ workflow panoply_main {
       input:
         input_ds = "${f}",
         gene_set_database = geneset_db,
-        output_prefix = job_identifier
+        output_prefix = job_identifier,
+        level = "gc"
     }
   }
 
@@ -185,7 +189,8 @@ workflow panoply_main {
       input:
         input_ds = "${f}",
         gene_set_database = geneset_db,
-        output_prefix = job_identifier
+        output_prefix = job_identifier,
+        level = "gc"
     }
   }
 

@@ -31,4 +31,4 @@ install_wkflow_wdl(){
 # install_task_wdl panoply_rna_protein_correlation
 # install_task_wdl panoply_sampleqc
 
-# install_wkflow_wdl unified_panoply
+# install_wkflow_wdl panoply_main
