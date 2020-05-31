@@ -24,7 +24,7 @@ task panoply_accumulate {
   }
 
   runtime {
-    docker      : "broadcptac/panoply_accumulate:1"
+    docker      : "broadcptacdev/panoply_accumulate:latest"
     memory      : select_first ([memory, 16]) + "GB"
     disks       : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu         : select_first ([num_threads, 1]) + ""

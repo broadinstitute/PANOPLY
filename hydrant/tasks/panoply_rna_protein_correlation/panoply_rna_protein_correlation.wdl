@@ -46,7 +46,7 @@ task panoply_rna_protein_correlation {
   }
 
   runtime {
-    docker : "broadcptac/panoply_rna_protein_correlation:1"
+    docker : "broadcptacdev/panoply_rna_protein_correlation:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

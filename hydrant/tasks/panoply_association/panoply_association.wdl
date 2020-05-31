@@ -44,7 +44,7 @@ task panoply_association {
   }
 
   runtime {
-    docker : "broadcptac/panoply_association:1"
+    docker : "broadcptacdev/panoply_association:latest"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

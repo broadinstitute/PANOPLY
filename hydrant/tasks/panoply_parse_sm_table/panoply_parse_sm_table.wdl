@@ -24,7 +24,7 @@ task panoply_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/panoply_parse_sm_table:1"
+    docker : "broadcptacdev/panoply_parse_sm_table:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
