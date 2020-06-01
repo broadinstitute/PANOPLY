@@ -21,6 +21,22 @@
 
 ## Utility functions
 
+function parse_yaml() {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
 function usage {
   echo "Usage: $0 OPERATION -i <input-tarball> -o <output-tarball>"
   echo "             -s <SM-output-file>  -a <parsed-data>"
@@ -250,7 +266,9 @@ function analysisInit {
 
 
 ## set defaults
-#  work with absolute paths for file/dir links/names
+# work with absolute paths for file/dir links/names
+# Get from final output yaml file:
+eval $(parse_yaml final_output_params.yaml)
 sm_file=
 norm_data=
 parsed_data=
@@ -267,12 +285,12 @@ rna_data=
 cna_data=
 groups=
 pe=
-cmap_group="all"
-cmap_type="pome"
-cmap_scores=
-cmap_nperm="0"
-cmap_permutation="tmp"
-cmap_config_file=
+cmap_group="$DEV_directory_and_file_names_cmap_group"
+cmap_type="$DEV_directory_and_file_names_cmap_type"
+cmap_scores=$DEV_directory_and_file_names_cmap_scores
+cmap_nperm=$DEV_directory_and_file_names_cmap_nperm
+cmap_permutation="$DEV_directory_and_file_names_cmap_permutation"
+cmap_config_file=$DEV_directory_and_file_names_cmap_config_file
 prefix="proteome"
 data_source="default"
 log_file="RUN-LOG.txt"
@@ -403,28 +421,28 @@ esac
   
 
 ## some definitions to more easily coordinate with config.r
-data_dir="data"
-parse_dir="parsed-data"
-norm_dir="normalized-data"
-harmonize_dir="harmonized-data"
-rna_dir="rna"
-cna_dir="cna"
-cmap_dir="cmap"
-cmap_prefix="$cmap_group-$cmap_type"
-qc_dir="sample-qc"
-assoc_dir="association"
-cluster_dir="clustering"
+data_dir="$DEV_directory_and_file_names_data_dir"
+parse_dir="$DEV_directory_and_file_names_parse_dir"
+norm_dir="$DEV_directory_and_file_names_norm_dir"
+harmonize_dir="$DEV_directory_and_file_names_harmonize_dir"
+rna_dir="$DEV_directory_and_file_names_rna_dir"
+cna_dir="$DEV_directory_and_file_names_cna_dir"
+cmap_dir="$DEV_directory_and_file_names_cmap_dir"
+cmap_prefix="$DEV_directory_and_file_names_cmap_prefix"
+qc_dir="$DEV_directory_and_file_names_qc_dir"
+assoc_dir="$DEV_directory_and_file_names_assoc_dir"
+cluster_dir="$DEV_directory_and_file_names_cluster_dir"
 if [ "$data" = "" ]; then
   subset_str=""
 else 
   subset_str="-$data"
 fi
-expt_design_file="exptdesign.csv"
-parsed_output="$prefix-ratio.gct"
-normalized_output="$prefix-ratio-norm.gct"
-filtered_output="$prefix-ratio-norm-NArm$subset_str.gct"
-rna_data_file="rna-data.gct"
-cna_data_file="cna-data.gct"
+expt_design_file="$DEV_directory_and_file_names_expt_design_file"
+parsed_output="$DEV_directory_and_file_names_parsed_output"
+normalized_output="$DEV_directory_and_file_names_normalized_output"
+filtered_output="$DEV_directory_and_file_names_filtered_output"
+rna_data_file="$DEV_directory_and_file_names_rna_data_dir"
+cna_data_file="$DEV_directory_and_file_names_cna_data_file"
 
 
 ## INITIALIZATION 

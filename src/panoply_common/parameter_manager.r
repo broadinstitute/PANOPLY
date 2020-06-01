@@ -42,6 +42,11 @@ option_list <- list(
     #cons_cluster:
   make_option(c("--clustering_sd_threshold"), type = "integer", dest = "clustering_sd_threshold", help = "threshold for filtering data before consensus clustering"),
   make_option(c("--clustering_na_threshold"), type = "double", dest = "clustering_na_threshold", help = "max fraction of missing values for clustering; rest are imputed"),
+  #immune_analysis:
+  make_option(c("--immune_enrichment_fdr"), type = "double", dest = "immune_enrichment_fdr", help = "fdr value for immune analysis"),
+  make_option(c("--immune_enrichment_groups"), type = "", dest = "immune_enrichment_groups", help = "immune_enrichment_groups for immune analysis"),
+  make_option(c("--immune_heatmap_width"), type = "", dest = "immune_heatmap_width", help = "immune_heatmap_width for immune analysis"),
+  make_option(c("--immune_heatmap_height"), type = "", dest = "immune_heatmap_height", help = "immune_heatmap_height for immune analysis"),  
     #cmap_analysis:
   make_option(c("--cna_threshold"), type = "double", dest = 'cna_threshold', help = "copy number up/down if abs (log2(copy number) - 1) is > cna.threshold (default: 0.3)"),
   make_option(c("--cna_effects_threshold"), type = "integer", dest = 'cna_effects_threshold', help = "min number of samples with up/down copy number to include gene for CMAP analysis (default: 15)"),
@@ -108,7 +113,13 @@ read_yaml_file <- function(yaml){
 # Write out final yaml file:
 write_yaml_file <- function(yaml){
   yaml_name <- file('final_output_params.yaml', "w")
-  write_yaml(yaml, yaml_name)
+  write_yaml(yaml, yaml_name,handlers = list(
+    logical = function(x) {
+      result <- ifelse(x, "TRUE", "FALSE")
+      class(result) <- "verbatim"
+      return(result)
+    }
+  ))
   close(yaml_name)
 }
 
@@ -350,7 +361,7 @@ check_pipeline_params <- function(opt,yaml){
 write_custom_config <- function(yaml){
   #custom_config_path <- '/prot/proteomics/Projects/PGDAC/src/'
   #custom_config_path <- '/output/'
-  output <- paste(paste('ndigit', '<-', yaml$global_parameters$output_precision$ndigits),
+  output <- paste(paste('ndigits', '<-', yaml$global_parameters$output_precision$ndigits),
                 paste('na.max', '<-', yaml$global_parameters$missing_values_and_filtering$na_max), 
                 paste('sample.na.max', '<-', yaml$global_parameters$missing_values_and_filtering$sample_na_max),
                 paste('min.numratio.fraction', '<-', yaml$global_parameters$missing_values_and_filtering$min_numratio_fraction),
