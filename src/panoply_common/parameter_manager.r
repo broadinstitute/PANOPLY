@@ -341,6 +341,27 @@ check_cmap_analysis_params <- function(opt, yaml){
   
 }
 
+# immune_analysis:
+check_immune_analysis_params <- function(opt, yaml){
+  if (!is.null(opt$immune_enrichment_fdr) | !is.null(opt$immune_enrichment_groups) | !is.null(opt$immune_heatmap_width) | !is.null(opt$immune_heatmap_height)){
+    if (!is.null(immune_enrichment_fdr)){
+      yaml$panoply_immune_analysis$immune_enrichment_fdr <- opt$immune_enrichment_fdr
+    }
+    if (!is.null(opt$immune_enrichment_groups)) {
+      yaml$panoply_immune_analysis$immune_enrichment_groups <- opt$immune_enrichment_groups
+    }
+    if (!is.null(opt$immune_heatmap_width)) {
+      yaml$panoply_immune_analysis$immune_heatmap_width <- opt$immune_heatmap_width
+    }
+    if (!is.null(opt$immune_heatmap_height)) {
+      yaml$panoply_immune_analysis$immune_heatmap_height <- opt$immune_heatmap_height
+    }
+    return(yaml)
+  }else{
+    return(yaml)
+  }
+}
+
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
   yaml <- check_parse_sm_params(opt,yaml)
@@ -353,8 +374,10 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_rna_corr_report_params(opt,yaml)
   yaml <- check_cons_clust_params(opt,yaml)
   yaml <- check_cmap_analysis_params(opt,yaml)
+  yaml <- check_immune_analysis_params(opt, yaml)
   return(yaml)
 }
+
 ##################################################################################################
 # Write to config functions:
 # For all modules other than cmap:
@@ -454,7 +477,8 @@ write_custom_cmap_config <- function(yaml){
                   sep = "\n")
   write(output, 'cmap-config-custom.r')
 }
-##########################3
+
+########################################################################################
 
 # Main function and logic
 # How to handle the commandline variables based on current module?
@@ -527,10 +551,10 @@ parse_command_line_parameters <- function(opt){
    
     
   }else if (opt$module == 'immune_analysis' & check_if_any_command_line(opt)){
-    # Get values from Mani
-    # Write check_immune_analysis_params
-    # Add above to pipeline workflow function (check_pipeline_params)
-    # Write custom config
+    # Get values from Mani added to master-parameters.yaml
+    yaml <- check_immune_analysis_params(opt,yaml)
+    write_custom_config(yaml) #needs to be updated to have immune values included!
+    
     
   }else if (opt$module == 'pipeline' & check_if_any_command_line(opt)){
     yaml <- check_pipeline_params(opt, yaml)
