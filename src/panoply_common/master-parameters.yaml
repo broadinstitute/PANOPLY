@@ -95,6 +95,10 @@ panoply_cmap_analysis:
 
 
 panoply_immune_analysis:
+  immune_enrichment_fdr: 0.05
+  immune_enrichment_subgroups: "NULL"
+  immune_heatmap_width: 10
+  immune_heatmap_height: 15
 
 
 

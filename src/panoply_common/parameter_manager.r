@@ -44,9 +44,9 @@ option_list <- list(
   make_option(c("--clustering_na_threshold"), type = "double", dest = "clustering_na_threshold", help = "max fraction of missing values for clustering; rest are imputed"),
   #immune_analysis:
   make_option(c("--immune_enrichment_fdr"), type = "double", dest = "immune_enrichment_fdr", help = "fdr value for immune analysis"),
-  make_option(c("--immune_enrichment_groups"), type = "", dest = "immune_enrichment_groups", help = "immune_enrichment_groups for immune analysis"),
-  make_option(c("--immune_heatmap_width"), type = "", dest = "immune_heatmap_width", help = "immune_heatmap_width for immune analysis"),
-  make_option(c("--immune_heatmap_height"), type = "", dest = "immune_heatmap_height", help = "immune_heatmap_height for immune analysis"),  
+  make_option(c("--immune_enrichment_subgroups"), dest = "immune_enrichment_subgroups", help = "immune_enrichment_groups for immune analysis"),
+  make_option(c("--immune_heatmap_width"), type = "integer", dest = "immune_heatmap_width", help = "immune_heatmap_width for immune analysis"),
+  make_option(c("--immune_heatmap_height"), type = "integer", dest = "immune_heatmap_height", help = "immune_heatmap_height for immune analysis"),  
     #cmap_analysis:
   make_option(c("--cna_threshold"), type = "double", dest = 'cna_threshold', help = "copy number up/down if abs (log2(copy number) - 1) is > cna.threshold (default: 0.3)"),
   make_option(c("--cna_effects_threshold"), type = "integer", dest = 'cna_effects_threshold', help = "min number of samples with up/down copy number to include gene for CMAP analysis (default: 15)"),
@@ -343,12 +343,12 @@ check_cmap_analysis_params <- function(opt, yaml){
 
 # immune_analysis:
 check_immune_analysis_params <- function(opt, yaml){
-  if (!is.null(opt$immune_enrichment_fdr) | !is.null(opt$immune_enrichment_groups) | !is.null(opt$immune_heatmap_width) | !is.null(opt$immune_heatmap_height)){
-    if (!is.null(immune_enrichment_fdr)){
+  if (!is.null(opt$immune_enrichment_fdr) | !is.null(opt$immune_enrichment_subgroups) | !is.null(opt$immune_heatmap_width) | !is.null(opt$immune_heatmap_height)){
+    if (!is.null(opt$immune_enrichment_fdr)){
       yaml$panoply_immune_analysis$immune_enrichment_fdr <- opt$immune_enrichment_fdr
     }
-    if (!is.null(opt$immune_enrichment_groups)) {
-      yaml$panoply_immune_analysis$immune_enrichment_groups <- opt$immune_enrichment_groups
+    if (!is.null(opt$immune_enrichment_subgroups)) {
+      yaml$panoply_immune_analysis$immune_enrichment_subgroups <- opt$immune_enrichment_subgroups
     }
     if (!is.null(opt$immune_heatmap_width)) {
       yaml$panoply_immune_analysis$immune_heatmap_width <- opt$immune_heatmap_width
@@ -421,7 +421,11 @@ write_custom_config <- function(yaml){
                 paste('clustering.sd.threshold', '<-', yaml$panoply_cons_cluster$clustering_sd_threshold),
                 paste('clustering.na.threshold', '<-', yaml$panoply_cons_cluster$clustering_na_threshold),
                 #cmap_analysis: HAS ITS OWN FUNCTION
-                #immune_analysis (via Mani)
+                #immune_analysis:
+                paste('immune.enrichment.fdr', '<-', yaml$panoply_immune_analysis$immune_enrichment_fdr),
+                paste('immune.enrichment.subgroups', '<-', yaml$panoply_immune_analysis$immune_enrichment_subgroups),
+                paste('immune.heatmap.width', '<-', yaml$panoply_immune_analysis$immune_heatmap_width),
+                paste('immune.heatmap.height', '<-', yaml$panoply_immune_analysis$immune_heatmap_height),
                 #DEV_sample_annotations:
                 paste('sample.id.col.name', '<-', paste('"',yaml$DEV_sample_annotation$sample_id_col_name, '"', sep = '')),
                 paste('experiment.col.name', '<-', paste('"',yaml$DEV_sample_annotation$experiment_col_name, '"', sep = '')),
@@ -551,9 +555,8 @@ parse_command_line_parameters <- function(opt){
    
     
   }else if (opt$module == 'immune_analysis' & check_if_any_command_line(opt)){
-    # Get values from Mani added to master-parameters.yaml
     yaml <- check_immune_analysis_params(opt,yaml)
-    write_custom_config(yaml) #needs to be updated to have immune values included!
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
     
   }else if (opt$module == 'pipeline' & check_if_any_command_line(opt)){
