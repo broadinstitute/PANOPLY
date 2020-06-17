@@ -156,7 +156,7 @@ verify_group_validity <- function( groups.cols, typemap.csv ){
                      stringsAsFactors = F, quote = '"' )
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- unique( annot[[groups.cols[group.idx]]] )
-    if ( length( groups.vals ) > 5 || length( groups.vals ) == 1 ){
+    if ( length( groups.vals ) > 10 || length( groups.vals ) == 1 ){
       drop <- c( drop, group.idx )
     }
   }
