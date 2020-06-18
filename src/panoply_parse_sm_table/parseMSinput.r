@@ -135,10 +135,24 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
   }
   
   
-  d <- read.delim (dataset, sep=';', skip=ifelse(proteome,1,2), header=FALSE)
-  if (proteome) d <- d[,-1]   # remove first column which is blank
+  # read data
+  # if subgroupNum column is present, read is as a string -- needed for SGT processing
   header.info <- process.header (dataset)
-  colnames (d) <- header.info$col.names.all
+  col.names <- header.info$col.names.all
+  col.classes <- ifelse (col.names == "subgroupNum", "character", NA)
+  if (proteome) {
+    # remove first column which is blank
+    col.names <- c ('blank', col.names)
+    col.classes <- c ("NULL", col.classes)
+  }
+  d <- read.delim (dataset, sep=';', skip=ifelse(proteome,1,2), header=FALSE,
+                   col.names=col.names, colClasses=col.classes)
+  # if subgroupNum is present, convert from x.y to x_y format
+  # to avoid conversion to floating point numbers
+  if ("subgroupNum" %in% colnames (d)) {
+    d$subgroupNum <- sapply (d$subgroupNum, function (x) gsub ('\\.', '_', x))
+  }
+ 
 
   # filter to remove non-human entries (rows)
   if (species.filter) {
