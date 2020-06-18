@@ -38,12 +38,6 @@ task panoply_blacksheep {
 
 workflow panoply_blacksheep {
 
-    call panoply_blacksheep {
-        input: #**Define call inputs for panoply_blacksheep here**
-    }
+    call panoply_blacksheep
 
-    output {
-        #**Define workflow outputs here. If defined, these will be the only
-        #  outputs available in the Method Configuration**
-    }
 }
