@@ -4,14 +4,6 @@ library(dplyr)
 library(tibble)
 library(stringr)
 
-# gct_path = "C:/Users/karen/blacksheep_r/prosp-brca-v5.4-public-phosphoproteome-ratio-norm-NArm.gct"
-# GeneSymbol_column = "GeneSymbol"
-# identifiers_file = FALSE
-# annotations_columns_of_interest = "NMF.Cluster"
-# fraction_samples_cutoff = 0.3
-# fdrcutoffvalue = .05
-# heatmap_annotations_columns = "NMF.Cluster,NMF.Cluster.Membership.Score,PAM50"
-
 args <- commandArgs(TRUE)
 
 gct_path = as.character(args[1])
@@ -34,6 +26,9 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file){
     left_join(data_values, by = "rowname")
   
   if (identifiers_file != FALSE){
+    if (identifiers_file == "kinases"){
+      identifiers_file = "/prot/proteomics/Projects/PGDAC/src/kinase_list.txt"
+    }
     identifiers = read.delim(identifiers_file, header = FALSE, sep="\t")
     identifiers = as.character(identifiers$V1)
     genesymbol = genesymbol %>%
