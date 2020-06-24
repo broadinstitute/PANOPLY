@@ -48,11 +48,11 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file){
   return(genesymbol_values)
 }
 
-create_annotations_input = function(gct, annotations_columns_of_interest){
+create_annotations_input = function(gct, groups_file){
   
   # extract annotations of interest for outlier analysis groupings
   annotations = gct@cdesc %>%
-    select(all_of(annotations_columns_of_interest))
+    select(all_of(colnames(groups_file)))
   
   # binarize annotations
   binary_annotations = make_comparison_columns(annotations)
@@ -188,7 +188,7 @@ generate_outliers_heatmaps = function(annotations, outliers_results_pos_neg, fdr
 }
 
 run_deva_all = function(annotations, data_values, fraction_samples_cutoff,
-                        gct, heatmap_annotations_columns, annotations_columns_of_interest, fdrcutoffvalue){
+                        gct, groups_file, fdrcutoffvalue){
   
   # make annotation groupings
   groupings = comparison_groupings(annotations)
@@ -209,10 +209,9 @@ run_deva_all = function(annotations, data_values, fraction_samples_cutoff,
 run_blacksheep_analysis = function(gct_path, 
                                    GeneSymbol_column, 
                                    identifiers_file, 
-                                   annotations_columns_of_interest,
+                                   groups_file,
                                    fraction_samples_cutoff, 
-                                   fdrcutoffvalue, 
-                                   heatmap_annotations_columns){
+                                   fdrcutoffvalue){
   
   dir.create("blacksheep")
   setwd("blacksheep")
@@ -231,11 +230,11 @@ run_blacksheep_analysis = function(gct_path,
 
     #format data and annotations
     data_values = create_values_input(gct, GeneSymbol_column, identifiers_file)
-    annotations = create_annotations_input(gct, annotations_columns_of_interest)
+    annotations = create_annotations_input(gct, groups_file)
 
     # run deva for positive and negative outliers, save tables and generate heatmaps
     blacksheep_out = run_deva_all(annotations, data_values, fraction_samples_cutoff,
-                          gct, heatmap_annotations_columns, annotations_columns_of_interest, fdrcutoffvalue)
+                          gct, groups_file, fdrcutoffvalue)
   
   }
 
