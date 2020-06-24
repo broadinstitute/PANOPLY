@@ -18,18 +18,18 @@ groups_file = yaml_params$panoply_blacksheep$groups_file
 fraction_samples_cutoff = yaml_params$panoply_blacksheep$fraction_samples_cutoff
 fdrcutoffvalue = yaml_params$panoply_blacksheep$fdr_value
 
-create_values_input = function(gct, GeneSymbol_column, identifiers_file, groups_file){
+create_values_input = function(gct, GeneSymbol_column, identifiers_file){
   
-  # extract phospho table and replace protein name with gene symbol
-  data_values = data.frame(gct@mat) %>%
+  # extract data table and replace protein name with gene symbol for downstream aggregation and analysis
+  data_values = data_values %>%
     rownames_to_column("rowname")
-  
+
   genesymbol = gct@rdesc %>%
     rownames_to_column("rowname") %>%
     select(all_of(GeneSymbol_column), rowname) %>%
     left_join(data_values, by = "rowname")
   
-  if (identifiers_file != FALSE){
+  if (identifiers_file != NULL){
     if (identifiers_file == "kinases"){
       identifiers_file = "/prot/proteomics/Projects/PGDAC/src/kinase_list.txt"
     }
@@ -43,7 +43,7 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file, groups_
   
   genesymbol_values = genesymbol %>%
     column_to_rownames(GeneSymbol_column) %>%
-    select(-rowname)  
+    select(-rowname)
   
   return(genesymbol_values)
 }
@@ -58,6 +58,26 @@ create_annotations_input = function(gct, annotations_columns_of_interest){
   binary_annotations = make_comparison_columns(annotations)
   
   return(binary_annotations)
+}
+
+outlier_count_only = function(data_values){
+
+  csv_name = c("negative", "positive")
+  x = c(TRUE,FALSE)
+  
+  for (i in 1:length(x)){
+    
+    dir.create(csv_name[i])
+    
+    # make outliers table
+    outlier_table_out = make_outlier_table(data_values,
+                                           analyze_negative_outliers = x[i])
+    
+    # save table indicating outliers
+    outlier_table = outlier_table_out$outliertab
+    write.csv(outlier_table, file.path(csv_name[i], paste0(csv_name[i], "_outliers_table.csv")))
+
+  return(outlier_table
 }
 
 outlier_count_and_analysis = function(groupings, data_values, fraction_samples_cutoff){
@@ -199,22 +219,32 @@ run_blacksheep_analysis = function(gct_path,
   
   # read gct file
   gct = parse.gctx(gct_path)
-  
-  # format data and annotations
-  data_values = create_values_input(gct, GeneSymbol_column, identifiers_file)
-  annotations = create_annotations_input(gct, annotations_columns_of_interest)
-  
-  # run deva for positive and negative outliers, save tables and generate heatmaps
-  run_deva = run_deva_all(annotations, data_values, fraction_samples_cutoff,
+
+  if (groups_file == NULL) {
+
+    data_values = data.frame(gct@mat)
+
+    # generate and save outlier tables for positive and negative outliers
+    blacksheep_out = outlier_count_only(data_values)
+
+  } else {
+
+    #format data and annotations
+    data_values = create_values_input(gct, GeneSymbol_column, identifiers_file)
+    annotations = create_annotations_input(gct, annotations_columns_of_interest)
+
+    # run deva for positive and negative outliers, save tables and generate heatmaps
+    blacksheep_out = run_deva_all(annotations, data_values, fraction_samples_cutoff,
                           gct, heatmap_annotations_columns, annotations_columns_of_interest, fdrcutoffvalue)
   
-  return(run_deva)
+  }
+
+  return(blacksheep_out)
 }
 
 blksheep = run_blacksheep_analysis(gct_path = gct_path,
                                    GeneSymbol_column = GeneSymbol_column,
                                    identifiers_file = identifiers_file,
-                                   annotations_columns_of_interest = annotations_columns_of_interest,
+                                   groups_file = groups_file,
                                    fraction_samples_cutoff = fraction_samples_cutoff,
-                                   fdrcutoffvalue = fdrcutoffvalue,
-                                   heatmap_annotations_columns = heatmap_annotations_columns)
+                                   fdrcutoffvalue = fdrcutoffvalue)
