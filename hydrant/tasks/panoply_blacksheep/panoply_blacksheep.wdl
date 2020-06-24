@@ -4,23 +4,18 @@ task panoply_blacksheep {
     Int? num_preemptions
 
     File input_gct
-    String genesymbol_col
-    String identifiers_file
-    String annotations_cols
-    Int fraction_cutoff
-    Int fdr_cutoff
-    String heatmap_annotations_cols
+    File yaml_file
 
     command {
         set -euo pipefail
 
-        Rscript blacksheep_rcode.R "${input_gct}" "${genesymbol_col}" "${identifiers_file}" "${annotations_cols}" ${fraction_cutoff} ${fdr_cutoff} "${heatmap_annotations_cols}"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "${yaml_file}"
 
         tar -czvf blacksheep_outlier_analysis.tar.gz blacksheep 
     }
 
     output {
-        File output = "blacksheep_outlier_analysis.tar.gz"
+        File tar_out = "blacksheep_outlier_analysis.tar.gz"
     }
 
     runtime {
@@ -36,7 +31,7 @@ task panoply_blacksheep {
     }
 }
 
-workflow panoply_blacksheep {
+workflow panoply_blacksheep_workflow {
 
     call panoply_blacksheep
 
