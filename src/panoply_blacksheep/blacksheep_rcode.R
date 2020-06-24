@@ -3,18 +3,22 @@ library(cmapR)
 library(dplyr)
 library(tibble)
 library(stringr)
+library(yaml)
 
 args <- commandArgs(TRUE)
 
 gct_path = as.character(args[1])
-GeneSymbol_column = as.character(args[2])
-identifiers_file = as.character(args[3])
-annotations_columns_of_interest = as.character(args[4])
-fraction_samples_cutoff = as.numeric(args[5])
-fdrcutoffvalue = as.numeric(args[6])
-heatmap_annotations_columns = as.character(args[7])
+yaml_file = as.character(args[2])
+#groups_file = as.character(args[3])
 
-create_values_input = function(gct, GeneSymbol_column, identifiers_file){
+yaml_params = read_yaml(yaml_file)
+GeneSymbol_column = yaml_params$global_parameters$gene_mapping$gene_id_col
+identifiers_file = yaml_params$panoply_blacksheep$identifiers_file
+groups_file = yaml_params$panoply_blacksheep$groups_file
+fraction_samples_cutoff = yaml_params$panoply_blacksheep$fraction_samples_cutoff
+fdrcutoffvalue = yaml_params$panoply_blacksheep$fdr_value
+
+create_values_input = function(gct, GeneSymbol_column, identifiers_file, groups_file){
   
   # extract phospho table and replace protein name with gene symbol
   data_values = data.frame(gct@mat) %>%
