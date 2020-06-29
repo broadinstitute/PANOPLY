@@ -5,6 +5,7 @@
 ## tolerance : threhsold for comparing numerical matrices,
 ##             by default set to 1.490116e-08 or .Machine$double.eps ^ 0.5
 ## file.list : a YAML file listing patterns
+## size.diff : a float number indicating a percent size change treshold for comparing image files 
 ##
 ## More on the YAML file:
 ##  1. keys should be sub-directories inside the tarball
@@ -48,7 +49,13 @@ set_arguments <- function() {
       c( "-d", "--tolerance" ),
       dest = "tolerance",
       action = "store",
-      type = 'character'))
+      type = 'double'),
+    
+    make_option(
+      c( "-s", "--size.diff" ),
+      dest = "size.diff",
+      action = "store",
+      type = 'double') )
   opt <<- parse_args( OptionParser( option_list=optionList ) )
 }
 
@@ -120,13 +127,14 @@ check_delta <- function(){
   for ( sub.dir in gold.dir.list ){
     if ( make.names( sub.dir ) %in% names( test.rules ) )
       patterns <- test.rules[[make.names( sub.dir )]] else
-        patterns <- c( "*.gct", "*.csv" )
+        patterns <- c( "*.gct", "*.csv", "*.txt" )
     files <- get_compare_file_list( patterns, sub.dir )
     compare_files( files )
   }
 }
 
 ## collect missing reports for any images / plots in all sub directories
+## collect unacceptable file size differences for any images / plots in all sub directories
 ## collect missing reports for a sub diectory itself
 check_missing <- function(){
   for ( sub.dir in gold.dir.list ) {
@@ -135,16 +143,22 @@ check_missing <- function(){
       miss.lines <<- c( miss.lines, glue( "-- missing. {sub.dir}\n" ) )
       next
     }
-
+    
     ## check for plots and images
     gold.plot.list <- list.files( glue( "{gold.dir}/{sub.dir}/" ),
                                   pattern = "*\\.pdf$|\\.png$|\\.jpeg$",
                                   full.names = F, recursive = T )
     check.plot.list <- unlist( lapply( gold.plot.list, function( x )
       glue( "{sub.dir}/{x}" ) ) )
+    
     for ( plot.file in check.plot.list ) {
+      test.size <- file.size( glue( "{test.dir}/{plot.file}" ) )
+      gold.size <- file.size( glue( "{gold.dir}/{plot.file}" ) )
+      
       if ( !( file.exists( glue( "{test.dir}/{plot.file}" ) ) ) )
         miss.lines <<- c( miss.lines, glue( "-- missing. {plot.file}\n" ) )
+      else if ( test.size/gold.size < ( 1 - diff.allow ) )
+        miss.lines <<- c( miss.lines, glue( "-- Warning: file size too small. {plot.file}\n" ) )
     }
   }
 }
@@ -171,6 +185,10 @@ test_setup <- function(){
         test.rules <<- read_yaml( opt$file.list )
     gold.dir.list <<- list.dirs( glue( "{gold.dir}/" ),
                                  full.names = F, recursive = F )
+    if ( !( "size.diff" %in% names( opt ) ) )
+      diff.allow <<- 0.5 else
+        diff.allow <<- opt$size.diff
+    
     pass.lines <<- c()
     miss.lines <<- c()
     fail.lines <<- c()
