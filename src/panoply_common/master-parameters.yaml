@@ -13,10 +13,14 @@ global_parameters:
     sd_filter_threshold: 0.5     # SD threshold for SD filtering
 
 
+  ### Gene mapping
+  # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
   gene_mapping:
     # Policy for combining/collapsing duplicate gene names:
     duplicate_gene_policy: maxvar
+    gene_id_col: geneSymbol
 
+  organism: human
 
 panoply_parse_sm_table:
   label_type_for_ms_exp:
@@ -100,6 +104,69 @@ panoply_immune_analysis:
   immune_heatmap_width: 10
   immune_heatmap_height: 15
 
+panoply_blacksheep:
+  identifiers_file: NULL
+  groups_file: NULL
+  fraction_samples_cutoff: 0.3
+  fdr_value: 0.05
+
+## multi-omics NMF clustering
+panoply_mo_nmf:
+  ## clustering
+  kmin: 5
+  kmax: 5
+  exclude_2: TRUE
+  core_membership: 0.5 
+  ## NMF parameters
+  nrun: 500
+  seed: random
+  method: brunet
+  bnmf: FALSE
+  ## annotations to include in heatmaps
+  ## and enrichments
+  ## categorial: at least one required
+  cat_anno: [cat1, cat2]
+  ## continuous: vector or NA
+  cont_anno: NA
+  ## aesthetics
+  ## colors for 'cat_anno'
+  cat_colors:
+   cat1:
+    level1: '#FCB462'
+    level2: '#BB81B8' 
+   cat2: 
+    level1: '#FCB462'
+    level2: '#BB81B8'
+  ## heatmap parameters
+  hm_cw: 5      ## cell width
+  hm_ch: 8      ## cell height 
+  hm_max_val: 10   ## max value at which the data will be capped in heatmap 
+  hm_max_val_z: 4  ## max value if z-scored 
+  ## filtering
+  filt_mode: global   ## global, separate, equal
+  sd_filt: 0.05
+  z_score: TRUE
+  ## imputation
+  impute: FALSE
+  impute_k: 5
+  max_na_row: 0.3   ## (not working yet)
+  max_na_col: 0.9   ## (not working yet)
+  ## misc
+  nmf_only: FALSE     ## if TRUE, no downstream analysis of clustering results will be performed
+
+## ssGSEA default  parameters (projection) 
+panoply_ssgsea_projection: 
+  nperm: 1000
+  weight: 0.75
+  norm: "rank"                  ## rank, log, log.rank, none
+  correl_type: "z.-score"       ## "rank", "z.score", "symm.rank"
+  statistic: "area.under.RES"   ## "area.under.RES", "Kolmogorov-Smirnov" 
+  output_score_type: "NES"      ## 'Score type: "ES" - enrichment score,  "NES" - normalized ES'
+  min_overlap: 10               ## 'Minimal overlap between signature and data set.'
+  extended_output: TRUE         ## 'If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.'
+  export_signat_gct: TRUE       ## For each signature export expression GCT files.
+  global_fdr: FALSE             ## If TRUE global FDR across all data columns is calculated.
+  multi_core: TRUE              ## If TRUE processing will be parallelized across gene sets using (N-1) CPU cores.
 
 
 DEV_sample_annotation:
@@ -113,11 +180,6 @@ DEV_sample_annotation:
     sampleQC_cls: "NULL"
     qc_col: QC.status
     qc_pass_label: QC.pass
-
-  ### Gene mapping
-  # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
-  gene_mapping:
-    gene_id_col: geneSymbol
 
   gct_file_ids: #used in config.r 
     proteome:
