@@ -14,6 +14,8 @@ option_list <- list(
   make_option(c("--nmiss_factor"), type = "double", dest = 'nmiss_factor', help = "for some situations, a more stringent condition is needed"),
   make_option(c("--sd_filter_threshold"), type = "double", dest = 'sd_filter_threshold', help = "SD threshold for SD filtering"),
   make_option(c("--duplicate_gene_policy"), type="character", dest = 'duplicate_gene_policy', help="Policy for combining/collapsing duplicate gene names"),
+  make_option(c("--gene_id_col"), type="character", dest = 'gene_id_col', help="column name containing gene id"),
+  make_option(c("--organism"), type="character", dest = 'organism', help="organism of study"),
   # All Command line possibles:
     # parse_SM_table:
   make_option(c("--label_type"), type="character", dest = 'label_type', help="label type for MS experiment. ex: TMT10", metavar="character"),
@@ -61,7 +63,51 @@ option_list <- list(
   make_option(c("--rankpt_n"), type = "integer", dest = 'rankpt_n', help = "number of CMAP profiles to consider when calculating mean rank point (default: 4)"),
   make_option(c("--mean_rankpt_threshold"), type = "integer", dest = 'mean_rankpt_threshold', help = "min value of mean rank point for gene signature to be considered enriched (default: 85)"),
   make_option(c("--cmap_fdr"), type = "double", dest = 'cmap_fdr', help = "BH-FDR threshold for fisher test of outlier scores, for gene to be considered enriched"),
-  make_option(c("--alpha"), type = "character", dest = 'alpha', help = "p-value threshold for cmap profile zscores and enrichments")
+  make_option(c("--alpha"), type = "character", dest = 'alpha', help = "p-value threshold for cmap profile zscores and enrichments"),
+  #mo_nmf:
+  make_option(c("--mo_nmf_kmin"), type = "integer", dest = 'mo_nmf_kmin', help = "mo nmf clustering kmin value."),
+  make_option(c("--mo_nmf_kmax"), type = "integer", dest = 'mo_nmf_kmax', help = "mo nmf clustering kmax value."),
+  make_option(c("--mo_nmf_exclude_2"), type = "logical", dest = 'mo_nmf_exclude_2', help = "mo nmf clustering exclude_2 value."),
+  make_option(c("--mo_nmf_core_membership"), type = "double", dest = 'mo_nmf_core_membership', help = "mo nmf clustering core_membership value."),
+  make_option(c("--mo_nmf_nrun"), type = "integer", dest = 'mo_nmf_nrun', help = "mo nmf nrun value."),
+  make_option(c("--mo_nmf_seed"), type = "character", dest = 'mo_nmf_seed', help = "mo nmf seed value."),
+  make_option(c("--mo_nmf_method"), type = "character", dest = 'mo_nmf_method', help = "mo nmf method value."),
+  make_option(c("--mo_nmf_bnmf"), type = "logical", dest = 'mo_nmf_bnmf', help = "mo nmf bmnf value."),
+  make_option(c("--mo_nmf_cat_anno"), dest = 'mo_nmf_cat_anno', help = "mo nmf annotations to include in heatmaps and enrichments, categorical."),
+  make_option(c("--mo_nmf_cont_anno"), dest = 'mo_nmf_cont_anno', help = "mo nmf annotations to include in heatmaps and enrichments, continuous."),
+  make_option(c("--mo_nmf_cat_colors_cat1_level1"), type = "character", dest = 'mo_nmf_cat_colors_cat1_level1', help = "mo nmf colors for cat_anno."),
+  make_option(c("--mo_nmf_cat_colors_cat1_level2"), type = "character", dest = 'mo_nmf_cat_colors_cat1_level2', help = "mo nmf colors for cat_anno."),
+  make_option(c("--mo_nmf_cat_colors_cat2_level1"), type = "character", dest = 'mo_nmf_cat_colors_cat2_level1', help = "mo nmf colors for cat_anno."),
+  make_option(c("--mo_nmf_cat_colors_cat2_level2"), type = "character", dest = 'mo_nmf_cat_colors_cat2_level2', help = "mo nmf colors for cat_anno."),
+  make_option(c("--mo_nmf_hm_cw"), type = "integer", dest = 'mo_nmf_hm_cw', help = "mo nmf heatmap cell width value."),
+  make_option(c("--mo_nmf_hm_ch"), type = "integer", dest = 'mo_nmf_hm_ch', help = "mo nmf heatmap cell height value."),
+  make_option(c("--mo_nmf_hm_max_val"), type = "integer", dest = 'mo_nmf_hm_max_val', help = "mo nmf heatmap max value at which the data will be capped in heatmap."),
+  make_option(c("--mo_nmf_hm_max_val_z"), type = "integer", dest = 'mo_nmf_hm_max_val_z', help = "mo nmf heatmap max value if z-scored."),
+  make_option(c("--mo_nmf_filt_mode"), type = "character", dest = 'mo_nmf_filt_mode', help = "mo nmf filtering mode value."),
+  make_option(c("--mo_nmf_sd_filt"), type = "double", dest = 'mo_nmf_sd_filt', help = "mo nmf filtering mode value."),
+  make_option(c("--mo_nmf_z_score"), type = "logical", dest = 'mo_nmf_z_score', help = "mo nmf filtering z score value."),
+  make_option(c("--mo_nmf_impute"), type = "logical", dest = 'mo_nmf_impute', help = "mo nmf imputation value."),
+  make_option(c("--mo_nmf_impute_k"), type = "integer", dest = 'mo_nmf_impute_k', help = "mo nmf imputation k value."),
+  make_option(c("--mo_nmf_max_na_row"), type = "double", dest = 'mo_nmf_max_na_row', help = "mo nmf imputation max na row value."),
+  make_option(c("--mo_nmf_max_na_col"), type = "double", dest = 'mo_nmf_max_na_col', help = "mo nmf imputation max na col value."),
+  make_option(c("--mo_nmf_nmf_only"), type = "logical", dest = 'mo_nmf_nmf_only', help = "mo nmf value if TRUE, no downstream analysis of clustering results will be performed."),
+  # ssGSEA_projection:
+  make_option(c("--ssgsea_nperm"), type = "integer", dest = 'ssgsea_nperm', help = "ssgsea projection nperm value."),
+  make_option(c("--ssgsea_weight"), type = "double", dest = 'ssgsea_weight', help = "ssgsea projection weight value."),
+  make_option(c("--ssgsea_norm"), type = "character", dest = 'ssgsea_norm', help = "ssgsea projection normalization type (if any)."),
+  make_option(c("--ssgsea_correl_type"), type = "character", dest = 'ssgsea_correl_type', help = "ssgsea projection normalization type (if any)."),
+  make_option(c("--ssgsea_statistic"), type = "character", dest = 'ssgsea_statistic', help = "ssgsea statistic method (ie: area.under.RES, Kolmogorov-Smirnov ."),
+  make_option(c("--ssgsea_output_score_types"), type = "character", dest = 'ssgsea_output_score_types', help = "ssgsea score type."),
+  make_option(c("--ssgsea_min_overlap"), type = "integer", dest = 'ssgsea_min_overlap', help = "ssgsea Minimal overlap between signature and data set."),
+  make_option(c("--ssgsea_extended_output"), type = "logical", dest = 'ssgsea_extended_output', help = "ssgsea If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files."),
+  make_option(c("--ssgsea_export_signat_gct"), type = "logical", dest = 'ssgsea_export_signat_gct', help = "ssgsea For each signature export expression GCT files."),
+  make_option(c("--ssgsea_global_fdr"), type = "logical", dest = 'ssgsea_global_fdr', help = "ssgsea If TRUE global FDR across all data columns is calculated."),
+  make_option(c("--ssgsea_multi_core"), type = "logical", dest = 'ssgsea_multi_core', help = "ssgsea If TRUE processing will be parallelized across gene sets using (N-1) CPU cores"),
+  # blacksheep_module:
+  make_option(c("--blacksheep_identifiers_file"), dest = 'blacksheep_identifiers_file', help = "blacksheep_identifiers_file"),
+  make_option(c("--blacksheep_groups_file"), dest = 'blacksheep_groups_file', help = "blacksheep_groups_file"),
+  make_option(c("--blacksheep_fraction_samples_cutoff"), type = "double", dest = 'blacksheep_fraction_samples_cutoff', help = "blacksheep_fraction_samples_cutoff"),
+  make_option(c("--blacksheep_fdr_value"), type = "double", dest = 'blacksheep_fdr_value', help = "blacksheep_fdr_value")
   )
 
 
@@ -73,7 +119,7 @@ if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
 p_load('yaml')
 
 # MODULE NAMES:
-# PIPELINE? or main or something to indicate the start of a pipeline? So it prints the used params once!
+# pipeline --evals all parameters at once
 # parse_sm_table
 # normalize_ms_data
 # rna_protein_correlation
@@ -86,6 +132,9 @@ p_load('yaml')
 # association
 # cmap_analysis
 # immune_analysis
+# blacksheep
+# mo_nmf
+# ssgsea_projection
 
 ### FUNCTIONS:
 
@@ -126,7 +175,7 @@ write_yaml_file <- function(yaml){
 ######################################## CHECK PARAMS FUNCTIONS ################################
 #Checks if any of the global vals are being changed from commandline. if yes will change them in yaml if no returns org yaml
 check_global_params <- function(opt,yaml){
-  if (!is.null(opt$ndigits) | !is.null(opt$na_max) | !is.null(opt$sample_na_max) | !is.null(opt$min_numratio_fraction) | !is.null(opt$nmiss_factor) | !is.null(opt$sd_filter_threshold) | !is.null(opt$duplicate_gene_policy)){
+  if (!is.null(opt$ndigits) | !is.null(opt$na_max) | !is.null(opt$sample_na_max) | !is.null(opt$min_numratio_fraction) | !is.null(opt$nmiss_factor) | !is.null(opt$sd_filter_threshold) | !is.null(opt$duplicate_gene_policy | !is.null(opt$gene_id_col) | !is.null(opt$organism))){
     yaml <- change_global_params(opt,yaml)
     return(yaml)
   }else{
@@ -156,6 +205,12 @@ change_global_params <- function(opt,yaml){
   }
   if (!is.null(opt$duplicate_gene_policy)){
     yaml$global_parameters$gene_mapping$duplicate_gene_policy <- opt$duplicate_gene_policy
+  }
+  if (!is.null(opt$gene_id_col)){
+    yaml$global_parameters$gene_mapping$gene_id_col <- opt$gene_id_col
+  }
+  if (!is.null(opt$organism)){
+    yaml$global_parameters$organism <- opt$organism
   }
   return(yaml)
 }
@@ -362,6 +417,142 @@ check_immune_analysis_params <- function(opt, yaml){
   }
 }
 
+# mo_nmf:
+check_mo_nmf_params <- function(opt, yaml){
+  if (!is.null(opt$mo_nmf_kmin)){
+    yaml$panoply_mo_nmf$kmin <- opt$mo_nmf_kmin
+  }
+  if (!is.null(opt$mo_nmf_kmax)){
+    yaml$panoply_mo_nmf$kmax <- opt$mo_nmf_kmax
+  }
+  if (!is.null(opt$mo_nmf_exclude_2)){
+    yaml$panoply_mo_nmf$exclude_2 <- opt$mo_nmf_exclude_2
+  }
+  if (!is.null(opt$mo_nmf_core_membership)){
+    yaml$panoply_mo_nmf$core_membership <- opt$mo_nmf_core_membership
+  }
+  if (!is.null(opt$mo_nmf_nrun)){
+    yaml$panoply_mo_nmf$nrun <- opt$mo_nmf_nrun
+  }
+  if (!is.null(opt$mo_nmf_seed)){
+    yaml$panoply_mo_nmf$seed <- opt$mo_nmf_seed
+  }
+  if (!is.null(opt$mo_nmf_method)){
+    yaml$panoply_mo_nmf$method <- opt$mo_nmf_method
+  }
+  if (!is.null(opt$mo_nmf_bnmf)){
+    yaml$panoply_mo_nmf$bnmf <- opt$mo_nmf_bnmf
+  }
+  if (!is.null(opt$mo_nmf_cat_anno)){
+    yaml$panoply_mo_nmf$cat_anno <- opt$mo_nmf_cat_anno
+  }
+  if (!is.null(opt$mo_nmf_cont_anno)){
+    yaml$panoply_mo_nmf$cont_anno <- opt$mo_nmf_cont_anno
+  }
+  if (!is.null(opt$mo_nmf_cat_colors_cat1_level1)){
+    yaml$panoply_mo_nmf$cat_colors$cat1$level1 <- opt$mo_nmf_cat_colors_cat1_level1
+  }
+  if (!is.null(opt$mo_nmf_cat_colors_cat1_level2)){
+    yaml$panoply_mo_nmf$cat_colors$cat1$level2 <- opt$mo_nmf_cat_colors_cat1_level2
+  }
+  if (!is.null(opt$mo_nmf_cat_colors_cat2_level1)){
+    yaml$panoply_mo_nmf$cat_colors$cat2$level1 <- opt$mo_nmf_cat_colors_cat2_level1
+  }
+  if (!is.null(opt$mo_nmf_cat_colors_cat2_level2)){
+    yaml$panoply_mo_nmf$cat_colors$cat2$level2 <- opt$mo_nmf_cat_colors_cat2_level2
+  }
+  if (!is.null(opt$mo_nmf_hm_cw)){
+    yaml$panoply_mo_nmf$hm_cw <- opt$mo_nmf_hm_cw
+  }
+  if (!is.null(opt$mo_nmf_hm_ch)){
+    yaml$panoply_mo_nmf$hm_ch <- opt$mo_nmf_hm_ch
+  }
+  if (!is.null(opt$mo_nmf_hm_max_val)){
+    yaml$panoply_mo_nmf$hm_max_val <- opt$mo_nmf_hm_max_val
+  }
+  if (!is.null(opt$mo_nmf_hm_max_val_z)){
+    yaml$panoply_mo_nmf$hm_max_val_z <- opt$mo_nmf_hm_max_val_z
+  }
+  if (!is.null(opt$mo_nmf_filt_mode)){
+    yaml$panoply_mo_nmf$filt_mode <- opt$mo_nmf_filt_mode
+  }
+  if (!is.null(opt$mo_nmf_sd_filt)){
+    yaml$panoply_mo_nmf$sd_filt <- opt$mo_nmf_sd_filt
+  }
+  if (!is.null(opt$mo_nmf_z_score)){
+    yaml$panoply_mo_nmf$z_score <- opt$mo_nmf_z_score
+  }
+  if (!is.null(opt$mo_nmf_impute)){
+    yaml$panoply_mo_nmf$impute <- opt$mo_nmf_impute
+  }
+  if (!is.null(opt$mo_nmf_impute_k)){
+    yaml$panoply_mo_nmf$impute_k <- opt$mo_nmf_impute_k
+  }
+  if (!is.null(opt$mo_nmf_max_na_row)){
+    yaml$panoply_mo_nmf$max_na_row <- opt$mo_nmf_max_na_row
+  }
+  if (!is.null(opt$mo_nmf_max_na_col)){
+    yaml$panoply_mo_nmf$max_na_col <- opt$mo_nmf_max_na_col
+  }
+  if (!is.null(opt$mo_nmf_nmf_only)){
+    yaml$panoply_mo_nmf$nmf_only <- opt$mo_nmf_nmf_only
+  }
+}
+
+# ssgsea_projection:
+check_ssgsea_projection_params <- function(opt, yaml){
+  if (!is.null(opt$ssgsea_nperm)){
+    yaml$panoply_ssgsea_projection$nperm <- opt$ssgsea_nperm
+  }
+  if (!is.null(opt$ssgsea_weight)){
+    yaml$panoply_ssgsea_projection$weight <- opt$ssgsea_weight
+  }
+  if (!is.null(opt$ssgsea_norm)){
+    yaml$panoply_ssgsea_projection$norm <- opt$ssgsea_norm
+  }
+  if (!is.null(opt$ssgsea_correl_type)){
+    yaml$panoply_ssgsea_projection$correl_type <- opt$ssgsea_correl_type
+  }
+  if (!is.null(opt$ssgsea_statistic)){
+    yaml$panoply_ssgsea_projection$statistic <- opt$ssgsea_statistic
+  }
+  if (!is.null(opt$ssgsea_output_score_type)){
+    yaml$panoply_ssgsea_projection$output_score_type <- opt$ssgsea_output_score_type
+  }
+  if (!is.null(opt$ssgsea_min_overlap)){
+    yaml$panoply_ssgsea_projection$min_overlap <- opt$ssgsea_min_overlap
+  }
+  if (!is.null(opt$ssgsea_extended_output)){
+    yaml$panoply_ssgsea_projection$extended_output <- opt$ssgsea_extended_output
+  }
+  if (!is.null(opt$ssgsea_export_signat_gct)){
+    yaml$panoply_ssgsea_projection$export_signat_gct <- opt$ssgsea_export_signat_gct
+  }
+  if (!is.null(opt$ssgsea_global_fdr)){
+    yaml$panoply_ssgsea_projection$global_fdr <- opt$ssgsea_global_fdr
+  }
+  if (!is.null(opt$ssgsea_multi_core)){
+    yaml$panoply_ssgsea_projection$multi_core <- opt$ssgsea_multi_core
+  }
+}
+
+# blacksheep:
+check_blacksheep_params <- function(opt, yaml){
+  if (!is.null(opt$blacksheep_identifiers_file)){
+    yaml$panoply_blacksheep$identifiers_file <- opt$blacksheep_identifiers_file
+  }
+  if (!is.null(opt$blacksheep_groups_file)){
+    yaml$panoply_blacksheep$groups_file <- opt$blacksheep_groups_file
+  }
+  if (!is.null(opt$blacksheep_fraction_samples_cutoff)){
+    yaml$panoply_blacksheep$fraction_samples_cutoff <- opt$blacksheep_fraction_samples_cutoff
+  }
+  if (!is.null(opt$blacksheep_fdr_value)){
+    yaml$panoply_blacksheep$fdr_value <- opt$blacksheep_fdr_value
+  }
+}
+
+# Checks all parameters (maybe use for final output yaml for whole pipeline?)
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
   yaml <- check_parse_sm_params(opt,yaml)
@@ -375,6 +566,9 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_cons_clust_params(opt,yaml)
   yaml <- check_cmap_analysis_params(opt,yaml)
   yaml <- check_immune_analysis_params(opt, yaml)
+  yaml <- check_mo_nmf_params(opt, yaml)
+  yaml <- check_ssgsea_projection_params(opt, yaml)
+  yaml <- check_blacksheep_params(opt, yaml)
   return(yaml)
 }
 
@@ -391,6 +585,8 @@ write_custom_config <- function(yaml){
                 paste('nmiss.factor', '<-', yaml$global_parameters$missing_values_and_filtering$nmiss_factor),
                 paste('sd.filter.threshold', '<-', yaml$global_parameters$missing_values_and_filtering$sd_filter_threshold),
                 paste('duplicate.gene.policy', '<-', paste('"', yaml$global_parameters$gene_mapping$duplicate_gene_policy, '"', sep = '')),
+                paste('gene.id.col', '<-', paste('"', yaml$global_parameters$gene_mapping$gene_id_col, '"', sep = '')),
+                paste('organism', '<-', paste('"', yaml$global_parameters$organism, '"', sep = '')),
                 #parse_sm_table:
                 paste('label.type', '<-', paste('"', yaml$panoply_parse_sm_table$label_type_for_ms_exp$label_type, '"', sep = '')),
                 'set.label.type (label.type)', #This needs to be run after label.type in config.r!
@@ -420,7 +616,7 @@ write_custom_config <- function(yaml){
                 #cons_cluster:
                 paste('clustering.sd.threshold', '<-', yaml$panoply_cons_cluster$clustering_sd_threshold),
                 paste('clustering.na.threshold', '<-', yaml$panoply_cons_cluster$clustering_na_threshold),
-                #cmap_analysis: HAS ITS OWN FUNCTION
+                #cmap_analysis: HAS ITS OWN FUNCTION below
                 #immune_analysis:
                 paste('immune.enrichment.fdr', '<-', yaml$panoply_immune_analysis$immune_enrichment_fdr),
                 paste('immune.enrichment.subgroups', '<-', yaml$panoply_immune_analysis$immune_enrichment_subgroups),
@@ -435,7 +631,6 @@ write_custom_config <- function(yaml){
                 paste('sampleQC.cls', '<-', yaml$DEV_sample_annotation$QC$sampleQC_cls),
                 paste('qc.col', '<-', paste('"', yaml$DEV_sample_annotation$QC$qc_col, '"', sep = '')),
                 paste('qc.pass.label', '<-', paste('"', yaml$DEV_sample_annotation$QC$qc_pass_label, '"', sep = '')),
-                paste('gene.id.col', '<-', paste('"', yaml$DEV_sample_annotation$gene_mapping$gene_id_col,  '"', sep = '')),
                 "if (type == 'proteome') {",
                 paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$id_col),
                 paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$desc_col),
@@ -557,7 +752,15 @@ parse_command_line_parameters <- function(opt){
   }else if (opt$module == 'immune_analysis' & check_if_any_command_line(opt)){
     yaml <- check_immune_analysis_params(opt,yaml)
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+  
+  }else if (opt$module == 'blacksheep' & check_if_any_command_line(opt)){
+    yaml <- check_blacksheep_params(opt,yaml)
     
+  }else if (opt$module == 'mo_nmf' & check_if_any_command_line(opt)){
+    yaml <- check_mo_nmf_params(opt,yaml)
+    
+  }else if (opt$module == 'ssgsea_projection' & check_if_any_command_line(opt)){
+    yaml <- check_ssgsea_projection_params(opt,yaml)
     
   }else if (opt$module == 'pipeline' & check_if_any_command_line(opt)){
     yaml <- check_pipeline_params(opt, yaml)
