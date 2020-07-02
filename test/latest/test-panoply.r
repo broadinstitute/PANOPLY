@@ -176,22 +176,22 @@ test_setup <- function(){
   if ( !( "tolerance" %in% names( opt ) ) )
     tolerance <<- .Machine$double.eps ^ 0.5 else
       tolerance <<- opt$tolerance
-    gold.dir <<- "gold-dir"
-    test.dir <<- "test-dir"
-    untar( opt$gold.tar, gold.dir )
-    untar( opt$test.tar, test.dir )
-    if ( !( "file.list" %in% names( opt ) ) )
-      test.rules <<- list() else
-        test.rules <<- read_yaml( opt$file.list )
-    gold.dir.list <<- list.dirs( glue( "{gold.dir}/" ),
-                                 full.names = F, recursive = F )
-    if ( !( "size.diff" %in% names( opt ) ) )
-      diff.allow <<- 0.5 else
-        diff.allow <<- opt$size.diff
+  gold.dir <<- "gold-dir"
+  test.dir <<- "test-dir"
+  untar( opt$gold.tar, gold.dir )
+  untar( opt$test.tar, test.dir )
+  if ( !( "file.list" %in% names( opt ) ) )
+    test.rules <<- list() else
+      test.rules <<- read_yaml( opt$file.list )
+  gold.dir.list <<- list.dirs( glue( "{gold.dir}/" ),
+                                full.names = F, recursive = F )
+  if ( !( "size.diff" %in% names( opt ) ) )
+    diff.allow <<- 0.5 else
+      diff.allow <<- opt$size.diff
     
-    pass.lines <<- c()
-    miss.lines <<- c()
-    fail.lines <<- c()
+  pass.lines <<- c()
+  miss.lines <<- c()
+  fail.lines <<- c()
 }
 
 main <- function(){
