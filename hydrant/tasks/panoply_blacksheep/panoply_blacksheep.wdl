@@ -4,10 +4,17 @@ task panoply_blacksheep {
     Int? num_preemptions
 
     File input_gct
-    File yaml_file
+    File master_yaml
+
+    File? identifiers_file
+    File? groups_file
+    Float? fraction_cutoff
+    Float? fdr_cutoff
 
     command {
         set -euo pipefail
+
+	# Myranda's parameter integration script: input master_yaml, output yaml_file
 
         /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "${yaml_file}"
 
