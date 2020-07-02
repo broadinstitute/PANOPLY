@@ -28,7 +28,7 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file){
     select(all_of(GeneSymbol_column), rowname) %>%
     left_join(data_values, by = "rowname")
   
-  if (identifiers_file != NULL){
+  if (!is.null(identifiers_file){
     if (identifiers_file == "kinases"){
       identifiers_file = "/prot/proteomics/Projects/PGDAC/src/kinase_list.txt"
     }
@@ -49,11 +49,27 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file){
 
 create_groupsfile_annotations = function(gct, groups_file){
   
-  # extract annotations of interest for outlier analysis groupings
-  annotations = gct@cdesc %>%
-    select(all_of(colnames(groups_file)))
+  annotations = fread(groups_file) %>%
+    column_to_rownames("Sample.ID")
   
   return(annotations)
+}
+
+create_binary_annotations = function(annotations){
+  
+  binary_annotations = make_comparison_columns(heatmap_annotations)
+  
+  cols = vector()
+  for (i in colnames(binary_annotations)){
+    if (1 %in% table(binary_annotations[,i])){
+      cols = append(i, cols)
+    }
+  }
+  
+  binary_annotations_revised = binary_annotations[, !(colnames(binary_annotations) %in% cols)]
+  
+  return(binary_annotations_revised)
+  
 }
 
 outlier_count_only = function(data_values){
@@ -72,6 +88,7 @@ outlier_count_only = function(data_values){
     # save table indicating outliers
     outlier_table = outlier_table_out$outliertab
     write.csv(outlier_table, file.path(csv_name[i], paste0(csv_name[i], "_outliers_table.csv")))
+  }
 
   return(outlier_table
 }
@@ -118,6 +135,18 @@ outlier_count_and_analysis = function(groupings, data_values, fraction_samples_c
   return(results)
 }
 
+order_heatmap_annotations = function(annotations){
+  
+  #order annotations for heatmap
+  column = gsub("_[^_]+$", "", heatmap_names[i])
+  annotations_ordered = annotations %>%
+    rownames_to_column("rowname") %>%
+    arrange_at(column) %>%
+    column_to_rownames("rowname")
+  
+  return(annotations_ordered)
+}
+
 generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_neg, fdrcutoffvalue, annotations){
   
   csv_name = c("negative", "positive")
@@ -146,13 +175,15 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
       write.table(GOI_list, file.path(csv_name[pos_neg], paste0("significant_genes_ ", csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".txt")), quote = FALSE, row.names = FALSE, col.names = FALSE)
 
       if(length(GOI) > 0) {
-        subset_fraction_table = deva_output$fraction_table[GOI,
-                                                            rownames(annotations), drop=FALSE]
+        annotations_ordered = order_heatmap_annotations(annotations)
         
-        col_heatmap_annotations = annotationlist_builder(annotations)
+        subset_fraction_table = deva_output$fraction_table[GOI,
+                                                            rownames(annotations_ordered), drop=FALSE]
+        
+        col_heatmap_annotations = annotationlist_builder(annotations_ordered)
         
         heatmap = create_heatmap(counttab = subset_fraction_table,
-                                 colmetatable = annotations,
+                                 colmetatable = annotations_ordered,
                                  colannotationlist = col_heatmap_annotations,
                                  colclusterparam = FALSE,
                                  rowclusterparam = FALSE,
@@ -197,7 +228,7 @@ run_blacksheep_analysis = function(gct_path,
   # read gct file
   gct = parse.gctx(gct_path)
 
-  if (groups_file == NULL) {
+  if (is.null(groups_file) {
 
     data_values = data.frame(gct@mat)
 
@@ -208,14 +239,14 @@ run_blacksheep_analysis = function(gct_path,
 
     #format data and annotations
     data_values = create_values_input(gct, GeneSymbol_column, identifiers_file)
-    annotations = create_groupsfile_annotations(gct, groups_file)
+    heatmap_annotations = create_groupsfile_annotations(gct, groups_file)
 
     # binarize annotations
-    binary_annotations = make_comparison_columns(annotations)
+    binary_annotations = create_binary_annotations(heatmap_annotations)
 
     # run deva for positive and negative outliers, save tables and generate heatmaps
     blacksheep_out = run_deva_all(binary_annotations, data_values, fraction_samples_cutoff,
-                          fdrcutoffvalue, annotations)
+                          fdrcutoffvalue, heatmap_annotations)
   
   }
 
