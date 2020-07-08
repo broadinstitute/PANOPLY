@@ -8,15 +8,21 @@ task panoply_blacksheep {
 
     File? identifiers_file
     File? groups_file
-    Float? fraction_cutoff
-    Float? fdr_cutoff
+    Float? fraction_samples_cutoff
+    Float? fdr_value
 
     command {
         set -euo pipefail
 
-	# Myranda's parameter integration script: input master_yaml, output yaml_file
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.R \
+        --module blacksheep \
+        --master_yaml ${master_yaml} \
+        ${"--identifiers_file " + identifiers_file} \
+        ${"--groups_file " + groups_file} \
+        ${"--fraction_samples_cutoff " + fraction_samples_cutoff} \
+        ${"--fdr_value " + fdr_value}
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "${yaml_file}"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "final_output_params.yaml"
 
         tar -czvf blacksheep_outlier_analysis.tar.gz blacksheep 
     }
