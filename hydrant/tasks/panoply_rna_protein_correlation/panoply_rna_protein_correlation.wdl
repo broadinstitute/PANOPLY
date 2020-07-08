@@ -4,7 +4,9 @@ task panoply_rna_protein_correlation {
   String type
   String standalone
   String? subType
-  File? params
+  File yaml
+  Int? rnaSDthreshold
+  Int? profilePlotTopN
   String? analysisDir
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_rna_protein_correlation-output.tar"
@@ -18,6 +20,11 @@ task panoply_rna_protein_correlation {
 
   command {
     set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module rna_protein_correlation \
+    --master_yaml ${yaml} \
+    ${"--rna_sd_threshold " + rnaSDthreshold} \
+    ${"--profile_plot_top_n " + profilePlotTopN}
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr \
                   -i ${inputData} \
@@ -26,7 +33,7 @@ task panoply_rna_protein_correlation {
                   -rna ${rnaExpr} \
                   -o ${outFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr \
                   -f ${inputData} \
@@ -37,7 +44,7 @@ task panoply_rna_protein_correlation {
                   -r ${analysisDir} \
                   -o ${outFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     fi
   }
 
@@ -46,7 +53,7 @@ task panoply_rna_protein_correlation {
   }
 
   runtime {
-    docker : "broadcptac/panoply_rna_protein_correlation:1"
+    docker : "broadcptac/panoply_rna_protein_correlation:dev"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -65,6 +72,8 @@ workflow panoply_rna_protein_correlation_workflow {
   File inputData
   String standalone
   String? analysisDir
+  Int? rnaSDthreshold
+  Int? profilePlotTopN
 
   call panoply_rna_protein_correlation {
     input:
@@ -73,5 +82,7 @@ workflow panoply_rna_protein_correlation_workflow {
       rnaExpr=rnaExpr,
       analysisDir=analysisDir,
       standalone=standalone
+      rnaSDthreshold=rnaSDthreshold
+      profilePlotTopN=profilePlotTopN
   } 
 }

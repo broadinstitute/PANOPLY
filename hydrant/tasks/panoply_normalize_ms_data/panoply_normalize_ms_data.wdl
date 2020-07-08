@@ -14,6 +14,8 @@ task panoply_normalize_ms_data {
   Float? nmissFactor
   Float? sdFilterThreshold
   String? duplicateGenePolicy
+  String? geneIdCol
+  String? organism
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_normalize_ms_data-output.tar"
@@ -37,7 +39,9 @@ task panoply_normalize_ms_data {
     ${"--min_numratio_fraction " + minNumratioFraction} \
     ${"--nmiss_factor " + nmissFactor} \
     ${"--sd_filter_threshold " + sdFilterThreshold} \
-    ${"--duplicate_gene_policy " + duplicateGenePolicy}
+    ${"--duplicate_gene_policy " + duplicateGenePolicy} \
+    ${"--gene_id_col " + geneIdCol} \
+    ${"--organism " + organism}
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -i ${inputData} \
@@ -92,6 +96,8 @@ workflow panoply_normalize_ms_data_workflow {
   Float? nmissFactor
   Float? sdFilterThreshold
   String? duplicateGenePolicy
+  String? geneIdCol
+  String? organism
 
   call panoply_normalize_ms_data {
     input:
@@ -109,5 +115,7 @@ workflow panoply_normalize_ms_data_workflow {
       nmissFactor=nmissFactor,
       sdFilterThreshold=sdFilterThreshold,
       duplicateGenePolicy=duplicateGenePolicy
+      geneIdCol=geneIdCol
+      organism=organism
   }
 }

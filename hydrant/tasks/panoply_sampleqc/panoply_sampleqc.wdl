@@ -2,7 +2,8 @@ task panoply_sampleqc {
   File tarball   # output from panoply_harmonize
   String type
   String? subType
-  File? params
+  File yaml
+  Float? corThreshold
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_sampleqc-output.tar"
 
@@ -14,7 +15,11 @@ task panoply_sampleqc {
 
   command {
     set -euo pipefail
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh sampleQC -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params}
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module sample_qc \
+    --master_yaml ${yaml} \
+    ${"--cor_threshold " + corThreshold} 
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh sampleQC -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} -p "config-custom.r"
   }
 
   output {
@@ -22,7 +27,7 @@ task panoply_sampleqc {
   }
 
   runtime {
-    docker : "broadcptac/panoply_sampleqc:1"
+    docker : "broadcptac/panoply_sampleqc:dev"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

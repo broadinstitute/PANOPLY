@@ -6,7 +6,17 @@ task panoply_harmonize {
   String standalone
   String? analysisDir
   String? subType
-  File? params
+  File yaml
+  String? pomeGeneIdCol
+  String? cnaGeneIdCol
+  String? rnaGeneIdCol
+  Int? ndigits
+  Float? naMax
+  Float? sampleNaMax
+  Float? minNumratioFraction
+  Float? nmissFactor
+  Float? sdFilterThreshold
+  String? duplicateGenePolicy
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
@@ -20,6 +30,19 @@ task panoply_harmonize {
 
   command {
     set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module harmonize \
+    --master_yaml ${yaml} \
+    ${"--pome_gene_id_col " + pomeGeneIdCol} \
+    ${"--cna_gene_id_col " + cnaGeneIdCol} \
+    ${"--rna_gene_id_col " + rnaGeneIdCol} \
+    ${"--ndigits " + ndigits} \
+    ${"--na_max " + naMax} \
+    ${"--sample_na_max " + sampleNaMax} \
+    ${"--min_numratio_fraction " + minNumratioFraction} \
+    ${"--nmiss_factor " + nmissFactor} \
+    ${"--sd_filter_threshold " + sdFilterThreshold} \
+    ${"--duplicate_gene_policy " + duplicateGenePolicy}
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -i ${inputData} \
@@ -30,7 +53,7 @@ task panoply_harmonize {
                   -cna ${cnaExpr} \
                   -o ${outFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -f ${inputData} \
@@ -42,7 +65,7 @@ task panoply_harmonize {
                   -cna ${cnaExpr} \
                   -o ${outFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     fi
   }
 
@@ -51,7 +74,7 @@ task panoply_harmonize {
   }
 
   runtime {
-    docker : "broadcptac/panoply_harmonize:1"
+    docker : "broadcptac/panoply_harmonize:dev"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -71,6 +94,14 @@ workflow panoply_harmonize_workflow {
     File cnaExpr
     String dataType
     String? analysisDir
+    File yaml
+    Int? ndigits
+    Float? naMax
+    Float? sampleNaMax
+    Float? minNumratioFraction
+    Float? nmissFactor
+    Float? sdFilterThreshold
+    String? duplicateGenePolicy
 
   call panoply_harmonize {
     input:
@@ -80,5 +111,13 @@ workflow panoply_harmonize_workflow {
       analysisDir=analysisDir,
       standalone=standalone,
       type=dataType
+      yaml=yaml
+      ndigits=ndigits
+      naMax=naMax
+      sampleNaMax=sampleNaMax
+      minNumratioFraction=minNumratioFraction
+      nmissFactor=nmissFactor
+      sdFilterThreshold=sdFilterThreshold
+      duplicateGenePolicy=duplicateGenePolicy
   }
 }
