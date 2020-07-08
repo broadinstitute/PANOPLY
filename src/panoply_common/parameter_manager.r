@@ -162,7 +162,7 @@ read_yaml_file <- function(yaml){
 # Write out final yaml file:
 write_yaml_file <- function(yaml){
   yaml_name <- file('final_output_params.yaml', "w")
-  write_yaml(yaml, yaml_name,handlers = list(
+  write_yaml(yaml, yaml_name, handlers = list(
     logical = function(x) {
       result <- ifelse(x, "TRUE", "FALSE")
       class(result) <- "verbatim"
@@ -497,6 +497,7 @@ check_mo_nmf_params <- function(opt, yaml){
   if (!is.null(opt$mo_nmf_nmf_only)){
     yaml$panoply_mo_nmf$nmf_only <- opt$mo_nmf_nmf_only
   }
+  return(yaml)
 }
 
 # ssgsea_projection:
@@ -534,6 +535,7 @@ check_ssgsea_projection_params <- function(opt, yaml){
   if (!is.null(opt$ssgsea_multi_core)){
     yaml$panoply_ssgsea_projection$multi_core <- opt$ssgsea_multi_core
   }
+  return(yaml)
 }
 
 # blacksheep:
@@ -550,6 +552,7 @@ check_blacksheep_params <- function(opt, yaml){
   if (!is.null(opt$blacksheep_fdr_value)){
     yaml$panoply_blacksheep$fdr_value <- opt$blacksheep_fdr_value
   }
+  return(yaml)
 }
 
 # Checks all parameters (maybe use for final output yaml for whole pipeline?)
@@ -619,7 +622,7 @@ write_custom_config <- function(yaml){
                 #cmap_analysis: HAS ITS OWN FUNCTION below
                 #immune_analysis:
                 paste('immune.enrichment.fdr', '<-', yaml$panoply_immune_analysis$immune_enrichment_fdr),
-                paste('immune.enrichment.subgroups', '<-', yaml$panoply_immune_analysis$immune_enrichment_subgroups),
+                paste('immune.enrichment.subgroups', '<-', ifelse(is.null(yaml$panoply_immune_analysis$immune_enrichment_subgroups),'NULL', yaml$panoply_immune_analysis$immune_enrichment_subgroups)),
                 paste('immune.heatmap.width', '<-', yaml$panoply_immune_analysis$immune_heatmap_width),
                 paste('immune.heatmap.height', '<-', yaml$panoply_immune_analysis$immune_heatmap_height),
                 #DEV_sample_annotations:
@@ -666,7 +669,7 @@ write_custom_cmap_config <- function(yaml){
                   paste('top.N', '<-', yaml$panoply_cmap_analysis$top_N),
                   paste('fdr.pvalue', '<-', yaml$panoply_cmap_analysis$fdr_pvalue),
                   paste('log.transform', '<-', yaml$panoply_cmap_analysis$log_transform),
-                  paste('must.include.genes', '<-', yaml$panoply_cmap_analysis$must_include_genes),
+                  paste('must.include.genes', '<-', ifelse(is.null(yaml$panoply_cmap_analysis$must_include_genes), 'NULL', yaml$panoply_cmap_analysis$must_include_genes)),
                   paste('cis.fdr', '<-', yaml$panoply_cmap_analysis$cis_fdr),
                   paste('legacy.score', '<-', yaml$panoply_cmap_analysis$legacy_score),
                   paste('rankpt.n', '<-', yaml$panoply_cmap_analysis$rankpt_n),
@@ -744,7 +747,7 @@ parse_command_line_parameters <- function(opt){
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
     
-  }else if (opt$module == 'cmap_analysis' & check_if_any_command_line(opt)){
+  }else if (opt$module == 'cmap_analysis'){
     yaml <- check_cmap_analysis_params(opt, yaml) #Returns updated yaml if module params were changed via command line
     write_custom_cmap_config(yaml) #Write params to custom-config.r (CMAP version)
    
@@ -755,14 +758,17 @@ parse_command_line_parameters <- function(opt){
   
   }else if (opt$module == 'blacksheep' & check_if_any_command_line(opt)){
     yaml <- check_blacksheep_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'mo_nmf' & check_if_any_command_line(opt)){
     yaml <- check_mo_nmf_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'ssgsea_projection' & check_if_any_command_line(opt)){
     yaml <- check_ssgsea_projection_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
-  }else if (opt$module == 'pipeline' & check_if_any_command_line(opt)){
+  }else if (opt$module == 'pipeline'){
     yaml <- check_pipeline_params(opt, yaml)
     write_custom_config(yaml)
     write_custom_cmap_config(yaml)

@@ -85,7 +85,7 @@ panoply_cmap_analysis:
   top_N: 500                       # maximum number of genes to run CMAP enrichment on (default: 500)
   fdr_pvalue: 0.05                 # FDR for CNA correlations (default: 0.05)
   log_transform: FALSE      # if TRUE, log transform input data
-  must_include_genes: "NULL"         # genes that must be included in the CMAP analysis (vector, default: NULL)
+  must_include_genes: NULL         # genes that must be included in the CMAP analysis (vector, default: NULL)
   # CMAP connectivity score and statistical significance:
   cis_fdr: fdr.pvalue              # FDR for cis-correlations (default: 0.05)
   legacy_score: FALSE              # if TRUE, legacy connectivity score will be calculated (using mean rank points), with permutation FDR
@@ -100,7 +100,7 @@ panoply_cmap_analysis:
 
 panoply_immune_analysis:
   immune_enrichment_fdr: 0.05
-  immune_enrichment_subgroups: "NULL"
+  immune_enrichment_subgroups: NULL
   immune_heatmap_width: 10
   immune_heatmap_height: 15
 
