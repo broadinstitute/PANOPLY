@@ -1,4 +1,4 @@
-FROM broadcptacdev/panoply_common:74e21ac
+FROM broadcptacdev/panoply_common:latest
 MAINTAINER rkothadi@broadinstitute.org
 
 RUN Rscript -e "pacman::p_load ('prada')"

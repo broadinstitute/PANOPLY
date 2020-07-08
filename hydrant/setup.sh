@@ -54,7 +54,7 @@ buildDocker() {
     yes | docker system prune --all;
   fi
   echo -e "$not Building $task locally...";
-  echo "!data\n!packages\n!R-utilities" > .dockerignore;
+  echo -e "!data\n!packages\n!R-utilities\n!src" > .dockerignore;
   if [[ $task == "panoply_libs" ]]; then
     mkdir -p packages
     cp -r $panoply/hydrant/packages/* packages/.
@@ -67,7 +67,10 @@ buildDocker() {
     mkdir -p data
     cp -r $panoply/data/* data/.
   fi
-  docker build --rm --no-cache -t $docker_ns/$task:$docker_tag . ;
+
+  dname_1="$docker_ns/$task:$docker_tag"
+  dname_2="$docker_ns/$task:latest"
+  docker build --rm --no-cache -t $dname_1 -t $dname_2 . ;
   docker images | grep "$task"
 }
 
@@ -78,6 +81,7 @@ pushDocker()
   cd $panoply/hydrant/tasks/$task/$task/;
   echo -e "$not Pushing $task:$docker_tag to dockerhub...";
   docker push $docker_ns/$task:$docker_tag;
+  docker push $docker_ns/$task:latest;
 }
 
 # replace the docker namespace and docker tag in the existing WDL

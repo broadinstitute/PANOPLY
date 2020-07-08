@@ -1,2 +1,0 @@
-entity:participant_id	inputFile	outputName	output
-Test	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/testdata_outlier.tar	outlier-analysis-results.tar	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/test_outlier_output.tar

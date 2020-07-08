@@ -1,16 +1,17 @@
-FROM r-base
+FROM r-base:3.6.3
 MAINTAINER rkothadi@broadinstitute.org
 
 RUN apt-get update
 RUN apt-get -t unstable install -y libssl-dev
 RUN apt-get -t unstable install -y libcurl4-openssl-dev
+RUN apt-get install -y jags
 
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
 RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
   install.packages( "BiocManager", \
     repos = "http://cran.us.r-project.org", dependencies = TRUE ); \
-  BiocManager::install(); \
+  BiocManager::install( version = "3.10" ); \
   BiocManager::install( c( "Biobase", \
 	"graph", \
 	"Rgraphviz", \
@@ -20,7 +21,9 @@ RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
 	"GO.db", \
         "rhdf5", \
         "prada", \
-	"AnnotationDbi" ) );' > /tmp/biocpkgs.R \
+	"AnnotationDbi", \
+        "ComplexHeatmap", \
+        "SummarizedExperiment" ) );' > /tmp/biocpkgs.R \
   && Rscript /tmp/biocpkgs.R
 
 RUN echo 'install.packages ( "estimate", \
@@ -78,18 +81,24 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( rjson ); \
 	p_install( GlobalOptions); \
 	p_install( GetoptLong ); \
-        p_install( MethComp ); \
+        p_install( coda ); \
+        p_install( rjags ); \
         p_install( limma );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
-RUN echo 'install.packages( \
-	"/prot/proteomics/Projects/PGDAC/packages/ComplexHeatmap_1.17.1.tar.gz", \
-	type="source", repos=NULL )' > /tmp/packages.R && Rscript /tmp/packages.R
 
 RUN echo 'install.packages( \
-	"/prot/proteomics/Projects/PGDAC/packages/cmapR_1.0.1.tar.gz", \
+	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \
 	type="source", repos=NULL );' > /tmp/packages.R && Rscript /tmp/packages.R
+
+RUN echo 'install.packages( \
+        "/prot/proteomics/Projects/PGDAC/packages/MethComp_1.30.0.tar.gz", \
+        type="source", repos=NULL );' > /tmp/packages.R && Rscript /tmp/packages.R
 
 RUN apt-get -t unstable install -y gfortran -std=legacy
 RUN echo 'install.packages( \
-	"/prot/proteomics/Projects/PGDAC/packages/pamr_1.55.tar.gz", \
+	"/prot/proteomics/Projects/PGDAC/packages/pamr_1.56.1.tar.gz", \
 	type="source", repos=NULL );' > /tmp/packages.R && Rscript /tmp/packages.R
+
+## Check which packages got installed and which failed
+COPY src/test_packages.r /tmp/test_packages.r
+RUN  Rscript /tmp/test_packages.r > /tmp/check_pkgs_log.txt

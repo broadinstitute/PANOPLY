@@ -1,2 +1,0 @@
-entity:participant_id	cna	rna	pome	analysisDir	groups
-MedulloProteomeCNA	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/medullo-cna-data.gct	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/medullo-rna-rsem.gct	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/proteome-filtered-data.gct	cna-test	gs://fc-27487a08-9d85-4c7a-b600-ada75bec414d/medullo/groups.csv

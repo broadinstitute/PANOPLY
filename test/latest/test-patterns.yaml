@@ -1,0 +1,5 @@
+---
+
+harmonized.data:
+  - "!sample-info.csv"
+  - "*.csv"

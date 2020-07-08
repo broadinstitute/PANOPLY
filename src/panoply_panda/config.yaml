@@ -1,0 +1,48 @@
+---
+
+TEDMINT: ~/.tedmint/pgdac_tedmint/v2-0/bin/
+
+wkspace: tedmint-test
+freeze.path: /Users/rkothadi/Documents/code/tedmint/safe-bckup/df
+
+typemap.gct:
+  proteome: tedmint-test-proteome-ratio-norm-NArm.gct
+  phosphoproteome: tedmint-test-phosphoproteome-ratio-norm-NArm.gct
+  acetylome:
+  rna:
+  cna: 
+
+typemap.csv:
+  annotation: tedmint-test-sample-annotation.csv
+  groups:
+
+groups.cols: 
+  - Smoking.Status
+  - Stage
+  - Region.of.Origin
+  - TP53.mutation.status
+  - KRAS.mutation.status
+  - STK11.mutation.status
+  - EGFR.mutation.status
+  - KEAP1.mutation.status
+  - RB1.mutation.status
+  - IL21R.mutation.status
+  - EGFL6.mutation.status
+  - LMO2.mutation.status
+  - C10orf62.mutation.status
+  - DKK3.mutation.status
+  - BIRC6.mutation.status
+
+globals:
+  project: broad-firecloud-cptac
+  group: GROUP_Broad_CPTAC@firecloud.org
+  meth_space: broadcptac
+
+sample.sets:
+  tumors:
+    fil_col: Type
+    fil_val: Tumor
+    geneset_db: /Users/rkothadi/Downloads/testme.gmt
+  normals:
+    fil_col: Type
+    fil_val: NAT
