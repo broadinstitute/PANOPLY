@@ -80,7 +80,7 @@ process_other_attributes <- function( set ){
     buck.file.name <- other.files$file.name[rIdx]
     locl.file.name <- tail( unlist( strsplit( buck.file.name,
                                               split = '/' ) ), 1 )
-    file.copy( from = buck.file.name,
+    file.copy( from = glue( "pipeline-input/{buck.file.name}" ),
                to = glue( "aggregates/{set}/{locl.file.name}" ) )
   }
 
@@ -133,10 +133,14 @@ process_additional_parameters <- function( set ){
       '-t sample_set -e {set}' )
     system( attr.set )
   }
-
 }
 
 process_types <- function( set ){
+  ## use gsutil to copy files to the google bucket
+  bucket.cp <- glue( 'gsutil -m cp aggregates/{set}/* ',
+                     'gs://{opt$bucket}/sample_sets/{set}/' )
+  system( bucket.cp )
+  
   ## iterate over all types and set links between type files in the google
   ## bucket and in the Terra table
   types <- c( opt$csv.types, opt$gct.types )

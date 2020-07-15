@@ -1,0 +1,172 @@
+###
+### Master Panoply Parameters YAML
+###
+
+---
+
+##############################################
+
+###
+### Parameters from config.r
+###
+
+config_r_parameters:
+
+###### THESE PARAMETERS REQUIRE CORRESPONDING CHANGES IN run-pipeline.sh PARAMETERS:
+  data.dir: '../data'
+  pre.dir: '../parsed-data'
+  norm.dir: '../normalized-data'
+  harmonize.dir: '../harmonized-data'
+
+  ## Input data location
+  # input files are copies to this location so that the tarball has all the data
+  input.data.file: file.path (data.dir, paste (type, '-SMout.ssv', sep=''))
+  expt.design.file: file.path (data.dir, 'exptdesign.csv')
+  rna.data.file: file.path (data.dir, 'rna-data.gct')
+  cna.data.file: file.path (data.dir, 'cna-data.gct')
+
+####### END OF PARAMETERS THAT REQUIRE CORRESPONDING CHANGES IN run-pipeline.sh PARAMETERS
+
+###
+### These Parameters can be freely changed and will only affect config.r:
+###
+
+### Label type for MS experiment (set.label.type must be called to initialize variables)
+  label_type_for_MS_exp:
+    label.type: TMT10  # alternatives: iTRAQ4, TMT10.126, TMT11
+
+### Sample replicate indicator
+# Sample.IDs MUST be unique in the expt.design.file; duplicate samples should have the same 
+# sample names, but include this replicate.indicator, followed by a unique suffix: <name>REP1) 
+  sample_replicate_indicator:
+    replicate.indicator: .REP
+
+### QC
+# QC status can be indiated using a separate cls file,
+# or included in the experiment design file with column name qc.col;
+# if neither is found, all samples are marked as qc.pass.label
+# if both exist, the experiment design file supercedes
+  QC:  
+    sampleQC.cls: NULL
+    qc.col: QC.status
+    qc.pass.label: QC.pass
+
+### Output precision for gct tables
+  output_precision:
+    ndigits: 5
+
+### Missing values and filtering
+  missing_values_and_filtering:
+    na.max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction or integer number of samples
+    min.numratio.fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
+    sample.na.max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+    nmiss.factor: 0.5            # for some situations, a more stringent condition is needed
+    sd.filter.threshold: 0.5     # SD threshold for SD filtering
+    clustering.sd.threshold: 2   # threshold for filtering data before consensus clustering
+    clustering.na.threshold: 0.5 # max fraction of missing values for clustering; rest are imputed
+    apply.SM.filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+
+### Normalization
+  normalization:
+    norm.method: Zcomp           # options: 2comp (default), median, mean
+    alt.method: median           # alt.method for comparison -- filtered datasets not generated
+
+### Gene mapping
+# gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
+  gene_mapping:
+    official.genesyms: gene-symbol-map.csv
+    gene.id.col: geneSymbol
+    protein.gene.map: RefSeq-GeneName-Map-20170701.txt
+    # Policy for combining/collapsing duplicate gene names:
+    duplicate.gene.policy: maxvar
+
+### RNA related
+  rna:
+    rna.output.prefix: rna-seq     # output prefix for tables creates during RNA analysis
+    rna.sd.threshold: 1            # for variation filter (set to NA to disable)
+
+### CNA/parallelism related
+  CNA_parallelism:
+    pe.max.default: 250            # default maximum processors/jobs
+
+### Project
+# data source -- for managing some operations (esp related to sample IDs and names)
+#  [all current options listed below -- uncomment only one]
+# use project.name to manage project specific processing and options
+  project:
+    project.name: default
+# project.name: cptac2.tcga
+
+## Disease
+# disease setting is used to set disease specific options and
+# run appropriate CNA subsets by creating run-cna-analysis-<disease>.r;
+# uncomment one (or none) below:
+  # disease:
+    # disease: MEDULLO
+    # disease: BRCA
+
+############################################## End of config.r parameters
+
+###
+### run-pipeline.sh parameters
+###
+
+# These parameters generally stay as defaults. Make sure any dependent parameters in config.r have been changed (and vice versa):
+run_pipeline_parameters:
+
+  # default parameters
+  # work with absolute paths for file/dir links/names
+  sm_file: ''
+  norm_data: ''
+  parsed_data: ''
+  filt_data: ''
+  expt_file: ''
+  input_tar: ''
+  output_tar: ''
+  analysis_dir: ''
+  code_dir: ''
+  common_data: ''
+  param_file: ''
+  data: ''
+  rna_data: ''
+  cna_data: ''
+  groups: ''
+  pe: ''
+  cmap_group: "all"
+  cmap_type: "pome"
+  cmap_scores: ''
+  cmap_nperm: "0"
+  cmap_permutation: "tmp"
+  cmap_config_file: ''
+  prefix: "proteome"
+  data_source: "default"
+  log_file: "RUN-LOG.txt"
+
+
+## Parameters with corresponding config.r values:
+## some definitions to more easily coordinate with config.r
+
+  data_dir: "data"                  # data.dir in config.r
+  parse_dir: "parsed-data"          # pre.dir in config.r
+  norm_dir: "normalized-data"       # norm.dir in config.r
+  harmonize_dir: "harmonized-data"  # harmonize.dir in config.r
+  rna_dir: "rna"
+  cna_dir: "cna"
+  cmap_dir: "cmap"
+  cmap_prefix: "$cmap_group-$cmap_type"
+  qc_dir: "sample-qc"
+  assoc_dir: "association"
+  cluster_dir: "clustering"
+
+  expt_design_file: "exptdesign.csv"  # affects expt.design.file in config.r
+  parsed_output: "$prefix-ratio.gct"
+  normalized_output: "$prefix-ratio-norm.gct"
+  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
+  rna_data_file: "rna-data.gct"       # affects rna.data.file in config.r
+  cna_data_file: "cna-data.gct"       # affects cna.data.file in config.r
+
+
+
+
+
+
