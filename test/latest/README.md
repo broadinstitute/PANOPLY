@@ -2,8 +2,9 @@ Test Script now exists in the `PANOPLY/tests/latest` folder that compares a gold
 
 ### Function
 - Checks for missing `png`, `jpeg`,  and `pdf` files in addition to other "data" files
+- Compares file sizes for `png`, `jpeg`,  and `pdf` files and warns of any decreases beyond a specified threshold
 - Checks for missing sub-directories
-- Compares all `GCT`s and `CSV`s unless specified with other regular expression rules to narrow down the list of files to compare
+- Compares all `GCT`s, `TXT`s and `CSV`s unless specified with other regular expression rules to narrow down the list of files to compare
 - Uses a `tolerance` argument` that can be set while calling the script
 - Logs messages for failed comparisons, missing files, and passed files
 
@@ -13,6 +14,7 @@ Test Script now exists in the `PANOPLY/tests/latest` folder that compares a gold
     + `test.tar`: test tarball
     + `tolerance`: threhsold for comparing numerical matrices; by default set to `1.490116e-08` or `.Machine$double.eps ^ 0.5`
     + `file.list`: a YAML file listing patterns
+    + `size.diff` : a float number indicating a percent size change treshold for comparing image files; default = `0.5` 
 - More on the YAML file:
     + keys should be sub-directories inside the tarball (NOTE: if sub-directory name is `harmonized-data` use key `make.names( "harmonized-data" )` as the key, which in this case would be `harmonized.data`
     + each sub-directory should have a non-nested list of patterns
