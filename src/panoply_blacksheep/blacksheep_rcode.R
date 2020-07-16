@@ -12,12 +12,14 @@ yaml_file = as.character(args[2])
 
 yaml_params = read_yaml(yaml_file)
 GeneSymbol_column = yaml_params$global_parameters$gene_mapping$gene_id_col
+SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_name
+apply_identifiers_filter = yaml_params$panoply_blacksheep$apply_identifiers_filter
 identifiers_file = yaml_params$panoply_blacksheep$identifiers_file
 groups_file = yaml_params$panoply_blacksheep$groups_file
 fraction_samples_cutoff = yaml_params$panoply_blacksheep$fraction_samples_cutoff
 fdrcutoffvalue = yaml_params$panoply_blacksheep$fdr_value
 
-create_values_input = function(gct, GeneSymbol_column, identifiers_file){
+create_values_input = function(gct, GeneSymbol_column, apply_identifiers_filter, identifiers_file){
   
   # extract data table and replace protein name with gene symbol for downstream aggregation and analysis
   data_values = data.frame(gct@mat) %>%
@@ -28,14 +30,21 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file){
     select(all_of(GeneSymbol_column), rowname) %>%
     left_join(data_values, by = "rowname")
 
-  if (!is.null(identifiers_file)){
-    if (identifiers_file == "kinases"){
+  if (apply_identifiers_filter == TRUE){
+    if (is.null(identifiers_file)){
       identifiers_file = "/prot/proteomics/Projects/PGDAC/src/kinase_list.txt"
+      print("Kinases filter applied")
+    } else {
+      print("Applying user-supplied file filter")
     }
     identifiers = read.delim(identifiers_file, header = FALSE, sep="\t")
     identifiers = as.character(identifiers$V1)
     genesymbol = genesymbol %>%
       filter(genesymbol[,GeneSymbol_column] %in% identifiers)
+  } else if (apply_identifiers_filter == FALSE) {
+    print("No filter applied")
+  } else {
+    warning("Unrecognized input for apply_identifiers_filter, continuing with no filter")
   }
   
   genesymbol[,GeneSymbol_column] = paste(genesymbol[,GeneSymbol_column], row.names(genesymbol), sep = "-")
@@ -47,10 +56,10 @@ create_values_input = function(gct, GeneSymbol_column, identifiers_file){
   return(genesymbol_values)
 }
 
-create_groupsfile_annotations = function(gct, groups_file){
+create_groupsfile_annotations = function(gct, groups_file, SampleID_column){
   
   annotations = read.csv(groups_file) %>%
-    column_to_rownames("Sample.ID")
+    column_to_rownames(SampleID_column)
   
   return(annotations)
 }
@@ -232,8 +241,8 @@ run_blacksheep_analysis = function(gct_path,
   } else {
 
     #format data and annotations
-    data_values = create_values_input(gct, GeneSymbol_column, identifiers_file)
-    heatmap_annotations = create_groupsfile_annotations(gct, groups_file)
+    data_values = create_values_input(gct, GeneSymbol_column, apply_identifiers_filter, identifiers_file)
+    heatmap_annotations = create_groupsfile_annotations(gct, groups_file, SampleID_column)
 
     # binarize annotations
     binary_annotations = create_binary_annotations(heatmap_annotations)
