@@ -104,7 +104,7 @@ option_list <- list(
   make_option(c("--ssgsea_global_fdr"), type = "logical", dest = 'ssgsea_global_fdr', help = "ssgsea If TRUE global FDR across all data columns is calculated."),
   make_option(c("--ssgsea_multi_core"), type = "logical", dest = 'ssgsea_multi_core', help = "ssgsea If TRUE processing will be parallelized across gene sets using (N-1) CPU cores"),
   # blacksheep_module:
-  make_option(c("--blacksheep_apply_identifiers_file"), type = "logical", dest = 'blacksheep_apply_identifiers_file', help = "blacksheep_apply_identifiers_file"),
+  make_option(c("--blacksheep_apply_filtering"), type = "logical", dest = 'blacksheep_apply_filtering', help = "blacksheep_apply_filtering"),
   make_option(c("--blacksheep_identifiers_file"), dest = 'blacksheep_identifiers_file', help = "blacksheep_identifiers_file"),
   make_option(c("--blacksheep_groups_file"), dest = 'blacksheep_groups_file', help = "blacksheep_groups_file"),
   make_option(c("--blacksheep_fraction_samples_cutoff"), type = "double", dest = 'blacksheep_fraction_samples_cutoff', help = "blacksheep_fraction_samples_cutoff"),
@@ -541,8 +541,8 @@ check_ssgsea_projection_params <- function(opt, yaml){
 
 # blacksheep:
 check_blacksheep_params <- function(opt, yaml){
-  if (!is.null(opt$blacksheep_apply_identifiers_file)){
-    yaml$panoply_blacksheep$apply_identifiers_file <- opt$blacksheep_apply_identifiers_file
+  if (!is.null(opt$blacksheep_apply_filtering)){
+    yaml$panoply_blacksheep$apply_filtering <- opt$blacksheep_apply_filtering
   }
   if (!is.null(opt$blacksheep_identifiers_file)){
     yaml$panoply_blacksheep$identifiers_file <- opt$blacksheep_identifiers_file
