@@ -690,7 +690,6 @@ task panoply_download
 
 workflow panoply_main {
   File inputData
-  File exptDesign
   File rnaExpr
   File rnaExpr_v3
   File cnaExpr

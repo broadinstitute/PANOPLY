@@ -17,10 +17,13 @@ BiocManager::install(
 p_install( data.table )
 p_install( matrixStats )
 p_load( glue )
-cmapR <- "https://www.bioconductor.org/packages/3.11/bioc/"
-cmapR <- glue( "{cmapR}src/contrib/Archive/cmapR/cmapR_0.99.19.tar.gz" )
-install.packages( cmapR, repos = NULL, type = "source" )
+devtools::install_github("cmap/cmapR")
+#cmapR <- "https://www.bioconductor.org/packages/3.11/bioc/"
+#cmapR <- glue( "{cmapR}src/contrib/Archive/cmapR/cmapR_0.99.19.tar.gz" )
+#install.packages( cmapR, repos = NULL, type = "source" )
 p_load( RColorBrewer )
+p_load( ids )
+p_load( getopt )
 EOM
 
 Rscript build-config-yaml-startup.r

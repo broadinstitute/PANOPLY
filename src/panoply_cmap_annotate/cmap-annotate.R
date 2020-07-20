@@ -207,7 +207,7 @@ cmap.annot.enrich <- function (analysis.dir,
   e <- enrich
   e.sig <- e [ e[,'fisher.test.pvalue'] < fdr, -5]
   write.csv (e.sig, sprintf ('%s/%s-cmap-%s-sig-genes-enrichment-pval%.2f.csv', 
-                             cmap.dir, group, dtype, fdr))
+                             cmap.dir, group, dtype, fdr), row.names=FALSE)
 }    
 
 
