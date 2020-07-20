@@ -13,7 +13,7 @@ yaml_file = as.character(args[2])
 yaml_params = read_yaml(yaml_file)
 GeneSymbol_column = yaml_params$global_parameters$gene_mapping$gene_id_col
 SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_name
-apply_identifiers_filter = yaml_params$panoply_blacksheep$apply_identifiers_filter
+apply_identifiers_filter = yaml_params$panoply_blacksheep$apply_filtering
 identifiers_file = yaml_params$panoply_blacksheep$identifiers_file
 groups_file = yaml_params$panoply_blacksheep$groups_file
 fraction_samples_cutoff = yaml_params$panoply_blacksheep$fraction_samples_cutoff
@@ -30,7 +30,7 @@ create_values_input = function(gct, GeneSymbol_column, apply_identifiers_filter,
     select(all_of(GeneSymbol_column), rowname) %>%
     left_join(data_values, by = "rowname")
 
-  if (apply_identifiers_filter == TRUE){
+  if (isTRUE(apply_identifiers_filter)){
     if (is.null(identifiers_file)){
       identifiers_file = "/prot/proteomics/Projects/PGDAC/src/kinase_list.txt"
       print("Kinases filter applied")
@@ -41,10 +41,8 @@ create_values_input = function(gct, GeneSymbol_column, apply_identifiers_filter,
     identifiers = as.character(identifiers$V1)
     genesymbol = genesymbol %>%
       filter(genesymbol[,GeneSymbol_column] %in% identifiers)
-  } else if (apply_identifiers_filter == FALSE) {
-    print("No filter applied")
   } else {
-    warning("Unrecognized input for apply_identifiers_filter, continuing with no filter")
+    print("No filter applied")
   }
   
   genesymbol[,GeneSymbol_column] = paste(genesymbol[,GeneSymbol_column], row.names(genesymbol), sep = "-")

@@ -6,7 +6,7 @@ task panoply_blacksheep {
     File input_gct
     File master_yaml
 
-    String? apply_identifiers_filter
+    String? apply_filtering
     File? identifiers_file
     File? groups_file
     Float? fraction_samples_cutoff
@@ -18,7 +18,7 @@ task panoply_blacksheep {
         /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.R \
         --module blacksheep \
         --master_yaml ${master_yaml} \
-        ${"--apply_identifiers_filter " + apply_identifiers_filter} \
+        ${"--apply_filtering " + apply_filtering} \
         ${"--identifiers_file " + identifiers_file} \
         ${"--groups_file " + groups_file} \
         ${"--fraction_samples_cutoff " + fraction_samples_cutoff} \
@@ -34,7 +34,7 @@ task panoply_blacksheep {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_blacksheep:latest"
+        docker : "broadcptacdev/panoply_blacksheep:cff57ae"
         memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
