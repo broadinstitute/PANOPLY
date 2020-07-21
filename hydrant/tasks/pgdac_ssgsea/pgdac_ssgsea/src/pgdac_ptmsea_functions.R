@@ -213,41 +213,23 @@ preprocessGCT <- function(
       mat.gc <- aggregate(mat, FUN=function(x) median(x, na.rm=T), by=list(genes))
     
     if(mode == 'SGT'){
-      
       # 1. extract top subgroup
       # 2. collapse to genes by taking median expression
-  
+      
       if(!SGT.col %in% colnames(rdesc)) stop(glue("Column {SGT.col} not found!"))
       
-      ## genes
-      genes <- rdesc[, gene.col]
-      ## subgroup number
-      sgt <- rdesc[, SGT.col] #%>% sub('\\..*', '', .)
-      
-      ## keep lowest subgroup per gene
-      sgt.idx <- tapply(sgt, genes, function(x) x[ which.min( as.numeric(sub('.*\\.', '', x))) ] )
-      
-      ## remove duplicated subgroup numbers introduced when there are more than 9 subgroups (happens in parsing module of panoply)
-      ## 234.10 -> 234.1
-      sgt.idx <- unique(sgt.idx)
-      
-      keep.idx <- match(sgt.idx, sgt)
-      #genes <- genes[ keep.idx] 
-      genes <- names(sgt.idx)
-      
-      mat.gc <- data.frame(id=genes, mat[keep.idx, ])
-      rdesc <- rdesc[keep.idx, ]
-      #mat.sgt <- aggregate(mat, FUN=function(x) x[1], by=list(sgt))
-      #mat.sgt <- mat.sgt[, -c(1)]
+      sgt <- rdesc[, SGT.col] %>% sub('\\..*', '', .)
+      mat.sgt <- aggregate(mat, FUN=function(x) x[1], by=list(sgt))
+      mat.sgt <- mat.sgt[, -c(1)]
       
       ## aggregate rdesc to SGT
-      #rdesc.sgt <- aggregate(rdesc, FUN=function(x) x[1], by=list(sgt))
-      #rdesc.sgt <- rdesc.sgt[, -c(1)]
+      rdesc.sgt <- aggregate(rdesc, FUN=function(x) x[1], by=list(sgt))
+      rdesc.sgt <- rdesc.sgt[, -c(1)]
       
       ## make gen-centric using median expression
-      #genes <- rdesc.sgt[, gene.col]
-      #mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
-      #rdesc <- rdesc.sgt
+      genes <- rdesc.sgt[, gene.col]
+      mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
+      rdesc <- rdesc.sgt
     }
     if(mode == 'abs.max'){
       mat.gc <- aggregate(mat, FUN=function(x)x[ which.max(abs(x)) ], by=list(genes))     

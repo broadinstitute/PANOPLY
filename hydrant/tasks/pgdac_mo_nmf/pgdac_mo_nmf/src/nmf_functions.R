@@ -816,12 +816,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     cw <- opt$hm_cw
     ch <- opt$hm_ch
     if(opt$z_score){
-      max.val <- opt$hm.max.val.z
+      max.val <- opt$hm_max_val_z
     } else {
-      max.val <- opt$hm.max.val
+      max.val <- opt$hm_max_val
     }
     
-  
     ###################################  
     ## get data type of each column
     cdesc <- as.tibble(cdesc)

@@ -752,7 +752,7 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
   
   ###############################
   ## loop over variables
-  pdf(paste0('7.0_boxplots_cluster-continuous-clinical-variables-min-membership-',core_membership,'.pdf'), 5, 5)
+  pdf(paste0('7.0_boxplots-min-membership-',core_membership,'.pdf'), 5, 5)
   for(var in cont_anno){
     
     
@@ -795,7 +795,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                                 blank.anno.col = 'white', ## color for blanks/NAs usind in heatmap annotation tracks
                                 core_membership=0.5,      ## NMF.cluster.membership score to define core memebrship
                                                           ## cluster enrichment of clinical variables will be done on the core set 
-                                feature.fdr=0.01,          ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                pval.ora= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
                                 organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
 
@@ -816,12 +817,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     cw <- opt$hm_cw
     ch <- opt$hm_ch
     if(opt$z_score){
-      max.val <- opt$hm.max.val.z
+      max.val <- opt$hm_max_val_z
     } else {
-      max.val <- opt$hm.max.val
+      max.val <- opt$hm_max_val
     }
     
-  
     ###################################  
     ## get data type of each column
     cdesc <- as.tibble(cdesc)
@@ -983,7 +983,12 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ## - enrichment is calculated on the core set of samples
     variables.all <- unique(c(class.variable, variable.other))
     variables.all <- variables.all[variables.all %in% colnames(cdesc)]
+    
+    ## fewer than 10 levels
     enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) < 10, 1, 0)) == 1)
+    
+    ## exclude 'N/A' category
+    
     
     clust.class.enrichment <- lapply(variables.all[enrich.idx], function(o){
       core.idx  <- which(!is.na(cdesc$NMF.consensus.core))
@@ -996,11 +1001,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     
     ## make matrix
     cons.map.mat <- Reduce(cbind, clust.class.enrichment)
-    cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < 0.01], collapse='|') )
+    cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < pval.ora], collapse='|') )
     cons.map.mat.signif <- data.frame(cluster=names(cons.map.mat.signif), enriched=cons.map.mat.signif)
 
     write.table(t(cons.map.mat), sep='\t', file=paste('cluster-enrichment.txt', sep=''), quote=F, row.names=T, col.names = NA)
-    write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-0.01.txt', sep=''), quote=F, row.names=F)
+    write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-', pval.ora, '.txt', sep=''), quote=F, row.names=F)
 
     ###########################################################
     ## significantly enriched in 'class variable'
@@ -1010,12 +1015,22 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     
     ## export
     write.table(cons.map.max, col.names = NA, sep='\t', file=paste('nmf_vs_', class.variable, '.txt', sep=''), quote=F)
-    cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < 0.01], collapse='|'))
+    cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < pval.ora], collapse='|'))
     not.mapped.idx <- which(nchar(cons.map.max) == 0 )
     
     if(length(not.mapped.idx) > 0)
       cons.map.max[not.mapped.idx] <- as.character(not.mapped.idx)
 
+    cons.map.max <- strsplit(cons.map.max, '\\|') %>% lapply(., function(x){
+      if(length(x) > 1 & blank.anno %in% x) {
+          keep.idx <- which(x != blank.anno)
+          return(x[keep.idx])
+      } else {
+        return(x)
+      }
+      
+      }) %>% unlist
+    
     ####################################################################
     ## map colors of 'class.variable' to NMF clusters
     mapped.idx <- which(cons.map.max %in% names(cdesc.color[[class.variable]]))
@@ -1055,10 +1070,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ##     boxplots comparing continuous variables
     ##
     if(!is.na(cont_anno)){
-          boxplotPerCluster(cdesc=cdesc,   ## clin.anno
+         try( boxplotPerCluster(cdesc=cdesc,   ## clin.anno
                             nmf2col=cdesc.color$NMF.consensus.mapped,     ## vector af length k mapping colors to clusters
                             cont_anno=cont_anno,     ## continuous variables to include
                             core_membership=core_membership)
+              )
     }
     
 
@@ -1539,7 +1555,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
         hm.concat <- hm.concat %v% hm.list[[i]]$hm.noanno
       
       ## draw heatmap
-      pdf('6.0_ComplexHeatmap_ALL_features-concat.pdf', 12, 16)
+      pdf('6.0_ComplexHeatmap_ALL_features-concat.pdf', 16, 16)
       draw(hm.concat, annotation_legend_side='bottom')
       dev.off()
     }

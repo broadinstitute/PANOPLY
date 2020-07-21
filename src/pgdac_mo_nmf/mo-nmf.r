@@ -3,6 +3,8 @@ rm(list=ls())
 options( warn = -1, stringsAsFactors = F )
 suppressPackageStartupMessages(library("optparse"))
 
+#Rscript c:\Users\karsten\Dropbox\Devel\PANOPLY\src\pgdac_mo_nmf\mo-nmf.r -y lscc-v3.0-param.yaml -n 3 -z c:\Users\karsten\Dropbox\Devel\PANOPLY\src\pgdac_mo_nmf\ -t data\lscc-v3.0-prot-psty-ack-rna-cnv.tar
+
 # specify command line arguments
 option_list <- list(
   make_option( c("-t", "--tar"), action='store', type='character',  dest='tar_file', help='tar file containing data tables in GCT v1.3 format.'),
@@ -152,7 +154,7 @@ p_load(limma)
 
 ## parse parameters
 opt <- parse_param(option_list) 
-#opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
+#opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/pgdac_mo_nmf/'
 #save(opt, file='debug.RData')
 
 ################################################
