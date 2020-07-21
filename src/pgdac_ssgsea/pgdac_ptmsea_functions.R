@@ -254,7 +254,7 @@ preprocessGCT <- function(
     }
   
     ## non-redundant gene symbols as rid
-    rid <- mat.gc[, 1]
+    rid <- mat.gc[, 1] %>% as.character
     #mat.gc <- mat.gc[, -c(1)] %>% data.frame
     if(n == 1) {
       mat.gc <- data.frame( matrix(mat.gc[, -c(1)], ncol=1, dimnames=list(rid, cid)))
@@ -1091,11 +1091,14 @@ pw_hm2 <- function(output.prefix,
 ## ######################################################
 ## pathway heatmap
 ## - developed for GSEA/PTM-SEA on NMF results
+## 
 pw_hm <- function(output.prefix, 
                   fdr.max = 0.05, ## max. FDR
                   n.max = 10, ## maximal number of signatures to label each side of the volcano plots
                   ptmsigdb=T,
                   ser.meth='',
+                  cw=10,
+                  ch=10,
                   ...  ## passed to pheatmap
 ){
   library(pacman)
@@ -1106,14 +1109,82 @@ pw_hm <- function(output.prefix,
   
   ## import ptm-sea results
   fn3 <- glue('{output.prefix}-combined.gct')
+  cat(fn3, '\n')
   gct <- parse.gctx(fn3)
   mat <- gct@mat
   cid <- gct@cid
   rdesc <- gct@rdesc
   rid <- gct@rid
   
+  ###################################
+  hallmark_process_category <- c(
+    HALLMARK_TNFA_SIGNALING_VIA_NFKB='signaling',
+    HALLMARK_HYPOXIA='pathway',
+    HALLMARK_CHOLESTEROL_HOMEOSTASIS='metabolic',
+    HALLMARK_MITOTIC_SPINDLE='proliferation',
+    HALLMARK_WNT_BETA_CATENIN_SIGNALING='signaling',
+    HALLMARK_TGF_BETA_SIGNALING='signaling',
+    HALLMARK_IL6_JAK_STAT3_SIGNALING='immune',
+    HALLMARK_DNA_REPAIR='DNA damage',
+    HALLMARK_G2M_CHECKPOINT='proliferation',
+    HALLMARK_APOPTOSIS='pathway',
+    HALLMARK_NOTCH_SIGNALING='signaling',
+    HALLMARK_ADIPOGENESIS='development',
+    HALLMARK_ESTROGEN_RESPONSE_EARLY='signaling',
+    HALLMARK_ESTROGEN_RESPONSE_LATE='signaling',
+    HALLMARK_ANDROGEN_RESPONSE='signaling',
+    HALLMARK_MYOGENESIS='development',
+    HALLMARK_PROTEIN_SECRETION='pathway',
+    HALLMARK_INTERFERON_ALPHA_RESPONSE='immune',
+    HALLMARK_INTERFERON_GAMMA_RESPONSE='immune',
+    HALLMARK_APICAL_JUNCTION='cellular component',
+    HALLMARK_APICAL_SURFACE='cellular component',
+    HALLMARK_HEDGEHOG_SIGNALING='signaling',
+    HALLMARK_COMPLEMENT='immune',
+    HALLMARK_UNFOLDED_PROTEIN_RESPONSE='pathway',
+    HALLMARK_PI3K_AKT_MTOR_SIGNALING='signaling',
+    HALLMARK_MTORC1_SIGNALING='signaling',
+    HALLMARK_E2F_TARGETS='proliferation',
+    HALLMARK_MYC_TARGETS_V1='proliferation',
+    HALLMARK_MYC_TARGETS_V2='proliferation',
+    HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION='development',
+    HALLMARK_INFLAMMATORY_RESPONSE='immune',
+    HALLMARK_XENOBIOTIC_METABOLISM='metabolic',
+    HALLMARK_FATTY_ACID_METABOLISM='metabolic',
+    HALLMARK_OXIDATIVE_PHOSPHORYLATION='metabolic',
+    HALLMARK_GLYCOLYSIS='metabolic',
+    HALLMARK_REACTIVE_OXYGEN_SPECIES_PATHWAY='pathway',
+    HALLMARK_REACTIVE_OXIGEN_SPECIES_PATHWAY='pathway',
+    HALLMARK_P53_PATHWAY='proliferation',
+    HALLMARK_UV_RESPONSE_UP='DNA damage',
+    HALLMARK_UV_RESPONSE_DN='DNA damage',
+    HALLMARK_ANGIOGENESIS='development',
+    HALLMARK_HEME_METABOLISM='metabolic',
+    HALLMARK_COAGULATION='immune',
+    HALLMARK_IL2_STAT5_SIGNALING='signaling',
+    HALLMARK_BILE_ACID_METABOLISM='metabolic',
+    HALLMARK_PEROXISOME='cellular component',
+    HALLMARK_ALLOGRAFT_REJECTION='immune',
+    HALLMARK_SPERMATOGENESIS='development',
+    HALLMARK_KRAS_SIGNALING_UP='signaling',
+    HALLMARK_KRAS_SIGNALING_DN='signaling',
+    HALLMARK_PANCREAS_BETA_CELLS='development'
+    )
+    
+  if(sum(rid %in% names(hallmark_process_category)) > 0){
+    process_category <- rep('', length(rid))
+    names(process_category) <- rid
+    
+    keep.idx <- which(names(hallmark_process_category) %in% names(process_category))
+    hallmark_process_category <- hallmark_process_category[keep.idx]
+    
+    process_category[names(hallmark_process_category)] <- hallmark_process_category
+    
+    rdesc <- data.frame(rdesc, process_category)
+  }
+  
   ## helper function
-  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
+  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out, cw, ch){
     
     ## fdr & score
     fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
@@ -1131,6 +1202,7 @@ pw_hm <- function(output.prefix,
     
     fdr.filt <- fdr[keep.idx, ]
     mat.filt <- mat[keep.idx, ]
+    rdesc.filt <- rdesc[keep.idx,]
     
     colnames(mat.filt) <- paste0('C', colnames(mat.filt))
     
@@ -1138,11 +1210,8 @@ pw_hm <- function(output.prefix,
     for(i in 1:ncol(mat.filt))
       anno.row[keep.idx.list[[i]], i] <- '*'
     
-    
-    
     dist.row <- dist(mat.filt, method = 'euclidean')
     dist.row <- seriate(dist.row, method = ser.meth)
-    
     
     #mat.filt[fdr.filt > fdr.max] <- NA
     
@@ -1152,27 +1221,46 @@ pw_hm <- function(output.prefix,
     color.breaks = seq( min.val, max.val, length.out=100 )
     
     ## heatmap color
-    #color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
-    color.hm <- colorRampPalette(c('cyan','darkblue', 'white', 'orange', 'yellow'))(99)
-    #color.hm <- colorRampPalette(c('blue', 'yellow'))(11)
-    #color.hm <- colorRampPalette(c('cyan', 'darkblue', 'yellow'))(99)
-    #color.hm <- viridis(99)
+    color.hm <- colorRampPalette(c('cyan','darkblue', 'grey90', 'orange', 'yellow'))(99)
+  
+    if('process_category' %in% colnames(rdesc.filt)){
+      ord.idx <- order(rdesc.filt$process_category)
+    } else {
+      ord.idx <- get_order(dist.row)
+    }
+    mat.filt <- mat.filt[ord.idx, ]
+    anno.row <- anno.row[ord.idx,]
+    
+    if('process_category' %in% colnames(rdesc.filt)){
+      rdesc.filt <- rdesc.filt[ord.idx, ]
+      annotation_row <- matrix(rdesc.filt$process_category, ncol=1, dimnames = list(rownames(rdesc.filt), c('cat')))
+      annotation_row <- data.frame(annotation_row)
+      annotation_colors <- list(cat=c('signaling'='skyblue2', 'immune'='coral2', 'development'='peachpuff', 
+                                      'proliferation'='palegreen3', 'cellular component'='snow4', 'metabolic'='khaki', 
+                                      'DNA damage'='darkmagenta', 'pathway'='tan3'))
+      gaps_row <- cumsum(table(annotation_row$cat))
+      rownames(mat.filt) <- sub('^HALLMARK_', '',  rownames(mat.filt))
+      rownames(annotation_row) <- sub('^HALLMARK_', '',  rownames(annotation_row))
+        
+    } else {
+      annotation_row <- NA
+      annotation_colors <- NA
+      gaps_row=NULL
+    }   
     
     
     
-    # try(pheatmap(mat.filt, 
-    #              cluster_cols = F, 
-    #              cluster_rows=T, 
-    #              clustering_distance_rows = dist.row, col=color.hm, 
-    #              breaks = color.breaks, filename = fn.out, display_numbers = anno.row, na_col = 'white', ...))
-    # 
-    mat.filt <- mat.filt[get_order(dist.row), ]
-    anno.row <- anno.row[get_order(dist.row),]
     try(pheatmap(mat.filt, 
                  cluster_cols = F, 
                  cluster_rows=F, 
                  col=color.hm, 
-                 breaks = color.breaks, filename = fn.out, display_numbers = anno.row, na_col = 'white', ...))
+                 breaks = color.breaks, filename = fn.out, 
+                 display_numbers = anno.row, 
+                 na_col = 'white', cellwidth = cw, cellheight = ch, 
+                 annotation_row = annotation_row ,
+                 annotation_colors = annotation_colors,
+                 gaps_row = gaps_row,
+                 ...))
     
     
   }
@@ -1183,12 +1271,11 @@ pw_hm <- function(output.prefix,
     for(rt in rid.type){
       fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}-blue-yellow.pdf")  
       idx <- grep(glue("^{rt}"), rid)
-      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out)
+      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out, cw, ch)
     }
   } else {
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}-{ser.meth}.pdf")  
-   # fn.out=NA
-    plothm(rdesc, mat, fdr.max, n.max, fn.out)
+    plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch)
   }
   
 }

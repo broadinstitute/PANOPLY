@@ -163,7 +163,7 @@ MapCalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
   
   map=apply(enrich , 2, function(xx) paste(names(xx)[xx < p.max], sep='|'))
   map.names <- names(map)
-  ## if multiple mapping were significant,
+  ## if multiple mappings were significant,
   ## pick the most significant mapping
   map <- lapply(names(map), function(y){ 
     if(length(map[[y]])>1){ 
@@ -253,7 +253,7 @@ parse.colors <- function(opt, cdesc, blank='N/A', blank.col='white'){
                 color.tmp[names(color.tmp.bck)] <- color.tmp.bck
       
                 idx <- which(!cdesc.levels %in% names(color.tmp.bck))
-                color.tmp[idx] <- palette()[1:length(idx)]
+                color.tmp[idx] <- alphabet()[1:length(idx)]
       
                 if(blank %in% names(color.tmp))
                   color.tmp[blank] <- blank.col
@@ -618,13 +618,21 @@ make.non.negative <- function(m){
 
 ###################################################################
 ## heatmap using ComplexHeatmap package
-MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.other, max.val, 
+MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.other, max.val=NULL, 
+                             symm.col=T, ## symmetric color scale centered at zero
                              ##row_title='', 
                              name='NMF features'){
+  library(pacman)  
+  p_load(circlize)
+  p_load(ComplexHeatmap)
+  p_load(RColorBrewer)
     
     ## cap values
     if(is.null(max.val)){
-      m.max <- ceiling(max(abs(m), na.rm=T))
+      if(symm.col)
+        m.max <- ceiling( max(abs(m), na.rm=T) )
+      else
+        m.max <- ceiling( max(m, na.rm=T) )
     } else {
       m.max <- max.val
       m[m > m.max] <- m.max
@@ -632,7 +640,14 @@ MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.oth
     }
     ## #####################################
     ## complexheatmap
-    col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
+  
+    if(symm.col){
+      col.breaks <- seq(-m.max, m.max, length.out=11)
+    } else {
+      m.min <- floor( min(m, na.rm=T) )
+      col.breaks <- seq(m.min, m.max, length.out=11)
+    }
+    col.hm <- colorRamp2(col.breaks, rev(brewer.pal (11, "RdBu")))
     
     ## column annotation
     cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color,
@@ -793,6 +808,8 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
 nmf.post.processing <- function(ws,                       ## filename of R-workspace
                                 blank.anno = 'N/A',       ## used to replace blanks/NAs in meta data
                                 blank.anno.col = 'white', ## color for blanks/NAs usind in heatmap annotation tracks
+                                #blank.anno.col = 'grey90', ## color for blanks/NAs usind in heatmap annotation tracks
+                                
                                 core_membership=0.5,      ## NMF.cluster.membership score to define core memebrship
                                                           ## cluster enrichment of clinical variables will be done on the core set 
                                 feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
@@ -1045,7 +1062,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ## check whether all NMF cluster have color
     if( sum(is.na(NMF.consensus.col)) > 0 ){
       idx.tmp <- which( is.na(NMF.consensus.col) )
-      col.tmp <-  rev( palette() )[ (1:length(idx.tmp) ) +  1]
+      col.tmp <-  rev( alphabet() )[ (1:length(idx.tmp) ) +  1]
       NMF.consensus.col[idx.tmp] <- col.tmp
     }
     cdesc$NMF.consensus.mapped <-  cdesc$NMF.consensus

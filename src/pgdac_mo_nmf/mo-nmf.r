@@ -128,7 +128,10 @@ p_load(org.Mm.eg.db)
 
 p_load(pheatmap)
 p_load(WriteXLS)
+
 p_load(RColorBrewer)
+p_load(pals)
+
 p_load(rhdf5)
 if(!require(cmapR))devtools::install_github("cmap/cmapR")
 p_load(dplyr)
@@ -139,8 +142,11 @@ p_load(rmarkdown)
 p_load(maptools)
 p_load(UpSetR)
 p_load(ComplexHeatmap)
-p_load(glue)
 p_load(circlize)
+
+
+p_load(glue)
+
 p_load(impute)
 
 p_load(doParallel)
@@ -156,6 +162,9 @@ p_load(limma)
 opt <- parse_param(option_list) 
 #opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/pgdac_mo_nmf/'
 #save(opt, file='debug.RData')
+
+opt$blank_anno='N/A'
+opt$blank_anno_col='grey90'
 
 ################################################
 ## source required files
@@ -540,7 +549,11 @@ main <- function(opt){
     ## #######################################################
     ##         generate some plots
     if(opt$nmf_only == FALSE){ 
-      p <- try(nmf.post.processing(fn.ws, core_membership=opt$core_membership, organism=opt$organism))
+      p <- try(nmf.post.processing(fn.ws, 
+                                   core_membership=opt$core_membership, 
+                                   organism=opt$organism,
+                                   blank.anno=opt$blank_anno,
+                                   blank.anno.col=opt$blank_anno_col))
     }
     
     return(0)
