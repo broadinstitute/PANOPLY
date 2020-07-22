@@ -114,8 +114,8 @@ workflow panoply_normalize_ms_data_workflow {
       minNumratioFraction=minNumratioFraction,
       nmissFactor=nmissFactor,
       sdFilterThreshold=sdFilterThreshold,
-      duplicateGenePolicy=duplicateGenePolicy
-      geneIdCol=geneIdCol
+      duplicateGenePolicy=duplicateGenePolicy,
+      geneIdCol=geneIdCol,
       organism=organism
   }
 }
