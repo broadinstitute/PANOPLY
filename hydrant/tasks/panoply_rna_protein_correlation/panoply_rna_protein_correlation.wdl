@@ -81,8 +81,8 @@ workflow panoply_rna_protein_correlation_workflow {
       type=dataType,
       rnaExpr=rnaExpr,
       analysisDir=analysisDir,
-      standalone=standalone
-      rnaSDthreshold=rnaSDthreshold
+      standalone=standalone,
+      rnaSDthreshold=rnaSDthreshold,
       profilePlotTopN=profilePlotTopN
   } 
 }

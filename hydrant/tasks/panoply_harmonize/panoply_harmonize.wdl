@@ -110,14 +110,14 @@ workflow panoply_harmonize_workflow {
       cnaExpr=cnaExpr,
       analysisDir=analysisDir,
       standalone=standalone,
-      type=dataType
-      yaml=yaml
-      ndigits=ndigits
-      naMax=naMax
-      sampleNaMax=sampleNaMax
-      minNumratioFraction=minNumratioFraction
-      nmissFactor=nmissFactor
-      sdFilterThreshold=sdFilterThreshold
+      type=dataType,
+      yaml=yaml,
+      ndigits=ndigits,
+      naMax=naMax,
+      sampleNaMax=sampleNaMax,
+      minNumratioFraction=minNumratioFraction,
+      nmissFactor=nmissFactor,
+      sdFilterThreshold=sdFilterThreshold,
       duplicateGenePolicy=duplicateGenePolicy
   }
 }

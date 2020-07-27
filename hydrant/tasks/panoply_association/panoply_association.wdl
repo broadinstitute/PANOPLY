@@ -5,7 +5,7 @@ task panoply_association {
   String? analysisDir
   File? groupsFile
   String? subType
-  File? params
+  File yaml
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_association-output.tar"
