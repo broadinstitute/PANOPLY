@@ -249,7 +249,7 @@ validate_data_table <- function (data.type, table.samples, sample.list) {
     # less than half of samples in annotation table found in data table
     printX ("WARNING", glue("Only {length(common)} (out of {length(sample.list)}) found in {data.type}"))
   } else {
-    printX ("INFO", glue("{data.type} successfully validated"))
+    print( glue( "\n.. INFO. {data.type} successfully validated.\n" ) )
   }
 }
 
