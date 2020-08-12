@@ -641,6 +641,9 @@ case $op in
                   
                  ## extract sd threshold from 'config.r'   
                  sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | awk -F' ' '{print $3}'`
+                 if [ ${#sdclust} -eq 3 ]; then 
+                   sdclust=$(echo $sdclust | cut -d " " -f 2)
+                 fi
                  
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
