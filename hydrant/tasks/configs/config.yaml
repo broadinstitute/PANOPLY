@@ -1,0 +1,65 @@
+TEDMINT: /panda/bin
+freeze.path: /home/jupyter-user/notebooks/cptac-panda-brca-test/edit//input/
+wkspace: cptac-panda-brca-test
+globals:
+  project: broad-firecloud-cptac
+  group: GROUP_Broad_CPTAC@firecloud.org
+  meth_space: broadcptac
+typemap.gct:
+  cna: brca-retrospective-v5.0-cna-data.gct
+  phosphoproteome: brca-retrospective-v5.0-phosphoproteome-ratio-norm-NArm.gct
+  proteome: brca-retrospective-v5.0-proteome-ratio-norm-NArm.gct
+  rna: brca-retrospective-v5.0-rnaseq-data.gct
+typemap.csv:
+  groups: brca-retrospective-v5.0-groups.csv
+  annotation: brca-retrospective-v5.0-sample-annotation.csv
+typemap.gmt:
+  gseaDB: c2.all.v6.2.symbols.gmt
+  ptmseaDB: ptm.sig.db.all.uniprot.human.v1.9.0.gmt
+typemap.yml:
+  parameters: brca-retrospective-v5.0-parameters.yml
+groups.cols:
+- PAM50
+- ER.Status
+- PR.Status
+- HER2.Status
+- TP53.mutation
+- PIK3CA.mutation
+- GATA3.mutation
+groups.colors:
+  PAM50:
+    Her2: '#E41A1C'
+    Basal: '#377EB8'
+    LumB: '#4DAF4A'
+    LumA: '#984EA3'
+  ER.Status:
+    Negative: '#A6CEE3'
+    Positive: '#1F78B4'
+  PR.Status:
+    Negative: '#B2DF8A'
+    Positive: '#33A02C'
+  HER2.Status:
+    Positive: '#FF7F00'
+    Negative: '#FFFF33'
+    Equivocal: '#A65628'
+  TP53.mutation:
+    '1': '#FB9A99'
+    '0': '#E31A1C'
+  PIK3CA.mutation:
+    '0': '#FDBF6F'
+    '1': '#FF7F00'
+  GATA3.mutation:
+    '0': '#CAB2D6'
+    '1': '#6A3D9A'
+sample.sets:
+  all:
+    fil_col: Type
+    fil_val: Tumor
+    gseaDB: c2.all.v6.2.symbols.gmt
+    ptmseaDB: ptm.sig.db.all.uniprot.human.v1.9.0.gmt
+  basal:
+    fil_col: PAM50
+    fil_val: Basal
+    gseaDB: c2.all.v6.2.symbols.gmt
+    ptmseaDB: ptm.sig.db.all.uniprot.human.v1.9.0.gmt
+normalize.proteomics: no

@@ -31,7 +31,7 @@ option_list <- list(
 # parse command line parameters
 # - do it here already to speed up the USAGE message
 # - the actual parsing of parameters happens in 
-#   function 'parse_param'
+#   function 'parse_yaml_mo_nmf()'
 opt_cmd <- parse_args( OptionParser(option_list=option_list) )
 
 ###########################################################
@@ -46,7 +46,7 @@ p_load("magrittr")
 ## - yaml file
 ## parameters in yaml file will be updated with 
 ## parameters specified on cmd
-parse_param <- function(cmd_option_list){
+parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf'){
   
   ## #########################################################
   # parse command line parameters
@@ -60,7 +60,7 @@ parse_param <- function(cmd_option_list){
     opt_yaml <- read_yaml(opt_cmd$yaml_file)
     
     ## extract relevant section
-    opt_yaml <- opt_yaml[['mo_nmf']]
+    opt_yaml <- opt_yaml[['panoply_mo_nmf']]
     
     ## convert vectors and lists to single strings
     opt_yaml[['cat_anno']] <- opt_yaml[['cat_anno']] %>% unlist %>% paste(., collapse=';')
@@ -71,14 +71,11 @@ parse_param <- function(cmd_option_list){
     ## parse cmd params
     cat('\n\nparsing command line parameters:\n')
     for(x in names(opt_cmd))
-     cat('---', x, opt_cmd[[x]], is.na(opt_cmd[[x]]),'\n')
-    
-      #sapply(opt_cmd, function(x)cat('---', names(x), x, '\n'))
+     cat('---', x, opt_cmd[[x]], '; prefer yaml?', opt_cmd[[x]] == 'NA','\n')
     
     ## update yaml with parameters specified on cmd line 
     cat('\n\nUpdating parameter file with command line parameters:\n')
     ## cmd parameters
-  #  cmd_not_null <- which( sapply(opt_cmd, function(x) !is.na(x)) )
     cmd_not_null <- which( !sapply(opt_cmd, function(x) x == 'NA' ) )
     cmd_to_update <- intersect( names(opt_cmd)[ cmd_not_null], names(opt_yaml) )
     cmd_to_add <- setdiff( names(opt_cmd), names(opt_yaml) )
@@ -159,12 +156,13 @@ p_load(magrittr)
 p_load(limma)
 
 ## parse parameters
-opt <- parse_param(option_list) 
-#opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/pgdac_mo_nmf/'
+opt <- parse_yaml_mo_nmf(option_list) 
+#opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/'
+opt$blank_anno <- 'N/A'
+opt$blank_anno_col <- 'white'
+
 #save(opt, file='debug.RData')
 
-opt$blank_anno='N/A'
-opt$blank_anno_col='grey90'
 
 ################################################
 ## source required files
@@ -180,8 +178,10 @@ cat('done!\n')
 main <- function(opt){
 
     ## for backwards compatibility
-    if(is.null(opt$organism))
-      opt$organism <- 'human'
+    if(is.null(opt$organism)) opt$organism <- 'human'
+    if(is.null(opt$blank_anno)) opt$blank_anno='N/A'
+    if(is.null(opt$blank_anno_col)) opt$blank_anno_col='white'
+    
     
     ## ##################################################
     ##           parse parameters

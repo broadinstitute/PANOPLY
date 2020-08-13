@@ -1035,7 +1035,7 @@ pw_hm2 <- function(output.prefix,
         idx=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]]
       idx
     }, fdr, mat )
-    save(keep.idx.list, file='debug.RData')
+    #save(keep.idx.list, file='debug.RData')
     keep.idx <- unique(unlist(keep.idx.list)) 
     
     
