@@ -1,4 +1,6 @@
-# PGDAC Pipeline
+# PANOPLY Pipeline
+
+## NOTE: This repository is under active developement. Documentation may be outdated. 
 
 ## Overview of `pgdac_main` workflow
 
