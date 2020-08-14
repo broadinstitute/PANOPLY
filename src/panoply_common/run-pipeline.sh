@@ -629,7 +629,7 @@ case $op in
              ;;
 #   cluster: perform consensus kmeans clustering
     cluster )   analysisInit "cluster"
-                cp $code_dir/pgdac_kmeans_consensus.R $cluster_dir/
+                cp $code_dir/panoply_kmeans_consensus.R $cluster_dir/
                 cp $code_dir/consensus_clustering.R $cluster_dir/
                 cp $code_dir/assoc-analysis.r $cluster_dir/
                 cp $code_dir/postprocess.R $cluster_dir/
@@ -648,7 +648,7 @@ case $op in
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
                  # number of bootstrap iterations are fixed
-                 Rscript pgdac_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
+                 Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
                  
                  # run association analysis on clusters to determine markers
                  R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
