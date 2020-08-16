@@ -1,0 +1,30 @@
+2020-08-16 14:44:21,210 INFO  - MaterializeWorkflowDescriptorActor [UUID(f470e2cb)]: Parsing workflow as WDL draft-2
+2020-08-16 14:44:22,419 INFO  - MaterializeWorkflowDescriptorActor [UUID(f470e2cb)]: Call-to-Backend assignments: panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report -> Local
+2020-08-16 14:44:22,673 WARN  - Local [UUID(f470e2cb)]: Key/s [memory, disks, cpu] is/are not supported by backend. Unsupported attributes will not be part of job executions.
+2020-08-16 14:44:23,995 INFO  - WorkflowExecutionActor-f470e2cb-0522-45fb-9a90-9c9c0a1c339b [UUID(f470e2cb)]: Starting panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report
+2020-08-16 14:44:25,319 WARN  - BackgroundConfigAsyncJobExecutionActor [UUID(f470e2cb)panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report:NA:1]: Unrecognized runtime attribute keys: disks, cpu, memory
+2020-08-16 14:44:29,117 INFO  - BackgroundConfigAsyncJobExecutionActor [UUID(f470e2cb)panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report:NA:1]: `set -euo pipefail
+Rscript /home/pgdac/src/rmd-normalize.r /cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report/inputs/-1376229487/cll-set1-proteome.tar cll-set1-v1.0-proteome proteome tmp`
+2020-08-16 14:44:29,170 INFO  - BackgroundConfigAsyncJobExecutionActor [UUID(f470e2cb)panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report:NA:1]: executing: # make sure there is no preexisting Docker CID file
+rm -f /media/sf_Dropbox/Devel/PANOPLY/hydrant/tasks/panoply_normalize_ms_data_report/cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report/execution/docker_cid
+# run as in the original configuration without --rm flag (will remove later)
+docker run \
+  --cidfile /media/sf_Dropbox/Devel/PANOPLY/hydrant/tasks/panoply_normalize_ms_data_report/cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report/execution/docker_cid \
+  -i \
+   \
+  --entrypoint /bin/bash \
+  -v /media/sf_Dropbox/Devel/PANOPLY/hydrant/tasks/panoply_normalize_ms_data_report/cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report:/cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report \
+  broadcptacdev/panoply_normalize_ms_data_report@sha256:59bf6a65561cb4c6a6619ef2ae2ab0782394ee4fee8a77ca1e3d57ee6419e0bc /cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report/execution/script
+
+# get the return code (working even if the container was detached)
+rc=$(docker wait `cat /media/sf_Dropbox/Devel/PANOPLY/hydrant/tasks/panoply_normalize_ms_data_report/cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report/execution/docker_cid`)
+
+# remove the container after waiting
+docker rm `cat /media/sf_Dropbox/Devel/PANOPLY/hydrant/tasks/panoply_normalize_ms_data_report/cromwell-executions/panoply_normalize_ms_data_report_workflow/f470e2cb-0522-45fb-9a90-9c9c0a1c339b/call-panoply_normalize_ms_data_report/execution/docker_cid`
+
+# return exit code
+exit $rc
+2020-08-16 14:44:29,962 INFO  - BackgroundConfigAsyncJobExecutionActor [UUID(f470e2cb)panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report:NA:1]: job id: 19796
+2020-08-16 14:44:29,974 INFO  - BackgroundConfigAsyncJobExecutionActor [UUID(f470e2cb)panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report:NA:1]: Status change from - to WaitingForReturnCodeFile
+2020-08-16 14:44:42,215 INFO  - BackgroundConfigAsyncJobExecutionActor [UUID(f470e2cb)panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report:NA:1]: Status change from WaitingForReturnCodeFile to Done
+2020-08-16 14:44:42,648 INFO  - $a [UUID(f470e2cb)]: Copying workflow logs from /media/sf_Dropbox/Devel/PANOPLY/hydrant/tasks/panoply_normalize_ms_data_report/cromwell-workflow-logs/workflow.f470e2cb-0522-45fb-9a90-9c9c0a1c339b.log to running/wf_logs/workflow.f470e2cb-0522-45fb-9a90-9c9c0a1c339b.log

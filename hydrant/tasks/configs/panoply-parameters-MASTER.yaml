@@ -1,0 +1,331 @@
+
+global_parameters:
+   ### Output precision for gct tables
+  output_precision:
+    ndigits: 5
+
+  missing_values_and_filtering:
+    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction 
+    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+    min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
+    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed
+    sd_filter_threshold: 0.5     # SD threshold for SD filtering
+
+
+  ### Gene mapping
+  # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
+  gene_mapping:
+    # Policy for combining/collapsing duplicate gene names:
+    duplicate_gene_policy: maxvar
+    gene_id_col: geneSymbol
+
+  organism: human
+
+panoply_parse_sm_table:
+  label_type_for_ms_exp:
+    label_type: TMT10          # alternatives: iTRAQ4, TMT10.126, TMT11
+  apply_sm_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
+  species_filter: TRUE
+
+
+panoply_normalize_ms_data:
+  normalization:
+    norm_method: '2comp'           # options: 2comp (default), median, mean
+    alt_method: 'median'           # alt.method for comparison -- filtered datasets not generated
+
+
+panoply_rna_protein_correlation:
+  rna:
+    rna_sd_threshold: 1            # for variation filter (set to NA to disable)
+    profile_plot_top_n: 25
+
+
+panoply_harmonize:
+  pome_gene_id_col: 'GeneSymbol'
+  cna_gene_id_col: 'id' # This and below get assigned to the same thing within the script I seperated here for clarity?
+  rna_gene_id_col: 'id'
+
+
+#panoply_association: # Any parameters here?
+
+
+panoply_sample_qc:
+  cor_threshold: 0.4
+  #?heatmap_palette: "RdYlBu"
+  #?put sample colors on here?
+
+
+panoply_cna_analysis:
+  cna_parallelism:
+    pe_max_default: 250            # default maximum processors/jobs
+  fdr_cna_corr: 0.05
+  min_cna_N: 5 #cna-analysis-setup.r
+
+
+panoply_cna_correlation_report:
+  fdr: 0.05
+
+
+panoply_rna_protein_correlation_report:
+  fdr: 0.05
+
+
+panoply_cons_cluster:
+  clustering_sd_threshold: 2   # threshold for filtering data before consensus clustering
+  clustering_na_threshold: 0.5 # max fraction of missing values for clustering; rest are imputed
+
+
+panoply_cmap_analysis:
+  # CMAP setup/initialization:
+  cna_threshold: 0.3               # copy number up/down if abs (log2(copy number) - 1) is > cna.threshold (default: 0.3)
+  cna_effects_threshold: 15        # min number of samples with up/down copy number to include gene for CMAP analysis (default: 15)
+  min_sigevents: 20                # gene must have at least this many significant trans events to be considered (default: 20)  
+  max_sigevents: 1800              # if a gene has more then max.sigevents, the top max.sigevents will be chosen
+  top_N: 500                       # maximum number of genes to run CMAP enrichment on (default: 500)
+  fdr_pvalue: 0.05                 # FDR for CNA correlations (default: 0.05)
+  log_transform: FALSE      # if TRUE, log transform input data
+  must_include_genes: NULL         # genes that must be included in the CMAP analysis (vector, default: NULL)
+  # CMAP connectivity score and statistical significance:
+  cis_fdr: fdr.pvalue              # FDR for cis-correlations (default: 0.05)
+  legacy_score: FALSE              # if TRUE, legacy connectivity score will be calculated (using mean rank points), with permutation FDR
+                                   # if FALSE, enrichement will be based on fisher test of outlier scores, with BH-FDR (default)
+  rankpt_n: 4                      # number of CMAP profiles to consider when calculating mean rank point (default: 4)
+  mean_rankpt_threshold: 85        # min value of mean rank point for gene signature to be considered enriched (default: 85)
+  cmap_fdr: 0.25                   # BH-FDR threshold for fisher test of outlier scores, for gene to be considered enriched
+  # CMAP annotation
+  alpha: fdr.pvalue      # p-value threshold for cmap profile zscores and enrichments
+
+
+
+panoply_immune_analysis:
+  immune_enrichment_fdr: 0.05
+  immune_enrichment_subgroups: NULL
+  immune_heatmap_width: 10
+  immune_heatmap_height: 15
+
+panoply_blacksheep:
+  apply_filtering: FALSE
+  identifiers_file: NULL
+  groups_file: NULL
+  fraction_samples_cutoff: 0.3
+  fdr_value: 0.05
+
+########################################
+## multi-omics NMF clustering
+panoply_mo_nmf:
+  ## clustering
+  kmin: 5
+  kmax: 5
+  exclude_2: TRUE
+  core_membership: 0.5 
+  ## NMF parameters
+  nrun: 500
+  seed: random
+  method: brunet
+  bnmf: FALSE
+  ## annotations to include in heatmaps
+  ## and enrichments
+  ## categorial: at least one required
+  cat_anno: [cat1, cat2]
+  ## continuous: vector or NA
+  cont_anno: NA
+  ## aesthetics
+  ## colors for 'cat_anno'
+  cat_colors:
+   cat1:
+    level1: '#FCB462'
+    level2: '#BB81B8' 
+   cat2: 
+    level1: '#FCB462'
+    level2: '#BB81B8'
+  ## heatmap parameters
+  hm_cw: 5      ## cell width
+  hm_ch: 8      ## cell height 
+  hm_max_val: 10   ## max value at which the data will be capped in heatmap 
+  hm_max_val_z: 4  ## max value if z-scored 
+  ## filtering
+  filt_mode: global   ## global, separate, equal
+  sd_filt: 0.05
+  z_score: TRUE
+  ## imputation
+  impute: FALSE
+  impute_k: 5
+  max_na_row: 0.3   ## (not working yet)
+  max_na_col: 0.9   ## (not working yet)
+  ## misc
+  nmf_only: FALSE     ## if TRUE, no downstream analysis of clustering results will be performed
+
+################################
+## ssGSEA default  parameters (projection) 
+#panoply_ssgsea_projection: 
+panoply_ssgsea:
+  nperm: 1000
+  weight: 0.75
+  norm: "rank"                  ## rank, log, log.rank, none
+  correl_type: "z.-score"       ## "rank", "z.score", "symm.rank"
+  statistic: "area.under.RES"   ## "area.under.RES", "Kolmogorov-Smirnov" 
+  output_score_type: "NES"      ## 'Score type: "ES" - enrichment score,  "NES" - normalized ES'
+  min_overlap: 10               ## 'Minimal overlap between signature and data set.'
+  extended_output: TRUE         ## 'If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.'
+  export_signat_gct: TRUE       ## For each signature export expression GCT files.
+  global_fdr: FALSE             ## If TRUE global FDR across all data columns is calculated.
+  multi_core: TRUE              ## If TRUE processing will be parallelized across gene sets using (N-1) CPU cores.
+
+################################
+## ssSGEA report
+panoply_ssgsea_report:
+  fdr: 0.05                     ## max. FDR
+  top_n: 20                     ## max. number of significant hits to plot/label
+
+
+###################################
+## DEV_ parameters for developers 
+## - DO NOT EDIT
+DEV_sample_annotation:
+  sample_id_col_name: "Sample.ID"
+  experiment_col_name: "Experiment"
+  channel_col_name: "Channel"
+  participant_col_name: "Participant"
+  type_col_name: "Type"
+  
+  QC:
+    sampleQC_cls: "NULL"
+    qc_col: QC.status
+    qc_pass_label: QC.pass
+
+  gct_file_ids: #used in config.r 
+    proteome:
+      id_col: 1
+      desc_col: 2
+      min_numratio: 2
+    phosphoproteome:
+      id_col: 1
+      desc_col: 2
+      min_numratio: 1
+
+DEV_directory_and_file_names:
+  # only run-pipeline.sh cmap values:
+  cmap_group: 'all'
+  cmap_type: 'pome'
+  cmap_scores: ''
+  cmap_nperm: '0'
+  cmap_permutation: 'tmp'
+  cmap_config_file: ''
+  # other:
+  rna_output_prefix: "rna-seq"
+  gene_mapping:
+    official_genesyms: "gene-symbol-map.csv"
+    protein_gene_map: "RefSeq-GeneName-Map-20170701.txt"
+
+  # data.dir in config.r:
+  data_dir: "data" 
+  # pre.dir in config.r:                 
+  parse_dir: "parsed-data" 
+  # norm.dir in config.r:         
+  norm_dir: "normalized-data" 
+  # harmonize.dir in config.r:      
+  harmonize_dir: "harmonized-data" 
+  # only run-pipeline.sh: 
+  rna_dir: "rna"
+  cna_dir: "cna"
+  cmap_dir: "cmap"
+  cmap_prefix: "$cmap_group-$cmap_type"
+  qc_dir: "sample-qc"
+  assoc_dir: "association"
+  cluster_dir: "clustering"
+  code_dir: ''
+  common_data: ''
+
+  # affects expt.design.file in config.r:
+  expt_design_file: "exptdesign.csv"  
+  parsed_output: "$prefix-ratio.gct"
+  normalized_output: "$prefix-ratio-norm.gct"
+  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
+  # affects rna.data.file in config.r:
+  rna_data_file: "rna-data.gct" 
+  # affects cna.data.file in config.r :     
+  cna_data_file: "cna-data.gct" 
+
+#############################
+## PANDA parameters
+TEDMINT: /panda/bin
+freeze.path: /home/jupyter-user/notebooks/cptac-panda-brca-test/edit//input/
+wkspace: cptac-panda-brca-test
+globals:
+  project: broad-firecloud-cptac
+  group: GROUP_Broad_CPTAC@firecloud.org
+  meth_space: broadcptac
+typemap.gct:
+  cna: brca-retrospective-v5.0-cna-data.gct
+  phosphoproteome: brca-retrospective-v5.0-phosphoproteome-ratio-norm-NArm.gct
+  proteome: brca-retrospective-v5.0-proteome-ratio-norm-NArm.gct
+  rna: brca-retrospective-v5.0-rnaseq-data.gct
+typemap.csv:
+  groups: brca-retrospective-v5.0-groups.csv
+  annotation: brca-retrospective-v5.0-sample-annotation.csv
+typemap.gmt:
+  gseaDB: c2.all.v6.2.symbols.gmt
+  ptmseaDB: ptm.sig.db.all.uniprot.human.v1.9.0.gmt
+typemap.yml:
+  parameters: brca-retrospective-v5.0-parameters.yml
+
+
+##############################
+## group variables
+groups.cols:
+- PAM50
+- ER.Status
+- PR.Status
+- HER2.Status
+- TP53.mutation
+- PIK3CA.mutation
+- GATA3.mutation
+
+groups.continous:
+- XX
+- XX
+
+###############################
+## colors for group variables
+groups.colors:
+  PAM50:
+    Her2: '#E41A1C'
+    Basal: '#377EB8'
+    LumB: '#4DAF4A'
+    LumA: '#984EA3'
+  ER.Status:
+    Negative: '#A6CEE3'
+    Positive: '#1F78B4'
+  PR.Status:
+    Negative: '#B2DF8A'
+    Positive: '#33A02C'
+  HER2.Status:
+    Positive: '#FF7F00'
+    Negative: '#FFFF33'
+    Equivocal: '#A65628'
+  TP53.mutation:
+    '1': '#FB9A99'
+    '0': '#E31A1C'
+  PIK3CA.mutation:
+    '0': '#FDBF6F'
+    '1': '#FF7F00'
+  GATA3.mutation:
+    '0': '#CAB2D6'
+    '1': '#6A3D9A'
+    
+###############################
+## sample sets
+sample.sets:
+  all:
+    fil_col: Type
+    fil_val: Tumor
+    gseaDB: c2.all.v6.2.symbols.gmt
+    ptmseaDB: ptm.sig.db.all.uniprot.human.v1.9.0.gmt
+  basal:
+    fil_col: PAM50
+    fil_val: Basal
+    gseaDB: c2.all.v6.2.symbols.gmt
+    ptmseaDB: ptm.sig.db.all.uniprot.human.v1.9.0.gmt
+    
+## ?    
+normalize.proteomics: no

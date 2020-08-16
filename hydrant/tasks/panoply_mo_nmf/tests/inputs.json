@@ -1,5 +1,0 @@
-{
-  "panoply_mo_nmf_workflow.gene_set_database": "testdata/h.all.v7.0.symbols.gmt",
-  "panoply_mo_nmf_workflow.tar_file": "testdata/pdac-v0.2-ratio-pstygc.tar",
-  "panoply_mo_nmf_workflow.yaml_file": "testdata/pdac-v0.2-param.yaml"
-}
