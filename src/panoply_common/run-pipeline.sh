@@ -639,11 +639,8 @@ case $op in
                  label=`echo $analysis_dir | sed -E 's,.*/(.*).*,\1,'`
                  tmpdir='.' ## temp-folder
                   
-                 ## extract sd threshold from 'config.r'   
-                 sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | awk -F' ' '{print $3}'`
-                 if [ ${#sdclust} -eq 3 ]; then 
-                   sdclust=$(echo $sdclust | cut -d " " -f 2)
-                 fi
+                 ## extract last occuring sd threshold from 'config.r'   
+                 sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | tail -1 | awk -F' ' '{print $3}'`
                  
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
