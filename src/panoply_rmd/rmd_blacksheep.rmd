@@ -1,0 +1,689 @@
+---
+title: "BlackSheep outlier analysis results"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+---
+
+## Overview
+This report summarizes the significant results (FDR < 0.05 ) of the BlackSheep module, which uses the blacksheepr package for differential extreme value analysis. Briefly, this module counts outliers in user-submitted data, tabulates outliers per group, and runs enrichment analysis (Fisher's exact test) to identify significant outliers in the groups of interest. More information can be found in Blumenberg et al. (2019, [preprint](https://www.biorxiv.org/content/10.1101/825067v2.full.pdf)).
+              
+## Positive outliers (FDR < 0.05) 
+### PAM50
+#### **PAM50: Basal**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PAM50_Basal_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PAM50_Basal.png)
+
+
+                       
+#### **PAM50: Her2**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PAM50_Her2_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PAM50_Her2.png)
+
+
+                       
+#### **PAM50: LumA**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PAM50_LumA_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PAM50_LumA.png)
+
+
+                       
+#### **PAM50: LumB**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PAM50_LumB_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PAM50_LumB.png)
+
+
+                        
+### ER.Status
+#### **ER.Status: Negative**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_ER.Status_Negative_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ER.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_ER.Status_Negative.png)
+
+
+                       
+#### **ER.Status: Positive**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_ER.Status_Positive_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ER.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_ER.Status_Positive.png)
+
+
+                        
+### PR.Status
+#### **PR.Status: Negative**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PR.Status_Negative_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PR.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PR.Status_Negative.png)
+
+
+                       
+#### **PR.Status: Positive**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PR.Status_Positive_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PR.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PR.Status_Positive.png)
+
+
+                        
+### HER2.Status
+#### **HER2.Status: Negative**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_HER2.Status_Negative_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by HER2.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_HER2.Status_Negative.png)
+
+
+                       
+#### **HER2.Status: Positive**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_HER2.Status_Positive_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by HER2.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_HER2.Status_Positive.png)
+
+
+                        
+### TP53.mutation
+#### **TP53.mutation: 0**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_TP53.mutation_0_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by TP53.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_TP53.mutation_0.png)
+
+
+                       
+#### **TP53.mutation: 1**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_TP53.mutation_1_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by TP53.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_TP53.mutation_1.png)
+
+
+                        
+### PIK3CA.mutation
+#### **PIK3CA.mutation: 0**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PIK3CA.mutation_0_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PIK3CA.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PIK3CA.mutation_0.png)
+
+
+                       
+#### **PIK3CA.mutation: 1**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_PIK3CA.mutation_1_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PIK3CA.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_PIK3CA.mutation_1.png)
+
+
+                        
+### GATA3.mutation
+#### **GATA3.mutation: 0**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_GATA3.mutation_0_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by GATA3.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_GATA3.mutation_0.png)
+
+
+                       
+#### **GATA3.mutation: 1**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("positive_GATA3.mutation_1_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by GATA3.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/positive/positive_outlier_analysis_GATA3.mutation_1.png)
+
+
+                       
+## Negative outliers (FDR < 0.05) 
+### PAM50
+#### **PAM50: Basal**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PAM50_Basal_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PAM50_Basal.png)
+
+
+                       
+#### **PAM50: Her2**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PAM50_Her2_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PAM50_Her2.png)
+
+
+                       
+#### **PAM50: LumA**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PAM50_LumA_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PAM50_LumA.png)
+
+
+                       
+#### **PAM50: LumB**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PAM50_LumB_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PAM50. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PAM50_LumB.png)
+
+
+                        
+### ER.Status
+#### **ER.Status: Negative**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_ER.Status_Negative_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ER.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_ER.Status_Negative.png)
+
+
+                       
+#### **ER.Status: Positive**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_ER.Status_Positive_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ER.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_ER.Status_Positive.png)
+
+
+                        
+### PR.Status
+#### **PR.Status: Negative**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PR.Status_Negative_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PR.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PR.Status_Negative.png)
+
+
+                       
+#### **PR.Status: Positive**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PR.Status_Positive_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PR.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PR.Status_Positive.png)
+
+
+                        
+### HER2.Status
+#### **HER2.Status: Negative**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_HER2.Status_Negative_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by HER2.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_HER2.Status_Negative.png)
+
+
+                       
+#### **HER2.Status: Positive**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_HER2.Status_Positive_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by HER2.Status. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_HER2.Status_Positive.png)
+
+
+                        
+### TP53.mutation
+#### **TP53.mutation: 0**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_TP53.mutation_0_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by TP53.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_TP53.mutation_0.png)
+
+
+                       
+#### **TP53.mutation: 1**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_TP53.mutation_1_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by TP53.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_TP53.mutation_1.png)
+
+
+                        
+### PIK3CA.mutation
+#### **PIK3CA.mutation: 0**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PIK3CA.mutation_0_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PIK3CA.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PIK3CA.mutation_0.png)
+
+
+                       
+#### **PIK3CA.mutation: 1**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_PIK3CA.mutation_1_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by PIK3CA.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_PIK3CA.mutation_1.png)
+
+
+                        
+### GATA3.mutation
+#### **GATA3.mutation: 0**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_GATA3.mutation_0_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+#### **GATA3.mutation: 1**
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("negative_GATA3.mutation_1_outlier.RData")
+```
+Number of significant genes: `r dim(outlier_analysis)[1]`
+
+
+                      
+
+
+**Table**: Significant genes ranked by FDR value.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+library(DT)
+datatable(outlier_analysis, rownames = FALSE, width = "500px")
+```
+
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by GATA3.mutation. Note: row names may not be annotated if there are more than 100 significant genes.
+![](blacksheep/negative/negative_outlier_analysis_GATA3.mutation_1.png)
+
+
+                       
