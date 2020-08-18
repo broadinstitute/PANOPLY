@@ -6,6 +6,15 @@ task panoply_association {
   File? groupsFile
   String? subType
   File yaml
+  Int? ndigits
+  Float? na_max
+  Float? sample_na_max
+  Float? min_numratio_fraction
+  Float? nmiss_factor
+  Float? sd_filter_threshold
+  String? duplicate_gene_policy
+  String? gene_id_col
+  String? organism
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_association-output.tar"
@@ -17,6 +26,18 @@ task panoply_association {
 
   command {
     set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module association \
+    --master_yaml ${yaml} \
+    ${"--ndigits " + ndigits} \
+    ${"--na_max " + na_max} \
+    ${"--sample_na_max " + sample_na_max} \
+    ${"--min_numratio_fraction " + min_numratio_fraction} \
+    ${"--nmiss_factor " + nmiss_factor} \
+    ${"--sd_filter_threshold " + sd_filter_threshold} \
+    ${"--duplicate_gene_policy " + duplicate_gene_policy} \
+    ${"--gene_id_col " + gene_id_col} \
+    ${"--organism " + organism}
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -i ${inputData} \
@@ -25,7 +46,7 @@ task panoply_association {
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -f ${inputData} \
@@ -35,7 +56,7 @@ task panoply_association {
                   -o ${outFile} \
                   -g ${groupsFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params}
+                  -p "config-custom.r"
     fi
   }
 
@@ -63,6 +84,16 @@ workflow panoply_association_workflow {
   String? analysisDir
   File? groupsFile
   String dataType
+  File yaml
+  Int? ndigits
+  Float? na_max
+  Float? sample_na_max
+  Float? min_numratio_fraction
+  Float? nmiss_factor
+  Float? sd_filter_threshold
+  String? duplicate_gene_policy
+  String? gene_id_col
+  String? organism
     
   call panoply_association {
     input:
@@ -70,6 +101,16 @@ workflow panoply_association_workflow {
       type=dataType,
       standalone=standalone,
       analysisDir=analysisDir,
-      groupsFile=groupsFile
+      groupsFile=groupsFile,
+      yaml=yaml,
+      ndigits=ndigits,
+      na_max=na_max,
+      sample_na_max=sample_na_max,
+      min_numratio_fraction=min_numratio_fraction,
+      nmiss_factor=nmiss_factor,
+      sd_filter_threshold=sd_filter_threshold,
+      duplicate_gene_policy=duplicate_gene_policy,
+      gene_id_col=gene_id_col,
+      organism=organism
   }
 }

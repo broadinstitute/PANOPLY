@@ -30,7 +30,7 @@ task panoply_cna_setup {
   }
 
   runtime {
-    docker : "broadcptac/panoply_cna_setup:dev"
+    docker : "broadcptacdev/panoply_cna_setup:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -45,5 +45,5 @@ task panoply_cna_setup {
 
 
 workflow panoply_cna_setup_workflow {
-	call panoply_cna_setup
+  call panoply_cna_setup
 }
