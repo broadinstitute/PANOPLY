@@ -40,4 +40,3 @@ task panoply_accumulate {
 workflow panoply_accumulate_workflow {
   call panoply_accumulate
 }
-
