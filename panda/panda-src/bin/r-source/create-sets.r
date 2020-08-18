@@ -52,7 +52,7 @@ annot.file <- glue( "{annot.file}/{opt$wkspace}-annotation.csv" )
 annot.data <- read.csv( annot.file, header = T, stringsAsFactors = F )
 
 s.ids <- annot.data$Sample.ID
-
+set_fval <- unlist( strsplit( set_fval, split = ';' ) )
 set.list  <- c()
 for ( value in set_fval ){
   set.list <- c( set.list,  s.ids[which( annot.data[, set_fcol] == value )] )

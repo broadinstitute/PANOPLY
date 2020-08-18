@@ -102,10 +102,12 @@ download_files <- function(){
   addr <- read.csv( addr.file, header = T, stringsAsFactors = F, sep = '\t' )
   types <- c( opt$gct.types, opt$csv.types, "groups" )
   invisible( lapply( types, function( t ){
-    dir.create( glue( "{opt$location}/split-data/{t}" ) )
+    dir.create( glue( "{opt$location}/split-data/{t}" ), showWarnings=FALSE )
     links <- addr[[t]]
     invisible( lapply( links, function( link ){
-      system( glue( "gsutil cp {link} {opt$location}/split-data/{t}/." ) )
+      # download only files not already present locally
+      if (!file.exists (glue ("{opt$location}/split-data/{t}/{basename(link)}")))
+        system( glue( "gsutil cp {link} {opt$location}/split-data/{t}/." ) )
     } ) )
   } ) )
 }
