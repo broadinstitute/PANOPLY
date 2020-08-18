@@ -95,5 +95,5 @@ full_path=$src/$full
 dir_create
 collect
 cd $src;
-tar -cvf pgdac_main_summary.tar $summ
-tar -cvf pgdac_main_full.tar $full
+tar -cvf panoply_main_summary.tar $summ
+tar -cvf panoply_main_full.tar $full
