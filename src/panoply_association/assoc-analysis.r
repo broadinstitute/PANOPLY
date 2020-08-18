@@ -72,7 +72,7 @@ if (! exists ("assoc.subgroups")) {
       subsamp <- group != 'ignore'
       # write subsamples dataset and class labels
       f <- paste (type, '-', g, sep='')
-      ds.g <- subset.gct (ds, subsamp)
+      ds.g <- col.subset.gct (ds, subsamp)
       gct.g <-  sprintf ("%s.gct", f)
       cls.g <- sprintf ("%s.cls", f)
       write.gct (ds.g, gct.g)
