@@ -15,7 +15,7 @@ task panoply_blacksheep {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.R \
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
         --module blacksheep \
         --master_yaml ${master_yaml} \
         ${"--apply_filtering " + apply_filtering} \
