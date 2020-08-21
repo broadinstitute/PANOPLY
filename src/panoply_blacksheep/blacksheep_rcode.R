@@ -127,7 +127,7 @@ outlier_count_and_analysis = function(groupings, data_values, fraction_samples_c
     
     # save fraction table - fraction of outliers per aggregated feature per sample
     fraction_table = count_outliers_out$fractiontab
-    write.csv(fraction_table, file.path(csv_name[i], paste0("fraction_", csv_name[i], "_outliers_per_feature.csv")))
+    write.csv(fraction_table, file.path(csv_name[i], paste0("fraction_", csv_name[i], "_outliers_per_genesymbol.csv")))
     
     # outlier enrichment analysis
     outlier_analysis_out <- outlier_analysis(grouptablist = count_outliers_out$grouptablist,
@@ -167,7 +167,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
       GOI_list = append(title, GOI)
       
       # save list of genes of interest
-      write.table(GOI_list, file.path(csv_name[pos_neg], paste0("significant_genes_ ", csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".txt")), quote = FALSE, row.names = FALSE, col.names = FALSE)
+      write.table(GOI_list, file.path(csv_name[pos_neg], paste0("significant_genes_", csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".txt")), quote = FALSE, row.names = FALSE, col.names = FALSE)
 
       if(length(GOI) > 0) {
         
@@ -191,6 +191,10 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
                                  nameparam = paste0(csv_name[pos_neg], " outlier analysis for ", heatmap_names[i], ", FDR cutoff value = ", fdrcutoffvalue))
         
         pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".pdf")))
+        print(heatmap)
+        dev.off()
+
+        png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".png")))
         print(heatmap)
         dev.off()
         
