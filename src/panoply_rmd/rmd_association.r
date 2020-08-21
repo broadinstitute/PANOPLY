@@ -114,7 +114,7 @@ output:
       smooth_scroll: true
 ---\n
 ## Overview
-This report summarizes the results of the Association module at FDR < ', fdr_value, '.
+This report summarizes the results of the Association module at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways.
               ')
   
   if (dir.exists(file.path(label, gsea_dir))){
@@ -163,15 +163,16 @@ load("', category_filename, '.RData")
 if ("category" %in% names(rdesc_volc)){
   p = ggplot(rdesc_volc, aes(x = ', nes_name, ', y = -log10(fdr), colour = group, text = pathway, group = category)) +
     geom_point() +
-    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed")
+    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed") +
+    scale_color_manual(values=c("black", "red"))
   ggplotly(p, tooltip = c("text", "category"))
 } else {
   p = ggplot(rdesc_volc, aes(x = ', nes_name, ', y = -log10(fdr), colour = group, text = pathway)) +
     geom_point() +
-    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed")
+    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed") +
+    scale_color_manual(values=c("black", "red"))
   ggplotly(p, tooltip = "text")
 }
-
 ```
 **Figure**: Volcano plot summarizing ssGSEA pathway results for ', category, ', comparison ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(" over.*", "", comparison), ' and negative NES values indicate enrichment in ', gsub(".*over ", "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '.
                     ')
@@ -189,14 +190,19 @@ load("', category_filename, '_filtered.RData")
 library(DT)
 datatable(rdesc_tab, rownames = FALSE, width = "500px")
 ```
+
+\n
                        ')
-        } else if (dim(rdesc_tab)[1] == 0){
+        } else {
           rmd = paste0(rmd, '\n
-No significantly enriched pathways with FDR < ', fdr_value, '.                       
+No significantly enriched pathways with FDR < ', fdr_value, '.  
+
+\n
                        ')
         }
       } else {
         mat = data.frame(file@mat)
+        compare = colnames(mat)
         rdesc = file@rdesc
         
         rdesc2 = rdesc %>%
@@ -222,11 +228,11 @@ No significantly enriched pathways with FDR < ', fdr_value, '.
         if (dim(mat2)[1]>=1){
           save(mat2, file = paste0(category_filename, "_filtered.RData"))
           
-          pw_hm(output.prefix = file, fdr.max = fdr_value, n.max = 50, ptmsigdb=F)
+          pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
           file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
           
           rmd = paste0(rmd, '\n
-![Figure: heatmap](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
+![**Figure**: Heatmap summarizing ssGSEA pathway results for ', category, ', clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
 \n
 **Table**: ', dim(mat2)[1], ' significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
@@ -235,14 +241,17 @@ library(DT)
 datatable(mat2, rownames = FALSE)
 ```
                        ')
-        } else if (dim(mat2)[1] == 0) {
+        } else {
           rmd = paste0(rmd, '\n
 No significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.                       
                        ')
         }
-
       }
     }
+  } else {
+    rmd = paste(rmd, '\n## ssGSEA Association Results
+No ssGSEA results were found.
+                ')
   }
   
   # write .rmd file
