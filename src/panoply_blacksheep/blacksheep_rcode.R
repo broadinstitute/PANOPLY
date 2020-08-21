@@ -194,7 +194,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
         print(heatmap)
         dev.off()
 
-        png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".png")))
+        png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".png")), width = 2200, height = 2200, res = 300)
         print(heatmap)
         dev.off()
         
