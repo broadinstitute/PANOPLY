@@ -75,7 +75,7 @@ if (! exists ("assoc.subgroups")) {
       ds.g <- col.subset.gct (ds, subsamp)
       gct.g <-  sprintf ("%s.gct", f)
       cls.g <- sprintf ("%s.cls", f)
-      write.gct (ds.g, gct.g)
+      write.gct (ds.g, gct.g, appenddim=FALSE)
       write.cls (group [subsamp], cls.g)
       
       if (min (summary (factor (read.cls (cls.g)))) < 3) {
