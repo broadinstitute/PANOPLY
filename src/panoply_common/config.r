@@ -227,3 +227,7 @@ rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
 
 ## CNA/parallelism related
 pe.max.default <- 250           # default maximum processors/jobs
+
+####################### END of ORIGINAL ###################################################
+
+

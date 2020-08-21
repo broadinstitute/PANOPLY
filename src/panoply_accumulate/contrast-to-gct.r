@@ -59,9 +59,9 @@ main <- function()
     {
       for ( contrast in col )
       {
-        cIdx <- as.numeric( unlist( 
-          strsplit( contrast, split = 'contrast.' ) )[2] )
-        col.ann <- c( col.ann, glue( "{cls[cIdx]}-vs-rest" ) )
+        cName <- unlist( 
+          strsplit( contrast, split = 'contrast.' ) )[2]
+        col.ann <- c( col.ann, glue( "{cName}-vs-rest" ) )
       }
     } else if ( col[1] == "Fold.Change" )
       col.ann <- glue( "{cls[2]}-over-{cls[1]}" )

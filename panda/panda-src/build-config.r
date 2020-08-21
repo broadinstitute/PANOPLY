@@ -99,6 +99,16 @@ y2true <- function( prompt ) {
   return( flag )
 }
 
+printX <- function (type, line1, line2=NULL, line3=NULL) {
+  outX <- glue ("\n\n{sep}")
+  outX <- glue ( "{outX}\n.. {type}. {line1}." )
+  if (!is.null (line2)) outX <- glue ( "{outX}\n.. {type}. {line2}." )
+  if (!is.null (line3)) outX <- glue ( "{outX}\n.. {type}. {line3}." )
+  outX <- glue( "{outX}\n{sep}\n")
+  if (type != "ERROR") print (outX)
+  invisible (outX)
+}
+
 ### ====
 ### Section. Inputs
 ### ====
@@ -106,7 +116,15 @@ y2true <- function( prompt ) {
 panda_initialize <- function () {
   # initialize system variables
   terra.wkspace <<- Sys.getenv( 'WORKSPACE_NAME' )
-  google.bucket <<- Sys.getenv( 'WORKSPACE_BUCKET' )  
+  google.bucket <<- Sys.getenv( 'WORKSPACE_BUCKET' )
+  
+  # check to make sure workspace does not have spaces or other special characters
+  if (grepl ( '[^[:alnum:]|_|-]', terra.wkspace )) {
+    error <- printX ("ERROR", "Invalid Workspace name", 
+                     "Only letters, numbers, dashes and underscores are allowed")
+    stop (error)
+  }
+  
   home <<- glue( "/home/jupyter-user/notebooks/{terra.wkspace}/edit/" )
   setwd (home)
   
@@ -124,27 +142,22 @@ panda_initialize <- function () {
     for (f in unlist (c (p$typemap.gct, p$typemap.csv, p$typemap.gmt, p$typemap.yml))) {
       if (! file.exists (glue ("input/{f}")) ) {
         ok <- FALSE
-        warn <- glue( "\n\n{sep}" )
-        warn <- glue( "{warn}\n.. WARNING. Previous {cfg} exists, but input files are missing" )
-        warn <- glue( "{warn}\n.. WARNING. Existing {cfg} will be ignored" )
-        warn <- glue( "{warn}\n{sep}\n")
-        print( warn )
+        printX ("WARNING", glue ("Previous {cfg} exists, but input files are missing"),
+                glue ("Existing {cfg} will be ignored"))
         break
       }
     }
     if (ok) {
-      info <- glue( "\n\n{sep}" )
-      info <- glue( "{info}\n.. INFO. Previous {cfg} exists." )
-      info <- glue( "{info}\n.. INFO. Input file map, groups and colors restored." )
-      info <- glue( "{info}\n.. INFO. Modify using appropriate Sections." )
-      info <- glue( "{info}\n{sep}\n")
-      print( info )
-      
+      printX ("INFO", glue("Previous {cfg} exists"),
+              glue("Input file map, groups and colors restored"),
+              glue("Modify using appropriate Sections"))
+
       typemap.gct <<- p$typemap.gct
       typemap.csv <<- p$typemap.csv
       typemap.gmt <<- p$typemap.gmt
       typemap.yml <<- p$typemap.yml
       groups.cols <<- p$groups.cols
+      groups.continous <<- p$groups.continuous
       groups.colors <<- list()
       for ( group in names( p$groups.colors ) ) {
         groups.colors[[group]] <<- list()
@@ -185,7 +198,7 @@ load_unzipped_files <- function(){
   zip.name <- tail( unlist( strsplit( input.zip, split = '/' ) ), 1 )
   system( glue( "gsutil cp {input.zip} {home}/." ) )
   if (!file.exists( zip.name )) 
-    stop (glue( "\n\n{sep}\n.. ERROR. Zip file {zip.name} not found in workspace bucket.\n{sep}\n" ))
+    stop ( printX ("ERROR", glue("Zip file {zip.name} not found in workspace bucket")) )
   
   if( dir.exists( "input" ) )
     unlink( "input", recursive = T )
@@ -216,12 +229,11 @@ validate_annotation_table <- function (typemap.csv) {
                      stringsAsFactors = F, quote = '"' )
   all.groups <- colnames( annot )
   missing.cols <- setdiff( required.cols, all.groups )
-  error <- glue(
-    "Missing Columns. \n{paste0( missing.cols, collapse = ', ' )}" )
   if( length( missing.cols ) > 0 )
-    stop( glue( "\n\n{sep}\n.. ERROR. {error}.\n{sep}\n" ) )
+    stop( printX ("ERROR", 
+                  glue("Missing Columns. \n{paste0( missing.cols, collapse = ', ' )}")) )
   else
-    print( glue( "\n\n{sep}\n.. INFO. Sample annotation file successfully validated.\n" ) )
+    printX ("INFO", "Sample annotation file successfully validated")
   
   return (annot$Sample.ID)
 }
@@ -230,17 +242,13 @@ validate_data_table <- function (data.type, table.samples, sample.list) {
   common <- intersect (table.samples, sample.list)
   if (length(common) == 0) {
     # no common samples between data.type and annotation table
-    error <- glue( "\n\n{sep}\n.. ERROR. No samples found in {data.type}." )
-    error <- glue( "{error}\n..        Harmonize samples names in annotation table and data tables." )
-    error <- glue( "{error}\n{sep}\n" )
+    error <- printX ("ERROR", glue("No samples found in {data.type}"),
+                     glue("Harmonize samples names in annotation table and data tables"))
     stop( error )
   }
   if (length(common) < length(sample.list)/2) {
     # less than half of samples in annotation table found in data table
-    warn <- glue( "\n\n{sep}" )
-    warn <- glue( "{warn}\n.. WARNING. Only {length(common)} (out of {length(sample.list)}) found in {data.type}" )
-    warn <- glue( "{warn}\n{sep}\n")
-    print( warn )
+    printX ("WARNING", glue("Only {length(common)} (out of {length(sample.list)}) found in {data.type}"))
   } else {
     print( glue( "\n.. INFO. {data.type} successfully validated.\n" ) )
   }
@@ -250,15 +258,15 @@ validate_input <- function () {
   ## check input data against annotation table
   # start by checking if annotation table is present, and has required columns
   if (is.null (typemap.csv$annotation)) {
-    stop( glue( "\n\n{sep}\n.. ERROR. Sample annotation file missing.\n{sep}\n" ) )
+    stop( printX ("ERROR", "Sample annotation file missing" ) )
   }
   samples <- validate_annotation_table (typemap.csv)
   
   # check for sample id matches to ensure proper harmonization
   if ( (!exists ("typemap.gct")) || length (typemap.gct) == 0 )
-    stop( glue( "\n\n{sep}\n.. ERROR. No gct files specified.\n{sep}\n" ) )
+    stop( printX ("ERROR", "No gct files specified") )
   if ( all (names (typemap.gct) %in% proteome.types == FALSE) )
-    stop( glue( "\n\n{sep}\n.. ERROR. No proteomics dataset specified.\n{sep}\n" ) )
+    stop( printX ("ERROR", "No proteomics dataset specified") )
   print( glue( "\n.. INFO. Validating sample IDs in other files ..\n" ) )
   flush.console ()  # without this, the display shows up later
   sapply (names (typemap.gct),   # gct files
@@ -266,7 +274,7 @@ validate_input <- function () {
             d <- suppressMessages (parse_gctx (typemap.gct[[n]]))
             validate_data_table (n, d@cid, samples)
           })
-  sapply (setdiff (names (typemap.csv), c('annotation')),   # csv files
+  sapply (setdiff (names (typemap.csv), c('annotation', 'groups')),   # csv files
           function (n) {
             d <- read.csv (typemap.csv[[n]], header = T,
                            stringsAsFactors = F, quote = '"')
@@ -333,36 +341,48 @@ select_groups <- function( all.groups ){
 verify_group_validity <- function( groups.cols, typemap.csv ){
   if (length (groups.cols) == 0) return (groups.cols)
   drop <- c()
+  cont <- groups.continuous <- c()
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- unique( annot[[groups.cols[group.idx]]] )
-    if ( length( groups.vals ) > max.categories || length( groups.vals ) == 1 ){
+    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
+      # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
+      # if column has > max.categories, drop from groups.cols, 
+      #   but, if numeric, treat as a continuous column and add to groups.continuous
       drop <- c( drop, group.idx )
+      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) 
+        cont <- c (cont, group.idx)
     }
   }
-  if ( length( drop ) > 0 ) groups.cols <- groups.cols[-drop]
-  return( groups.cols )
+  if ( length( cont ) > 0 ) groups.continuous <- groups.cols[cont]
+  if ( length( drop ) > 0 ) groups.cols <- groups.cols[-drop]     # do this last
+  return( list (groups.cols=groups.cols, groups.continuous=groups.continuous) )
 }
 
-display_validated_groups <- function( groups.cols, groups=FALSE ){
+display_validated_groups <- function( groups.cols, groups.continuous, groups=FALSE ){
   if (!groups ) {
-    warning <- glue( "Annotations (if any) with <2 or {max.categories}+ categories were excluded." )
-    print( glue( "\n\n{sep}\n.. WARNING. {warning}" ) )
+    warning <- glue( "Annotations (if any) with <2 categories were excluded." )
+    warning <- glue( "\nAnnotations with > {max.categories} are considered continuous. ")
+    printX ("WARNING", warning)
   }
-  print( glue( "\n.. Selected groups:\n\n" ) )
+  print( glue( "\n.. Selected groups:\n" ) )
   print( glue( "{add_space( 1:length( groups.cols ) )}: {groups.cols}" ) )
+  if (length (groups.continuous) > 0) {
+    print( glue( "\n\n.. Continuous groups:\n" ) )
+    print( glue( "{add_space( 1:length( groups.continuous ) )}: {groups.continuous}" ) )
+  }
 }
 
 panda_select_groups <- function(){
   groups.cols <<- select_groups( all.groups )
   if (length (groups.cols) == 0) {
     # no groups were selected -- choose all valid columns from annotation
-    info <- glue( "\n\n{sep}\n.. INFO. No groups selected. Using all valid annotations." )
-    info <- glue( "{info}\n{sep}\n")
-    print( info )
+    printX ("INFO", "No groups selected. Using all valid annotations")
     groups.cols <<- setdiff (all.groups, c (required.cols, ignore.cols))
   }
-  groups.cols <<- verify_group_validity( groups.cols, typemap.csv )
+  final.cols <- verify_group_validity( groups.cols, typemap.csv )
+  groups.cols <<- final.cols$groups.cols
+  groups.continuous <<- final.cols$groups.continuous
 }
 
 panda_groups <- function(){
@@ -374,7 +394,9 @@ panda_groups <- function(){
     if (keep) {
       gr <- read.csv( typemap.csv$groups, header = T,
                       stringsAsFactors = F, quote = '"' )
-      groups.cols <<- setdiff (colnames( gr ), c('Sample.ID'))
+      final.cols <- verify_group_validity( as.vector (unlist (gr)), typemap.csv )
+      groups.cols <<- final.cols$groups.cols
+      groups.continuous <<- final.cols$groups.continuous
     }
   } 
   
@@ -384,7 +406,7 @@ panda_groups <- function(){
     panda_select_groups ()
   }
   
-  display_validated_groups( groups.cols, groups=keep )
+  display_validated_groups( groups.cols, groups.continuous, groups=keep )
   panda_colors_defaults (display=FALSE)  ## always set default colors automatically
   print( DONE )
 }
@@ -508,18 +530,17 @@ panda_colors_edit <- function(){
 sample_set_sanity_check <- function( sample.sets ){
   command <- glue( "fissfc sset_list -w {terra.wkspace} -p {globals$project}" )
   exist.ss <- system( command, intern = T )
-  if ( "all" %in% exist.ss ) {
-    # delete the 'all' sample set so that it can be re-created with updated parameters
-    # but don't delete till 
-    delete.all <- TRUE
-  }
+  
+  # delete the 'all' sample set so that it can be re-created with updated parameters
+  # but don't delete yet, in case sample set definition is aborted
+  delete.all <- ifelse ("all" %in% exist.ss, TRUE, FALSE)
+    
   exist.ss <- setdiff (exist.ss, 'all')  # always include 'all' -- keeps samples synchronized
   if ( !( identical( character(), exist.ss ) ) ){
     overlap.flags <- names( sample.sets ) %in% exist.ss
     if ( any( overlap.flags ) ){
       overlap.ssets <- names( sample.sets )[overlap.flags]
       warning <- glue ("WARNING. Sample sets -- {overlap.ssets} -- already exist.")
-      # warning <- glue ("{warning}\n.. Disambiguating using random suffixes ..")
       print( glue( "\n\n{sep}\n.. {warning}\n" ) )
       flush.console()
       overwrite <- y2true ("Overwrite sample sets?")
@@ -634,6 +655,7 @@ panda_finalize <- function (internal=FALSE) {
   lines$typemap.gmt <- typemap.gmt
   lines$typemap.yml <- typemap.yml
   lines$groups.cols <- groups.cols
+  lines$groups.continuous <- groups.continuous
   lines$groups.colors <- list()
   for ( group in names( groups.colors ) ) {
     lines$groups.colors[[group]] <- list()
