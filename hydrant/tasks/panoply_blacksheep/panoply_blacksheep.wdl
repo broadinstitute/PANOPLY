@@ -31,6 +31,7 @@ task panoply_blacksheep {
 
     output {
         File tar_out = "blacksheep_outlier_analysis.tar.gz"
+	File final_yaml = "final_output_params.yaml"
     }
 
     runtime {
