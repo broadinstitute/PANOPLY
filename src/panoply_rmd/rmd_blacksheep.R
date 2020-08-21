@@ -2,29 +2,18 @@
 
 # tar_file  - URL of tar file created by task panoply_blacksheep
 # yaml_file - URL of integrated yaml file produced by parameter_manager.r
-# label     - character, name of desired folder in tarball
-# type      - character, data type
 
-# args = commandArgs()
-# 
-# tar_file = args[1]
-# yaml_file = args[2]
-# label = args[3]
-# type = args[4]
+args = commandArgs()
+
+tar_file = args[1]
+yaml_file = args[2]
 
 library(yaml)
 library(rmarkdown)
 library(stringr)
 library(dplyr)
 
-tar_file = "G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_scripts/rmd/blacksheep_outlier_analysis.tar.gz"
-yaml_file = "G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_scripts/test.yaml"
-
-
-setwd("G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_scripts/rmd")
-
-rmd_blacksheep = function(#tar_file, 
-                          yaml_file){
+rmd_blacksheep = function(tar_file, yaml_file){
   
   # extract values from final yaml file
   yaml_params = read_yaml(yaml_file)
@@ -33,7 +22,7 @@ rmd_blacksheep = function(#tar_file,
   groups_file = yaml_params$panoply_blacksheep$groups_file
   
   # extract files from tarball
-  #untar(tar_file)
+  untar(tar_file)
 
   # begin writing rmd
   rmd = paste('---
@@ -109,12 +98,11 @@ No groups file was provided so enrichment analysis of outliers was not performed
   }
   
   # write .rmd file
-  writeLines(rmd, con = "G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_scripts/rmd/rmd_blacksheep.rmd")
+  writeLines(rmd, con = "rmd_blacksheep.rmd")
   
   # render .rmd file
-  rmarkdown::render("G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_scripts/rmd/rmd_blacksheep.rmd")
+  rmarkdown::render("rmd_blacksheep.rmd")
 }
 
 # run rmd_blacksheep function to make rmd report
-rmd_blacksheep(#tar_file, 
-               yaml_file)
+rmd_blacksheep(tar_file, yaml_file)
