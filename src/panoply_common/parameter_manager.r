@@ -31,6 +31,8 @@ option_list <- list(
   make_option(c("--pome_gene_id_col"), type = "character", dest = 'pome_gene_id_col', help = "gene id column for harmonize pome data"),
   make_option(c("--cna_gene_id_col"), type = "character", dest = 'cna_gene_id_col', help = "gene id column for harmonize cna data"),
   make_option(c("--rna_gene_id_col"), type = "character", dest = 'rna_gene_id_col', help = "gene id column for harmonize rna data"),
+    #association:
+  make_option(c("--fdr_assoc"), type = "double", dest = 'fdr_assoc', help = "association module fdr value"),
     #sample_qc:
   make_option(c("--cor_threshold"), type = "double", dest = 'cor_threshold', help = "correlation threshold for sample_qc"),
     #cna_analysis:
@@ -559,6 +561,14 @@ check_blacksheep_params <- function(opt, yaml){
   return(yaml)
 }
 
+# association:
+check_association_params <- function(opt, yaml){
+  if (!is.null(opt$fdr_assoc)){
+    yaml$panoply_association$fdr_assoc <- opt$fdr_assoc
+  }
+  return(yaml)
+}
+
 # Checks all parameters (maybe use for final output yaml for whole pipeline?)
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
@@ -566,6 +576,7 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_normalize_sm_params(opt,yaml)
   yaml <- check_rna_protein_correlation_params(opt,yaml)
   yaml <- check_harmonize_params(opt,yaml)
+  yaml <- check_association_params(opt,yaml)
   yaml <- check_sample_qc_params(opt,yaml)
   yaml <- check_cna_analysis_params(opt,yaml)
   yaml <- check_cna_corr_report_params(opt,yaml)
@@ -610,6 +621,8 @@ write_custom_config <- function(yaml){
                 paste('pome.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$pome_gene_id_col, '"', sep = '')),
                 paste('cna.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$cna_gene_id_col, '"', sep = '')),
                 paste('rna.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$rna_gene_id_col, '"', sep = '')),
+                #association:
+                paste('assoc.fdr', '<-', yaml$panoply_association$fdr_assoc),
                 #sample_qc:
                 paste('cor.threshold', '<-', yaml$panoply_sample_qc$cor_threshold),
                 #cna_analysis:
@@ -748,6 +761,7 @@ parse_command_line_parameters <- function(opt){
     
   }else if (opt$module == 'association' & check_if_any_command_line(opt)){
     yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
+    yaml <- check_association_params(opt, yaml) #Returns updated yaml if module params were changed via command line
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
     

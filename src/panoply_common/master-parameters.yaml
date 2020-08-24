@@ -47,8 +47,11 @@ panoply_harmonize:
   rna_gene_id_col: 'id'
 
 
-#panoply_association: # Any parameters here?
-
+panoply_association:
+  fdr_assoc: 0.05
+  
+panoply_association_report:
+  fdr_value: 0.05
 
 panoply_sample_qc:
   cor_threshold: 0.4
