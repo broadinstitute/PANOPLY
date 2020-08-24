@@ -57,7 +57,7 @@ summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dt
       if (!is.null (permutation)) return ()    # do not write for permutation scores
       D <- ES
       D@mat <- as.matrix (d)
-      write.gct (D, f)
+      write.gct (D, f, appenddim=FALSE)
     }
     
     
