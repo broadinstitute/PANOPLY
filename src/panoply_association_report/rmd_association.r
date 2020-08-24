@@ -17,6 +17,7 @@ library(yaml)
 library(cmapR)
 library(tibble)
 library(dplyr)
+library(tidyr)
 library(ggplot2)
 library(gridExtra)
 library(plotly)
@@ -28,7 +29,7 @@ yaml_file = "G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_
 label = "panoply-lscc-3-2-acetylome-full-results"
 type = "acetylome"
 
-setwd("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd")
+setwd("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/")
 source("heatmap_function.R")
 
 hallmark_process_category <- c(
@@ -89,17 +90,95 @@ names(hallmark_category) = "category"
 hallmark_category = hallmark_category %>%
   rownames_to_column("pathway")
 
+volcano_plot = function(mat, rdesc, rid, split_word, fdr_value, category, category_filename, rmd){
+  comparison = gsub("\\.", " ", colnames(mat))
+  comparison_filename = gsub("\\.", "_", colnames(mat))
+  colnames(mat) = paste("NES", colnames(mat), sep = "_")
+  
+  mat2 = mat %>%
+    rownames_to_column("pathway")
+  
+  rdesc2 = rdesc %>%
+    rownames_to_column("pathway") %>%
+    rename(fdr = all_of(contains("fdr"))) %>%
+    select(pathway, fdr) %>%
+    left_join(mat2) %>%
+    arrange(fdr)
+  
+  # add hallmark categories if hallmark database used
+  if(sum(rid %in% hallmark_category$pathway) > 0){
+    rdesc2 = left_join(rdesc2, hallmark_category)
+  }
+  
+  rdesc_volc = rdesc2 %>%
+    mutate(group = ifelse(fdr<fdr_value, "Significant", "Not significant")) %>%
+    mutate(pathway = gsub("^HALLMARK_", "", pathway))
+  
+  save(rdesc_volc, file = paste0(category_filename, comparison_filename, ".RData"))
+  
+  nes_name = grep("NES", colnames(rdesc2), value = TRUE)
+  
+  if (split_word == "vs"){
+    rmd = paste(rmd, '\n#### Contrast:', comparison)
+  }
+  
+  rmd = paste0(rmd, '\n
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("', category_filename, comparison_filename, '.RData")
+if ("category" %in% names(rdesc_volc)){
+  p = ggplot(rdesc_volc, aes(x = ', nes_name, ', y = -log10(fdr), colour = group, text = pathway, group = category)) +
+    geom_point() +
+    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed") +
+    scale_color_manual(values=c("black", "red"))
+  ggplotly(p, tooltip = c("text", "category"))
+} else {
+  p = ggplot(rdesc_volc, aes(x = ', nes_name, ', y = -log10(fdr), colour = group, text = pathway)) +
+    geom_point() +
+    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed") +
+    scale_color_manual(values=c("black", "red"))
+  ggplotly(p, tooltip = "text")
+}
+```
+**Figure**: Volcano plot summarizing ssGSEA pathway results for ', category, ', contrast ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(paste0(" ", split_word, ".*"), "", comparison), ' and negative NES values indicate enrichment in ', gsub(paste0(".*", split_word, " "), "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '.
+               ')
+        
+  rdesc_tab = rdesc2 %>% 
+    filter(fdr < fdr_value) %>%
+    mutate(fdr = signif(fdr, 3))
+  
+  # if there are any significant results, make a table
+  if (dim(rdesc_tab)[1]>= 1){
+    save(rdesc_tab, file = paste0(category_filename, comparison_filename, "_filtered.RData"))
+    rmd = paste0(rmd, '\n
+**Table**: ', dim(rdesc_tab)[1], ' significantly enriched pathways for ', comparison, ' with FDR < ', fdr_value, '.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("', category_filename, comparison_filename, '_filtered.RData")
+library(DT)
+datatable(rdesc_tab, rownames = FALSE, width = "500px")
+```
+\n
+                 ')
+  } else {
+    rmd = paste0(rmd, '\n
+No significantly enriched pathways for ', comparison, ' with FDR < ', fdr_value, '.  
+\n
+                 ')
+  }
+  
+  return(rmd)
+}
+
 rmd_association = function(#tar_file, 
                            yaml_file, label, type){
   
   # extract values from final yaml file
   yaml_params = read_yaml(yaml_file)
-  fdr_value = 0.01 # need to add from updated yaml file
+  # fdr_value = yaml_params$panoply_association_report$fdr_value
+  fdr_value = 0.01
   
   # extract files from tarball
   # untar(tar_file)
   
-  assoc_dir = "association"
   gsea_dir = "ssgsea_assoc"
   
   # begin writing rmd
@@ -108,7 +187,7 @@ title: "Association analysis results"
 output: 
   html_document:
     toc: true
-    toc_depth: 3
+    toc_depth: 4
     toc_float:
       collapsed: true
       smooth_scroll: true
@@ -131,121 +210,76 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
       
       combined_file = grep("combined", list.files(file.path(label, gsea_dir, in_dir), full.names = TRUE), value = TRUE)
       file = parse.gctx(combined_file)
+      
+      # if there is only one comparison in GCT, make volcano plot
       if (length(file@cid) == 1){
-        mat = data.frame(file@mat) 
-        comparison = gsub("\\.", " ", colnames(mat))
-        colnames(mat) = paste("NES", colnames(mat), sep = "_")
-        mat = mat %>%
-          rownames_to_column("pathway")
-        rdesc = data.frame(file@rdesc) %>%
-          rownames_to_column("pathway") %>%
-          rename(fdr = all_of(contains("fdr"))) %>%
-          select(pathway, fdr) %>%
-          left_join(mat) %>%
-          arrange(fdr)
+        rmd = volcano_plot(mat = data.frame(file@mat), rdesc = data.frame(file@rdesc), rid = file@rid, split_word = "over", fdr_value = fdr_value, category = category, category_filename = category_filename, rmd = rmd)
         
-        # add hallmark categories if hallmark database used
-        if(sum(file@rid %in% hallmark_category$pathway) > 0){
-          rdesc = left_join(rdesc, hallmark_category)
-        }
-        
-        rdesc_volc = rdesc %>%
-          mutate(group = ifelse(fdr<fdr_value, "Significant", "Not significant")) %>%
-          mutate(pathway = gsub("^HALLMARK_", "", pathway))
-        
-        save(rdesc_volc, file = paste0(category_filename, ".RData"))
-        
-        nes_name = grep("NES", colnames(rdesc), value = TRUE)
-        
-        rmd = paste0(rmd, '\n
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("', category_filename, '.RData")
-if ("category" %in% names(rdesc_volc)){
-  p = ggplot(rdesc_volc, aes(x = ', nes_name, ', y = -log10(fdr), colour = group, text = pathway, group = category)) +
-    geom_point() +
-    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed") +
-    scale_color_manual(values=c("black", "red"))
-  ggplotly(p, tooltip = c("text", "category"))
-} else {
-  p = ggplot(rdesc_volc, aes(x = ', nes_name, ', y = -log10(fdr), colour = group, text = pathway)) +
-    geom_point() +
-    geom_hline(yintercept = -log10(', fdr_value, '), linetype = "dashed") +
-    scale_color_manual(values=c("black", "red"))
-  ggplotly(p, tooltip = "text")
-}
-```
-**Figure**: Volcano plot summarizing ssGSEA pathway results for ', category, ', comparison ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(" over.*", "", comparison), ' and negative NES values indicate enrichment in ', gsub(".*over ", "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '.
-                    ')
-        
-        rdesc_tab = rdesc %>% 
-          filter(fdr < fdr_value) %>%
-          mutate(fdr = signif(fdr, 3))
-        
-        if (dim(rdesc_tab)[1]>= 1){
-          save(rdesc_tab, file = paste0(category_filename, "_filtered.RData"))
-          rmd = paste0(rmd, '\n
-**Table**: ', dim(rdesc_tab)[1], ' significantly enriched pathways with FDR < ', fdr_value, '.
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("', category_filename, '_filtered.RData")
-library(DT)
-datatable(rdesc_tab, rownames = FALSE, width = "500px")
-```
-
-\n
-                       ')
-        } else {
-          rmd = paste0(rmd, '\n
-No significantly enriched pathways with FDR < ', fdr_value, '.  
-
-\n
-                       ')
-        }
+      # if there are multiple comparisons in GCT, make volcano plots + heatmap  
       } else {
         mat = data.frame(file@mat)
         compare = colnames(mat)
-        rdesc = file@rdesc
+        rdesc = data.frame(file@rdesc)
         
-        rdesc2 = rdesc %>%
-          select(contains("fdr")) %>%
-          rownames_to_column("pathway") %>%
-          gather(key = "comparison", value = "fdr", -pathway) %>%
-          mutate(comparison = gsub("fdr\\.pvalue\\.", "", comparison)) %>%
-          mutate(fdr = signif(fdr, 3))
-        
-        mat2 = mat %>%
-          rownames_to_column("pathway") %>%
-          gather(key = "comparison", value = "NES", -pathway, na.rm = TRUE) %>%
-          left_join(rdesc2) %>%
-          filter(fdr < fdr_value) %>%
-          arrange(fdr)
-        
-        if(sum(rid %in% hallmark_category$pathway) > 0){
-          mat2 = mat2 %>%
-            left_join(hallmark_category) %>%
-            arrange(category)
-        }
-   
-        if (dim(mat2)[1]>=1){
-          save(mat2, file = paste0(category_filename, "_filtered.RData"))
+        for (name in colnames(mat)){
+          mat_1 = mat %>%
+            select(all_of(name))
           
-          pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
-          file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
+          rdesc_1 = rdesc %>%
+            select(contains(name))
           
-          rmd = paste0(rmd, '\n
-![**Figure**: Heatmap summarizing ssGSEA pathway results for ', category, ', clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
-\n
-**Table**: ', dim(mat2)[1], ' significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("', category_filename, '_filtered.RData")
-library(DT)
-datatable(mat2, rownames = FALSE)
-```
-                       ')
-        } else {
-          rmd = paste0(rmd, '\n
-No significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.                       
-                       ')
+          rmd = volcano_plot(mat = mat_1, rdesc = rdesc_1, rid = file@rid, split_word = "vs", fdr_value = fdr_value, category = category, category_filename = category_filename, rmd = rmd)
         }
+      
+        pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
+        file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
+        
+        rmd = paste0(rmd, '\n#### Overview of all contrasts
+![**Figure**: Heatmap summarizing all ssGSEA pathway results for ', category, ', clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
+\n                       
+                     ')
+        
+#         rdesc2 = rdesc %>%
+#           select(contains("fdr")) %>%
+#           rownames_to_column("pathway") %>%
+#           gather(key = "comparison", value = "fdr", -pathway) %>%
+#           mutate(comparison = gsub("fdr\\.pvalue\\.", "", comparison)) %>%
+#           mutate(fdr = signif(fdr, 3))
+#         
+#         mat2 = mat %>%
+#           rownames_to_column("pathway") %>%
+#           gather(key = "comparison", value = "NES", -pathway, na.rm = TRUE) %>%
+#           left_join(rdesc2) %>%
+#           filter(fdr < fdr_value) %>%
+#           arrange(fdr)
+#         
+#         if(sum(rid %in% hallmark_category$pathway) > 0){
+#           mat2 = mat2 %>%
+#             left_join(hallmark_category) %>%
+#             arrange(category)
+#         }
+#    
+#         if (dim(mat2)[1]>=1){
+#           save(mat2, file = paste0(category_filename, "_filtered.RData"))
+#           
+#           pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
+#           file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
+#           
+#           rmd = paste0(rmd, '\n
+# ![**Figure**: Heatmap summarizing ssGSEA pathway results for ', category, ', clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
+# \n
+# **Table**: ', dim(mat2)[1], ' significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.
+# ```{r echo=FALSE, warning=FALSE, message=FALSE}
+# load("', category_filename, '_filtered.RData")
+# library(DT)
+# datatable(mat2, rownames = FALSE)
+# ```
+#                        ')
+#         } else {
+#           rmd = paste0(rmd, '\n
+# No significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.                       
+#                        ')
+#         }
       }
     }
   } else {
