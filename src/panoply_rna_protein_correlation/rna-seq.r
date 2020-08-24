@@ -30,7 +30,7 @@ run.order <- sapply (samples.order,
                      })
 d <- add.cols.gct (d, data.frame (na.col=rep(NA, nrow(d@mat))))   # add NA column at the end -- use for missing samples
 d <- rearrange.gct (d, run.order, new.cid=samples.order)
-write.gct (d, paste (out.prefix, '.gct', sep=''), ver=3)  # write out GCT v1.3
+write.gct (d, paste (out.prefix, '.gct', sep=''), ver=3, appenddim=FALSE)  # write out GCT v1.3
 
 
 ## filters
@@ -38,6 +38,6 @@ write.gct (d, paste (out.prefix, '.gct', sep=''), ver=3)  # write out GCT v1.3
 if ( !is.na (sd.threshold) ) {
   sds <- apply (d@mat, 1, sd, na.rm=TRUE)
   d.subset <- row.subset.gct (d, sds > sd.threshold)
-  write.gct (d.subset, paste (out.prefix, '-sdfilter.gct', sep=''))
+  write.gct (d.subset, paste (out.prefix, '-sdfilter.gct', sep=''), appenddim=FALSE)
 }
 
