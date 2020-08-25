@@ -48,7 +48,7 @@ panoply_harmonize:
 
 
 panoply_association:
-  fdr_assoc: 0.05
+  fdr_assoc: 0.01
   
 panoply_association_report:
   fdr_value: 0.05

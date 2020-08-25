@@ -6,6 +6,7 @@ task panoply_association {
   File? groupsFile
   String? subType
   File yaml
+  Float? fdr_assoc
   Int? ndigits
   Float? na_max
   Float? sample_na_max
@@ -29,6 +30,7 @@ task panoply_association {
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module association \
     --master_yaml ${yaml} \
+    ${"--fdr_assoc " + fdr_assoc} \
     ${"--ndigits " + ndigits} \
     ${"--na_max " + na_max} \
     ${"--sample_na_max " + sample_na_max} \
@@ -85,6 +87,7 @@ workflow panoply_association_workflow {
   File? groupsFile
   String dataType
   File yaml
+  Float? fdr_assoc
   Int? ndigits
   Float? na_max
   Float? sample_na_max
@@ -103,6 +106,7 @@ workflow panoply_association_workflow {
       analysisDir=analysisDir,
       groupsFile=groupsFile,
       yaml=yaml,
+      fdr_assoc=fdr_assoc,
       ndigits=ndigits,
       na_max=na_max,
       sample_na_max=sample_na_max,
