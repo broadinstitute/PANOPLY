@@ -21,6 +21,22 @@
 
 ## Utility functions
 
+function parse_yaml() {
+   local prefix=$2
+   local s='[[:space:]]*' w='[a-zA-Z0-9_]*' fs=$(echo @|tr @ '\034')
+   sed -ne "s|^\($s\)\($w\)$s:$s\"\(.*\)\"$s\$|\1$fs\2$fs\3|p" \
+        -e "s|^\($s\)\($w\)$s:$s\(.*\)$s\$|\1$fs\2$fs\3|p"  $1 |
+   awk -F$fs '{
+      indent = length($1)/2;
+      vname[indent] = $2;
+      for (i in vname) {if (i > indent) {delete vname[i]}}
+      if (length($3) > 0) {
+         vn=""; for (i=0; i<indent; i++) {vn=(vn)(vname[i])("_")}
+         printf("%s%s%s=\"%s\"\n", "'$prefix'",vn, $2, $3);
+      }
+   }'
+}
+
 function usage {
   echo "Usage: $0 OPERATION -i <input-tarball> -o <output-tarball>"
   echo "             -s <SM-output-file>   -a <parsed-data>"
@@ -461,7 +477,6 @@ filtered_output="$prefix-ratio-norm-NArm$subset_str.gct"
 rna_data_file="rna-data.gct"
 cna_data_file="cna-data.gct"
 
-
 ## INITIALIZATION 
 ## Directory setup and/or extract tarball
 if [ $op = "inputSM" -o $op = "inputNorm" -o "$input_tar" = "" ]
@@ -614,7 +629,7 @@ case $op in
              ;;
 #   cluster: perform consensus kmeans clustering
     cluster )   analysisInit "cluster"
-                cp $code_dir/pgdac_kmeans_consensus.R $cluster_dir/
+                cp $code_dir/panoply_kmeans_consensus.R $cluster_dir/
                 cp $code_dir/consensus_clustering.R $cluster_dir/
                 cp $code_dir/assoc-analysis.r $cluster_dir/
                 cp $code_dir/postprocess.R $cluster_dir/
@@ -624,13 +639,13 @@ case $op in
                  label=`echo $analysis_dir | sed -E 's,.*/(.*).*,\1,'`
                  tmpdir='.' ## temp-folder
                   
-                 ## extract sd threshold from 'config.r'   
-                 sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | awk -F' ' '{print $3}'`
+                 ## extract last occuring sd threshold from 'config.r'   
+                 sdclust=`cat config.r | grep -e '^clustering.sd.threshold' | tail -1 | awk -F' ' '{print $3}'`
                  
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
                  # number of bootstrap iterations are fixed
-                 Rscript pgdac_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
+                 Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
                  
                  # run association analysis on clusters to determine markers
                  R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;

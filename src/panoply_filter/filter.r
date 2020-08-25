@@ -14,7 +14,7 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
     # write out current ds (gct) to file f
     if (separate.QC.types && length (unique (cls)) > 1)   # if there is more than one type
       for (cl in unique (cls)) {
-        d.t <- subset.gct (ds, cls==cl)
+        d.t <- col.subset.gct (ds, cls==cl)
         if (ncol(d.t@mat) > 0) {
           if (cl == qc.pass.label) file.name <- paste (f, '.gct', sep='')  # QC passes cases
           else file.name <- paste (f, '-', cl, '.gct', sep='')
@@ -106,7 +106,7 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
       }
       # keep first occurance only, and fix cls
       keep.samples <- !duplicated (ds@cdesc[, avail.cols])
-      ds <- subset.gct (ds, keep.samples)   
+      ds <- col.subset.gct (ds, keep.samples)   
       cls <- cls [keep.samples]
     }    
   }

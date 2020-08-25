@@ -157,6 +157,7 @@ panda_initialize <- function () {
       typemap.gmt <<- p$typemap.gmt
       typemap.yml <<- p$typemap.yml
       groups.cols <<- p$groups.cols
+      groups.continous <<- p$groups.continuous
       groups.colors <<- list()
       for ( group in names( p$groups.colors ) ) {
         groups.colors[[group]] <<- list()
@@ -273,7 +274,7 @@ validate_input <- function () {
             d <- suppressMessages (parse_gctx (typemap.gct[[n]]))
             validate_data_table (n, d@cid, samples)
           })
-  sapply (setdiff (names (typemap.csv), c('annotation')),   # csv files
+  sapply (setdiff (names (typemap.csv), c('annotation', 'groups')),   # csv files
           function (n) {
             d <- read.csv (typemap.csv[[n]], header = T,
                            stringsAsFactors = F, quote = '"')
@@ -340,24 +341,36 @@ select_groups <- function( all.groups ){
 verify_group_validity <- function( groups.cols, typemap.csv ){
   if (length (groups.cols) == 0) return (groups.cols)
   drop <- c()
+  cont <- groups.continuous <- c()
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- unique( annot[[groups.cols[group.idx]]] )
-    if ( length( groups.vals ) > max.categories || length( groups.vals ) == 1 ){
+    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
+      # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
+      # if column has > max.categories, drop from groups.cols, 
+      #   but, if numeric, treat as a continuous column and add to groups.continuous
       drop <- c( drop, group.idx )
+      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) 
+        cont <- c (cont, group.idx)
     }
   }
-  if ( length( drop ) > 0 ) groups.cols <- groups.cols[-drop]
-  return( groups.cols )
+  if ( length( cont ) > 0 ) groups.continuous <- groups.cols[cont]
+  if ( length( drop ) > 0 ) groups.cols <- groups.cols[-drop]     # do this last
+  return( list (groups.cols=groups.cols, groups.continuous=groups.continuous) )
 }
 
-display_validated_groups <- function( groups.cols, groups=FALSE ){
+display_validated_groups <- function( groups.cols, groups.continuous, groups=FALSE ){
   if (!groups ) {
-    warning <- glue( "Annotations (if any) with <2 or {max.categories}+ categories were excluded." )
+    warning <- glue( "Annotations (if any) with <2 categories were excluded." )
+    warning <- glue( "\nAnnotations with > {max.categories} are considered continuous. ")
     printX ("WARNING", warning)
   }
-  print( glue( "\n.. Selected groups:\n\n" ) )
+  print( glue( "\n.. Selected groups:\n" ) )
   print( glue( "{add_space( 1:length( groups.cols ) )}: {groups.cols}" ) )
+  if (length (groups.continuous) > 0) {
+    print( glue( "\n\n.. Continuous groups:\n" ) )
+    print( glue( "{add_space( 1:length( groups.continuous ) )}: {groups.continuous}" ) )
+  }
 }
 
 panda_select_groups <- function(){
@@ -367,7 +380,9 @@ panda_select_groups <- function(){
     printX ("INFO", "No groups selected. Using all valid annotations")
     groups.cols <<- setdiff (all.groups, c (required.cols, ignore.cols))
   }
-  groups.cols <<- verify_group_validity( groups.cols, typemap.csv )
+  final.cols <- verify_group_validity( groups.cols, typemap.csv )
+  groups.cols <<- final.cols$groups.cols
+  groups.continuous <<- final.cols$groups.continuous
 }
 
 panda_groups <- function(){
@@ -379,7 +394,9 @@ panda_groups <- function(){
     if (keep) {
       gr <- read.csv( typemap.csv$groups, header = T,
                       stringsAsFactors = F, quote = '"' )
-      groups.cols <<- setdiff (colnames( gr ), c('Sample.ID'))
+      final.cols <- verify_group_validity( as.vector (unlist (gr)), typemap.csv )
+      groups.cols <<- final.cols$groups.cols
+      groups.continuous <<- final.cols$groups.continuous
     }
   } 
   
@@ -389,7 +406,7 @@ panda_groups <- function(){
     panda_select_groups ()
   }
   
-  display_validated_groups( groups.cols, groups=keep )
+  display_validated_groups( groups.cols, groups.continuous, groups=keep )
   panda_colors_defaults (display=FALSE)  ## always set default colors automatically
   print( DONE )
 }
@@ -638,6 +655,7 @@ panda_finalize <- function (internal=FALSE) {
   lines$typemap.gmt <- typemap.gmt
   lines$typemap.yml <- typemap.yml
   lines$groups.cols <- groups.cols
+  lines$groups.continuous <- groups.continuous
   lines$groups.colors <- list()
   for ( group in names( groups.colors ) ) {
     lines$groups.colors[[group]] <- list()

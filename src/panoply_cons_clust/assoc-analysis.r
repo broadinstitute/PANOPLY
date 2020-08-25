@@ -14,8 +14,7 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                        id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                        duplicate.gene.policy=duplicate.gene.policy,
                                        impute.colmax=sample.na.max,
-                                       official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
-                                       fdr=assoc.fdr)
+                                       official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
   
   # if class vector has > 2 classes, and sufficient numbers per class,
   # run 1 vs. all marker selection for each class
@@ -31,8 +30,7 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                            id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                            duplicate.gene.policy=duplicate.gene.policy,
                                            impute.colmax=sample.na.max,
-                                           official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
-                                           fdr=assoc.fdr)
+                                           official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'))
     }
   }
 }
@@ -74,7 +72,7 @@ if (! exists ("assoc.subgroups")) {
       subsamp <- group != 'ignore'
       # write subsamples dataset and class labels
       f <- paste (type, '-', g, sep='')
-      ds.g <- col.subset.gct (ds, subsamp)
+      ds.g <- subset.gct (ds, subsamp)
       gct.g <-  sprintf ("%s.gct", f)
       cls.g <- sprintf ("%s.cls", f)
       write.gct (ds.g, gct.g, appenddim=FALSE)

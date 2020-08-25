@@ -6,7 +6,20 @@ task panoply_harmonize {
   String standalone
   String? analysisDir
   String? subType
-  File? params
+  File yaml
+  String? pomeGeneIdCol
+  String? cnaGeneIdCol
+  String? rnaGeneIdCol
+  Int? ndigits
+  Float? na_max
+  Float? sample_na_max
+  Float? min_numratio_fraction
+  Float? nmiss_factor
+  Float? sd_filter_threshold
+  String? duplicate_gene_policy
+  String? gene_id_col
+  String? organism
+
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String dataDir = "/prot/proteomics/Projects/PGDAC/data"
@@ -20,6 +33,22 @@ task panoply_harmonize {
 
   command {
     set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module harmonize \
+    --master_yaml ${yaml} \
+    ${"--pome_gene_id_col " + pomeGeneIdCol} \
+    ${"--cna_gene_id_col " + cnaGeneIdCol} \
+    ${"--rna_gene_id_col " + rnaGeneIdCol} \
+    ${"--ndigits " + ndigits} \
+    ${"--na_max " + na_max} \
+    ${"--sample_na_max " + sample_na_max} \
+    ${"--min_numratio_fraction " + min_numratio_fraction} \
+    ${"--nmiss_factor " + nmiss_factor} \
+    ${"--sd_filter_threshold " + sd_filter_threshold} \
+    ${"--duplicate_gene_policy " + duplicate_gene_policy} \
+    ${"--gene_id_col " + gene_id_col} \
+    ${"--organism " + organism}
+
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -i ${inputData} \
@@ -30,7 +59,7 @@ task panoply_harmonize {
                   -cna ${cnaExpr} \
                   -o ${outFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -f ${inputData} \
@@ -42,7 +71,7 @@ task panoply_harmonize {
                   -cna ${cnaExpr} \
                   -o ${outFile} \
                   ${"-m " + subType} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     fi
   }
 
@@ -71,6 +100,16 @@ workflow panoply_harmonize_workflow {
     File cnaExpr
     String dataType
     String? analysisDir
+    File yaml
+    Int? ndigits
+    Float? na_max
+    Float? sample_na_max
+    Float? min_numratio_fraction
+    Float? nmiss_factor
+    Float? sd_filter_threshold
+    String? duplicate_gene_policy
+    String? gene_id_col
+    String? organism
 
   call panoply_harmonize {
     input:
@@ -79,6 +118,16 @@ workflow panoply_harmonize_workflow {
       cnaExpr=cnaExpr,
       analysisDir=analysisDir,
       standalone=standalone,
-      type=dataType
+      type=dataType,
+      yaml=yaml,
+      ndigits=ndigits,
+      na_max=na_max,
+      sample_na_max=sample_na_max,
+      min_numratio_fraction=min_numratio_fraction,
+      nmiss_factor=nmiss_factor,
+      sd_filter_threshold=sd_filter_threshold,
+      duplicate_gene_policy=duplicate_gene_policy,
+      gene_id_col=gene_id_col,
+      organism=organism
   }
 }

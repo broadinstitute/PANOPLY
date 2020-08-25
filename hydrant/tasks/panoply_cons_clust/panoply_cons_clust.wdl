@@ -1,11 +1,13 @@
-task pgdac_cons_clust {
+task panoply_cons_clust {
   File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
   String type
   File? groupsFile
   String? subType
-  File? params
+  File yaml
+  Int? clustering_sd_threshold
+  Float? clustering_na_threshold
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String outFile = "pgdac_cluster-output.tar"
+  String outFile = "panoply_cluster-output.tar"
 
   Int? memory
   Int? disk_space
@@ -15,8 +17,13 @@ task pgdac_cons_clust {
 
   command {
     set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module cons_clust \
+    --master_yaml ${yaml} \
+    ${"--clustering_sd_threshold " + clustering_sd_threshold} \
+    ${"--clustering_na_threshold " + clustering_na_threshold} 
     echo ${type}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} ${"-p " + params} ${"-g " + groupsFile}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} -p "config-custom.r" ${"-g " + groupsFile}
    
   }
 
@@ -25,7 +32,7 @@ task pgdac_cons_clust {
   }
 
   runtime {
-    docker : "broadcptac/pgdac_cons_clust:4"
+    docker : "broadcptacdev/panoply_cons_clust:latest"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 8]) + ""
@@ -38,6 +45,7 @@ task pgdac_cons_clust {
   }
 }
 
-workflow pgdac_cons_clust_workflow {
-	call pgdac_cons_clust
+workflow panoply_cons_clust_workflow {
+  call panoply_cons_clust
 }
+
