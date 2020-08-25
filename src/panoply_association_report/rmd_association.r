@@ -19,9 +19,7 @@ library(tibble)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
-library(gridExtra)
 library(plotly)
-library(seriation)
 library(glue)
 
 tar_file = "C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/acetylome-28a7ada4-4d04-46dd-8fe5-1c4e82449081-pgdac_main_full.tar"
