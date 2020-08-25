@@ -25,12 +25,12 @@ library(seriation)
 library(glue)
 
 tar_file = "C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/acetylome-28a7ada4-4d04-46dd-8fe5-1c4e82449081-pgdac_main_full.tar"
-yaml_file = "G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/blacksheep_scripts/test.yaml"
+yaml_file = "C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_common/master-parameters.yaml"
 label = "panoply-lscc-3-2-acetylome-full-results"
 type = "acetylome"
 
-setwd("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/")
-source("heatmap_function.R")
+setwd("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_association_report/")
+source("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/heatmap_function.R")
 
 hallmark_process_category <- c(
   HALLMARK_TNFA_SIGNALING_VIA_NFKB='signaling',
@@ -173,13 +173,12 @@ rmd_association = function(#tar_file,
   
   # extract values from final yaml file
   yaml_params = read_yaml(yaml_file)
-  # fdr_value = yaml_params$panoply_association_report$fdr_value
-  fdr_value = 0.01
+  fdr_value = yaml_params$panoply_association_report$fdr_value
+  #gsea_dir = yaml_params$panoply_association_report$ssgsea_dir
+  gsea_dir = "ssgsea_assoc"
   
   # extract files from tarball
-  # untar(tar_file)
-  
-  gsea_dir = "ssgsea_assoc"
+  untar(tar_file)
   
   # begin writing rmd
   rmd = paste0('---
@@ -235,7 +234,7 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
         file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
         
         rmd = paste0(rmd, '\n#### Overview of all contrasts
-![**Figure**: Heatmap summarizing all ssGSEA pathway results for ', category, ', clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
+![**Figure**: Heatmap summarizing significant ssGSEA pathway results for ', category, ', all contrasts, clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
 \n                       
                      ')
         
