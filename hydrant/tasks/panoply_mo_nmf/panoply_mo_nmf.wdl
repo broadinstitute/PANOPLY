@@ -83,7 +83,9 @@ workflow panoply_mo_nmf_workflow {
 			gene_set_database=gene_set_database,
 			yaml_file=yaml_file,
 			output_prefix=label,
-			weight=1
+ 			mode="abs.max",
+			weight=1,
+			
 	}
 
     	call panoply_ssgsea_report_wdl.panoply_ssgsea_report {

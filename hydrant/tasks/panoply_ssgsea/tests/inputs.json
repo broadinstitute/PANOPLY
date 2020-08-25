@@ -1,6 +1,0 @@
-{
-
-  "panoply_ssgsea_workflow.panoply_ssgsea.gene_set_database": "testdata/h.all.v7.0.symbols.gmt",
-  "panoply_ssgsea_workflow.panoply_ssgsea.input_ds": "testdata/data_TNBC_Phospho_Respective_CR_MedianMADnorm_VMsiteFlanks_n72x26620.gct",
-  "panoply_ssgsea_workflow.panoply_ssgsea.yaml_file": "testdata/preproc-ssgsea.yaml"
-}

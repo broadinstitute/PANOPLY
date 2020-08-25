@@ -46,27 +46,42 @@ p_load("magrittr")
 ## - yaml file
 ## parameters in yaml file will be updated with 
 ## parameters specified on cmd
-parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf'){
+parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf', yaml_colors='groups.colors', yaml_groups_cat='groups.cols', yaml_groups_cont='groups.cols.continuous'){
   
   ## #########################################################
   # parse command line parameters
   opt_cmd <- parse_args( OptionParser(option_list=cmd_option_list) )
-  
+  # opt_cmd$yaml_file <- "c:/Users/karsten/Dropbox/Devel/PANOPLY/hydrant/tasks/configs/panoply-parameters-MASTER.yaml"
   ############################################################
   ## parse yaml file
   if(!is.na(opt_cmd$yaml_file) & file.exists(opt_cmd$yaml_file)){
     
     ## import yaml
-    opt_yaml <- read_yaml(opt_cmd$yaml_file)
+    opt_yaml_all <- read_yaml(opt_cmd$yaml_file)
     
+    ###################################
+    ## parse groups
+    #opt_yaml[['cat_anno']] <- opt_yaml[[yaml_groups_cat]] %>% unlist %>% paste(., collapse=';')
+    opt_yaml_groups <- opt_yaml_all[[yaml_groups_cat]] %>% unlist %>% paste(., collapse=';')
+    #opt_yaml_anno <- append(opt_yaml, opt_yaml_tmp)
+    names(opt_yaml_groups)[length(opt_yaml_groups)] <- 'cat_anno'
+    
+    if(yaml_groups_cont %in% names(opt_yaml_all)){
+      opt_yaml_groups[['cont_anno']] <- opt_yaml_all[[yaml_groups_cont]] %>% unlist %>% paste(., collapse=';')
+    }
+    
+    ###################################
+    ## parse colors
+    tmp <- opt_yaml_all[[yaml_colors]]
+    #colors.tmp <- sapply(opt_yaml[["cat_colors"]], function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
+    colors.tmp <- sapply(tmp, function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
+    opt_yaml_colors <- list()
+    opt_yaml_colors[['cat_colors']] <- paste(paste(names(colors.tmp), colors.tmp, sep='='), collapse='|')
+    
+    
+    ###################################
     ## extract relevant section
-    opt_yaml <- opt_yaml[['panoply_mo_nmf']]
-    
-    ## convert vectors and lists to single strings
-    opt_yaml[['cat_anno']] <- opt_yaml[['cat_anno']] %>% unlist %>% paste(., collapse=';')
-    opt_yaml[['cont_anno']] <- opt_yaml[['cont_anno']] %>% unlist %>% paste(., collapse=';')
-    colors.tmp <- sapply(opt_yaml[["cat_colors"]], function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
-    opt_yaml[["cat_colors"]] <- paste(paste(names(colors.tmp), colors.tmp, sep='='), collapse='|')
+    opt_yaml <- opt_yaml_all[[yaml_section]]
     
     ## parse cmd params
     cat('\n\nparsing command line parameters:\n')
@@ -90,6 +105,11 @@ parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf'){
       opt_yaml <- append(opt_yaml, opt_cmd_to_add)
     }
     
+    ## append grroups and colors
+    opt_yaml <- append(opt_yaml, opt_yaml_groups)
+    opt_yaml <- append(opt_yaml, opt_yaml_colors)
+    
+    
     ## updated params
     opt <- opt_yaml
     
@@ -100,14 +120,29 @@ parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf'){
   
   ## force correct mode
   opt$sd_filt <- as.numeric(opt$sd_filt)
+  opt$core_membership <- as.numeric(opt$core_membership)
+  
   opt$z_score <- as.logical(opt$z_score)
   opt$impute <- as.logical(opt$impute)
-  opt$impute_k <- as.integer(opt$impute_k)
+  opt$exclude_2 <- as.logical(opt$exclude_2)
+  opt$bnmf  <- as.logical(opt$bnmf)
+  opt$nmf_only  <- as.logical(opt$nmf_only)
+  
   opt$max_na_row <- as.numeric(opt$max_na_row)
   opt$max_na_col  <- as.numeric(opt$max_na_col)
+  opt$hm_cw <- as.numeric(opt$hm_cw)
+  opt$hm_ch <- as.numeric(opt$hm_ch)
+  opt$hm_max_val <-  as.numeric(opt$hm_max_val)
+  opt$hm_max_val_z <- as.numeric(opt$hm_max_val_z)
+  
+  opt$impute_k <- as.integer(opt$impute_k)
   opt$kmin <- as.integer(opt$kmin)
   opt$kmax <- as.integer(opt$kmax)
   opt$nrun <- as.integer(opt$nrun)
+  
+  opt$filt_mode <- as.character(opt$filt_mode)
+  opt$gene_col <- as.character(opt$gene_col)
+  opt$organism <- as.character(opt$organism)
   
   return(opt)
 } 

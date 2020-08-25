@@ -99,3 +99,7 @@ RUN R -e "pacman::p_install('org.Rn.eg.db')"
 ## I/O
 RUN R -e "pacman::p_install('WriteXLS')"
 RUN R -e "pacman::p_install('readxl')"
+
+
+RUN R -e "pacman::p_install('pals')"
+

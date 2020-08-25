@@ -113,56 +113,53 @@ panoply_blacksheep:
 ########################################
 ## multi-omics NMF clustering
 panoply_mo_nmf:
+
   ## clustering
-  kmin: 5
-  kmax: 5
+  kmin: 3
+  kmax: 4
   exclude_2: TRUE
   core_membership: 0.5 
+ 
+  #########################
   ## NMF parameters
-  nrun: 500
+  nrun: 2
   seed: random
   method: brunet
   bnmf: FALSE
-  ## annotations to include in heatmaps
-  ## and enrichments
-  ## categorial: at least one required
-  cat_anno: [cat1, cat2]
-  ## continuous: vector or NA
-  cont_anno: NA
-  ## aesthetics
-  ## colors for 'cat_anno'
-  cat_colors:
-   cat1:
-    level1: '#FCB462'
-    level2: '#BB81B8' 
-   cat2: 
-    level1: '#FCB462'
-    level2: '#BB81B8'
+ 
   ## heatmap parameters
   hm_cw: 5      ## cell width
   hm_ch: 8      ## cell height 
   hm_max_val: 10   ## max value at which the data will be capped in heatmap 
   hm_max_val_z: 4  ## max value if z-scored 
+
+  #########################
   ## filtering
-  filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05
+  filt_mode: equal   ## global, separate, equal
+  sd_filt: 0.7
   z_score: TRUE
+ 
+  #########################
   ## imputation
   impute: FALSE
   impute_k: 5
-  max_na_row: 0.3   ## (not working yet)
-  max_na_col: 0.9   ## (not working yet)
+  max_na_row: 0.3 ## (not working yet)
+  max_na_col: 0.9 ## (not working yet)
+ 
+  #########################
   ## misc
-  nmf_only: FALSE     ## if TRUE, no downstream analysis of clustering results will be performed
+  gene_col: geneSymbol     ##   
+  nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
+  organism: human
+  #lib_dir: 'C:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
 
 ################################
-## ssGSEA default  parameters (projection) 
-#panoply_ssgsea_projection: 
+## ssGSEA default  parameters (projection)
 panoply_ssgsea:
   nperm: 1000
   weight: 0.75
-  norm: "rank"                  ## rank, log, log.rank, none
-  correl_type: "z.-score"       ## "rank", "z.score", "symm.rank"
+  sample_norm_type: "rank"      ## rank, log, log.rank, none
+  correl_type: "z.score"        ## "rank", "z.score", "symm.rank"
   statistic: "area.under.RES"   ## "area.under.RES", "Kolmogorov-Smirnov" 
   output_score_type: "NES"      ## 'Score type: "ES" - enrichment score,  "NES" - normalized ES'
   min_overlap: 10               ## 'Minimal overlap between signature and data set.'
@@ -171,6 +168,23 @@ panoply_ssgsea:
   global_fdr: FALSE             ## If TRUE global FDR across all data columns is calculated.
   multi_core: TRUE              ## If TRUE processing will be parallelized across gene sets using (N-1) CPU cores.
 
+
+######################################
+## ssgsea preprocessGCT parameters   
+panoply_preprocess_gct:
+ level: gc                      ## Mode of report, 'ssc' - single-site-centric, 'gc' - gene-centric, 'gcr' - gene-centric-redundant.
+ id_type: sm                    ## Notation of site-ids: 'sm' - Spectrum Mill; 'wg' - Web Gestalt; 'ph' - Philosopher
+ id_type_out: seqwin            ## Type of site id for output: 'uniprot', 'refseq', 'seqwin', 'psp' (psp not implemented yet).
+ acc_type_in: refseq            ## Type of accession number in 'rid' object in GCT file (uniprot, refseq, symbol).
+ seqwin_column: VMsiteFlanks    ## Column containing flanking sequences, separated by '|'. Only relevant if '--id_type_out' = 'seqwin'
+ gene_symbol_column: geneSymbol ## Name of column listing gene names; used for gene centric reports.
+ sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
+ localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
+ mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
+ residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
+ ptm: p                         ## Type of modification, e.g "p" or "ac".
+ preprocess_gct: TRUE           ## If FALSE nothing will be done; probably needed for to make this step optional in WDL.
+ 
 ################################
 ## ssSGEA report
 panoply_ssgsea_report:
@@ -281,37 +295,36 @@ groups.cols:
 - PIK3CA.mutation
 - GATA3.mutation
 
-groups.continous:
-- XX
-- XX
+groups.cols.continuous:
+- Experiment  ## for testing purposes
 
 ###############################
 ## colors for group variables
 groups.colors:
   PAM50:
-    Her2: '#E41A1C'
-    Basal: '#377EB8'
-    LumB: '#4DAF4A'
-    LumA: '#984EA3'
+    Her2: 'cyan'
+    Basal: red'
+    LumB: 'lightblue'
+    LumA: 'blue'
   ER.Status:
-    Negative: '#A6CEE3'
-    Positive: '#1F78B4'
+    Negative: 'white'
+    Positive: 'black'
   PR.Status:
-    Negative: '#B2DF8A'
-    Positive: '#33A02C'
+    Negative: 'white'
+    Positive: 'black'
   HER2.Status:
-    Positive: '#FF7F00'
-    Negative: '#FFFF33'
-    Equivocal: '#A65628'
+    Positive: 'black'
+    Negative: 'white'
+    Equivocal: 'grey'
   TP53.mutation:
-    '1': '#FB9A99'
-    '0': '#E31A1C'
+    '1': 'darkblue'
+    '0': 'white'
   PIK3CA.mutation:
-    '0': '#FDBF6F'
-    '1': '#FF7F00'
+    '0': 'white'
+    '1': 'darkblue'
   GATA3.mutation:
-    '0': '#CAB2D6'
-    '1': '#6A3D9A'
+    '0': 'white'
+    '1': 'darkblue'
     
 ###############################
 ## sample sets
