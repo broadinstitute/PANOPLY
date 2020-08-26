@@ -671,7 +671,12 @@ panda_finalize <- function (internal=FALSE) {
   # output config for panda and copy to google bucket
   setwd( home )
   cfg <- defaults$panda_parameters_file_name
-  write_yaml( x = lines, file = cfg )
+  write_yaml( x = lines, file = cfg,
+              handlers = list (logical=function (x) {
+                result <- ifelse (x, "TRUE", "FALSE")
+                class (result) <- "verbatim"
+                return (result)
+              }))
   system( glue( "gsutil cp {home}/{cfg} {google.bucket}/{cfg}" ) )
   new.config <<- FALSE
   # concatenate master parameter file and copy to google bucket
