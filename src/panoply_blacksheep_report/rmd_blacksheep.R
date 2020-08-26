@@ -3,10 +3,10 @@
 # tar_file  - URL of tar file created by task panoply_blacksheep
 # yaml_file - URL of integrated yaml file produced by parameter_manager.r
 
-args = commandArgs()
+args = commandArgs(TRUE)
 
-tar_file = args[1]
-yaml_file = args[2]
+tar_file = as.character(args[1])
+yaml_file = as.character(args[2])
 
 library(yaml)
 library(rmarkdown)
@@ -14,7 +14,7 @@ library(stringr)
 library(dplyr)
 
 rmd_blacksheep = function(tar_file, yaml_file){
-  
+
   # extract values from final yaml file
   yaml_params = read_yaml(yaml_file)
   fdr_value = yaml_params$panoply_blacksheep$fdr_value
@@ -105,4 +105,4 @@ No groups file was provided so enrichment analysis of outliers was not performed
 }
 
 # run rmd_blacksheep function to make rmd report
-rmd_blacksheep(tar_file, yaml_file)
+rmd_result = rmd_blacksheep(tar_file, yaml_file)

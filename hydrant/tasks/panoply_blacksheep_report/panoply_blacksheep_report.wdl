@@ -9,7 +9,7 @@ task panoply_blacksheep_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript src/rmd_blacksheep.R "${input_tar}" "${final_yaml}"
+        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}" "${final_yaml}"
     }
 
     output {
@@ -29,7 +29,7 @@ task panoply_blacksheep_report {
     }
 }
 
-workflow panoply_blacksheep_report {
+workflow panoply_blacksheep_report_workflow {
 
     call panoply_blacksheep_report
 
