@@ -25,7 +25,7 @@ rmd_blacksheep = function(tar_file, yaml_file){
   untar(tar_file)
 
   # begin writing rmd
-  rmd = paste('---
+  rmd = paste0('---
 title: "BlackSheep outlier analysis results"
 output: 
   html_document:
@@ -36,7 +36,7 @@ output:
       smooth_scroll: true
 ---\n
 ## Overview
-This report summarizes the significant results (FDR <', fdr_value, ') of the BlackSheep module, which uses the blacksheepr package for differential extreme value analysis. Briefly, this module counts outliers in user-submitted data, tabulates outliers per group, and runs enrichment analysis (Fisher\'s exact test) to identify significant outliers in the groups of interest. More information can be found in Blumenberg et al. (2019, [preprint](https://www.biorxiv.org/content/10.1101/825067v2.full.pdf)).
+This report summarizes the significant results (FDR < ', fdr_value, ') of the BlackSheep module, which uses the blacksheepr package for differential extreme value analysis. Briefly, this module counts outliers in user-submitted data, tabulates outliers per group, and runs enrichment analysis (Fisher\'s exact test) to identify significant outliers in the groups of interest. More information can be found in Blumenberg et al. (2019, [preprint](https://www.biorxiv.org/content/10.1101/825067v2.full.pdf)).
               ')
 
   # if outlier analysis was performed (i.e. groups file provided), create outlier analysis rmd report
