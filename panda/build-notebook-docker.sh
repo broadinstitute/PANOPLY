@@ -58,7 +58,7 @@ if [[ $a_flag == "true" ]]; then
 fi
 
 # final docker
-cp $panoply/src/panoply_common/master-parameters.yml $panoply/panda/panda-src/defaults/.
+cp $panoply/src/panoply_common/master-parameters.yaml $panoply/panda/panda-src/defaults/.
 cd $panoply/panda/panda-src
 final_docker1="$docker_ns/panda:$docker_tag"
 final_docker2="$docker_ns/panda:latest"
