@@ -26,12 +26,15 @@ task panoply_blacksheep {
 
         /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "final_output_params.yaml"
 
-        tar -czvf blacksheep_outlier_analysis.tar.gz blacksheep 
+        if [ "${groups_file}" != "" ]; then
+            cp ${groups_file} "blacksheep"
+        fi
+
+        tar -czvf blacksheep_outlier_analysis.tar.gz blacksheep final_output_params.yaml
     }
 
     output {
         File tar_out = "blacksheep_outlier_analysis.tar.gz"
-        File final_yaml = "final_output_params.yaml"
     }
 
     runtime {

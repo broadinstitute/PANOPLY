@@ -4,12 +4,11 @@ task panoply_blacksheep_report {
     Int? num_preemptions
 
     File input_tar
-    File final_yaml
 
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}" "${final_yaml}"
+        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}"
     }
 
     output {
