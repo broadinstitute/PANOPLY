@@ -18,13 +18,13 @@ rmd_blacksheep = function(tar_file){
   untar(tar_file)
 
   # extract values from final yaml file
-  yaml_params = read_yaml("blacksheep_outlier_analysis/final_output_params.yaml")
+  yaml_params = read_yaml("final_output_params.yaml")
   fdr_value = yaml_params$panoply_blacksheep$fdr_value
   SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_name
   groups_file_path = yaml_params$panoply_blacksheep$groups_file
 
   if (!is.null(groups_file_path)){
-    groups_file = list.files("blacksheep_outlier_analysis/blacksheep", pattern = "\\.csv", full.names = TRUE)
+    groups_file = list.files("blacksheep", pattern = "\\.csv", full.names = TRUE)
   }
 
   # begin writing rmd
@@ -43,7 +43,7 @@ This report summarizes the significant results (FDR < ', fdr_value, ') of the Bl
               ')
 
   # if outlier analysis was performed (i.e. groups file provided), create outlier analysis rmd report
-  if (length(grep("outlieranalysis", list.files("blacksheep_outlier_analysis/blacksheep", recursive = TRUE)))>0){
+  if (length(grep("outlieranalysis", list.files("blacksheep", recursive = TRUE)))>0){
     for (i in c("positive", "negative")){
       rmd = paste0(rmd, '\n## ', str_to_title(i), ' outliers (FDR < ', fdr_value, ')')
       group_names = read.csv(groups_file) %>%
@@ -51,9 +51,9 @@ This report summarizes the significant results (FDR < ', fdr_value, ') of the Bl
       group_names = group_names[!(group_names %in% SampleID_column)]
       for (group_name in group_names){
         rmd = paste(rmd, '\n###', group_name)
-        outlier_filenames = grep(paste0("outlieranalysis_for_", group_name), list.files(file.path("blacksheep_outlier_analysis/blacksheep",i)), value=TRUE)
+        outlier_filenames = grep(paste0("outlieranalysis_for_", group_name), list.files(file.path("blacksheep",i)), value=TRUE)
         for (file in outlier_filenames){
-          outlier_analysis = read.csv(file.path("blacksheep_outlier_analysis/blacksheep", i, file))
+          outlier_analysis = read.csv(file.path("blacksheep", i, file))
           category = gsub(paste0(".*", group_name, "_(.+?)_.*"), "\\1", file)
           
           fdrcols = grep("fdr", colnames(outlier_analysis), value = TRUE)
@@ -87,7 +87,7 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
 ```
 
 **Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ', group_name, '. Note: row names may not be annotated if there are more than 100 significant genes.
-![](', file.path("blacksheep_outlier_analysis/blacksheep", i, grep(paste0(group_name, "_", category, ".png"), list.files(file.path("blacksheep_outlier_analysis/blacksheep", i)), value = TRUE)), ')
+![](', file.path("blacksheep", i, grep(paste0(group_name, "_", category, ".png"), list.files(file.path("blacksheep", i)), value = TRUE)), ')
 
 
                        ')
@@ -108,4 +108,4 @@ No groups file was provided so enrichment analysis of outliers was not performed
 }
 
 # run rmd_blacksheep function to make rmd report
-rmd_result = rmd_blacksheep(tar_file, yaml_file)
+rmd_result = rmd_blacksheep(tar_file)
