@@ -6,10 +6,17 @@ task panoply_association_report {
     File input_tar
     File master_yaml
 
+    Float? fdr_value
+
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /home/pgdac/src/rmd_association.r "${input_tar}" "${master_yaml}"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+        --module association_report \
+        --master_yaml ${master_yaml} \
+        ${"--fdr_value " + fdr_value}
+
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_association.r "${input_tar}" "final_output_params.yaml"
     }
 
     output {

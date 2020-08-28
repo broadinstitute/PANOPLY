@@ -5,12 +5,12 @@
 # label     - character, name of desired folder in tarball
 # type      - character, data type
 
-# args = commandArgs()
-# 
-# tar_file = args[1]
-# yaml_file = args[2]
-# label = args[3]
-# type = args[4]
+args = commandArgs(TRUE)
+
+tar_file = args[1]
+yaml_file = args[2]
+label = args[3]
+type = args[4]
 
 library(rmarkdown)
 library(yaml)
@@ -22,13 +22,7 @@ library(ggplot2)
 library(plotly)
 library(glue)
 
-tar_file = "C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/acetylome-28a7ada4-4d04-46dd-8fe5-1c4e82449081-pgdac_main_full.tar"
-yaml_file = "C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_common/master-parameters.yaml"
-label = "panoply-lscc-3-2-acetylome-full-results"
-type = "acetylome"
-
-setwd("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_association_report/")
-source("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_rmd/heatmap_function.R")
+source("/prot/proteomics/Projects/PGDAC/src/rmd-ssgsea-functions.R")
 
 hallmark_process_category <- c(
   HALLMARK_TNFA_SIGNALING_VIA_NFKB='signaling',
@@ -166,8 +160,7 @@ No significantly enriched pathways for ', comparison, ' with FDR < ', fdr_value,
   return(rmd)
 }
 
-rmd_association = function(#tar_file, 
-                           yaml_file, label, type){
+rmd_association = function(tar_file, yaml_file, label, type){
   
   # extract values from final yaml file
   yaml_params = read_yaml(yaml_file)
@@ -229,54 +222,12 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
         }
       
         pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
-        file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
+        file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_10.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_10.png"))
         
         rmd = paste0(rmd, '\n#### Overview of all contrasts
-![**Figure**: Heatmap summarizing significant ssGSEA pathway results for ', category, ', all contrasts, clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
+![**Figure**: Heatmap summarizing significant ssGSEA pathway results for ', category, ', all contrasts, clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_10.png)
 \n                       
                      ')
-        
-#         rdesc2 = rdesc %>%
-#           select(contains("fdr")) %>%
-#           rownames_to_column("pathway") %>%
-#           gather(key = "comparison", value = "fdr", -pathway) %>%
-#           mutate(comparison = gsub("fdr\\.pvalue\\.", "", comparison)) %>%
-#           mutate(fdr = signif(fdr, 3))
-#         
-#         mat2 = mat %>%
-#           rownames_to_column("pathway") %>%
-#           gather(key = "comparison", value = "NES", -pathway, na.rm = TRUE) %>%
-#           left_join(rdesc2) %>%
-#           filter(fdr < fdr_value) %>%
-#           arrange(fdr)
-#         
-#         if(sum(rid %in% hallmark_category$pathway) > 0){
-#           mat2 = mat2 %>%
-#             left_join(hallmark_category) %>%
-#             arrange(category)
-#         }
-#    
-#         if (dim(mat2)[1]>=1){
-#           save(mat2, file = paste0(category_filename, "_filtered.RData"))
-#           
-#           pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
-#           file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_50.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_50.png"))
-#           
-#           rmd = paste0(rmd, '\n
-# ![**Figure**: Heatmap summarizing ssGSEA pathway results for ', category, ', clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_50.png)
-# \n
-# **Table**: ', dim(mat2)[1], ' significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.
-# ```{r echo=FALSE, warning=FALSE, message=FALSE}
-# load("', category_filename, '_filtered.RData")
-# library(DT)
-# datatable(mat2, rownames = FALSE)
-# ```
-#                        ')
-#         } else {
-#           rmd = paste0(rmd, '\n
-# No significantly enriched pathways across ', length(file@cid), ' comparisons with FDR < ', fdr_value, '.                       
-#                        ')
-#         }
       }
     }
   } else {
@@ -294,5 +245,4 @@ No ssGSEA results were found.
 }
 
 # run rmd_association function to make rmd report
-rmd_association(#tar_file, 
-                yaml_file = yaml_file, label = label, type = type)
+rmd_association(tar_file, yaml_file = yaml_file, label = label, type = type)
