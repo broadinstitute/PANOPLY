@@ -51,7 +51,7 @@ panoply_association:
   fdr_assoc: 0.01
   
 panoply_association_report:
-  fdr_value: 0.05
+  fdr_value: 0.01
 
 panoply_sample_qc:
   cor_threshold: 0.4
