@@ -7,7 +7,7 @@ Source ('stats.r')
 gct.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
 
 
-run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
+run.marker.selection <- function (input.gct.file, input.cls.file, prefix, run.1vAll=FALSE) {
   # runs marker selection on input data for given class vector in input.cls
   marker.selection.and.classification (input.gct.file, input.cls.file, paste (prefix, '-analysis', sep=''), 
                                        id.col=id.col, desc.col=desc.col, gsea=TRUE,
@@ -16,23 +16,25 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
                                        impute.colmax=sample.na.max,
                                        official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
                                        fdr=assoc.fdr)
-  
-  # if class vector has > 2 classes, and sufficient numbers per class,
-  # run 1 vs. all marker selection for each class
-  cls <- read.cls (input.cls.file)
-  if (nlevels (factor (cls)) > 2 && min (summary (factor (cls))) >= 10) {
-    cls.1vAll <- classes.1vAll (cls)
-    for (i in 1:ncol(cls.1vAll)) {
-      prefix.1vA <- paste (prefix, colnames(cls.1vAll)[i], sep='-')
-      new.clsf <- paste (prefix.1vA, '.cls', sep='')
-      write.cls (cls.1vAll[,i], new.clsf)
-      marker.selection.and.classification (input.gct.file, new.clsf, paste (prefix.1vA, '-analysis', sep=''),
-                                           id.col=id.col, desc.col=desc.col, gsea=TRUE,
-                                           id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
-                                           duplicate.gene.policy=duplicate.gene.policy,
-                                           impute.colmax=sample.na.max,
-                                           official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
-                                           fdr=assoc.fdr)
+ 
+  if (run.1vAll) {
+    # if class vector has > 2 classes, and sufficient numbers per class,
+    # run 1 vs. all marker selection for each class
+    cls <- read.cls (input.cls.file)
+    if (nlevels (factor (cls)) > 2 && min (summary (factor (cls))) >= 10) {
+      cls.1vAll <- classes.1vAll (cls)
+      for (i in 1:ncol(cls.1vAll)) {
+        prefix.1vA <- paste (prefix, colnames(cls.1vAll)[i], sep='-')
+        new.clsf <- paste (prefix.1vA, '.cls', sep='')
+        write.cls (cls.1vAll[,i], new.clsf)
+        marker.selection.and.classification (input.gct.file, new.clsf, paste (prefix.1vA, '-analysis', sep=''),
+                                             id.col=id.col, desc.col=desc.col, gsea=TRUE,
+                                             id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
+                                             duplicate.gene.policy=duplicate.gene.policy,
+                                             impute.colmax=sample.na.max,
+                                             official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
+                                             fdr=assoc.fdr)
+      }
     }
   }
 }
