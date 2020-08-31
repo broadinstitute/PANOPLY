@@ -135,6 +135,7 @@ p_load('yaml')
 # rna_corr_report
 # cons_clust
 # association
+# association_report
 # cmap_analysis
 # immune_analysis
 # blacksheep
