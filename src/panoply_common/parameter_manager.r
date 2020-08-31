@@ -33,6 +33,8 @@ option_list <- list(
   make_option(c("--rna_gene_id_col"), type = "character", dest = 'rna_gene_id_col', help = "gene id column for harmonize rna data"),
     #association:
   make_option(c("--fdr_assoc"), type = "double", dest = 'fdr_assoc', help = "association module fdr value"),
+    #association_report:
+  make_option(c("--fdr_value"), type = "double", dest = 'fdr_value', help = "association report module fdr value"),
     #sample_qc:
   make_option(c("--cor_threshold"), type = "double", dest = 'cor_threshold', help = "correlation threshold for sample_qc"),
     #cna_analysis:
@@ -133,6 +135,7 @@ p_load('yaml')
 # rna_corr_report
 # cons_clust
 # association
+# association_report
 # cmap_analysis
 # immune_analysis
 # blacksheep
@@ -569,6 +572,14 @@ check_association_params <- function(opt, yaml){
   return(yaml)
 }
 
+#association_report:
+check_association_report_params <- function(opt, yaml){
+  if (!is.null(opt$fdr_value)){
+    yaml$panoply_association_report$fdr_value <- opt$fdr_value
+  }
+  return(yaml)
+}
+
 # Checks all parameters (maybe use for final output yaml for whole pipeline?)
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
@@ -577,6 +588,7 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_rna_protein_correlation_params(opt,yaml)
   yaml <- check_harmonize_params(opt,yaml)
   yaml <- check_association_params(opt,yaml)
+  yaml <- check_association_report_params(opt,yaml)
   yaml <- check_sample_qc_params(opt,yaml)
   yaml <- check_cna_analysis_params(opt,yaml)
   yaml <- check_cna_corr_report_params(opt,yaml)
@@ -764,6 +776,9 @@ parse_command_line_parameters <- function(opt){
     yaml <- check_association_params(opt, yaml) #Returns updated yaml if module params were changed via command line
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
+  }else if (opt$module == 'association_report' & check_if_any_command_line(opt)){
+    yaml <- check_association_report_params(opt,yaml)
+    write_custom_config(yaml)
     
   }else if (opt$module == 'cmap_analysis'){
     yaml <- check_cmap_analysis_params(opt, yaml) #Returns updated yaml if module params were changed via command line
