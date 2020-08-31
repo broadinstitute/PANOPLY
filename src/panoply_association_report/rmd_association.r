@@ -165,7 +165,6 @@ rmd_association = function(tar_file, yaml_file, label, type){
   # extract values from final yaml file
   yaml_params = read_yaml(yaml_file)
   fdr_value = yaml_params$panoply_association_report$fdr_value
-  #gsea_dir = yaml_params$panoply_association_report$ssgsea_dir
   gsea_dir = "ssgsea_assoc"
   
   # extract files from tarball
@@ -235,12 +234,14 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
 No ssGSEA results were found.
                 ')
   }
+
+  rmd_name = paste(label, type, "association_rmd.rmd", sep = "_")
   
   # write .rmd file
-  writeLines(rmd, con = "rmd_association.rmd")
+  writeLines(rmd, con = rmd_name)
   
   # render .rmd file
-  rmarkdown::render("rmd_association.rmd")
+  rmarkdown::render(rmd_name)
   
 }
 

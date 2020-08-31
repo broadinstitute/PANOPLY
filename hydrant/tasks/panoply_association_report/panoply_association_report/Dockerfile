@@ -1,7 +1,10 @@
 FROM broadcptacdev/panoply_common:latest
 MAINTAINER karen@broadinstitute.org
 
-RUN R -e "install.packages(c('dplyr', 'rmarkdown'),\
+RUN apt-get update
+RUN apt-get -t unstable install -y pandoc
+
+RUN R -e "install.packages(c('dplyr', 'rmarkdown', 'plotly'),\
     dependencies=TRUE,\
     repos = 'http://cran.rstudio.com/')"
 

@@ -5,6 +5,8 @@ task panoply_association_report {
 
     File input_tar
     File master_yaml
+    String label
+    String type
 
     Float? fdr_value
 
@@ -16,11 +18,11 @@ task panoply_association_report {
         --master_yaml ${master_yaml} \
         ${"--fdr_value " + fdr_value}
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_association.r "${input_tar}" "final_output_params.yaml"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_association.r "${input_tar}" "final_output_params.yaml" "${label}" "${type}"
     }
 
     output {
-        File report_out = "rmd_association.html"
+        File report_out = "${label}_${type}_association_rmd.html"
     }
 
     runtime {
