@@ -1,5 +1,5 @@
 FROM broadcptacdev/panoply_common:latest
-MAINTAINER rkothadi@broadinstitute.org
+MAINTAINER karen@broadinstitute.org
 
 RUN R -e "install.packages(c('dplyr', 'stringr', 'tibble', 'yaml', 'BiocManager'),\
     dependencies=TRUE,\
