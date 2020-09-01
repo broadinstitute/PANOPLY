@@ -69,12 +69,14 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
     totalint.fields <- rep (grep (totalint.pat, header.1[1:length(header.2)]), each=n)
     unique_pep.fields <- rep (grep (unique_pep.pat, header.1[1:length(header.2)]), each=n)
     refint.fields <- rep (grep (refint.pat, header.1[1:length(header.2)]), each=n)
+    # intensity.fields include refint.fields -- remove
+    intensity.fields <- setdiff (intensity.fields, refint.fields)
     
     first.in.run <- ratio.fields [ seq (1, length(ratio.fields), n) ]  # X-plex labels with (X-1) ratios
     if (is.null (expt.design)) {
       col.names <- unlist (lapply (header.2 [first.in.run], parse.info))
     } else {
-      ed <- read.csv (expt.design)
+      ed <- read.csv (expt.design, as.is=TRUE)
       col.names <- unlist (lapply (1:length(first.in.run), get.sample.names, ed))
     }
 
@@ -98,7 +100,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
     sample.annotations <- data.frame ()
     if (!is.null (expt.design)) {
       # check if there are any sample annotations
-      d <- read.csv (expt.design)
+      d <- read.csv (expt.design, as.is=TRUE)
       annot.cols <- setdiff (colnames (d), 'Sample.ID')
       sample.annotations <- d[, c('Sample.ID', annot.cols)]
       # add sample QC info (pass/fail)
@@ -115,8 +117,8 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
     gct@mat <- as.matrix (data)
     gct@rid <- as.character (info[,1])
     gct@cid <- as.character (colnames (data))
-    gct@rdesc <- fix.datatypes (info)
-    gct@cdesc <- fix.datatypes (sample.annotations)
+    gct@rdesc <- info
+    gct@cdesc <- sample.annotations
     gct@version <- "#1.3"
     gct@src <- file
     # write output file
