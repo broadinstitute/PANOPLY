@@ -111,8 +111,8 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
       }
     }
   } else {
-    rmd = paste(rmd, '\n## No outlier analysis was performed\n
-No groups file was provided so enrichment analysis of outliers was not performed, only outlier count tables were calculated. See output tar file: blacksheep_outlier_analysis.tar.gz')
+    rmd = paste0(rmd, '\n## No outlier analysis was performed\n
+No groups file was provided so enrichment analysis of outliers was not performed, only outlier count tables were calculated. See output tar file: ', basename(tar_file), '.')
   }
   
   rmd_name = paste(output_prefix, "blacksheep_rmd.rmd", sep="_")
