@@ -5,6 +5,7 @@ task panoply_blacksheep {
 
     File input_gct
     File master_yaml
+    String output_prefix
 
     String? apply_filtering
     File? identifiers_file
@@ -18,11 +19,11 @@ task panoply_blacksheep {
         /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
         --module blacksheep \
         --master_yaml ${master_yaml} \
-        ${"--apply_filtering " + apply_filtering} \
-        ${"--identifiers_file " + identifiers_file} \
-        ${"--groups_file " + groups_file} \
-        ${"--fraction_samples_cutoff " + fraction_samples_cutoff} \
-        ${"--fdr_value " + fdr_value}
+        ${"--blacksheep_apply_filtering " + apply_filtering} \
+        ${"--blacksheep_identifiers_file " + identifiers_file} \
+        ${"--blacksheep_groups_file " + groups_file} \
+        ${"--blacksheep_fraction_samples_cutoff " + fraction_samples_cutoff} \
+        ${"--blacksheep_fdr_value " + fdr_value}
 
         /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "final_output_params.yaml"
 
@@ -30,11 +31,11 @@ task panoply_blacksheep {
             cp ${groups_file} "blacksheep"
         fi
 
-        tar -czvf blacksheep_outlier_analysis.tar.gz blacksheep final_output_params.yaml
+        tar -czvf "${output_prefix}_blacksheep.tar" blacksheep final_output_params.yaml
     }
 
     output {
-        File tar_out = "blacksheep_outlier_analysis.tar.gz"
+        File tar_out = "${output_prefix}_blacksheep.tar"
     }
 
     runtime {
