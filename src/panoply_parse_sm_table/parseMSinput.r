@@ -148,7 +148,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
     col.classes <- c ("NULL", col.classes)
   }
   d <- read.delim (dataset, sep=';', skip=ifelse(proteome,1,2), header=FALSE,
-                   col.names=col.names, colClasses=col.classes)
+                   col.names=col.names, colClasses=col.classes, stringsAsFactors=FALSE)
   # if subgroupNum is present, convert from x.y to x_y format
   # to avoid conversion to floating point numbers
   if ("subgroupNum" %in% colnames (d)) {
@@ -171,9 +171,11 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
   # if additional.cols are requested, include those that are present in the input
   info.col1 <- as.character (d[,id.col])
   info.col2 <- as.character (d[,'entry_name'])
-  if (is.null (additional.cols)) info.data <- cbind (Name=info.col1, Description=info.col2)
-  else info.data <- cbind (id=info.col1, id.description=info.col2, 
-                           d[, intersect (additional.cols, colnames(d))])
+  if (is.null (additional.cols)) info.data <- data.frame (Name=info.col1, Description=info.col2, 
+                                                          stringsAsFactors=FALSE)
+  else info.data <- data.frame (id=info.col1, id.description=info.col2, 
+                                d[, intersect (additional.cols, colnames(d))], 
+                                stringsAsFactors=FALSE)
   
   for (i in 1:length (header.info$cols.list)) {
     fields <- header.info$col.numbers[[i]]
