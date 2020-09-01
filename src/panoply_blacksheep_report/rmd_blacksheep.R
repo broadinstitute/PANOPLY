@@ -1,18 +1,19 @@
 ### Create Rmarkdown report for BlackSheep module ###
 
 # tar_file  - URL of tar file created by task panoply_blacksheep
-# yaml_file - URL of integrated yaml file produced by parameter_manager.r
+# output_prefix - prefix to be used for naming html file
 
 args = commandArgs(TRUE)
 
 tar_file = as.character(args[1])
+output_prefix = as.character(args[2])
 
 library(yaml)
 library(rmarkdown)
 library(stringr)
 library(dplyr)
 
-rmd_blacksheep = function(tar_file){
+rmd_blacksheep = function(tar_file, output_prefix){
   
   # extract files from tarball
   untar(tar_file)
@@ -22,6 +23,8 @@ rmd_blacksheep = function(tar_file){
   fdr_value = yaml_params$panoply_blacksheep$fdr_value
   SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_name
   groups_file_path = yaml_params$panoply_blacksheep$groups_file
+  apply_filtering = yaml_params$panoply_blacksheep$apply_filtering
+  identifiers_file = yaml_params$panoply_blacksheep$identifiers_file
 
   if (!is.null(groups_file_path)){
     groups_file = list.files("blacksheep", pattern = "\\.csv", full.names = TRUE)
@@ -41,6 +44,18 @@ output:
 ## Overview
 This report summarizes the significant results (FDR < ', fdr_value, ') of the BlackSheep module, which uses the blacksheepr package for differential extreme value analysis. Briefly, this module counts outliers in user-submitted data, tabulates outliers per group, and runs enrichment analysis (Fisher\'s exact test) to identify significant outliers in the groups of interest. More information can be found in Blumenberg et al. (2019, [preprint](https://www.biorxiv.org/content/10.1101/825067v2.full.pdf)).
               ')
+  
+  if (apply_filtering & is.null(identifiers_file)){
+    rmd = paste(rmd, '\n**Note: outlier analysis has been filtered for kinases.**
+
+                ')
+  }
+  
+  if (apply_filtering & !is.null(identifiers_file)){
+    rmd = paste(rmd, '\n**Note: outlier analysis has been filtered for results in user-supplied gene list.**
+
+                ')
+  }
 
   # if outlier analysis was performed (i.e. groups file provided), create outlier analysis rmd report
   if (length(grep("outlieranalysis", list.files("blacksheep", recursive = TRUE)))>0){
@@ -100,12 +115,14 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
 No groups file was provided so enrichment analysis of outliers was not performed, only outlier count tables were calculated. See output tar file: blacksheep_outlier_analysis.tar.gz')
   }
   
+  rmd_name = paste(output_prefix, "blacksheep_rmd.rmd", sep="_")
+  
   # write .rmd file
-  writeLines(rmd, con = "rmd_blacksheep.rmd")
+  writeLines(rmd, con = rmd_name)
   
   # render .rmd file
-  rmarkdown::render("rmd_blacksheep.rmd")
+  rmarkdown::render(rmd_name)
 }
 
 # run rmd_blacksheep function to make rmd report
-rmd_result = rmd_blacksheep(tar_file)
+rmd_result = rmd_blacksheep(tar_file, output_prefix)

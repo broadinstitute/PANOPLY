@@ -4,15 +4,16 @@ task panoply_blacksheep_report {
     Int? num_preemptions
 
     File input_tar
+    String output_prefix
 
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}"
+        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}" "${output_prefix}"
     }
 
     output {
-        File report_out = "rmd_blacksheep.html"
+        File report_out = "${output_prefix}_blacksheep_rmd.html"
     }
 
     runtime {
