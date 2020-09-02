@@ -247,6 +247,7 @@ DEV_directory_and_file_names:
   qc_dir: "sample-qc"
   assoc_dir: "association"
   cluster_dir: "clustering"
+  ssgsea_assoc: ""
   code_dir: ''
   common_data: ''
 

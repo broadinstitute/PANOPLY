@@ -814,6 +814,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                                                           ## cluster enrichment of clinical variables will be done on the core set 
                                 feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
                                 pval.ora= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
+                                max.categories=10,        ## max. number of levels in categorial metadata to be included on the 
+                                                          ## overrepresentation analysis
                                 organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
 
@@ -970,7 +972,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     }
 
     #########################################
-    ## cluster membership score
+    ## cluster membership score:
+    ## - fractional
     NMF.cluster.membership.alldigits <- apply(H, 2, function(x) max(x/sum(x)))
     NMF.cluster.membership <- round( NMF.cluster.membership.alldigits, 3)
     
@@ -1002,7 +1005,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     variables.all <- variables.all[variables.all %in% colnames(cdesc)]
     
     ## fewer than 10 levels
-    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) < 10, 1, 0)) == 1)
+    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) <= max.categories, 1, 0)) == 1)
     
     ## exclude 'N/A' category
     

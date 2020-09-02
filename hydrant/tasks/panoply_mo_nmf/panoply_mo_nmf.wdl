@@ -1,6 +1,3 @@
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/9/plain-WDL/descriptor" as panoply_ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/1/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
-
 #########################################################################
 ## NMF
 task panoply_mo_nmf {
@@ -63,43 +60,19 @@ task panoply_mo_nmf {
 }
 
 ################################################
-##  workflow: mo-nmf plus ssgsea
+##  workflow: mo-nmf
 workflow panoply_mo_nmf_workflow {
 	
 	File tar_file
-	File gene_set_database
-        File yaml_file
-	String label
-
+	File yaml_file
+	
 	call panoply_mo_nmf {
 		input:
 			tar_file=tar_file,
 			yaml_file=yaml_file
 	}
 
-	call panoply_ssgsea_wdl.panoply_ssgsea {
-		input:
-			input_ds=panoply_mo_nmf.feature_matrix_w,
-			gene_set_database=gene_set_database,
-			yaml_file=yaml_file,
-			output_prefix=label,
- 			mode="abs.max",
-			weight=1,
-			
-	}
-
-    	call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
-	        input:
-		        tarball=panoply_ssgsea.results,
-			cfg_yaml=yaml_file,
-			label=label
-		
-	}
-
 	output {
 		File nmf_clust=panoply_mo_nmf.results
-		File nmf_ssgsea=panoply_ssgsea.results
-		#File nmf_ssgsea_report="panoply_ssgsea_report.report_" + label + ".html"
-		File nmf_ssgsea_report=panoply_ssgsea_report.report
 		}
 }
