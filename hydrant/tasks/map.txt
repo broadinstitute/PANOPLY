@@ -1,6 +1,7 @@
 =panoply_common
 ;panoply_accumulate
 ;panoply_association
+;panoply_blacksheep
 ;panoply_cmap_analysis
 ;panoply_cmap_annotate
 ;panoply_cna_setup
@@ -12,6 +13,7 @@
 ;panoply_parse_sm_table
 ;panoply_rna_protein_correlation
 ;panoply_sampleqc
+;panoply_unified_pre
 =panoply_utils
 ;panoply_common
 =r.base.3.6.3
