@@ -4,7 +4,7 @@ MAINTAINER karen@broadinstitute.org
 RUN apt-get update
 RUN apt-get -t unstable install -y pandoc
 
-RUN R -e "install.packages(c('dplyr', 'rmarkdown', 'plotly'),\
+RUN R -e "install.packages(c('yaml', 'tibble', 'dplyr', 'tidyr', 'rmarkdown', 'ggplot2', 'plotly', 'glue'),\
     dependencies=TRUE,\
     repos = 'http://cran.rstudio.com/')"
 

@@ -1,7 +1,7 @@
 ### Create Rmarkdown report for association module ###
 
 # tar_file  - URL of tar file created by task panoply_association
-# yaml_file - URL of integrated yaml file produced by parameter_manager.r
+# yaml_file - URL of master yaml file
 # label     - character, name of desired folder in tarball
 # type      - character, data type
 
