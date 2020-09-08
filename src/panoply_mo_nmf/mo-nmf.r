@@ -41,12 +41,17 @@ p_load("yaml")
 p_load("magrittr")
 
 ################################################
-## funtion to parse parse and update parameters
+## funtion to parse and update parameters
 ## - cmd line
 ## - yaml file
 ## parameters in yaml file will be updated with 
 ## parameters specified on cmd
-parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf', yaml_colors='groups.colors', yaml_groups_cat='groups.cols', yaml_groups_cont='groups.cols.continuous'){
+parse_yaml_mo_nmf <- function(cmd_option_list, 
+                              yaml_section='panoply_mo_nmf', 
+                              yaml_colors='groups.colors', 
+                              yaml_groups_cat='groups.cols', 
+                              yaml_groups_cont='groups.cols.continuous'
+                              ){
   
   ## #########################################################
   # parse command line parameters
@@ -61,13 +66,14 @@ parse_yaml_mo_nmf <- function(cmd_option_list, yaml_section='panoply_mo_nmf', ya
     
     ###################################
     ## parse groups
-    #opt_yaml[['cat_anno']] <- opt_yaml[[yaml_groups_cat]] %>% unlist %>% paste(., collapse=';')
     opt_yaml_groups <- opt_yaml_all[[yaml_groups_cat]] %>% unlist %>% paste(., collapse=';')
-    #opt_yaml_anno <- append(opt_yaml, opt_yaml_tmp)
     names(opt_yaml_groups)[length(opt_yaml_groups)] <- 'cat_anno'
     
+    ## optional continious variables
     if(yaml_groups_cont %in% names(opt_yaml_all)){
       opt_yaml_groups[['cont_anno']] <- opt_yaml_all[[yaml_groups_cont]] %>% unlist %>% paste(., collapse=';')
+    } else {
+      opt_yaml_groups[['cont_anno']] <- NA
     }
     
     ###################################
@@ -193,8 +199,9 @@ p_load(limma)
 ## parse parameters
 opt <- parse_yaml_mo_nmf(option_list) 
 #opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/'
-opt$blank_anno <- 'N/A'
-opt$blank_anno_col <- 'white'
+#opt$organism <- 'human'
+#opt$blank_anno <- 'N/A'
+#opt$blank_anno_col <- 'white'
 
 #save(opt, file='debug.RData')
 
