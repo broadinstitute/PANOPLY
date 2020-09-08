@@ -814,6 +814,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                                                           ## cluster enrichment of clinical variables will be done on the core set 
                                 feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
                                 pval.ora= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
+                                max.categories=10,        ## max. number of levels in categorial metadata to be included on the 
+                                                          ## overrepresentation analysis
                                 organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
 
@@ -935,7 +937,6 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     class.variable <- class.variable.org
 
     
-    # 
     # ## ##########################################
     # ## silhoutte plots
     # if(!opt$bnmf){
@@ -970,7 +971,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     }
 
     #########################################
-    ## cluster membership score
+    ## cluster membership score:
+    ## - fractional
     NMF.cluster.membership.alldigits <- apply(H, 2, function(x) max(x/sum(x)))
     NMF.cluster.membership <- round( NMF.cluster.membership.alldigits, 3)
     
@@ -1002,7 +1004,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     variables.all <- variables.all[variables.all %in% colnames(cdesc)]
     
     ## fewer than 10 levels
-    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) < 10, 1, 0)) == 1)
+    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) <= max.categories, 1, 0)) == 1)
     
     ## exclude 'N/A' category
     
@@ -1028,8 +1030,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ## significantly enriched in 'class variable'
     cons.map.max <- clust.class.enrichment[[class.variable]]
     colnames(cons.map.max) <- sub('.*\\:', '', colnames(cons.map.max))
-   # rownames(cons.map.max) <- paste0('C', rownames(cons.map.max))
-    
+ 
     ## export
     write.table(cons.map.max, col.names = NA, sep='\t', file=paste('nmf_vs_', class.variable, '.txt', sep=''), quote=F)
     cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < pval.ora], collapse='|'))
@@ -1120,15 +1121,24 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     
         
     ## cluster
+    ## pdf
     MyPheatMap(H.norm, cdesc=cdesc, cdesc.color=cdesc.color, rdesc=NULL, class.variable=class.variable,
                variable.other=variable.other, filename='2.2_coefmap_pheatmap_clustered.pdf', cluster_cols=T,
                color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), cw=cw, ch=ch, max.val=NULL)
-
+    ## png
+    MyPheatMap(H.norm, cdesc=cdesc, cdesc.color=cdesc.color, rdesc=NULL, class.variable=class.variable,
+               variable.other=variable.other, filename='2.2_coefmap_pheatmap_clustered.png', cluster_cols=T,
+               color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), cw=cw, ch=ch, max.val=NULL)
+    
     ## disable clustering
     MyPheatMap(H.norm, cdesc=cdesc, cdesc.color=cdesc.color, rdesc=NULL, class.variable=class.variable,
                variable.other=variable.other, filename='2.2_coefmap_pheatmap_sorted.pdf',
                color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), cw=cw, ch=ch, max.val=NULL)
-
+    ## png
+    MyPheatMap(H.norm, cdesc=cdesc, cdesc.color=cdesc.color, rdesc=NULL, class.variable=class.variable,
+               variable.other=variable.other, filename='2.2_coefmap_pheatmap_sorted.png',
+               color=colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), cw=cw, ch=ch, max.val=NULL)
+    
     ## #######################################
     ## consensus map
     if(!opt$bnmf){
@@ -1142,7 +1152,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       MyPheatMap(cons, cdesc=cdesc, cdesc.color=cdesc.color, rdesc=NULL, class.variable=class.variable,
                  variable.other=variable.other, filename=paste('3.1_consensusmap_nrun_', opt$nrun,'_pheatmap.pdf', sep=''),
                  color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), cw=cw, ch=ch, max.val=NULL)
-
+      ## png
+      MyPheatMap(cons, cdesc=cdesc, cdesc.color=cdesc.color, rdesc=NULL, class.variable=class.variable,
+                 variable.other=variable.other, filename=paste('3.1_consensusmap_nrun_', opt$nrun,'_pheatmap.png', sep=''),
+                 color=colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), cw=cw, ch=ch, max.val=NULL)
+      
       }
 
     ## ##############################################################
@@ -1468,9 +1482,6 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
     s.acc.gn.kinase <- lapply(s.acc.gn.kinase, function(x) x[which(!duplicated(apply(x, 1, paste, collapse=' '))),] )
 
-    ## sort
-    # s.acc.gn.kinase <- lapply(s.acc.gn.kinase, function(x)x[order(x$NMF.Score, decreasing=T), ])
-
     ## kinases
     list2env(s.acc.gn.kinase , envir=.GlobalEnv)
     all.kinase.features <- lapply(s.acc.gn.kinase, function(x)x$Accession) %>% unlist %>% unique
@@ -1480,9 +1491,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     
     
     ## #################################################
-    ## UpSet plot of featiures per cluster
+    ## UpSet plot of features per cluster
     ##
-    #upset.mat <- matrix(0, ncol=length(s.acc), nrow=length(unique(unlist(sapply(s.acc, function(x)x$Accession )))), dimnames=list(unique(unlist(sapply(s.acc, function(x)x$Accession ))), names(s.acc)))
     if(length(s.acc.gn.anno.modT) > 1) {
               upset.mat <- matrix(0, ncol=length(s.acc.gn.anno.modT), nrow=length(unique(unlist(sapply(s.acc.gn.anno.modT, function(x)x$Accession )))), 
                                   dimnames=list(unique(unlist(sapply(s.acc.gn.anno.modT, function(x)x$Accession ))), paste0('C',names(s.acc.gn.anno.modT))))
@@ -1490,6 +1500,9 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                 upset.mat[s.acc.gn.anno.modT[[ii]]$Accession, paste0('C',ii)] <- 1
               
               pdf('4.1_upset_NMF_markers.pdf')
+              upset(data.frame(upset.mat), point.size = 4, text.scale = 1.5, nintersects = NA, nsets = length(s.acc.gn.anno.modT))
+              dev.off()
+              png('4.1_upset_NMF_markers.png')
               upset(data.frame(upset.mat), point.size = 4, text.scale = 1.5, nintersects = NA, nsets = length(s.acc.gn.anno.modT))
               dev.off()
     }
@@ -1511,7 +1524,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
     ## add mapping to class variable
     idx.tmp <- match( names(cons.map.max[names(s.acc.gn.anno.modT)]), rownames(data.types.mat))
-    rownames(data.types.mat)[idx.tmp] <- paste(rownames(data.types.mat)[idx.tmp], ' (', cons.map.max, ')', sep='' )
+    ## commented out on 2020/09/04 
+    #rownames(data.types.mat)[idx.tmp] <- paste(rownames(data.types.mat)[idx.tmp], ' (', cons.map.max, ')', sep='' )
 
     col <- RColorBrewer::brewer.pal(length(tmp), "Set2")[1:length(tmp)]
 
@@ -1522,14 +1536,21 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     pdf('4.2_barplot_features_per_basis2.pdf')
     fancyBarplot(t(data.types.mat), srt=30, xlab='NMF basis', col=col, main='Proteogenomic features', ylab='No. features')
     legend('top', legend=names(col), fill=col, bty='n')
-    #legend('topright', legend=paste('total #:', length(unique(unlist( s.acc2 )))), bty='n')
     dev.off()
-
+    png('4.2_barplot_features_per_basis2.png')
+    fancyBarplot(t(data.types.mat), srt=30, xlab='NMF basis', col=col, main='Proteogenomic features', ylab='No. features')
+    legend('top', legend=names(col), fill=col, bty='n')
+    dev.off()
+    
+    
     ## ##############
     ## table
     m <- data.types.mat
+    ## pdf
     try(pheatmap(m, cluster_rows=F, cluster_cols=F, display_numbers=T, legend=F, number_format='%.0f', cellwidth=30, cellheight=30, fontsize=15, number_color='grey20', main='NMF features', scale='none', col='white', border_color='blue', filename='4.3_matrix_features_per_NMF.consensus.pdf'))
-
+    ## png
+    try(pheatmap(m, cluster_rows=F, cluster_cols=F, display_numbers=T, legend=F, number_format='%.0f', cellwidth=30, cellheight=30, fontsize=15, number_color='grey20', main='NMF features', scale='none', col='white', border_color='blue', filename='4.3_matrix_features_per_NMF.consensus.png'))
+    
 
     ## ###########################################################
     ## plot the actual expression values for the extracted features
@@ -1542,11 +1563,16 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
       if( !is.null(nrow(m))){
 
-        ## plot
+        ## plot pdf
         pdf(paste('5.',cc-1,'_ComplexHeatmap_expression_C', i, '.pdf', sep=''), 13, 12)
         hm.list[[cc]] <- MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val) #, row_title=paste0('C',i))
         dev.off()
 
+        ## plot png
+        png(paste('5.',cc-1,'_ComplexHeatmap_expression_C', i, '.png', sep=''),  width=13, height=12, units = 'in', res=100)
+        draw(hm.list[[cc]]$hm.anno)
+        dev.off()
+        
         ###############################################
         ## assemble GCT
         gct <- new('GCT')
@@ -1575,40 +1601,29 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       pdf('6.0_ComplexHeatmap_ALL_features-concat.pdf', 16, 16)
       draw(hm.concat, annotation_legend_side='bottom')
       dev.off()
+      
+      png('6.0_ComplexHeatmap_ALL_features-concat.png', width=16, height=16, units = 'in', res=100)
+      draw(hm.concat, annotation_legend_side='bottom')
+      dev.off()
+      
     }
     ## ############################################################
     ##
     ##                plot ALL markers
     ##
-    #feat.all <- unique(unlist(s.acc2)) %>% sort ##%>% make.names
     feat.all <- unique(unlist(lapply(s.acc.gn.anno.modT, function(x)paste(x$Type, x$Accession, sep='-')))) 
-    #keep.idx <- which(feat.all %in% feat.all2)
-    #feat.all <- feat.all[keep.idx]
-    
-    # rdesc.feat <- matrix(0, nrow=length(feat.all), ncol=length(s.acc), dimnames=list( feat.all, names(s.acc) ))
-    # for(i in 1:length(s.acc.gn.anno.modT)){
-    #   feat.tmp <- paste(s.acc.gn.anno.modT[[i]]$Type, s.acc.gn.anno.modT[[i]]$Accession, sep='-')
-    #    #rdesc.feat[ s.acc[[i]]$Accession[which( s.acc[[i]]$Accession %in% feat.all)], i] <- 1
-    #   rdesc.feat[ feat.tmp[ which( feat.tmp %in% feat.all)], i] <- 1
-    # }
-    # rdesc.feat <- data.frame(rdesc.feat)
-    # 
-    # feat.all <- feat.all[feat.all %in% rownames(expr)]
-    # rdesc.feat <- rdesc.feat[feat.all, ] 
-    # 
-    # 
-    # ## order features
-    # ord.idx <- rev(do.call(order, as.list(rdesc.feat)))
     m <- expr[ feat.all, ]
-    # m <- m[ord.idx, ]
-    # rdesc.feat <- rdesc.feat[ord.idx, ]
-
+   
     ## #########################################################
     ##  complex heatmap
     pdf('6.1_ComplexHeatmap_ALL_features.pdf', 12, 16)
-    MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)
+    MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)$hm.anno
     dev.off()
 
+    png('6.1_ComplexHeatmap_ALL_features.png', width=12, height=16, units='in', res=100)
+    MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)$hm.anno
+    dev.off()
+    
     ## ############################################################
     ## plot ALL markersbut without CNV
     if(length( grep('^CNV-', rownames(m) )) > 0 ){
@@ -1622,9 +1637,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
         ## #####################################
         ## complexheatmap
         pdf('6.2_ComplexHeatmap_ALL_features_no_CNV.pdf', 11, 16)
-        MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)
+        MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)$hm.anno
         dev.off()
 
+        png('6.2_ComplexHeatmap_ALL_features_no_CNV.png', width=11, height=16, units='in', res=100)
+        MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)$hm.anno
+        dev.off()
+        
         ## ##############################################################################
         ## CNV only
         if(length(cnv.idx) == 1) {
@@ -1769,7 +1788,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     #names(col) <- cdesc[,1]
     col <- sapply(col, function(i) col.tmp[i])
 
-    ## plot
+    #################################
+    ## plot PDF
     pdf(paste('9.0_PCA.pdf'))
     plot(pc1, pc2, col=col,  cex=2, main=paste('PCA: ', paste(data.omes, collapse=', '), '\n', paste(paste(dim(expr), collapse=' x '), 'matrix')), 
          xlab=glue("PC 1 ({round(pca.var[2,1]*100, 1)} %)"), 
@@ -1782,7 +1802,22 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
            pch=pch.vec[sort(unique(NMF.consensus))], title='cluster')
     
     dev.off()
-
+    #################################
+    ## plot PNG
+    png(paste('9.0_PCA.png'))
+    plot(pc1, pc2, col=col,  cex=2, main=paste('PCA: ', paste(data.omes, collapse=', '), '\n', paste(paste(dim(expr), collapse=' x '), 'matrix')), 
+         xlab=glue("PC 1 ({round(pca.var[2,1]*100, 1)} %)"), 
+         ylab=glue("PC 2 ({round(pca.var[2,2]*100, 1)} %)"), 
+         pch=pch.vec[ NMF.consensus ] )
+    pointLabel(pc1, pc2, labels=cdesc[ names(NMF.consensus), 1], col=col, offset=50, method='SANN', cex=.5)
+    
+    legend('topright', legend=names(col.tmp), pch=16, cex=1, col=col.tmp, bty='n')
+    legend('bottomright', legend=paste0("C",sort(unique(NMF.consensus))),
+           pch=pch.vec[sort(unique(NMF.consensus))], title='cluster')
+    
+    dev.off()
+    
+    
 
     ## #############################################
     ## PCA on NMF features
@@ -1798,8 +1833,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     #names(col) <- cdesc[,1]
     col <- sapply(col, function(i) col.tmp[i])
 
-    ## correct colors
-    ## plot
+    ########################################
+    ## plot: PDF
     pdf(paste('9.1_PCA_NMF_features.pdf'))
     
     plot(pc1, pc2, col=col,  cex=2, 
@@ -1815,7 +1850,21 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
            pch=pch.vec[sort(unique(NMF.consensus))], title='cluster')
     dev.off()
 
-
+    ## plot: PNG
+    png(paste('9.1_PCA_NMF_features.png'))
+    plot(pc1, pc2, col=col,  cex=2, 
+         main=paste('PCA on NMF features: ', 
+                    paste(data.omes, collapse=', '), '\n', 
+                    paste(paste(dim(expr.nmf), collapse=' x '), 'matrix')), 
+         xlab=glue("PC 1 ({round(pca.nmf.var[2,1]*100, 1)} %)"), 
+         ylab=glue("PC 2 ({round(pca.nmf.var[2,2]*100, 1)} %)"), 
+         pch=pch.vec[ NMF.consensus ])
+    pointLabel(pc1, pc2, labels=cdesc[ names(NMF.consensus), 1], col=col, offset=20, method='SANN', cex=.5)
+    legend('topright', legend=names(col.tmp), pch=16, cex=1, col=col.tmp, bty='n')
+    legend('bottomright', legend=paste0('C',sort(unique(NMF.consensus))),
+           pch=pch.vec[sort(unique(NMF.consensus))], title='cluster')
+    dev.off()
+    
     ## ################################################################
     ##
     ##   T-SNE plot of NMF markers
@@ -1859,14 +1908,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
         NMF_col=tsne.nmf.col,
         NMF_class=tsne.nmf.class
       )
-
-
-      ##plot_ly(d, x=~tsne_1, y=~tsne_2, mode='markers', text=~Feature, color=~NMF_class)
-
+      
+      ## symbols for data type
       symbs <- c('circle', 'x', 'o', 'square', 'diamond', 'triangle-down', 'pentagon')
 
-      #col.tmp <- unique(d$NMF_col)
-      #names(col.tmp) <- unique(d$NMF_class)
+      ## colors
       col.tmp <- NMF.consensus.col
       names(col.tmp) <- paste(1:length(col.tmp), names(col.tmp ))
 
@@ -1954,7 +2000,7 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
   goi <- goi %>% strsplit(., ';') %>% unlist %>% unique
 
   ## signed scores
- # nmf.marker.list <- lapply(nmf.marker.list[valid.idx], function(x) x %>% mutate(Score = if_else(Direction == 'down', -1*Score, Score)))
+  # nmf.marker.list <- lapply(nmf.marker.list[valid.idx], function(x) x %>% mutate(Score = if_else(Direction == 'down', -1*Score, Score)))
   nmf.marker.list <- lapply(nmf.marker.list, function(x) 
     if(nrow(x) > 0)
       x %>% mutate(NMF.Score = if_else(Direction == 'down', -1*NMF.Score, NMF.Score))
@@ -2045,10 +2091,6 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
 
       } ## end loop over omes
       dev.off()
-
-      ## goi in NMF marker list?
-      ## g.nmf.idx <- lapply(nmf.marker.list, function(x) x[grep(g, x[, 1]),] )
-
     }
   }
 
