@@ -1,0 +1,7 @@
+Loading required package: pacman
+parsing as GCT v1.3
+tmp/cll-set1-v1.0-proteome/normalized-data/proteome-ratio-norm.gct 10000 rows, 110 cols, 17 row descriptors, 13 col descriptors
+Error in validObject(.Object) : 
+  invalid class “GCT” object: cid must be unique
+Calls: rmd_normalize ... new -> initialize -> initialize -> .local -> validObject
+Execution halted

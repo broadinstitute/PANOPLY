@@ -213,30 +213,48 @@ preprocessGCT <- function(
       mat.gc <- aggregate(mat, FUN=function(x) median(x, na.rm=T), by=list(genes))
     
     if(mode == 'SGT'){
+      
       # 1. extract top subgroup
       # 2. collapse to genes by taking median expression
-      
+  
       if(!SGT.col %in% colnames(rdesc)) stop(glue("Column {SGT.col} not found!"))
       
-      sgt <- rdesc[, SGT.col] %>% sub('\\..*', '', .)
-      mat.sgt <- aggregate(mat, FUN=function(x) x[1], by=list(sgt))
-      mat.sgt <- mat.sgt[, -c(1)]
+      ## genes
+      genes <- rdesc[, gene.col]
+      ## subgroup number
+      sgt <- rdesc[, SGT.col] #%>% sub('\\..*', '', .)
+      
+      ## keep lowest subgroup per gene
+      sgt.idx <- tapply(sgt, genes, function(x) x[ which.min( as.numeric(sub('.*\\.', '', x))) ] )
+      
+      ## remove duplicated subgroup numbers introduced when there are more than 9 subgroups (happens in parsing module of panoply)
+      ## 234.10 -> 234.1
+      sgt.idx <- unique(sgt.idx)
+      
+      keep.idx <- match(sgt.idx, sgt)
+      #genes <- genes[ keep.idx] 
+      genes <- names(sgt.idx)
+      
+      mat.gc <- data.frame(id=genes, mat[keep.idx, ])
+      rdesc <- rdesc[keep.idx, ]
+      #mat.sgt <- aggregate(mat, FUN=function(x) x[1], by=list(sgt))
+      #mat.sgt <- mat.sgt[, -c(1)]
       
       ## aggregate rdesc to SGT
-      rdesc.sgt <- aggregate(rdesc, FUN=function(x) x[1], by=list(sgt))
-      rdesc.sgt <- rdesc.sgt[, -c(1)]
+      #rdesc.sgt <- aggregate(rdesc, FUN=function(x) x[1], by=list(sgt))
+      #rdesc.sgt <- rdesc.sgt[, -c(1)]
       
       ## make gen-centric using median expression
-      genes <- rdesc.sgt[, gene.col]
-      mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
-      rdesc <- rdesc.sgt
+      #genes <- rdesc.sgt[, gene.col]
+      #mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
+      #rdesc <- rdesc.sgt
     }
     if(mode == 'abs.max'){
       mat.gc <- aggregate(mat, FUN=function(x)x[ which.max(abs(x)) ], by=list(genes))     
     }
   
     ## non-redundant gene symbols as rid
-    rid <- mat.gc[, 1]
+    rid <- mat.gc[, 1] %>% as.character
     #mat.gc <- mat.gc[, -c(1)] %>% data.frame
     if(n == 1) {
       mat.gc <- data.frame( matrix(mat.gc[, -c(1)], ncol=1, dimnames=list(rid, cid)))
@@ -831,346 +849,4 @@ prepare_mo_nmf_output <- function(w.str,
   write.gct(out, ofile = ofile, appenddim = F)
   
   return(0)
-}
-
-## ###########################################################################
-##               PTM-SEA / ssGSEA volcano plots
-gg_volc <- function(output.prefix, 
-                    fdr.max = 0.05, ## max. FDR
-                    n.max = 5, ## maximal number of signatures to label each side of the volcano plots
-                    ncol=3,    ## number of plots per row
-                    alpha=100,
-                    #show=c('KINASE-PSP_mTOR/MTOR', 'KINASE-PSP_PKCA/PRKCA', 'KINASE-PSP_PKACA/PRKACA', 'KINASE-PSP_CDK2', 'KINASE-PSP_CDK1'),
-                    show=NULL, ## signatures to show in all plots
-                    ...  ## passed to ggsave
-                    ){
-    #fdr.max <- 0.05 
-    #n.max <- 5 
-    if(!require(pacman)) install.packages("pacman")
-    p_load(ggpubr)
-    p_load(ggrepel)
-  
-    ## import ptm-sea results
-    fn3 <- glue('{output.prefix}-combined.gct')
-    ptm <- parse.gctx(fn3)
-    mat <- ptm@mat
-    cid <- ptm@cid
-    rdesc <- ptm@rdesc
-    rid <- ptm@rid
-    
-    
-    ## loop over sample columns
-    plot.list <- vector('list', length(cid))
-    names(plot.list) <- cid
-    
-    for(s in cid){
-      
-      pval.tmp <- rdesc[ , glue("pvalue.{sub('^X','',make.names(s))}")] %>% as.numeric
-      fdr.tmp <- rdesc[ , glue("fdr.pvalue.{sub('^X','',make.names(s))}")] %>% as.numeric
-      ol.tmp <- rdesc[, glue("Signature.set.overlap.percent.{sub('^X','',make.names(s))}")] %>% as.numeric
-      score.tmp <- mat[ , glue('{s}')] %>% as.numeric
-      
-      
-      Enrichment.Score <- score.tmp
-      P.Value <- -10*log(pval.tmp, 10)
-      
-      
-      Significant <- rep('n', nrow(rdesc))
-      sig.idx <- which(fdr.tmp < fdr.max) 
-      if(length(sig.idx) > 0)
-        Significant[sig.idx] <- 'y'
-      
-      col <- Significant
-      col[col == 'y'] <- 'red'
-      col[col == 'n'] <- 'grey'
-      
-      ## used for ranking
-      Rank <- P.Value * Enrichment.Score
-      
-      data.plot <- data.frame(Enrichment.Score,
-                              P.Value,
-                              Significant,
-                              Signature=rid,
-                              Overlap.Percent=ol.tmp,
-                              Rank=Rank,
-                              col)
-      if(!is.null(show)){
-        highlight <- rep('n', nrow(data.plot))
-        highlight[ which(data.plot$Signature %in% show )] <- 'y'
-        data.plot <- data.frame(data.plot, highlight)
-      }
-      
-      xlim=max(abs(data.plot$Enrichment.Score))
-      ymax=max(abs(data.plot$P.Value))
-      
-      if(is.null(show)){
-          data.sig.dn <- data.plot %>% 
-            filter(Significant == 'y' & Enrichment.Score < 0) %>% 
-            arrange(Rank) 
-          if(nrow(data.sig.dn) > n.max)
-            data.sig.dn <- data.sig.dn[1:(min( n.max, nrow(data.sig.dn))), ]
-            #data.sig.dn <- data.sig.dn %>% slice(1:(min( n.max, nrow(data.sig.dn))))
-          
-          data.sig.up <- data.plot %>% 
-            filter(Significant == 'y' & Enrichment.Score > 0) %>% 
-            arrange(desc(Rank)) 
-          if(nrow(data.sig.up) > n.max)
-            data.sig.up <- data.sig.up[1:(min( n.max, nrow(data.sig.up))), ]
-      } else {
-        
-        data.sig.up <- data.plot %>% 
-          filter(highlight == 'y' & Enrichment.Score > 0) %>% 
-          arrange(desc(Rank)) 
-        data.sig.dn <- data.plot %>% 
-          filter(highlight == 'y' & Enrichment.Score < 0) %>% 
-          arrange(Rank) 
-      }
-      #  data.sig.up <- data.sig.up %>% slice(1:(min( n.max, nrow(data.sig.up))))
-      
-      
-      p <- ggplot(data.plot, aes(Enrichment.Score, P.Value ) ) + 
-        geom_point(aes(size=Overlap.Percent, colour=Significant)) + 
-        xlim(-xlim, xlim) +
-        geom_vline(xintercept=0, linetype=3) +
-        labs(title=glue('{s}'), y='-10log10(P-value)') +
-        scale_colour_manual(name="", values = c("y"=my.col2rgb("darkred", alpha = alpha), 
-                                                "n"=my.col2rgb("grey", alpha = alpha))) +
-        geom_label_repel( aes(label=Signature),
-                          #nudge_x=data.sig.dn$Enrichment.Score,
-                          nudge_x=-5,
-                          #nudge_y=seq(max(data.plot$P.Value), min(data.plot$P.Value), length.out = nrow(data.sig.dn) )[order(data.sig.dn$P.Value, decreasing = T)],
-                          nudge_y=-5,
-                          direction='y',
-                          data=data.sig.dn,
-                          force=1, size=3) +
-        
-        geom_label_repel( aes(label=Signature),
-                          #nudge_x=data.sig.up$Enrichment.Score,
-                          nudge_x=5,
-                          nudge_y=-5,
-                          direction='y',
-                          data=data.sig.up,
-                          force=1, size=3)
-      
-      p <- p + theme_bw() + theme(plot.title=element_text(hjust=0.5))
-      
-      
-      plot.list[[s]] <- p
-    }
-    
-    ## plot and save
-    if(length(plot.list) > 9){
-      
-      pdf(glue("volcano_{output.prefix}.pdf"), ...)
-      for(s in names(plot.list)){
-        plot(plot.list[[s]])
-      }
-      dev.off()
-      
-    } else {
-      pp <- ggarrange(plotlist= plot.list, common.legend=T, ncol = ncol)
-      ggsave(glue("volcano_{output.prefix}.pdf"),  device='pdf', ...)
-    }
-    #save(pp, file='debug.RData')
-    #annotate_figure(pp, top=glue("class vector: {output.prefix}"))
-    
-    
-   # return(data.plot)
-   return(0)
-}
-
-
-## ######################################################
-## pathway heatmap
-## - developed for GSEA/PTM-SEA on NMF results
-pw_hm2 <- function(output.prefix, 
-                  fdr.max = 0.05, ## max. FDR
-                  n.max = 10, ## maximal number of signatures to label each side of the volcano plots
-                  ptmsigdb=T,
-                  ...  ## passed to pheatmap
-){
-  library(pacman)
-  p_load(RColorBrewer)
-  p_load(pheatmap)
-  #fdr.max <- 0.05 
-  #n.max <- 5 
-  
-  ## import ptm-sea results
-  fn3 <- glue('{output.prefix}-combined.gct')
-  ptm <- parse.gctx(fn3)
-  mat <- ptm@mat
-  cid <- ptm@cid
-  rdesc <- ptm@rdesc
-  rid <- ptm@rid
-  
-  ## helper function
-  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
-    
-    ## fdr & score
-    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
-    keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
-      cat(i)
-      f=fdr[, i] ## fdr
-      s=mat[, i] ## score
-      idx=which(f < fdr.max)
-      if(length(idx) > 0)
-        idx=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]]
-      idx
-    }, fdr, mat )
-    save(keep.idx.list, file='debug.RData')
-    keep.idx <- unique(unlist(keep.idx.list)) 
-    
-    
-    
-    #keep.idx <- c()
-    # for(i in 1:ncol(fdr)){
-    #   f <- fdr[, i] ## fdr
-    #   s <- mat[, i] ## score
-    #   idx=which(f < fdr.max)
-    #   if(length(idx) > 0)
-    #     keep.idx <- union(keep.idx, 
-    #                       idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]])
-    #   #keep.idx <- union(keep.idx, idx)
-    # }
-    # 
-    fdr.filt <- fdr[keep.idx, ]
-    mat.filt <- mat[keep.idx, ]
-    
-    dist.row <- dist(mat.filt, method = 'euclidean')
-    
-    mat.filt[fdr.filt > fdr.max] <- NA
-    
-    max.val = ceiling( max( abs(mat.filt), na.rm=T) )
-    min.val = -max.val
-    
-    color.breaks = seq( min.val, max.val, length.out=12 )
-    color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
-    
-    try(pheatmap(mat.filt, 
-                 cluster_cols = F, 
-                 cluster_rows=T, 
-                 clustering_distance_rows = dist.row, col=color.hm, 
-                 breaks = color.breaks, filename = fn.out, ...))
-  
-  }
-  #debug(plothm)
-  if(ptmsigdb){ ## split categories
-    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
-    for(rt in rid.type){
-      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-      idx <- grep(glue("^{rt}"), rid)
-      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out)
-    }
-  } else {
-    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-    fn.out=NA
-    plothm(rdesc, mat, fdr.max, n.max, fn.out)
-  }
-
-}
-
-
-## ######################################################
-## pathway heatmap
-## - developed for GSEA/PTM-SEA on NMF results
-pw_hm <- function(output.prefix, 
-                  fdr.max = 0.05, ## max. FDR
-                  n.max = 10, ## maximal number of signatures to label each side of the volcano plots
-                  ptmsigdb=T,
-                  ser.meth='',
-                  ...  ## passed to pheatmap
-){
-  library(pacman)
-  p_load(RColorBrewer)
-  p_load(pheatmap)
-  #fdr.max <- 0.05 
-  #n.max <- 5 
-  
-  ## import ptm-sea results
-  fn3 <- glue('{output.prefix}-combined.gct')
-  gct <- parse.gctx(fn3)
-  mat <- gct@mat
-  cid <- gct@cid
-  rdesc <- gct@rdesc
-  rid <- gct@rid
-  
-  ## helper function
-  plothm <- function(rdesc, mat, fdr.max, n.max, fn.out){
-    
-    ## fdr & score
-    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
-    keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
-     # cat(i)
-      f=fdr[, i] ## fdr
-      s=mat[, i] ## score
-      idx=which(f < fdr.max)
-      if(length(idx) > 0)
-        idx=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]]
-      rownames(mat)[idx]
-    }, fdr, mat )
-    #save(keep.idx.list, file='debug.RData')
-    keep.idx <- unique(unlist(keep.idx.list)) 
-    
-    fdr.filt <- fdr[keep.idx, ]
-    mat.filt <- mat[keep.idx, ]
-    
-    colnames(mat.filt) <- paste0('C', colnames(mat.filt))
-    
-    anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
-    for(i in 1:ncol(mat.filt))
-      anno.row[keep.idx.list[[i]], i] <- '*'
-    
-    
-    
-    dist.row <- dist(mat.filt, method = 'euclidean')
-    dist.row <- seriate(dist.row, method = ser.meth)
-    
-    
-    #mat.filt[fdr.filt > fdr.max] <- NA
-    
-    max.val = ceiling( max( abs(mat.filt), na.rm=T) )
-    min.val = -max.val
-    
-    color.breaks = seq( min.val, max.val, length.out=100 )
-    
-    ## heatmap color
-    #color.hm = rev(brewer.pal (length(color.breaks)-1, "RdBu"))
-    color.hm <- colorRampPalette(c('cyan','darkblue', 'white', 'orange', 'yellow'))(99)
-    #color.hm <- colorRampPalette(c('blue', 'yellow'))(11)
-    #color.hm <- colorRampPalette(c('cyan', 'darkblue', 'yellow'))(99)
-    #color.hm <- viridis(99)
-    
-    
-    
-    # try(pheatmap(mat.filt, 
-    #              cluster_cols = F, 
-    #              cluster_rows=T, 
-    #              clustering_distance_rows = dist.row, col=color.hm, 
-    #              breaks = color.breaks, filename = fn.out, display_numbers = anno.row, na_col = 'white', ...))
-    # 
-    mat.filt <- mat.filt[get_order(dist.row), ]
-    anno.row <- anno.row[get_order(dist.row),]
-    try(pheatmap(mat.filt, 
-                 cluster_cols = F, 
-                 cluster_rows=F, 
-                 col=color.hm, 
-                 breaks = color.breaks, filename = fn.out, display_numbers = anno.row, na_col = 'white', ...))
-    
-    
-  }
-  
-  #debug(plothm)
-  if(ptmsigdb){ ## split categories
-    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
-    for(rt in rid.type){
-      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}-blue-yellow.pdf")  
-      idx <- grep(glue("^{rt}"), rid)
-      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out)
-    }
-  } else {
-    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}-{ser.meth}.pdf")  
-   # fn.out=NA
-    plothm(rdesc, mat, fdr.max, n.max, fn.out)
-  }
-  
 }

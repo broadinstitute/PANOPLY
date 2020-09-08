@@ -179,7 +179,7 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
     samp.bs <- sample(samp, ns, replace=T)
     m.bs <- m[, samp.bs]
     
-    ## take car of missing values
+    ## take care of missing values
     if(method == 'nmf')
       keep.idx <- which(apply(m.bs, 1, function(x) sum(x != 0) ) > 0)
     if(method == 'kmeans')

@@ -1,0 +1,7 @@
+{
+  "panoply_cna_correlation_report_workflow.panoply_cna_correlation_report.fdr": "0.05",
+  "panoply_cna_correlation_report_workflow.panoply_cna_correlation_report.label": "panoply-lscc-3-2-acetylome-full-results",
+  "panoply_cna_correlation_report_workflow.panoply_cna_correlation_report.tarball": "testdata/acetylome-28a7ada4-4d04-46dd-8fe5-1c4e82449081-pgdac_main_full.tar",
+  "panoply_cna_correlation_report_workflow.panoply_cna_correlation_report.tmpDir": "testdata/",
+  "panoply_cna_correlation_report_workflow.panoply_cna_correlation_report.type": "acetylome"
+}

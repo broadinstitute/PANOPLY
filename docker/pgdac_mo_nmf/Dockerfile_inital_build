@@ -68,3 +68,48 @@ RUN R -e "library(pacman);p_install('Rtsne')"
 RUN R -e "library(pacman);p_install('plotly')"
 RUN R -e "library(pacman);p_install('rmarkdown')"
 RUN R -e "library(pacman);p_install('vioplot')"
+
+# v2: FROM broadcptac/pgdac_mo_nmf:3
+RUN R -e "library(pacman);p_install('UpSetR')"
+RUN R -e "library(pacman);p_install('ComplexHeatmap')"
+
+# v3: FROM broadcptac/pgdac_mo_nmf:4
+RUN R -e "library(pacman);p_install('impute')"
+
+# v4: FROM broadcptac/pgdac_mo_nmf:5
+RUN R -e "library(pacman);p_install('doParallel')"
+RUN R -e "library(pacman);p_install('foreach')"
+RUN R -e "library(pacman);p_install('readxl')"
+RUN R -e "library(pacman);p_install('ccfindR')"
+
+# v5: FROM broadcptac/pgdac_mo_nmf:6
+RUN R -e "library(pacman);p_install('tibble')"
+#RUN R -e "library(pacman);p_install('magrittr')"
+
+# v6: FROM broadcptac/pgdac_mo_nmf:5
+#RUN R -e "library(pacman);p_install('doParallel')"
+#RUN R -e "library(pacman);p_install('foreach')"
+#RUN R -e "library(pacman);p_install('readxl')"
+#RUN R -e "library(pacman);p_install('ccfindR')"
+
+#RUN R -e "library(pacman);p_install('tibble')"
+#RUN R -e "library(pacman);p_install('magrittr')"
+
+# v7-v10: updates to R-code
+
+# v11: FROM broadcptac/pgdac_mo_nmf:10
+RUN R -e "library(pacman);p_install('limma')"
+RUN R -e "pacman::p_install('statmod')"
+RUN R -e "pacman::p_install('BiocManager')"
+
+## update ComplexHeatmap
+RUN wget https://bioconductor.org/packages/release/bioc/src/contrib/ComplexHeatmap_2.2.0.tar.gz
+RUN R -e "pacman::p_install(c(clue, png))"
+RUN R -e "install.packages('circlize')"
+RUN R -e "install.packages('ComplexHeatmap_2.2.0.tar.gz', repos = NULL, type='source')"
+
+# v12: FROM broadcptac/pgdac_mo_nmf:11
+RUN R -e "pacman::p_install('ggpubr')"
+
+# v13: FROM broadcptac/pgdac_mo_nmf:12
+RUN R -e "pacman::p_install('yaml')"

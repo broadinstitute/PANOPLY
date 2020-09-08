@@ -1,12 +1,10 @@
 
-
-
 ###########################################
 ## returns 'topn.rank' no. of clusters
 ## with max. 'metric'-scores
 GetBestRank <- function(metric,      ## vector of a metric to assess clustering
                         topn.rank=1, ## No. of topN ranks
-                        exclude.2=F,  ## should rank=2 be excluded?
+                        exclude_2=F,  ## should rank=2 be excluded?
                         rel.inc=1e-3
                         ){
 
@@ -25,7 +23,7 @@ GetBestRank <- function(metric,      ## vector of a metric to assess clustering
   # }
   #
 
-  if(exclude.2){
+  if(exclude_2){
      if('2' %in% names(metric))
        metric <- metric[-which(names(metric) == '2')]
   }
@@ -116,8 +114,7 @@ CalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
       #p <- sum( (class.vec %in% class.level)/length(class.vec) )
     
       
-      # binomial p
-      #res.per.clust[clust, class.level] <- binom.test(x11, n, p, alternative = 'greater')$p.value
+      # Fisher's p
       res.per.clust[clust, class.level] <- fisher.test( rbind(c(x11, x12), c(x21, x22)), alternative = 'greater')$p.value
       
       }
@@ -156,7 +153,7 @@ CalcClustEnrichBinom <- function(clust.vec,  ## vector of cluster labels
 }
 
 ########################################################
-## 
+## map clusters to annotations
 MapCalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
                                class.vec,   ## vector of class labels, same order and length as 'clust'
                                p.max
@@ -166,7 +163,7 @@ MapCalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
   
   map=apply(enrich , 2, function(xx) paste(names(xx)[xx < p.max], sep='|'))
   map.names <- names(map)
-  ## if multiple mapping were significant,
+  ## if multiple mappings were significant,
   ## pick the most significant mapping
   map <- lapply(names(map), function(y){ 
     if(length(map[[y]])>1){ 
@@ -201,74 +198,120 @@ MapCalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
 parse.colors <- function(opt, cdesc, blank='N/A', blank.col='white'){
 
   ## user defined colors
-  class.colors <- opt$class.colors
-  color.all <- class.colors %>% strsplit(., '\\|') %>% unlist
-
-  ## check dups
-  color.all <- color.all[ !duplicated(sub('^(.*?)=.*', '\\1', color.all)) ]
-
-  ## put into a format suitable for 'pheatmap'
-  cdesc.color <- vector('list', length(color.all))
-  names(cdesc.color) <- sub('^(.*?)=.*', '\\1', color.all)
-
-  color.all <- sub('.*?=','', color.all)
-
-  ## 
-  keep.idx <- names(cdesc.color) %in% colnames(cdesc)
-  cdesc.color <- cdesc.color[ keep.idx ]
-  color.all <- color.all[ keep.idx ]
-  
-  ## assign levels to colors
-  for(i in 1:length(cdesc.color)){
-
-    cat('parsing colors for: ', names(cdesc.color)[i], ' ...')
-    
-    ## cdesc column
-    cdesc.column <- names(cdesc.color)[i]
-
-    
-    ## present in cdesc?
-    if(!cdesc.column %in% colnames(cdesc)){
+  if(!is.na(opt$cat_colors)){
+        cat_colors <- opt$cat_colors
+        color.all <- cat_colors %>% strsplit(., '\\|') %>% unlist
       
-      cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
-      #break;
-    
-      } else {
-        cdesc.levels <- cdesc[, cdesc.column] %>% unique
-        cdesc.levels[ nchar(cdesc.levels) == 0 | is.na(cdesc.levels) ] <- blank
-
-        ## extract colors specified for levels of cdesc.column
-        color.tmp <- color.all[i] %>% strsplit(., ';') %>% unlist %>% strsplit(. , ':')
-        color.names <- sapply(color.tmp, function(x)x[1])
-        color.tmp <- sapply(color.tmp, function(x)x[2])
-     
-           names(color.tmp) <- color.names
-        color.tmp <- gsub('\\\'', '', color.tmp)
-        names(color.tmp) <- gsub('\\\'', '', names(color.tmp))
-
-        ## check whether all levels were assigned
-        ## fill with random colors
-        if(sum(!cdesc.levels %in% names(color.tmp)) > 0){
-          color.tmp.bck <- color.tmp
-          color.tmp <- cdesc.levels
-          names(color.tmp) <- cdesc.levels
-          color.tmp[names(color.tmp.bck)] <- color.tmp.bck
-
-          idx <- which(!cdesc.levels %in% names(color.tmp.bck))
-          color.tmp[idx] <- palette()[1:length(idx)]
-
-          if(blank %in% names(color.tmp))
-            color.tmp[blank] <- blank.col
+        ## check dups
+        color.all <- color.all[ !duplicated(sub('^(.*?)=.*', '\\1', color.all)) ]
+      
+        ## put into a format suitable for 'pheatmap'
+        cdesc.color <- vector('list', length(color.all))
+        names(cdesc.color) <- sub('^(.*?)=.*', '\\1', color.all)
+      
+        color.all <- sub('.*?=','', color.all)
+      
+        ## check whether in meta data
+        keep.idx <- names(cdesc.color) %in% colnames(cdesc)
+        cdesc.color <- cdesc.color[ keep.idx ]
+        color.all <- color.all[ keep.idx ]
+        
+        ## assign levels to colors
+        for(i in 1:length(cdesc.color)){
+      
+          cat('parsing colors for: ', names(cdesc.color)[i], ' ...')
+          
+          ## cdesc column
+          cdesc.column <- names(cdesc.color)[i]
+      
+          
+          ## present in cdesc?
+          if(!cdesc.column %in% colnames(cdesc)){
+            
+            cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
+            #break;
+          
+            } else {
+              cdesc.levels <- cdesc[, cdesc.column] %>% unique
+              cdesc.levels[ nchar(as.character(cdesc.levels)) == 0 | is.na(cdesc.levels) ] <- blank
+      
+              ## extract colors specified for levels of cdesc.column
+              color.tmp <- color.all[i] %>% strsplit(., ';') %>% unlist %>% strsplit(. , ':')
+              color.names <- sapply(color.tmp, function(x)x[1])
+              color.tmp <- sapply(color.tmp, function(x)x[2])
+           
+                 names(color.tmp) <- color.names
+              color.tmp <- gsub('\\\'', '', color.tmp)
+              names(color.tmp) <- gsub('\\\'', '', names(color.tmp))
+      
+              ## check whether all levels were assigned
+              ## fill with random colors
+              if(sum(!cdesc.levels %in% names(color.tmp)) > 0){
+                color.tmp.bck <- color.tmp
+                color.tmp <- cdesc.levels
+                names(color.tmp) <- cdesc.levels
+                color.tmp[names(color.tmp.bck)] <- color.tmp.bck
+      
+                idx <- which(!cdesc.levels %in% names(color.tmp.bck))
+                color.tmp[idx] <- alphabet()[1:length(idx)]
+      
+                if(blank %in% names(color.tmp))
+                  color.tmp[blank] <- blank.col
+              }
+              cdesc.color[[i]] <- color.tmp
+            } ## end else
+             #cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
+          
+          cat('done\n')
+          } # end for loop
+        
+        cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
+        
+        } else { ## end !is.na(opt$cat_colors) (user defined colors)
+          
+        ###################################
+        ## pick colors automatically
+          
+          ## categories specified
+          cdesc.cat <- opt$cat_anno %>% strsplit(., ';') %>% unlist %>% unique
+          cdesc.cat <- cdesc.cat[cdesc.cat %in% colnames(cdesc) ]
+          
+          ## color palettes to pick from
+          my.brewer.pal.info <- brewer.pal.info[ c('Set1', 'Set2', 'Set3', 'Paired', 'Dark2', 'Accent'), ]  %>% rownames_to_column('pal') %>% as.tibble
+          
+          ## list
+          cdesc.color <- vector('list', length(cdesc.cat))
+          names(cdesc.color) <- cdesc.cat
+          
+          ## loop over annotation columns
+          for(i in names(cdesc.color)){
+            
+            ## get levels in current category
+            cat.lev <- cdesc[, i] %>% unlist
+            if(sum(is.na(cat.lev)) > 0){
+              cat.lev[which(is.na(cat.lev))] <- blank.anno
+            }
+            cat.lev <- unique(cat.lev)
+            cat.numb <- length(cat.lev)
+            
+            ## if there are fewer than 12 categories
+            if(cat.numb <= 12){
+              pal.tmp <- dplyr::filter(my.brewer.pal.info, maxcolors >= cat.numb)
+              ## pick randomly
+              pick <- base::sample(1:nrow(pal.tmp), 1)
+              
+              ## assign colors to levels
+              color.tmp <- brewer.pal(n=cat.numb, name=unlist(pal.tmp[pick, 'pal']))
+              names(color.tmp) <- cat.lev
+              
+              ## colors for blanks
+              if(blank %in% names(color.tmp))
+                color.tmp[blank] <- blank.col
+              
+              cdesc.color[[i]] <- color.tmp
+            }
+          }
         }
-        cdesc.color[[i]] <- color.tmp
-      } ## end else
-       #cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
-    
-    cat('done\n')
-    } # end for loop
-  
-  cdesc.color <- lapply(cdesc.color, function(x){names(x)=sub('\\n.*', '',names(x));x})
-
   return(cdesc.color)
 }
 
@@ -412,6 +455,133 @@ import.data.sets <- function(tar.file, tmp.dir, zscore.cnv=F){
 }
 
 
+## ##############################################
+## filter datasets
+filter.datasets <- function(gct.comb,
+                            sd_filt,
+                            mode=c('global', 'separate', 'equal')
+                            ){
+
+  mode <- match.arg(mode)
+ 
+  ## ###################
+  ## calculate SD accross samples
+  sd.expr <- apply(gct.comb@mat, 1, sd, na.rm=T)
+  
+  ## data types
+  data.type <- sub('^(.*?)-.*','\\1', gct.comb@rdesc$Data.Type.ID)
+  names(data.type) <- rownames(gct.comb@rdesc)
+    
+  #######################
+  ## helper function
+  sd_filt_func <- function(sd.vec, perc){
+    sd.perc <- quantile(sd.vec, c(perc))
+    keep <- which( sd.vec > sd.perc)
+    return(names(keep))
+  }
+  
+  ## ###################
+  ## global filter
+  if(mode == 'global'){
+    
+    if(sd_filt > 0){
+      
+      cat("\napplying SD-filter:", mode, '\n')
+      sd.keep <- sd_filt_func(sd.expr, sd_filt)
+      
+      #cat("removed", nrow(gct.comb@mat)-length(sd.keep), "features with SD<=", round(sd.perc, 2), "(", names(sd.perc),"-tile)\n\n")
+     
+    } else{
+      sd.keep <- rownames(gct.comb$rdesc)
+    }
+  }
+  
+  ## #################
+  ## filter each dataset separately
+  if(mode == 'separate' ){
+    cat("\napplying SD-filter:", mode, '\n')
+      
+    ## filter each type separetely
+    sd.keep <- base::tapply(sd.expr, data.type, sd_filt_func, sd_filt) %>% unlist
+  }
+  
+  ## ######################
+  ## equal weights
+  if(mode == 'equal' ){
+    
+    cat("\napplying SD-filter:", mode, '\n')
+    
+    rdesc <- gct.comb@rdesc
+    expr <- gct.comb@mat
+    
+    ## apply global filter first
+    sd.keep <- sd_filt_func(sd.expr, sd_filt)
+    ## update
+    rdesc <- rdesc[sd.keep, ]
+    sd.expr <- sd.expr[sd.keep]
+    data.type <- data.type[sd.keep]
+    
+    ## data types
+    #data.type <- sub('^(.*?)-.*','\\1', rdesc$Data.Type.ID)
+    
+    ## determine smallest dataset
+    data.type.dist <- table(data.type)
+    
+    min.numb <- min(data.type.dist <- table(data.type))
+    
+    ## filter each type separately
+    sd.keep <- base::tapply(sd.expr, data.type, function(x, min.numb){
+        keep.idx <- order(x, decreasing = T)    
+        keep.idx <- keep.idx[1:min.numb]
+        names(x)[keep.idx]
+    }, min.numb) %>% unlist
+    
+   
+  }
+  ##########################
+  ## update 
+  
+  ## GCT
+  gct.filt <- gct.comb
+  gct.filt@mat <- data.matrix(gct.filt@mat [sd.keep,])
+  gct.filt@rdesc <- gct.filt@rdesc[sd.keep, ]
+  gct.filt@rid <- rownames(gct.filt@mat)
+  
+  ## sd vector
+  sd.expr.filt <- sd.expr[sd.keep]
+  ## data type vector
+  data.type.filt <- data.type[sd.keep]
+  
+  #####################################################
+  ## plot number of feature before/after filtering
+  data.type.dist <- table(sub('^(.*?)-.*','\\1', gct.comb@rdesc$Data.Type.ID))
+  data.type.dist.filt <- table(sub('^(.*?)-.*','\\1', gct.filt@rdesc$Data.Type.ID))
+  
+  data.type.dist.comb <- rbind(data.type.dist, data.type.dist.filt)
+  rownames( data.type.dist.comb) <- c('all', 'filtered')
+  col <- c('grey30', 'grey80')
+  
+  pdf(paste0('0_barplot_number_features_filt-',mode,'.pdf'), width=max(4, length(data.type.dist)*2), height = 6)
+  fancyBarplot( data.type.dist.comb, col=col, srt = 45, ylab='No. features')
+  legend('top', legend=rownames(data.type.dist.comb), fill=col, title = paste0('mode: ', mode) )
+  dev.off()
+  
+  #####################################################
+  ## plot SD of features before/after filtering
+  sd.list <- base::tapply(sd.expr, data.type, function(x)x)
+  sd.list.filt <- base::tapply(sd.expr.filt, data.type.filt, function(x)x)
+  names(sd.list.filt) <- paste0(names(sd.list), '.filt')
+  
+  sd.list  <- c(sd.list, sd.list.filt)
+  sd.list <- sd.list[order(names(sd.list))]
+  
+  pdf(paste0('0_boxplot_std-dev_filt-',mode,'.pdf'), width=max(4, length(data.type.dist)*2), height = 6)
+  p<- try(fancyBoxplot(sd.list, ylab='Std Dev', show.numb = 'median'))
+  dev.off()
+  
+  return(gct.filt)
+}
+
 ## #############################################
 ## make a matrix non-negative
 ## separate up/down
@@ -448,10 +618,21 @@ make.non.negative <- function(m){
 
 ###################################################################
 ## heatmap using ComplexHeatmap package
-MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.other, max.val){
-
+MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.other, max.val=NULL, 
+                             symm.col=T, ## symmetric color scale centered at zero
+                             ##row_title='', 
+                             name='NMF features'){
+  library(pacman)  
+  p_load(circlize)
+  p_load(ComplexHeatmap)
+  p_load(RColorBrewer)
+    
+    ## cap values
     if(is.null(max.val)){
-      m.max <- ceiling(max(abs(m), na.rm=T))
+      if(symm.col)
+        m.max <- ceiling( max(abs(m), na.rm=T) )
+      else
+        m.max <- ceiling( max(m, na.rm=T) )
     } else {
       m.max <- max.val
       m[m > m.max] <- m.max
@@ -459,7 +640,16 @@ MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.oth
     }
     ## #####################################
     ## complexheatmap
-    col.hm <- colorRamp2(seq(-m.max, m.max, length.out=11), rev(brewer.pal (11, "RdBu")))
+  
+    if(symm.col){
+      col.breaks <- seq(-m.max, m.max, length.out=11)
+    } else {
+      m.min <- floor( min(m, na.rm=T) )
+      col.breaks <- seq(m.min, m.max, length.out=11)
+    }
+    col.hm <- colorRamp2(col.breaks, rev(brewer.pal (11, "RdBu")))
+    
+    ## column annotation
     cdesc.ha <- HeatmapAnnotation(df=cdesc[ , rev(c(class.variable, variable.other))], col=cdesc.color,
                                   show_legend = T, show_annotation_name = T, annotation_name_side = 'right',
                                   annotation_legend_param=list(
@@ -469,7 +659,7 @@ MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.oth
                                     #title_position = "leftcenter"
                                     )
                                   )
-
+    ## heatmap
     hm <- Heatmap(m, col=col.hm,
                   cluster_columns = F,
                   top_annotation = cdesc.ha,
@@ -482,18 +672,38 @@ MyComplexHeatmap <- function(m, cdesc, cdesc.color, class.variable, variable.oth
                   column_title_rot=0,
                   
                   row_dend_side = 'right',
-                  name='NMF features',
+                  #name='NMF features',
+                  name=name,
                   show_row_names = F,
                   show_column_names = F,
                   use_raster = FALSE)
     ## plot
     draw(hm, annotation_legend_side='bottom')
+    
+    ## heatmap without annotation
+    hm.noanno <- Heatmap(m, col=col.hm,
+                  cluster_columns = F,
+                  row_split = sub('-.*','',rownames(m)),
+                  
+                  row_title_rot=0,
+                  
+                  column_split = paste0('C', cdesc$NMF.consensus),
+                  column_title_rot=0,
+                  
+                  row_dend_side = 'right',
+                  name=name,
+                  show_row_names = F,
+                  show_column_names = F,
+                  use_raster = FALSE)##,
+                 ## row_title=row_title)
+    
+    return(list(hm.anno=hm, hm.noanno=hm.noanno))
 }
 
 ###################################################################
 ## heatmap using teh pheatmap package
 MyPheatMap <- function(m, cdesc, cdesc.color, rdesc=NULL, class.variable, variable.other, filename, color, cw, ch,
-                       max.val=NULL, gaps_row=NULL, gaps_col=NULL, cluster_rows=F, cluster_cols=F, ... ){
+                       max.val=NULL, gaps_row=NULL, gaps_col=NULL, cluster_rows=F, cluster_cols=F,  show_rownames=T, ... ){
 
   if(is.null(max.val)){
     m.max <- ceiling(max(abs(m), na.rm=T))
@@ -513,14 +723,84 @@ MyPheatMap <- function(m, cdesc, cdesc.color, rdesc=NULL, class.variable, variab
   #         cluster_cols = F, cluster_rows=F, filename='6.0_heatmap_ALL_features.pdf', show_rownames=F, breaks=seq(-m.max, m.max, length.out=12), color=rev(brewer.pal (11, "RdBu")), cellwidth = cw)
   ## sort
   pheatmap(m, scale='none', annotation_row = rdesc, annotation_col=cdesc[ , rev(c(class.variable, variable.other))], annotation_colors=cdesc.color,
-           cluster_cols = cluster_cols, cluster_rows=cluster_rows, filename=filename, show_rownames=F,
+           cluster_cols = cluster_cols, cluster_rows=cluster_rows, filename=filename, show_rownames=show_rownames,
            breaks=breaks,
            color=color,
            cellwidth = cw,
+           cellheight = ch,
            gaps_col = cumsum(table(cdesc$NMF.consensus)), gaps_row = gaps_row,
            ...)
 }
 
+################################################
+## boxplots comapring continous variables
+##
+boxplotPerCluster <- function(cdesc,   ## clin.anno
+                              nmf2col,     ## vector af length k mapping colors to clusters
+                              cont_anno,     ## continous variables to include
+                              core_membership=0.5,
+                              blank.anno = 'N/A'
+                              ){
+  
+  ######################
+  # nclust 
+  nclust <- max(as.numeric(cdesc$NMF.consensus))
+  names(nmf2col) <- glue("{1:nclust}")
+  
+  ## continuous variable to plot
+  keep.idx <- which(cont_anno %in% colnames(cdesc))
+  if(length(cont_anno) == 0){
+    warning('The specified variables could not be found. Skipping boxplots...\n')
+    return()
+  }
+  cont_anno <- cont_anno[keep.idx]
+  
+  ## pairwise comparisons
+  comps <- list()
+  cc <- 1
+  for(i in 1:(nclust-1))
+    for(j in (i+1):nclust){
+      comps[[cc]] <- c(i, j)
+      cc <- cc + 1
+    }
+  
+  
+  ###############################
+  ## loop over variables
+  pdf(paste0('7.0_boxplots-min-membership-',core_membership,'.pdf'), 5, 5)
+  for(var in cont_anno){
+    
+    
+    cdesc.filt <- cdesc[!grepl(blank.anno, cdesc[, var]), ]
+    cdesc.filt[, var] <- as.numeric(cdesc.filt[, var])
+    
+    cdesc.filt <- cdesc.filt %>% filter(NMF.cluster.membership > core_membership) 
+    #cdesc.filt <- 
+      
+    #p <-# cdesc %>% filter(NMF.cluster.membership > core_membership) %>%
+        #filter(!grepl('N/A', `var`)) %>%
+      
+    p <-  ggboxplot(cdesc.filt, x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
+        ggtitle(var) +
+        stat_compare_means(comparisons=comps)
+    
+    
+    plot(p)
+    
+    # p <- try(
+    #   cdesc %>% filter(NMF.cluster.membership > core_membership) %>%
+    #            filter(!grepl('N/A', var)) %>%
+    #       ggboxplot(., x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
+    #       ggtitle(var) +
+    #       stat_compare_means(comparisons=comps)
+    #   )
+    # 
+    # if(class(p) != 'try-error') plot(p)
+    # 
+  }
+  dev.off()
+
+}
 
 ## #############################################
 ## main function ...
@@ -528,9 +808,15 @@ MyPheatMap <- function(m, cdesc, cdesc.color, rdesc=NULL, class.variable, variab
 nmf.post.processing <- function(ws,                       ## filename of R-workspace
                                 blank.anno = 'N/A',       ## used to replace blanks/NAs in meta data
                                 blank.anno.col = 'white', ## color for blanks/NAs usind in heatmap annotation tracks
-                                core.membership=0.5,      ## NMF.cluster.membership score to define core memebrship
+                                #blank.anno.col = 'grey90', ## color for blanks/NAs usind in heatmap annotation tracks
+                                
+                                core_membership=0.5,      ## NMF.cluster.membership score to define core memebrship
                                                           ## cluster enrichment of clinical variables will be done on the core set 
-                                feature.fdr=0.01          ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                pval.ora= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
+                                max.categories=10,        ## max. number of levels in categorial metadata to be included on the 
+                                                          ## overrepresentation analysis
+                                organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
 
     ## ############################
@@ -539,6 +825,23 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     load(ws)
     cat('done.\n')
 
+    ###############################
+    ## organism
+    organism <- match.arg(organism)
+    if(organism == 'human') org.id <- 'Hs'
+    if(organism == 'mouse') org.id <- 'Mm'
+    if(organism == 'rat') org.id <- 'Rn'
+    
+    ## heatmap aesthetics
+    cw <- opt$hm_cw
+    ch <- opt$hm_ch
+    if(opt$z_score){
+      max.val <- opt$hm_max_val_z
+    } else {
+      max.val <- opt$hm_max_val
+    }
+    
+    ###################################  
     ## get data type of each column
     cdesc <- as.tibble(cdesc)
     cc <- cdesc %>%
@@ -571,19 +874,28 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
   ## ###################################################
   ## class variable/annotation tracks of interest
-  class.variable <- opt$class.variable
-  variable.other <- strsplit( opt$variable.other, ';' ) %>% unlist
+  cat_anno <- strsplit( opt$cat_anno, ';' ) %>% unlist
+  class.variable <- cat_anno[1]
   class.variable <- gsub('\\\'', '', class.variable)
-  variable.other <- gsub('\\\'', '', variable.other)
-
-  ## pheatmap parameters
-  cw <- 15
-  ch <- 15
-  if(zscore.all){
-    max.val <- 3
+  
+  ## other categorial variables of interest
+  if(length(cat_anno) > 1){
+    variable.other <- cat_anno[2:length(cat_anno)]
+    variable.other <- gsub('\\\'', '', variable.other)
+    keep.idx <- variable.other %in% colnames(cdesc)
+    variable.other <- variable.other[ keep.idx ]
   } else {
-    max.val <- 10
+    variable.other <- c()
   }
+  ## continous variables
+  if(!is.na(opt$cont_anno)){
+    cont_anno <- strsplit( opt$cont_anno, ';' ) %>% unlist
+    cont_anno <- gsub('\\\'', '', cont_anno)
+  } else{
+    cont_anno <- NA
+  }
+  
+
   ## ############################################
   ## save a copy
   #expr.full.org <- expr.full
@@ -604,7 +916,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
   ## ################################
   ## parse genes of interest
-  gene.column <- opt$gene.column
+  gene_col <- opt$gene_col
 
   ## ####################################################
   ##              loop over ranks
@@ -613,25 +925,30 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     dir.create(paste('K', rank, sep='_'))
     setwd(paste('K', rank, sep='_'))
 
+    ##################################
     ## extract NMF results
     res <- res.rank[[as.character( rank )]]
 
-    ## ##########################################
-    ## silhoutte plots
-    if(!opt$bnmf){
-      pdf(paste('1.0_silhouette_K_', rank, '.pdf', sep=''), 10, 6)
-      #par(mfrow=c(1,2))
-      plot(rank.sil[[rank]], main=paste('K=', rank, sep=''), col=palette()[1:as.numeric(rank)+1] )
-      #plot(rank.sil.random[[rank]], main=paste('Randomized data', sep=''), col=palette()[1:as.numeric(rank)+1])
-      dev.off()
-    }
-
+    #################################
     ## colors
     cdesc.color <- cdesc.color.org
     cdesc <- cdesc.org
     variable.other <- variable.other.org
     class.variable <- class.variable.org
 
+    
+    # 
+    # ## ##########################################
+    # ## silhoutte plots
+    # if(!opt$bnmf){
+    #   pdf(paste('1.0_silhouette_K_', rank, '.pdf', sep=''), 10, 6)
+    #   #par(mfrow=c(1,2))
+    #   plot(rank.sil[[rank]], main=paste('K=', rank, sep=''), col=palette()[1:as.numeric(rank)+1] )
+    #   #plot(rank.sil.random[[rank]], main=paste('Randomized data', sep=''), col=palette()[1:as.numeric(rank)+1])
+    #   dev.off()
+    # }
+    # 
+    # 
     ## data matrix
     expr <- expr.org
 
@@ -654,9 +971,10 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       NMF.consensus <- predict(res, 'consensus')
     }
 
-    ## cluster membership score
+    #########################################
+    ## cluster membership score:
+    ## - fractional
     NMF.cluster.membership.alldigits <- apply(H, 2, function(x) max(x/sum(x)))
-    #NMF.cluster.membership <- apply(H, 2, function(x) round(max(x/sum(x)), 3))
     NMF.cluster.membership <- round( NMF.cluster.membership.alldigits, 3)
     
     
@@ -665,13 +983,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     for(ii in 1:as.numeric(rank))
       NMF.consensus[ NMF.consensus == ii ] <-  NMF.basis[NMF.consensus == ii]
     
+    ##########################################
     ## define core membership
     NMF.consensus.core <- NMF.consensus
-    NMF.consensus.core[ which(NMF.cluster.membership.alldigits < core.membership) ] <- NA
+    NMF.consensus.core[ which(NMF.cluster.membership.alldigits < core_membership) ] <- NA
     
     ## add to cdesc
     cdesc <- data.frame(cdesc, 
-                        ##NMF.basis=as.factor(NMF.basis), 
                         NMF.consensus=as.factor(NMF.consensus), 
                         NMF.consensus.core=as.factor(NMF.consensus.core), 
                         NMF.cluster.membership=NMF.cluster.membership)
@@ -684,7 +1002,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ## of levels in 'cdesc'
     ## - enrichment is calculated on the core set of samples
     variables.all <- unique(c(class.variable, variable.other))
-    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) < 10, 1, 0)) == 1)
+    variables.all <- variables.all[variables.all %in% colnames(cdesc)]
+    
+    ## fewer than 10 levels
+    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) <= max.categories, 1, 0)) == 1)
+    
+    ## exclude 'N/A' category
+    
     
     clust.class.enrichment <- lapply(variables.all[enrich.idx], function(o){
       core.idx  <- which(!is.na(cdesc$NMF.consensus.core))
@@ -693,25 +1017,40 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       colnames(tmp) <- paste(o,colnames(tmp), sep=':')
       tmp
     })
-    names(clust.class.enrichment) <- c(class.variable, variable.other)[enrich.idx]
+    names(clust.class.enrichment) <- variables.all[enrich.idx]
     
     ## make matrix
     cons.map.mat <- Reduce(cbind, clust.class.enrichment)
-    cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < 0.01], collapse='|') )
+    cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < pval.ora], collapse='|') )
     cons.map.mat.signif <- data.frame(cluster=names(cons.map.mat.signif), enriched=cons.map.mat.signif)
 
     write.table(t(cons.map.mat), sep='\t', file=paste('cluster-enrichment.txt', sep=''), quote=F, row.names=T, col.names = NA)
-    write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-0.01.txt', sep=''), quote=F, row.names=F)
+    write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-', pval.ora, '.txt', sep=''), quote=F, row.names=F)
 
+    ###########################################################
     ## significantly enriched in 'class variable'
     cons.map.max <- clust.class.enrichment[[class.variable]]
     colnames(cons.map.max) <- sub('.*\\:', '', colnames(cons.map.max))
+   # rownames(cons.map.max) <- paste0('C', rownames(cons.map.max))
+    
+    ## export
     write.table(cons.map.max, col.names = NA, sep='\t', file=paste('nmf_vs_', class.variable, '.txt', sep=''), quote=F)
-    cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < 0.01], collapse='|'))
+    cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < pval.ora], collapse='|'))
     not.mapped.idx <- which(nchar(cons.map.max) == 0 )
+    
     if(length(not.mapped.idx) > 0)
       cons.map.max[not.mapped.idx] <- as.character(not.mapped.idx)
 
+    cons.map.max <- strsplit(cons.map.max, '\\|') %>% lapply(., function(x){
+      if(length(x) > 1 & blank.anno %in% x) {
+          keep.idx <- which(x != blank.anno)
+          return(x[keep.idx])
+      } else {
+        return(x)
+      }
+      
+      }) %>% unlist
+    
     ####################################################################
     ## map colors of 'class.variable' to NMF clusters
     mapped.idx <- which(cons.map.max %in% names(cdesc.color[[class.variable]]))
@@ -719,25 +1058,44 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     NMF.consensus.col[mapped.idx] <- cdesc.color[[class.variable]][ cons.map.max[mapped.idx] ]
     names(NMF.consensus.col) <- cons.map.max
 
-    
-    
     ## add NMF to heatmap annotation tracks
     variable.other <- c('NMF.consensus',  'NMF.consensus.mapped', 'NMF.consensus.core', 'NMF.cluster.membership', variable.other)
-    ##variable.other <- c('NMF.consensus.mapped', 'NMF.consensus.core', 'NMF.cluster.membership', variable.other)
-    
+  
     ######################################################
-    ## check whether all NMF basis have color
+    ## check whether all NMF cluster have color
     if( sum(is.na(NMF.consensus.col)) > 0 ){
       idx.tmp <- which( is.na(NMF.consensus.col) )
-      col.tmp <-  rev( palette() )[ (1:length(idx.tmp) ) +  1]
+      col.tmp <-  rev( alphabet() )[ (1:length(idx.tmp) ) +  1]
       NMF.consensus.col[idx.tmp] <- col.tmp
     }
     cdesc$NMF.consensus.mapped <-  cdesc$NMF.consensus
     cdesc.color$NMF.consensus.mapped <- NMF.consensus.col
     names(cdesc.color$NMF.consensus.mapped) <- 1:length(NMF.consensus.col)
+    
     ##
     cdesc.color$NMF.consensus.core <- c(NMF.consensus.col,  blank.anno.col)
     names(cdesc.color$NMF.consensus.core) <- c(1:length(NMF.consensus.col), blank.anno)
+    
+    
+    ## ##########################################
+    ## silhoutte plots
+    if(!opt$bnmf){
+       pdf(paste('1.0_silhouette_K_', rank, '.pdf', sep=''), 10, 6)
+       plot(rank.sil[[rank]], main=paste('K=', rank, sep=''), col=NMF.consensus.col)#col=palette()[1:as.numeric(rank)+1] )
+       dev.off()
+    }
+    
+    #######################################################
+    ##
+    ##     boxplots comparing continuous variables
+    ##
+    if(!is.na(cont_anno)){
+         try( boxplotPerCluster(cdesc=cdesc,   ## clin.anno
+                            nmf2col=cdesc.color$NMF.consensus.mapped,     ## vector af length k mapping colors to clusters
+                            cont_anno=cont_anno,     ## continuous variables to include
+                            core_membership=core_membership)
+              )
+    }
     
 
     ## ########################################
@@ -757,11 +1115,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     gct.H <- new('GCT')
     gct.H@mat <- H
     gct.H@cdesc <- cdesc
-    gct.H@rid <- paste(1:nrow(H))
+    gct.H@rid <- paste0('C',1:nrow(H))
     gct.H@cid <- rownames(cdesc)
-    write.gct(gct.H, ofile=glue('pattern-matrix-H'))
+    write.gct(gct.H, ofile=as.character(glue('pattern-matrix-H')))
     gct.H@mat <- H.norm
-    write.gct(gct.H, ofile=glue('pattern-matrix-H-norm-by-max'))
+    write.gct(gct.H, ofile=as.character(glue('pattern-matrix-H-norm-by-max')))
     
         
     ## cluster
@@ -847,13 +1205,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     dimnames(W.norm.comb) <- list(feat.comb, colnames(W))
 
     ## create GCT file
-    if(opt$gene.column %in% colnames(rdesc)){
+    if(opt$gene_col %in% colnames(rdesc)){
       w.comb.rdesc <- data.frame(
         Type=sub('^(.*?)-.*','\\1', rownames(W.norm.comb)),
-        geneSymbol=gct.comb@rdesc[rownames(W.norm.comb), opt$gene.column],
+        geneSymbol=gct.comb@rdesc[rownames(W.norm.comb), opt$gene_col],
         stringsAsFactors = F)
 
-      ## if 'opt$gene.column' was not present in all tables
+      ## if 'opt$gene_col' was not present in all tables
       ## use rownames to extract gene symbols...
       if(sum(is.na(w.comb.rdesc$geneSymbol)) > 0){
         na.idx <- which(is.na(w.comb.rdesc$geneSymbol))
@@ -873,7 +1231,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     w.gct@rid <- rownames(W.norm.comb)
     w.gct@cid <- colnames(W.norm.comb)
     w.gct@rdesc <- w.comb.rdesc
-    write.gct(w.gct, ofile=glue("matrix_W_combined_signed.gct"), appenddim = F)
+    write.gct(w.gct, ofile="matrix_W_combined_signed.gct", appenddim = F)
 
     ################################################################
     ##
@@ -912,6 +1270,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     dev.off()
     names(s) <- paste(1:length(s))
 
+    #################################
     ## cluster with no features
     rm.idx <- which( sapply(s, function(x) sum(is.na(x))) > 0)
     if(length(rm.idx) > 0){
@@ -933,8 +1292,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
     ## ####################################
     ## gene names
-    if(opt$gene.column %in% colnames(rdesc)){
-      s.gn <- lapply(s.acc, function(x) rdesc[x$Accession, opt$gene.column] )
+    if(opt$gene_col %in% colnames(rdesc)){
+      s.gn <- lapply(s.acc, function(x) rdesc[x$Accession, opt$gene_col] )
       s.gn.red <- s.gn
 
     } else {
@@ -971,11 +1330,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     s.acc.gn.anno <- s.acc.gn
 
     ## ################################################################
-    if(opt$gene.column %in% colnames(rdesc)){
+    if(opt$gene_col %in% colnames(rdesc)){
 
       ## add description and enzyme codes
       s.acc.gn.anno <- lapply( s.acc.gn, function(x)
-        AnnotationDbi::select(org.Hs.eg.db, keys=x$SYMBOL , column=c( 'GENENAME',  'ENZYME'), keytype='SYMBOL', multiVals='first')
+        AnnotationDbi::select(eval(parse(text=paste0("org.",org.id,".eg.db"))), keys=x$SYMBOL , column=c( 'GENENAME',  'ENZYME'), keytype='SYMBOL', multiVals='first')
       )
 
       ## add cytoband
@@ -985,7 +1344,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       
       s.acc.gn.anno.cyto <- lapply( s.acc.gn.anno, function(x){
         
-        entrez.id <- mapIds(org.Hs.eg.db, keys = x$SYMBOL, keytype = 'SYMBOL', column = 'ENTREZID')
+        entrez.id <- mapIds(eval(parse(text=paste0("org.",org.id,".eg.db"))), keys = x$SYMBOL, keytype = 'SYMBOL', column = 'ENTREZID')
         
         ## check for NULL
         null.idx <- sapply(entrez.id, is.null)
@@ -1030,7 +1389,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
         s.acc.gn.anno[[i]] <- tmp
       }
 
-    } ## end if(opt$gene.column %in% colnames(rdesc))
+    } ## end if(opt$gene_col %in% colnames(rdesc))
 
     ## sort
     s.acc.gn.anno <- lapply(s.acc.gn.anno, function(x)x[order(x$NMF.Score, decreasing=T), ])
@@ -1134,7 +1493,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                 upset.mat[s.acc.gn.anno.modT[[ii]]$Accession, paste0('C',ii)] <- 1
               
               pdf('4.1_upset_NMF_markers.pdf')
-              upset(data.frame(upset.mat), point.size = 4, text.scale = 1.5)
+              upset(data.frame(upset.mat), point.size = 4, text.scale = 1.5, nintersects = NA, nsets = length(s.acc.gn.anno.modT))
               dev.off()
     }
 
@@ -1178,6 +1537,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     ## ###########################################################
     ## plot the actual expression values for the extracted features
     cc <- 1
+    hm.list <- list()
     for(i in names(s.gn[ names(s.acc.gn.anno.modT) ] )){
 
       acc <- paste(s.acc.gn.anno.modT[[i]]$Type, s.acc.gn.anno.modT[[i]]$Accession, sep='-')
@@ -1187,7 +1547,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
         ## plot
         pdf(paste('5.',cc-1,'_ComplexHeatmap_expression_C', i, '.pdf', sep=''), 13, 12)
-        MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val)
+        hm.list[[cc]] <- MyComplexHeatmap(m, cdesc, cdesc.color, class.variable, variable.other, max.val) #, row_title=paste0('C',i))
         dev.off()
 
         ###############################################
@@ -1198,16 +1558,27 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
         gct@cdesc <- data.frame(cdesc)
         gct@cid <- colnames(m)
         gct@rid <- rownames(m)
-        write.gct(gct, ofile = glue("5.{cc-1}_data_matrix_C{i}"))
+        write.gct(gct, ofile = as.character(glue("5.{cc-1}_data_matrix_C{i}")))
         
-        
-        
+        names(hm.list)[cc] <- i
         cc <- cc + 1
         
       } # end !is.null(nrow(m))
 
     }
-
+    #############################
+    ## concatenate heatmaps
+    if(length(hm.list) > 1){
+      hm.concat <- hm.list[[1]]$hm.anno
+      
+      for(i in 2:length(hm.list))
+        hm.concat <- hm.concat %v% hm.list[[i]]$hm.noanno
+      
+      ## draw heatmap
+      pdf('6.0_ComplexHeatmap_ALL_features-concat.pdf', 16, 16)
+      draw(hm.concat, annotation_legend_side='bottom')
+      dev.off()
+    }
     ## ############################################################
     ##
     ##                plot ALL markers
@@ -1217,23 +1588,23 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     #keep.idx <- which(feat.all %in% feat.all2)
     #feat.all <- feat.all[keep.idx]
     
-    rdesc.feat <- matrix(0, nrow=length(feat.all), ncol=length(s.acc), dimnames=list( feat.all, names(s.acc) ))
-    for(i in 1:length(s.acc.gn.anno.modT)){
-      feat.tmp <- paste(s.acc.gn.anno.modT[[i]]$Type, s.acc.gn.anno.modT[[i]]$Accession, sep='-')
-       #rdesc.feat[ s.acc[[i]]$Accession[which( s.acc[[i]]$Accession %in% feat.all)], i] <- 1
-      rdesc.feat[ feat.tmp[ which( feat.tmp %in% feat.all)], i] <- 1
-    }
-    rdesc.feat <- data.frame(rdesc.feat)
-
-    feat.all <- feat.all[feat.all %in% rownames(expr)]
-    rdesc.feat <- rdesc.feat[feat.all, ] 
-    
-    
-    ## order features
-    ord.idx <- rev(do.call(order, as.list(rdesc.feat)))
+    # rdesc.feat <- matrix(0, nrow=length(feat.all), ncol=length(s.acc), dimnames=list( feat.all, names(s.acc) ))
+    # for(i in 1:length(s.acc.gn.anno.modT)){
+    #   feat.tmp <- paste(s.acc.gn.anno.modT[[i]]$Type, s.acc.gn.anno.modT[[i]]$Accession, sep='-')
+    #    #rdesc.feat[ s.acc[[i]]$Accession[which( s.acc[[i]]$Accession %in% feat.all)], i] <- 1
+    #   rdesc.feat[ feat.tmp[ which( feat.tmp %in% feat.all)], i] <- 1
+    # }
+    # rdesc.feat <- data.frame(rdesc.feat)
+    # 
+    # feat.all <- feat.all[feat.all %in% rownames(expr)]
+    # rdesc.feat <- rdesc.feat[feat.all, ] 
+    # 
+    # 
+    # ## order features
+    # ord.idx <- rev(do.call(order, as.list(rdesc.feat)))
     m <- expr[ feat.all, ]
-    m <- m[ord.idx, ]
-    rdesc.feat <- rdesc.feat[ord.idx, ]
+    # m <- m[ord.idx, ]
+    # rdesc.feat <- rdesc.feat[ord.idx, ]
 
     ## #########################################################
     ##  complex heatmap
@@ -1373,7 +1744,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                         clust.str=dir('../', pattern='^clin_anno_nmf.txt', full.names = T),
                         nmf.res.dir='../',
                         K=as.numeric(rank),
-                        gene.col=opt$gene.column))
+                        gene_col=opt$gene_col))
       
       setwd('..')
     }
@@ -1544,7 +1915,7 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
                               clust.str,      ## path to 'clin_anno_nmf.txt'
                               K,              ## number of clusters
                               nmf.res.dir,    ##
-                              gene.col        ## column name containing gene symbols
+                              gene_col        ## column name containing gene symbols
                               ){
 
   p.clust.enrich <- 0.01
@@ -1573,7 +1944,11 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
   
   ## ########################################
   ## import nmf markers
-  nmf.marker.list <- lapply(1:K, function(i) read_xlsx(nmf.marker.str, sheet = i) %>% as.data.frame )
+  sheets <- excel_sheets(nmf.marker.str)
+  nmf.map <- nmf.map[ sheets ]
+  
+  #nmf.marker.list <- lapply(1:K, function(i) read_xlsx(nmf.marker.str, sheet = i) %>% as.data.frame )
+  nmf.marker.list <- lapply(sheets, function(i) read_xlsx(nmf.marker.str, sheet = i) %>% as.data.frame )
   names(nmf.marker.list) <- nmf.map
 
   #valid.idx <- which(sapply(nmf.marker.list, nrow) > 0)
@@ -1599,7 +1974,7 @@ BoxplotNMFmarkers <- function(nmf.marker.str, ## path to Excel sheet containing 
   for(g in goi){
 
     ## goi in data set?
-    g.mo.idx <- grep(glue("^{g}$"), mo.rdesc[, gene.col])
+    g.mo.idx <- grep(glue("^{g}$"), mo.rdesc[, gene_col])
     
     if( length( g.mo.idx ) > 0 ){
 
