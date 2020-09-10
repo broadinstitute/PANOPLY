@@ -136,9 +136,6 @@ rmd_ssgsea <- function(opt){
   ## identify -combinded.gct
   gct.comb <- dir(tmp.dir, pattern = '-combined.gct$', full.names = T)
   
-  ## signature gcts
-  # gct.signat <- dir(file.path(tmp.dir, 'signature_gct'), pattern = '.gct$', full.names = T)
-  
   ## parameter file
   param <- dir(tmp.dir, pattern = 'parameters.txt$', full.names = T)
   
@@ -146,8 +143,6 @@ rmd_ssgsea <- function(opt){
   ## import and save as .Rdata
   if(file.exists(gct.comb))
     gct.comb <- parse.gctx(gct.comb)
-  #if(length(gct.signat) > 0)
-  #  gct.signat <- lapply(gct.signat, parse.gctx)
   if(file.exists(param))
     param <- readLines(param)
   
@@ -188,7 +183,7 @@ load(paste('data.RData', sep='/')) ## import data
 
 \n\n### Pathway heatmap
 
-```{r, include=TRUE, fig.align='center', fig.cap=c('**Figure 1**: Enrichment of cancer hallmark gene sets in multi-omics subtypes detected by single sample gene set enrichment analysis (ssGSEA) applied to feature weights determined by NMF. Shown are normalized enrichment scores (NES). Asterisk indicate gene sets with FDR < xx.'), echo=FALSE}
+```{r, include=TRUE, fig.align='center', fig.cap=c('**Figure 1**: Enrichment of gene sets in multi-omics subtypes detected by ssGSEA applied to feature weights determined by NMF. Shown are normalized enrichment scores (NES). Asterisk indicate gene sets with FDR < ', fdr,'.'), echo=FALSE}
 knitr::include_graphics(fn.png)
 ```
 
