@@ -326,6 +326,7 @@ pw_hm <- function(output.prefix,
   
   ################################################################
   ## PTMsigDB: separate heatmaps for different categories
+  if(is.null(n.max)) n.max <- 'all'
   if(ptmsigdb){ ## split categories
     rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
     for(rt in rid.type){
