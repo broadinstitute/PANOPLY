@@ -233,9 +233,9 @@ function analysisInit {
                   exit 1
                 else
                   createSubdirs $cna_dir
-                  if [ "$fdr" != "" ]; then
-                  	 echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
-                  fi
+                  #if [ "$fdr" != "" ]; then
+                  	 #echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
+                  #fi
                 fi ;;
     CMAPsetup ) if [ ! -f $cna_dir/$cmap_prefix-matrix.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-sigevents.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-pval.csv -o ! -f $data_dir/cmap-knockdown-genes-list.txt ]; then
                   echo "Required initialization files not found -- run CNAcorr first ... abort"
@@ -576,7 +576,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-		            echo "fdr_cna_corr <- $fdr" >> config.r;
+		            #echo "fdr_cna_corr <- $fdr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
