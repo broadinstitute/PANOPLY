@@ -7,15 +7,10 @@ task panoply_association {
   String? subType
   File yaml
   Float? fdr_assoc
-  Int? ndigits
-  Float? na_max
   Float? sample_na_max
-  Float? min_numratio_fraction
   Float? nmiss_factor
-  Float? sd_filter_threshold
   String? duplicate_gene_policy
   String? gene_id_col
-  String? organism
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_association-output.tar"
@@ -31,15 +26,10 @@ task panoply_association {
     --module association \
     --master_yaml ${yaml} \
     ${"--fdr_assoc " + fdr_assoc} \
-    ${"--ndigits " + ndigits} \
-    ${"--na_max " + na_max} \
     ${"--sample_na_max " + sample_na_max} \
-    ${"--min_numratio_fraction " + min_numratio_fraction} \
     ${"--nmiss_factor " + nmiss_factor} \
-    ${"--sd_filter_threshold " + sd_filter_threshold} \
     ${"--duplicate_gene_policy " + duplicate_gene_policy} \
-    ${"--gene_id_col " + gene_id_col} \
-    ${"--organism " + organism}
+    ${"--gene_id_col " + gene_id_col}
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -i ${inputData} \
@@ -88,15 +78,11 @@ workflow panoply_association_workflow {
   String dataType
   File yaml
   Float? fdr_assoc
-  Int? ndigits
-  Float? na_max
   Float? sample_na_max
-  Float? min_numratio_fraction
   Float? nmiss_factor
-  Float? sd_filter_threshold
   String? duplicate_gene_policy
   String? gene_id_col
-  String? organism
+
     
   call panoply_association {
     input:
@@ -107,14 +93,9 @@ workflow panoply_association_workflow {
       groupsFile=groupsFile,
       yaml=yaml,
       fdr_assoc=fdr_assoc,
-      ndigits=ndigits,
-      na_max=na_max,
       sample_na_max=sample_na_max,
-      min_numratio_fraction=min_numratio_fraction,
       nmiss_factor=nmiss_factor,
-      sd_filter_threshold=sd_filter_threshold,
       duplicate_gene_policy=duplicate_gene_policy,
-      gene_id_col=gene_id_col,
-      organism=organism
+      gene_id_col=gene_id_col
   }
 }

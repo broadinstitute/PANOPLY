@@ -4,6 +4,7 @@ task panoply_download
   File ssgsea_ome_tar
   File ssgsea_rna_tar
   File? ptmsea
+  String output_prefix
   String analysisDir
   String summary_tar = "panoply_main_summary.tar"
   String full_tar = "panoply_main_full.tar"
@@ -50,11 +51,13 @@ task panoply_download
         -s ${ssgsea_assoc_dir} \
         -l ${ssgsea_clust_dir} \
         ${"-p" + ptmsea};
+    mv ${summary_tar} ${output_prefix}-${summary_tar}
+    mv ${full_tar} ${output_prefix}-${full_tar}
   }
 
   output {
-    File summary = "${summary_tar}"
-    File full = "${full_tar}"
+    File summary = "${output_prefix}-${summary_tar}"
+    File full = "${output_prefix}-${full_tar}"
   } 
 
   runtime {

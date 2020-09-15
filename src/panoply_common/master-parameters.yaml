@@ -3,13 +3,13 @@
 global_parameters:
    ### Output precision for gct tables
   output_precision:
-    ndigits: 5
+    ndigits: 5                  # used by: panoply_normalize_ms_data
 
   missing_values_and_filtering:
-    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction 
-    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction. Used by: panoply_harmonize 
+    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated. Used by: panoply_association
     min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
-    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed
+    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed. Used by: panoply_association
     sd_filter_threshold: 0.5     # SD threshold for SD filtering
 
 
@@ -17,8 +17,8 @@ global_parameters:
   # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
   gene_mapping:
     # Policy for combining/collapsing duplicate gene names:
-    duplicate_gene_policy: maxvar
-    gene_id_col: geneSymbol
+    duplicate_gene_policy: maxvar # used by: panoply_association, panoply_harmonize
+    gene_id_col: geneSymbol       # used by: panoply_association, panoply_harmonize, panoply_normalize_ms_data
 
   organism: human
 

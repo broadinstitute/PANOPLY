@@ -1,7 +1,7 @@
 task panoply_association_report {
-    Float? ram_gb
-    Int? local_disk_gb
-    Int? num_preemptions
+    Int? memory
+  	Int? disk_space
+  	Int? num_threads
 
     File input_tar
     File master_yaml
@@ -27,9 +27,9 @@ task panoply_association_report {
 
     runtime {
         docker : "broadcptacdev/panoply_association_report:latest"
-        memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+        memory: select_first ([memory, 8]) + "GB"
+        disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+        preemptible : select_first ([num_threads, 1]) + ""
     }
 
     meta {

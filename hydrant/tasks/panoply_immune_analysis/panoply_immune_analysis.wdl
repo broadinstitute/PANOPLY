@@ -2,11 +2,13 @@ task panoply_immune_analysis {
   File inputData
   String type
   String standalone
+  File yaml
   String? analysisDir
   File? groupsFile
   String? subType
-  File? params
-  Float ?fdr
+  Float? fdr
+  Int? heatmapWidth
+  Int? heatmapHeight
 
   String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_immune_analysis-output.tar"
@@ -18,6 +20,8 @@ task panoply_immune_analysis {
 
   command {
     set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r --module immune_analysis --master_yaml ${yaml} ${"--immune_enrichment_subgroups " + groupsFile} ${"--immune_enrichment_fdr " + fdr} ${"--immune_heatmap_width " + heatmapWidth} ${"--immune_heatmap_height " + heatmapHeight}
+    
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh immune \
                   -i ${inputData} \
@@ -27,7 +31,7 @@ task panoply_immune_analysis {
                   ${"-g " + groupsFile} \
                   ${"-m " + subType} \
                   ${"-z " + fdr} \
-                  ${"-p " + params};
+                  -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh immune \
                   -rna ${inputData} \
@@ -38,7 +42,7 @@ task panoply_immune_analysis {
                   ${"-g " + groupsFile} \
                   ${"-m " + subType} \
                   ${"-z " + fdr} \
-                  ${"-p " + params}
+                  -p "config-custom.r"
     fi
   }
 
@@ -47,7 +51,7 @@ task panoply_immune_analysis {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_immune_analysis:92b3434"
+    docker : "broadcptacdev/panoply_immune_analysis:latest"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 40]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
