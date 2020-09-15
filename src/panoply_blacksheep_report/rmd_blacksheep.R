@@ -35,6 +35,7 @@ rmd_blacksheep = function(tar_file, output_prefix){
 title: "BlackSheep outlier analysis results"
 output: 
   html_document:
+    self_contained: no
     toc: true
     toc_depth: 3
     toc_float:
