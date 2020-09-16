@@ -172,7 +172,7 @@ rmd_association = function(tar_file, yaml_file, label, type){
   
   # begin writing rmd
   rmd = paste0('---
-title: "Association analysis results"
+title: "Association analysis results for ', type, '"
 output: 
   html_document:
     toc: true
@@ -182,7 +182,7 @@ output:
       smooth_scroll: true
 ---\n
 ## Overview
-This report summarizes the results of the Association module at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways.
+This report summarizes the results of the Association module for ', type, ' at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways.
               ')
   
   if (dir.exists(file.path(label, gsea_dir))){
