@@ -265,8 +265,8 @@ pw_hm <- function(output.prefix,
     rdesc.filt <- rdesc[keep.idx,]
     
     ## add 'C' if column names are all numeric
-    ##
-    colnames(mat.filt) <- paste0('C', colnames(mat.filt))
+    if(sum( is.na(as.numeric(colnames(mat.filt))) ) == 0)
+      colnames(mat.filt) <- paste0('C', colnames(mat.filt))
     
     anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
     for(i in 1:ncol(mat.filt))
@@ -326,6 +326,7 @@ pw_hm <- function(output.prefix,
   
   ################################################################
   ## PTMsigDB: separate heatmaps for different categories
+  if(is.null(n.max)) n.max <- 'all'
   if(ptmsigdb){ ## split categories
     rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
     for(rt in rid.type){

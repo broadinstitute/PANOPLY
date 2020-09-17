@@ -1,20 +1,28 @@
 #!/bin/bash
 start_dir=`pwd`    # must be invoked from the PANOPLY/release directory
-panoply=$release_dir/..
+panoply=$start_dir/..
 red='\033[0;31m'
 grn='\033[0;32m'
 reg='\033[0m'
 err="${red}error.${reg}"
 not="${grn}----->${reg}" ## notification
 
-base_url="https://registry.hub.docker.com/v2/repositories/"
+## users (for method permissions)
+proteomics_comp=(karsten@broadinstitute.org mmaynard@broadinstitute.org karen@broadinstitute.org)
+
+## documentation location
+doc_dir="$panoply/hydrant"
+
 
 display_usage() {
-  echo "usage: ./release.sh -p pull_dns -T release_tag "
-  echo "                    [-N [release_dns]] [-h]"
+  echo "usage: ./release.sh -p pull_dns -T release_tag -N release_dns "
+  echo "                    -w workspace_all -y workspace_pipelines -r project[-h]"
   echo "-N | string | Docker namespace for building and pushing release"
   echo "-T | string | Docker release tag"
   echo "-p | string | Docker namespace to pull latest dev images from"
+  echo "-r | string | Workspace project id"
+  echo "-w | string | Workspace to populate with all methods"
+  echo "-y | string | Workspace to populate pipeline/workflow methods"
   echo "-h | flag   | Print Usage"
   exit
 }
@@ -31,11 +39,67 @@ replaceDockerInWdl() {
 }
 
 
-while getopts ":p:T:N:h" opt; do
+replaceWdlImports() {
+  wdl_f=$1
+  repl=$2
+  modules=$( grep import $wdl_f | sed -n 's|.*:\(panoply_.*\)/versions.*|\1|p' )
+  for mod in $modules
+  do
+    new_snap=$( grep $mod $repl )
+    sed -i -e "s|https.*$mod.*descriptor|$new_snap|" $wdl_f
+  done
+  rm $wdl_f-e
+}
+
+
+installMethod() {
+  meth=$1
+  meth_wdl=$2
+  type=$3   # tasks or workflows
+  
+  echo -e "$not ... Installing method $meth"
+
+  # install method on FireCloud/Terra with synopsis/documentation
+  syn=""
+  doc=""
+  if [[ -f $doc_dir/$type/$meth/$meth-synopsis.txt ]]; then
+    syn=`cat $doc_dir/$type/$meth/$meth-synopsis.txt`
+  fi
+  if [[ -f $doc_dir/$type/$meth/$meth-documentation.txt ]]; then
+    doc="$doc_dir/$type/$meth/$meth-documentation.txt"
+  fi
+  fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release $release_tag" $syn $doc
+    
+  # get method snapshot id and save release snapshot ids
+  snap=$(fissfc meth_list -m $meth -n $release_dns | sort -n -k3 | tail -1 | cut -f3)
+
+  # set method permissions
+  fissfc meth_set_acl -m $meth -n $release_dns -i $snap -r OWNER --users ${proteomics_comp[@]}
+  fissfc meth_set_acl -m $meth -n $release_dns -i $snap -r READER --users public
+  
+  # add to snapshot list
+  echo "https://api.firecloud.org/ga4gh/v1/tools/$release_dns:$meth/versions/$snap/plain-WDL/descriptor" >> $snapshots
+  
+  # copy method to workspace(s)
+  #  there is no (?) direct way to copy a method to a workspace
+  #  instead, create an empty config template and install it in the workspace
+  fissfc config_template -m $meth -n $release_dns -i $snap -t sample_set |  \
+    sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
+  fissfc config_put -w $wkspace_all -p $project -c $meth-template.json
+  if [ "$type" == "workflows" ]; then
+      fissfc config_put -w $wkspace_pipelines -p $project -c $meth-template.json
+  fi
+}
+
+
+while getopts ":p:T:N:r:w:y:h" opt; do
     case $opt in
         p) pull_dns="$OPTARG";;
         T) release_tag="$OPTARG";;
         N) release_dns="$OPTARG";;
+        r) project="$OPTARG";;
+        w) wkspace_all="$OPTARG";;
+        y) wkspace_pipelines="$OPTARG";;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
@@ -55,15 +119,62 @@ if [[ -z $release_dns ]]; then
   release_dns=$pull_dns
 fi
 
-modules=( $( ls -d $panoply/tasks/panoply_* | xargs -n 1 basename ) )
-release_dir=version-$release_tag
+if [[ -z $project ]]; then
+  echo -e "$err Workspace project ID required (usually broad-firecloud-cptac). Exiting.."
+  exit 1
+fi
 
-mkdir -p $release_dir;
+if [[ -z $wkspace_all ]]; then
+  echo -e "$err Production workspace name for all methods required. Exiting.."
+  exit 1
+fi
+
+if [[ -z $wkspace_pipelines ]]; then
+  release_dns=$pull_dns
+fi
+
+
+
+## DOCKER HUB
+echo -e "$not Logging in to Docker Hub"
+base_url="https://registry.hub.docker.com/v2/repositories/"
+docker login
+
+
+## WORKSPACES 
+createWkSpace() {
+  ws=$1
+  echo -e "$not Creating workspace $ws"
+  
+  fissfc space_new -w $ws -p $project
+  # set permissions
+  fissfc space_set_acl -w $ws -p $project -r OWNER --users ${proteomics_comp[@]}
+  fissfc space_set_acl -w $ws -p $project -r READER --users public
+  
+  # set workspace public using FireCloud API -- eg
+  # curl -X POST "https://api.firecloud.org/api/methods/broadcptac/panoply_main_copy/1/permissions" -H "accept: application/json" -H "Authorization: Bearer $(gcloud auth --account=manidr@broadinstitute.org print-access-token)" -H "Content-Type: application/json" -d "[{\"user\":\"public\",\"role\":\"READER\"}]"
+  
+}
+# workspace for pipelines + all modules
+createWkSpace $wkspace_all 
+# workspace for pipelines only
+createWkSpace $wkspace_pipelines 
+
+
+## TASKS
+release_dir=version-$release_tag
+modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
+snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
+
+# create release directory and clean up
+mkdir -p $release_dir
+rm -f $snapshots
 yes | docker system prune --all
 
 for mod in "${modules[@]}"
 do
-  mkdir -p $release_dir/$mod
+  echo -e "$not Processing task $mod"
+
   url=$base_url$pull_dns/$mod/tags
   lat=( $( curl -s -S "$url" | \
              jq '."results"[]["name"]' | \
@@ -72,24 +183,43 @@ do
     continue;
   fi
   
-  mkdir -p $release_dir/$mod;
-  cd $release_dir/$mod;
+  mkdir -p $release_dir/$mod
+  cd $release_dir/$mod
   
   # build release docker
   echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-  docker build --rm --no-cache -t $release_dns/$mod:$release_tag . ;
+  docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
   docker images | grep "$mod"
-  docker login
   docker push $release_dns/$mod:$release_tag
   
-  # copy and update task WDL
-  wdl_dir=$panoply/tasks/panoply_$mod/panoply_$mod
-  wdl=panoply_$mod.wdl
+  # copy and update task WDL, install method and save snapshot id
+  wdl_dir=$panoply/hydrant/tasks/$mod/
+  wdl=$mod.wdl
   if [[ -f $wdl_dir/$wdl ]]; then
     cp $wdl_dir/$wdl $wdl
-    replaceDockerInWdl panoply_$mod $release_dns $release_tag
-    # install method with synopsis/documentation
-    # get method snapshot id using fissfc meth_list and save release snapshot ids
+    replaceDockerInWdl $mod $release_dns $release_tag
+    installMethod $mod $wdl "tasks"
   fi
-  cd $start_dir;
+  cd $start_dir
+done
+
+
+## WORKFLOWS
+workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename ) )
+for wk in "${workflows[@]}"
+do
+  echo -e "$not Processing workflow $wk"
+
+  mkdir -p $release_dir/$wk
+  cd $release_dir/$wk
+
+  # copy and update WDL imports 
+  wdl_dir=$panoply/hydrant/workflows/$wk/
+  wdl=$wk.wdl
+  if [[ -f $wdl_dir/$wdl ]]; then
+    cp $wdl_dir/$wdl $wdl
+    replaceWdlImports $wdl $snapshots
+    installMethod $wk $wdl "workflows"
+  fi
+  cd $start_dir
 done

@@ -48,7 +48,7 @@ ignore.cols <- c(
   "QC.status" )
 
 
-### "globals" variable
+### "global" variable
 globals <- list()
 globals$project <- "broad-firecloud-cptac"
 globals$group <- "GROUP_Broad_CPTAC@firecloud.org"
@@ -56,10 +56,10 @@ globals$meth_space <- "broadcptac"
 
 ### defaults (files to be located in docker image)
 defaults <- list()
-defaults$parameters <- "/panda/defaults/master-parameters.yml"
+defaults$parameters <- "/panda/defaults/master-parameters.yaml"
 defaults$ptmsea_db <- "/panda/defaults/ptm.sig.db.all.uniprot.human.v1.9.0.gmt"
 defaults$gsea_db <- "/panda/defaults/h.all.v6.2.symbols.gmt"
-defaults$all_parameters_file_name <- "panoply-parameters.yml"
+defaults$all_parameters_file_name <- "panoply-parameters.yaml"
 defaults$panda_parameters_file_name <- "config.yaml"
 
 ### small global functions
