@@ -5,11 +5,12 @@ task panoply_blacksheep_report {
 
     File input_tar
     String output_prefix
+    String type
 
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}" "${output_prefix}"
+        /usr/bin/Rscript /home/pgdac/src/rmd_blacksheep.R "${input_tar}" "${output_prefix}" "${type}"
     }
 
     output {
@@ -25,7 +26,7 @@ task panoply_blacksheep_report {
 
     meta {
         author : "Karen Christianson"
-        email : "karenchristianson@broadinstitute.org"
+        email : "karen@broadinstitute.org"
     }
 }
 

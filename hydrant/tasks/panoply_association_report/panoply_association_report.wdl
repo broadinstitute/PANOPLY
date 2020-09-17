@@ -34,7 +34,7 @@ task panoply_association_report {
 
     meta {
         author : "Karen Christianson"
-        email : "karenchristianson@broadinstitute.org"
+        email : "karen@broadinstitute.org"
     }
 }
 
