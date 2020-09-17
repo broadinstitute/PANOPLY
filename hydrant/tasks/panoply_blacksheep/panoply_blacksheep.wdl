@@ -1,9 +1,7 @@
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_report/versions/4/plain-WDL/descriptor" as blacksheep_report_wdl
-
 task panoply_blacksheep {
     Int? memory
-  	Int? disk_space
-  	Int? num_threads
+    Int? disk_space
+    Int? num_threads
 
     File input_gct
     File master_yaml
@@ -43,8 +41,8 @@ task panoply_blacksheep {
     runtime {
         docker : "broadcptacdev/panoply_blacksheep:latest"
         memory : select_first ([memory, 10]) + "GB"
-    	disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    	cpu : select_first ([num_threads, 1]) + ""
+        disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+        cpu : select_first ([num_threads, 1]) + ""
     }
 
     meta {
@@ -55,30 +53,6 @@ task panoply_blacksheep {
 
 
 workflow panoply_blacksheep_workflow {
-    File input_gct
-    File master_yaml
-    String output_prefix
-    File? groups_file
-    String type
-    
-    call panoply_blacksheep {
-        input:
-            input_gct = input_gct,
-            master_yaml = master_yaml,
-            output_prefix = output_prefix,
-            groups_file = groups_file
-    }
-    
-    call blacksheep_report_wdl.panoply_blacksheep_report {
-        input:
-            input_tar = panoply_blacksheep.tar_out,
-            output_prefix = output_prefix,
-            type = type
-    }
-    
-    output{
-        File blacksheep_tar = panoply_blacksheep.tar_out
-        File blacksheep_report = panoply_blacksheep_report.report_out
-    }
+    call panoply_blacksheep
         
 }
