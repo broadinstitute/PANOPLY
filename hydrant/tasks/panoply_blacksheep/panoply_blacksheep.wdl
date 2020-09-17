@@ -1,3 +1,5 @@
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_report/versions/4/plain-WDL/descriptor" as blacksheep_report_wdl
+
 task panoply_blacksheep {
     Int? memory
   	Int? disk_space
@@ -51,8 +53,32 @@ task panoply_blacksheep {
     }
 }
 
+
 workflow panoply_blacksheep_workflow {
-
-    call panoply_blacksheep
-
+    File input_gct
+    File master_yaml
+    String output_prefix
+    File? groups_file
+    String type
+    
+    call panoply_blacksheep {
+        input:
+            input_gct = input_gct,
+            master_yaml = master_yaml,
+            output_prefix = output_prefix,
+            groups_file = groups_file
+    }
+    
+    call blacksheep_report_wdl.panoply_blacksheep_report {
+        input:
+            input_tar = panoply_blacksheep.tar_out,
+            output_prefix = output_prefix,
+            type = type
+    }
+    
+    output{
+        File blacksheep_tar = panoply_blacksheep.tar_out
+        File blacksheep_report = panoply_blacksheep_report.report_out
+    }
+        
 }
