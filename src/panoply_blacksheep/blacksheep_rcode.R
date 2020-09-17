@@ -145,7 +145,7 @@ outlier_count_and_analysis = function(groupings, data_values, fraction_samples_c
 generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_neg, fdrcutoffvalue, annotations){
   
   csv_name = c("negative", "positive")
-  heatmap_names = names(data.frame(binary_annotations))
+  category_names = names(data.frame(binary_annotations))
   
   for (pos_neg in 1:length(outliers_results_pos_neg)){
     deva_output = outliers_results_pos_neg[[pos_neg]]
@@ -154,6 +154,13 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
     
     # adapted from blacksheepr outlier_heatmap function
     for (i in 1:length(outlier_analysis_out)){
+      
+      for (name in category_names){
+        if(grepl(name, names(outlier_analysis_out[i]))){
+          heatmap_name = name
+        }
+      }
+      
       intable = data.frame(outlier_analysis_out[[i]])
       intable[intable == ""] = NA
       
@@ -164,16 +171,16 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
       
       # genes of interest for heatmap
       GOI = as.character(intable[which(intable[,fdrcols]<fdrcutoffvalue),1])
-      title = paste0("Significant genes in ", csv_name[pos_neg], " outlier analysis for ", heatmap_names[i], ", FDR cutoff value = ", fdrcutoffvalue)
+      title = paste0("Significant genes in ", csv_name[pos_neg], " outlier analysis for ", heatmap_name, ", FDR cutoff value = ", fdrcutoffvalue)
       GOI_list = append(title, GOI)
       
       # save list of genes of interest
-      write.table(GOI_list, file.path(csv_name[pos_neg], paste0("significant_genes_", csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".txt")), quote = FALSE, row.names = FALSE, col.names = FALSE)
+      write.table(GOI_list, file.path(csv_name[pos_neg], paste0("significant_genes_", csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".txt")), quote = FALSE, row.names = FALSE, col.names = FALSE)
 
       if(length(GOI) > 0) {
         
         #order annotations for heatmap
-        column = gsub("_[^_]+$", "", heatmap_names[i])
+        column = gsub("_[^_]+$", "", heatmap_name)
         annotations_ordered = annotations %>%
           rownames_to_column("rowname") %>%
           arrange_at(column) %>%
@@ -189,17 +196,17 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
                                  colannotationlist = col_heatmap_annotations,
                                  colclusterparam = FALSE,
                                  rowclusterparam = FALSE,
-                                 nameparam = paste0(csv_name[pos_neg], " outlier analysis for ", heatmap_names[i], ", FDR cutoff value = ", fdrcutoffvalue))
+                                 nameparam = paste0(csv_name[pos_neg], " outlier analysis for ", heatmap_name, ", FDR cutoff value = ", fdrcutoffvalue))
         
-        pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".pdf")))
+        pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".pdf")))
         print(heatmap)
         dev.off()
 
-        png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_names[i], ".png")), width = 2200, height = 2200, res = 300)
+        png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".png")), width = 2200, height = 2200, res = 300)
         print(heatmap)
         dev.off()
         
-        print(paste0(csv_name[pos_neg], " outlier analysis heatmap for ", heatmap_names[i], " complete"))
+        print(paste0(csv_name[pos_neg], " outlier analysis heatmap for ", heatmap_name, " complete"))
         
       }
     }
