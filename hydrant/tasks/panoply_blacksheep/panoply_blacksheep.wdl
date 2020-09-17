@@ -1,7 +1,7 @@
 task panoply_blacksheep {
     Int? memory
-  	Int? disk_space
-  	Int? num_threads
+    Int? disk_space
+    Int? num_threads
 
     File input_gct
     File master_yaml
@@ -41,8 +41,8 @@ task panoply_blacksheep {
     runtime {
         docker : "broadcptacdev/panoply_blacksheep:latest"
         memory : select_first ([memory, 10]) + "GB"
-    	disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-    	cpu : select_first ([num_threads, 1]) + ""
+        disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+        cpu : select_first ([num_threads, 1]) + ""
     }
 
     meta {
@@ -51,8 +51,8 @@ task panoply_blacksheep {
     }
 }
 
+
 workflow panoply_blacksheep_workflow {
-
     call panoply_blacksheep
-
+        
 }
