@@ -1,15 +1,15 @@
----
+
 
 global_parameters:
    ### Output precision for gct tables
   output_precision:
-    ndigits: 5
+    ndigits: 5                  # used by: panoply_normalize_ms_data
 
   missing_values_and_filtering:
-    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction 
-    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
+    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction. Used by: panoply_harmonize 
+    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated. Used by: panoply_association
     min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
-    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed
+    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed. Used by: panoply_association
     sd_filter_threshold: 0.5     # SD threshold for SD filtering
 
 
@@ -17,8 +17,8 @@ global_parameters:
   # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
   gene_mapping:
     # Policy for combining/collapsing duplicate gene names:
-    duplicate_gene_policy: maxvar
-    gene_id_col: geneSymbol
+    duplicate_gene_policy: maxvar # used by: panoply_association, panoply_harmonize
+    gene_id_col: geneSymbol       # used by: panoply_association, panoply_harmonize, panoply_normalize_ms_data
 
   organism: human
 
@@ -51,7 +51,7 @@ panoply_association:
   fdr_assoc: 0.01
   
 panoply_association_report:
-  fdr_value: 0.05
+  fdr_value: 0.01
 
 panoply_sample_qc:
   cor_threshold: 0.4
@@ -114,56 +114,56 @@ panoply_blacksheep:
   fraction_samples_cutoff: 0.3
   fdr_value: 0.05
 
+########################################
 ## multi-omics NMF clustering
 panoply_mo_nmf:
+
   ## clustering
-  kmin: 5
-  kmax: 5
+  kmin: 3
+  kmax: 4
   exclude_2: TRUE
   core_membership: 0.5 
+ 
+  #########################
   ## NMF parameters
-  nrun: 500
+  nrun: 2
   seed: random
   method: brunet
   bnmf: FALSE
-  ## annotations to include in heatmaps
-  ## and enrichments
-  ## categorial: at least one required
-  cat_anno: [cat1, cat2]
-  ## continuous: vector or NA
-  cont_anno: NA
-  ## aesthetics
-  ## colors for 'cat_anno'
-  cat_colors:
-   cat1:
-    level1: '#FCB462'
-    level2: '#BB81B8' 
-   cat2: 
-    level1: '#FCB462'
-    level2: '#BB81B8'
+  
   ## heatmap parameters
   hm_cw: 5      ## cell width
   hm_ch: 8      ## cell height 
   hm_max_val: 10   ## max value at which the data will be capped in heatmap 
   hm_max_val_z: 4  ## max value if z-scored 
+
+  #########################
   ## filtering
-  filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05
+  filt_mode: equal   ## global, separate, equal
+  sd_filt: 0.7
   z_score: TRUE
+ 
+  #########################
   ## imputation
   impute: FALSE
   impute_k: 5
-  max_na_row: 0.3   ## (not working yet)
-  max_na_col: 0.9   ## (not working yet)
+  max_na_row: 0.3 ## (not working yet)
+  max_na_col: 0.9 ## (not working yet)
+ 
+  #########################
   ## misc
-  nmf_only: FALSE     ## if TRUE, no downstream analysis of clustering results will be performed
+  gene_col: geneSymbol     ##   
+  nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
+  organism: human
+  #lib_dir: 'C:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
 
-## ssGSEA default  parameters (projection) 
-panoply_ssgsea_projection: 
+################################
+## ssGSEA default  parameters (projection)
+panoply_ssgsea:
   nperm: 1000
   weight: 0.75
-  norm: "rank"                  ## rank, log, log.rank, none
-  correl_type: "z.-score"       ## "rank", "z.score", "symm.rank"
+  sample_norm_type: "rank"      ## rank, log, log.rank, none
+  correl_type: "z.score"        ## "rank", "z.score", "symm.rank"
   statistic: "area.under.RES"   ## "area.under.RES", "Kolmogorov-Smirnov" 
   output_score_type: "NES"      ## 'Score type: "ES" - enrichment score,  "NES" - normalized ES'
   min_overlap: 10               ## 'Minimal overlap between signature and data set.'
@@ -173,6 +173,31 @@ panoply_ssgsea_projection:
   multi_core: TRUE              ## If TRUE processing will be parallelized across gene sets using (N-1) CPU cores.
 
 
+######################################
+## ssgsea preprocessGCT parameters   
+panoply_preprocess_gct:
+ level: gc                      ## Mode of report, 'ssc' - single-site-centric, 'gc' - gene-centric, 'gcr' - gene-centric-redundant.
+ id_type: sm                    ## Notation of site-ids: 'sm' - Spectrum Mill; 'wg' - Web Gestalt; 'ph' - Philosopher
+ id_type_out: seqwin            ## Type of site id for output: 'uniprot', 'refseq', 'seqwin', 'psp' (psp not implemented yet).
+ acc_type_in: refseq            ## Type of accession number in 'rid' object in GCT file (uniprot, refseq, symbol).
+ seqwin_column: VMsiteFlanks    ## Column containing flanking sequences, separated by '|'. Only relevant if '--id_type_out' = 'seqwin'
+ gene_symbol_column: geneSymbol ## Name of column listing gene names; used for gene centric reports.
+ sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
+ localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
+ mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
+ residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
+ ptm: p                         ## Type of modification, e.g "p" or "ac".
+ preprocess_gct: TRUE           ## If FALSE nothing will be done; probably needed for to make this step optional in WDL.
+ 
+################################
+## ssSGEA report
+panoply_ssgsea_report:
+  fdr: 0.05                     ## max. FDR
+  top_n: 20                     ## max. number of significant hits to plot/label
+
+###################################
+## DEV_ parameters for developers 
+## - DO NOT EDIT
 DEV_sample_annotation:
   sample_id_col_name: "Sample.ID"
   experiment_col_name: "Experiment"
@@ -194,9 +219,6 @@ DEV_sample_annotation:
       id_col: 1
       desc_col: 2
       min_numratio: 1
-
-
-
 
 DEV_directory_and_file_names:
   # only run-pipeline.sh cmap values:
