@@ -6,5 +6,5 @@ LABEL description="Docker for single-omics kmeans consensus clustering."
 
 MAINTAINER rkothadi@broadinstitute.org
 
-RUN rm -R /prot/proteomics/Projects/PGDAC/src/*
+
 COPY src /prot/proteomics/Projects/PGDAC/src
