@@ -368,12 +368,26 @@ summary {
 <div id="panoply-tutorial" class="section level1">
 <h1>PANOPLY Tutorial</h1>
 <p>PANOPLY is a platform for applying state-of-the-art statistical and machine learning algorithms to transform multi-omic data from cancer samples into biologically meaningful and interpretable results. PANOPLY leverages <a href="http://app.terra.bio">Terra</a>—a cloud-native platform for extreme-scale data analysis, sharing, and collaboration—to host proteogenomic workflows, and is designed to be flexible, automated, reproducible, scalable, and secure. A wide array of algorithms applicable to all cancer types have been implemented, and we highlight the application of PANOPLY to the analysis of cancer proteogenomic data.</p>
-<p>This PANOPLY tutorial provides a tour of how to use the PANOPLY proteogenomic data analysis pipeline, using the breast cancer dataset published in Mertins, et. al.<sup>1</sup>.</p>
+<p>This PANOPLY tutorial provides a tour of how to use the PANOPLY proteogenomic data analysis pipeline, using the breast cancer dataset published in Mertins, et. al.<sup>1</sup>. The input dataset (<code>tutorial-brca-input.zip</code> file) can be found in the <a href="https://github.com/broadinstitute/PANOPLY/tree/dev/tutorial">tutorial</a> subdirectory, along with a HTML version of this tutorial.</p>
+<div id="requirements" class="section level2">
+<h2>1. Requirements</h2>
+<ol style="list-style-type: decimal">
+<li>To run PANOPLY, you need a Terra account. To create an account follow the steps <a href="https://support.terra.bio/hc/en-us/articles/360034677651-Account-setup-and-exploring-Terra">here</a>.</li>
+<li>Once you have an account, you need to create a <a href="https://support.terra.bio/hc/en-us/articles/360026182251-How-to-set-up-billing-in-Terra">billing project</a>. The free credits program previously available has been suspended. Please follow <code>Set up billing in Terra from scratch - in three steps</code> to set up your billing account.</li>
+</ol>
+</div>
+<div id="clone-panoply-production-workspace" class="section level2">
+<h2>2. Clone PANOPLY production workspace</h2>
+<p>Clone the Terra production workspace at <a href="https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_0">PANOPLY_Production_Pipelines_v1_0</a>.</p>
+<ol style="list-style-type: decimal">
+<li>Navigate to <a href="https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_0">workspace</a>.</li>
+</ol>
 <div id="references" class="section level3">
 <h3>References</h3>
 <ol style="list-style-type: decimal">
 <li>Mertins, P. et al. Proteogenomics connects somatic mutations to signalling in breast cancer. Nature 534, 55–62 (2016).</li>
 </ol>
+</div>
 </div>
 </div>
 
