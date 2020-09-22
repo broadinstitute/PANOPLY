@@ -71,7 +71,7 @@ task panoply_ssgsea {
 		}
 
 	runtime {
-		docker : "broadcptacdev/panoply_ssgsea:7"
+		docker : "broadcptacdev/panoply_ssgsea:latest"
 		memory : select_first ([memory, 8]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " HDD"
 		cpu : select_first ([num_threads, 8]) + ""

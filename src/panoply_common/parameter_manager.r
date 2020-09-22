@@ -50,7 +50,7 @@ option_list <- list(
   make_option(c("--clustering_na_threshold"), type = "double", dest = "clustering_na_threshold", help = "max fraction of missing values for clustering; rest are imputed"),
   #immune_analysis:
   make_option(c("--immune_enrichment_fdr"), type = "double", dest = "immune_enrichment_fdr", help = "fdr value for immune analysis"),
-  make_option(c("--immune_enrichment_subgroups"), dest = "immune_enrichment_subgroups", help = "immune_enrichment_groups for immune analysis"),
+  make_option(c("--immune_enrichment_subgroups"), type = "character", dest = "immune_enrichment_subgroups", help = "immune_enrichment_groups for immune analysis"),
   make_option(c("--immune_heatmap_width"), type = "integer", dest = "immune_heatmap_width", help = "immune_heatmap_width for immune analysis"),
   make_option(c("--immune_heatmap_height"), type = "integer", dest = "immune_heatmap_height", help = "immune_heatmap_height for immune analysis"),  
     #cmap_analysis:
@@ -651,7 +651,7 @@ write_custom_config <- function(yaml){
                 #cmap_analysis: HAS ITS OWN FUNCTION below
                 #immune_analysis:
                 paste('immune.enrichment.fdr', '<-', yaml$panoply_immune_analysis$immune_enrichment_fdr),
-                paste('immune.enrichment.subgroups', '<-', ifelse(is.null(yaml$panoply_immune_analysis$immune_enrichment_subgroups),'NULL', yaml$panoply_immune_analysis$immune_enrichment_subgroups)),
+                paste('immune.enrichment.subgroups', '<-', ifelse(is.null(yaml$panoply_immune_analysis$immune_enrichment_subgroups),'NULL', paste('"',yaml$panoply_immune_analysis$immune_enrichment_subgroups,'"', sep = ''))),
                 paste('immune.heatmap.width', '<-', yaml$panoply_immune_analysis$immune_heatmap_width),
                 paste('immune.heatmap.height', '<-', yaml$panoply_immune_analysis$immune_heatmap_height),
                 #DEV_sample_annotations:

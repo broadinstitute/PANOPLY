@@ -1,7 +1,7 @@
 task panoply_blacksheep {
-    Float? ram_gb
-    Int? local_disk_gb
-    Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
 
     File input_gct
     File master_yaml
@@ -40,9 +40,9 @@ task panoply_blacksheep {
 
     runtime {
         docker : "broadcptacdev/panoply_blacksheep:latest"
-        memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+        memory : select_first ([memory, 10]) + "GB"
+        disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+        cpu : select_first ([num_threads, 1]) + ""
     }
 
     meta {
@@ -51,8 +51,8 @@ task panoply_blacksheep {
     }
 }
 
+
 workflow panoply_blacksheep_workflow {
-
     call panoply_blacksheep
-
+        
 }

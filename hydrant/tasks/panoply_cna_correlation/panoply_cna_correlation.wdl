@@ -45,7 +45,3 @@ workflow panoply_cna_correlation_workflow {
   call panoply_cna_correlation
 }
 
-
-workflow panoply_cna_correlation_workflow {
-	call panoply_cna_correlation
-}

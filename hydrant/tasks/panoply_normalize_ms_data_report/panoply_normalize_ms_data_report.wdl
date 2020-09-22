@@ -3,6 +3,8 @@ task panoply_normalize_ms_data_report {
   String label
   String type
   String tmpDir
+  File yaml
+  String? normalizeProteomics
 
   Int? memory
   Int? disk_space
@@ -10,11 +12,29 @@ task panoply_normalize_ms_data_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}
+    if [ ${normalizeProteomics} ]; then
+      if [ ${normalizeProteomics} = "FALSE" ]; then
+        norm=FALSE
+      fi
+      if [ ${normalizeProteomics} = "TRUE" ]; then
+        norm=TRUE
+      fi
+    else
+      # Find the flag for normalize.proteomics in the yaml:
+      cfg=${yaml}
+      echo "library(yaml);yaml=read_yaml('$cfg');norm=yaml[['normalize.proteomics']];writeLines(as.character(norm), con='norm.txt')" > cmd.r
+      Rscript cmd.r
+      norm=`cat norm.txt`
+    fi
+    if [ $norm = FALSE ]; then
+      echo 'no normalization performed' > "norm_"${label}".html"
+    else
+      Rscript /home/pgdac/src/rmd-normalize.r ${tarball} ${label} ${type} ${tmpDir}
+    fi
   }
 
   output {
-    File report = "norm_" + label + ".html"
+    File report = "norm_" + "${label}" + ".html"
   }
 
   runtime {
