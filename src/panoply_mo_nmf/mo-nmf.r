@@ -203,8 +203,6 @@ opt <- parse_yaml_mo_nmf(option_list)
 #opt$blank_anno <- 'N/A'
 #opt$blank_anno_col <- 'white'
 #opt$core_membership <- 0
-#save(opt, file='debug.RData')
-
 
 ################################################
 ## source required files

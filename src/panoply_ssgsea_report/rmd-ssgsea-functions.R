@@ -14,6 +14,7 @@ gg_volc <- function(output.prefix,
     if(!require(pacman)) install.packages("pacman")
     p_load(ggpubr)
     p_load(ggrepel)
+    p_load(dplyr)
   
     ## import ptm-sea results
     fn3 <- glue('{output.prefix}-combined.gct')
