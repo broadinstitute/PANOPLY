@@ -119,14 +119,14 @@ panoply_blacksheep:
 panoply_mo_nmf:
 
   ## clustering
-  kmin: 3
-  kmax: 4
+  kmin: 2
+  kmax: 10
   exclude_2: TRUE
   core_membership: 0.5 
  
   #########################
   ## NMF parameters
-  nrun: 2
+  nrun: 50
   seed: random
   method: brunet
   bnmf: FALSE
@@ -139,8 +139,8 @@ panoply_mo_nmf:
 
   #########################
   ## filtering
-  filt_mode: equal   ## global, separate, equal
-  sd_filt: 0.7
+  filt_mode: global   ## global, separate, equal
+  sd_filt: 0.05
   z_score: TRUE
  
   #########################
