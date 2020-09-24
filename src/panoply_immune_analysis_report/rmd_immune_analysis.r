@@ -89,6 +89,9 @@ rmd_immune = function(tar_file, yaml_file, label){
     spread (type, value)
   save(scatter.data, file = "XC_ES_scatterdata.Rdata")
   
+  # read immune subtype enrichment results filtered for fdr cutoff
+  subtype = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv")))
+  
   # write rmd
   rmd = paste0('---
 title: "Immune analysis results"
@@ -113,8 +116,25 @@ p = ggplot (aes (x=ESTIMATE, y=xCell, group=score, color=score, text = id), data
   facet_wrap(~score, scales="free")
 ggplotly(p, tooltip = "text", height = 500, width = 900)
 ```
-**Figure**: 
-               ')
+**Figure**: Interactive scatter plots comparing Immune and Stromal Scores calculated by xCell and ESTIMATE. Hovering over each point reveals which sample it corresponds to.
+
+
+## Immune subtype enrichment analysis results
+
+Number of significant enrichments between immune subtypes and annotation groups: ', dim(subtype)[1]
+               )
+  
+  if (dim(subtype)[1] >= 1){
+    save(subtype, file = "subtype_enrichment.Rdata")
+    rmd = paste0(rmd, '\n
+**Table**: significant (FDR < ', immune.enrichment.fdr, ') enrichment analyses between immune subtypes and annotation groups.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("subtype_enrichment.Rdata")
+library(DT)
+datatable(subtype, rownames = FALSE, width = "500px")
+```               
+           ')
+  }
   
   rmd_name = paste(label, "immune_rmd.rmd", sep = "_")
   
