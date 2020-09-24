@@ -459,10 +459,12 @@ import.data.sets <- function(tar.file, tmp.dir, zscore.cnv=F){
 ## filter datasets
 filter.datasets <- function(gct.comb,
                             sd_filt,
-                            mode=c('global', 'separate', 'equal')
+                            mode=c('global', 'separate', 'equal', 'none')
                             ){
 
   mode <- match.arg(mode)
+  
+  if(mode == 'none') return(gct.comb)
  
   ## ###################
   ## calculate SD accross samples

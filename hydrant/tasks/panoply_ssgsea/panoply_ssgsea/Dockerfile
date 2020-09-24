@@ -19,6 +19,7 @@ RUN dos2unix src/*
 RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/src/ssGSEA2.0.R && dos2unix ssGSEA2.0.R && mv ssGSEA2.0.R src
 RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/src/parse_yaml_ssgsea.R && dos2unix parse_yaml_ssgsea.R && mv parse_yaml_ssgsea.R src
 RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/src/io.R && dos2unix io.R && mv io.R src
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/src/utils.R && dos2unix utils.R && mv utils.R src
 RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/ssgsea-cli.R && dos2unix ssgsea-cli.R && chmod +x ssgsea-cli.R
 
 ## install R-packages

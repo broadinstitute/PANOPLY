@@ -80,10 +80,10 @@ get.trans.genelist <- function (analysis.dir, cmap.data, grp, typ, alpha) {
                          entry <- as.vector (sapply (genesets[[x]]$entry, function (y) strsplit (y, split=';')[[1]][1]))
                          list (head=x, desc=x, entry=entry)
                        })
-  write.gmt (sig.trans, sprintf ("%s/%s-cmap-%s-sig-genes-translist.gmt", cmap, grp, typ))
+  write_gmt (sig.trans, sprintf ("%s/%s-cmap-%s-sig-genes-translist.gmt", cmap, grp, typ))
   
   ## CMAP subsets
-  cmap.annot <- read.gctx.meta (cmap.data, dimension='col')
+  cmap.annot <- read.gctx.meta (cmap.data, dim='col')
   cmap.subset <- cmap.annot [ cmap.annot[,'pert_iname'] %in% sig.table [,'gene'], ]
   subset.data <- parse.gctx (cmap.data, cid=cmap.subset[,'id'])
   write.gct (subset.data, sprintf ("%s/%s-cmap-%s-sig-genes-profiles.gct", cmap, grp, typ),
@@ -109,7 +109,7 @@ get.trans.genelist <- function (analysis.dir, cmap.data, grp, typ, alpha) {
           desc=sprintf ("%d / %d", sum(o.overlap, na.rm=T), length(sig.trans[[i]]$entry)), 
           entry=sig.trans[[i]]$entry[o.overlap])
   })
-  write.gmt (overlap, sprintf ("%s/%s-cmap-%s-sig-genes-overlap.gmt", cmap, grp, typ))
+  write_gmt (overlap, sprintf ("%s/%s-cmap-%s-sig-genes-overlap.gmt", cmap, grp, typ))
   
   ## plot overlap results
   #  trans-genes vs cmap (significant regulated genes) overlap

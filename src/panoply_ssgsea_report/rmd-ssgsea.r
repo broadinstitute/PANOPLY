@@ -183,7 +183,7 @@ load(paste('data.RData', sep='/')) ## import data
 
 \n\n### Pathway heatmap
 
-```{r, include=TRUE, fig.align='center', fig.cap=c('**Figure 1**: Enrichment of gene sets in multi-omics subtypes detected by ssGSEA applied to feature weights determined by NMF. Shown are normalized enrichment scores (NES). Asterisk indicate gene sets with FDR < ', fdr,'.'), echo=FALSE}
+```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure 1**: Enrichment of gene sets in multi-omics subtypes detected by ssGSEA applied to feature weights determined by NMF. Shown are normalized enrichment scores (NES). Asterisk indicate gene sets with FDR < ', fdr,'.'), echo=FALSE}
 knitr::include_graphics(fn.png)
 ```
 
