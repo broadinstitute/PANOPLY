@@ -1,7 +1,6 @@
 ### Create Rmarkdown report for immune analysis module ###
 
 # tar_file  - URL of tar file created by task panoply_immune_analysis
-# yaml_file - URL of master yaml file (after parameter manager integration)
 # label     - character, name of folder in tarball
 
 args = commandArgs(TRUE)
@@ -18,17 +17,13 @@ library(tidyr)
 library(ggplot2)
 library(plotly)
 
-rmd_immune = function(tar_file, yaml_file, label){
+rmd_immune = function(tar_file, label){
   
   # extract files from tarball
   untar(tar_file)
   
   # source config.R
-  # source(file.path(label, "config.r"))
-  immune.enrichment.subgroups <- "/cromwell_root/fc-eaf370c1-9c61-4cd8-b54f-cccd2e316032/sample_sets/all/groups-aggregate.csv"
-  immune.enrichment.fdr <- 0.05
-  immune.heatmap.width <- 10
-  immune.heatmap.height <- 15
+  source(file.path(label, "config.r"))
   
   immune_dir = "immune-analysis"
   
@@ -90,7 +85,8 @@ rmd_immune = function(tar_file, yaml_file, label){
   save(scatter.data, file = "XC_ES_scatterdata.Rdata")
   
   # read immune subtype enrichment results filtered for fdr cutoff
-  subtype = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv")))
+  subtype = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv"))) %>%
+    rename(fdr = adj.pvalue)
   
   # write rmd
   rmd = paste0('---
@@ -103,13 +99,13 @@ output:
      collapsed: true
 ---\n
 ## Overview
-This report summarizes the results of the immune analysis module, which runs several algorithms assigning immune scores for understanding the tumor microenvironment. **E**stimation of **ST**romal and **I**mmune cells in **MA**lignant **T**umor tissues using **E**xpression data (**ESTIMATE**, [Yoshihara et al., 2013](https://doi.org/10.1038/ncomms3612)) uses gene expression signatures to calculate the fraction of stromal and immune cells and infer tumor purity. **xCell** ([Aran et al., 2017](https://doi.org/10.1186/s13059-017-1349-1)) uses a gene signature-based method to infer immune and stromal cell types. **ImmuneSubtypeClassifier** ([Thorrson et al., 2018](https://doi.org/10.1016/j.immuni.2018.03.023)) uses immune gene expression signatures to classify tumor samples into one of 6 immune subtypes. Enrichment analysis is performed on immune subtypes and significant results at FDR < ', immune.enrichment.fdr, ' reported.
+This report summarizes the results of the immune analysis module, which runs several algorithms assigning immune scores for understanding the tumor microenvironment. **E**stimation of **ST**romal and **I**mmune cells in **MA**lignant **T**umor tissues using **E**xpression data (**ESTIMATE**, [Yoshihara et al., 2013](https://doi.org/10.1038/ncomms3612)) uses gene expression signatures to calculate the fraction of stromal and immune cells and infer tumor purity. **xCell** ([Aran et al., 2017](https://doi.org/10.1186/s13059-017-1349-1)) uses a gene signature-based method to infer immune and stromal cell types. **ImmuneSubtypeClassifier** ([Thorrson et al., 2018](https://doi.org/10.1016/j.immuni.2018.03.023)) uses immune gene expression signatures to classify tumor samples into one of 6 immune subtypes. Enrichment analysis (Fisher\'s exact test) is performed on immune subtypes and significant results at FDR < ', immune.enrichment.fdr, ' reported.
 
-## xCell results
+## xCell scores
 
 ![**Figure**: Heatmap showing xCell scores for each sample. Rows (cell types) and columns (samples) are clustered by hierarchical clustering using the Pearson correlation method. Sample annotations, including key immune scores from all three algorithms, are labeled at the top of the heatmap.](xcell-scores-heatmap.png)
 
-## Comparison of xCell and ESTIMATE results
+## Comparison of xCell and ESTIMATE scores
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("XC_ES_scatterdata.Rdata")
 p = ggplot (aes (x=ESTIMATE, y=xCell, group=score, color=score, text = id), data=scatter.data) + geom_point() +
@@ -119,7 +115,7 @@ ggplotly(p, tooltip = "text", height = 500, width = 900)
 **Figure**: Interactive scatter plots comparing Immune and Stromal Scores calculated by xCell and ESTIMATE. Hovering over each point reveals which sample it corresponds to.
 
 
-## Immune subtype enrichment analysis results
+## Immune subtype enrichment analysis
 
 Number of significant enrichments between immune subtypes and annotation groups: ', dim(subtype)[1]
                )
@@ -147,4 +143,4 @@ datatable(subtype, rownames = FALSE, width = "500px")
 }
 
 # run rmd_association function to make rmd report
-rmd_immune(tar_file, yaml_file = yaml_file, label = label)
+rmd_immune(tar_file = tar_file, label = label)
