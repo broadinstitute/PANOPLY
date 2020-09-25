@@ -57,7 +57,7 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
   runXCell <- function (ds, out.prefix) {
     # run xCell and save/return scores
     scores.table <- xCellAnalysis (ds)
-    scores <- t (scores.table)
+    scores <- t (scores.table) %>% data.frame %>% rownames_to_column("Sample.ID")
     
     write.csv (scores, paste0 (out.prefix, '.csv'), row.names=FALSE)
     return (scores)
