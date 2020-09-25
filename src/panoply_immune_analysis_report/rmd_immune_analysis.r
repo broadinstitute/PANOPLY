@@ -9,7 +9,6 @@ tar_file = args[1]
 label = args[2]
 
 library(rmarkdown)
-library(yaml)
 library(dplyr)
 library(tibble)
 library(ComplexHeatmap)
