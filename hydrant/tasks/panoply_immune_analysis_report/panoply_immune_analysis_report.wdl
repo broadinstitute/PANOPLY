@@ -4,12 +4,13 @@ task panoply_immune_analysis_report {
     Int? num_preemptions
 
     File tar_file
+    File yaml_file
     String label
 
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_immune_analysis.r "${tar_file}" "${label}"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_immune_analysis.r "${tar_file}" "${yaml_file}" "${label}"
     }
 
     output {
