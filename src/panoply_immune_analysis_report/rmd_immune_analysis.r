@@ -1,14 +1,17 @@
 ### Create Rmarkdown report for immune analysis module ###
 
 # tar_file  - URL of tar file created by task panoply_immune_analysis
+# yaml_file - URL of master parameters yaml file including output from startup notebook
 # label     - character, name of folder in tarball
 
 args = commandArgs(TRUE)
 
 tar_file = args[1]
-label = args[2]
+yaml_file = args[2]
+label = args[3]
 
 library(rmarkdown)
+library(yaml)
 library(dplyr)
 library(tibble)
 library(ComplexHeatmap)
@@ -16,10 +19,13 @@ library(tidyr)
 library(ggplot2)
 library(plotly)
 
-rmd_immune = function(tar_file, label){
+rmd_immune = function(tar_file, yaml_file, label){
   
   # extract files from tarball
   untar(tar_file)
+  
+  # read yaml file
+  yaml_params = read_yaml(yaml_file)
   
   # source config.R
   source(file.path(label, "config.r"))
@@ -28,12 +34,10 @@ rmd_immune = function(tar_file, label){
   
   # read in all immune results
   rna.ES = read.csv(file.path(label, immune_dir, "estimate-scores.csv"), row.names = 1)
-  rna.XC = read.csv(file.path(label, immune_dir, "xcell-scores.csv"))
+  rna.XC = read.csv(file.path(label, immune_dir, "xcell-scores.csv"), row.names = 1)
   rna.subtype = read.csv(file.path(label, immune_dir, "immune-subtype.csv"), row.names = 1)
   
   # make xCell heatmap (including annotations from ESTIMATE & immune subtyping)
-  subgroup.table <- read.csv (file.path(label, immune_dir, basename(immune.enrichment.subgroups)))
-  rownames(rna.XC) = subgroup.table[,'Sample.ID']
   results <- t (rna.XC [, -(1:3 + ncol (rna.XC))])
 
   # assign annotations depending on groups file  
@@ -59,8 +63,10 @@ rmd_immune = function(tar_file, label){
     mutate (Immune.Subtype = factor (rna.subtype[samples, 'Immune.Subtype'])) %>%
     select (-Sample.ID)
   
+  color = lapply(yaml_params$groups.colors, unlist)
+  
   annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.5, annotation_width = 0.5,
-                                   show_annotation_name=TRUE)
+                                   show_annotation_name=TRUE, col = color)
   
   heatmap <- Heatmap (results, top_annotation=annotation, 
                       row_names_gp = gpar (fontsize=8), column_names_gp = gpar(fontsize=8),
@@ -84,8 +90,18 @@ rmd_immune = function(tar_file, label){
   save(scatter.data, file = "XC_ES_scatterdata.Rdata")
   
   # read immune subtype enrichment results filtered for fdr cutoff
-  subtype = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv"))) %>%
+  subtype_data = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv"))) %>%
     rename(fdr = adj.pvalue)
+  
+  subtype = data.frame(Immune.Subtype = rep(1:6), 
+                             Immune.Subtype.Description = c("Wound healing",
+                                                            "IFN-gamma dominant",
+                                                            "Inflammatory",
+                                                            "Lymphocyte depleted",
+                                                            "Immunologically quiet",
+                                                            "TGF-beta dominant")) %>%
+    right_join(subtype_data)
+
   
   # write rmd
   rmd = paste0('---
@@ -122,7 +138,14 @@ Number of significant enrichments between immune subtypes and annotation groups:
   if (dim(subtype)[1] >= 1){
     save(subtype, file = "subtype_enrichment.Rdata")
     rmd = paste0(rmd, '\n
-**Table**: significant (FDR < ', immune.enrichment.fdr, ') enrichment analyses between immune subtypes and annotation groups.
+**Table**: significant (FDR < ', immune.enrichment.fdr, ') enrichment analyses between immune subtypes and annotation groups.\n
+* Subtype 1 = Wound healing
+* Subtype 2 = IFN-gamma dominant
+* Subtype 3 = Inflammatory
+* Subtype 4 = Lymphocyte depleted
+* Subtype 5 = Immunologically quiet
+* Subtype 6 = TGF-beta dominant \n
+
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("subtype_enrichment.Rdata")
 library(DT)
@@ -142,4 +165,4 @@ datatable(subtype, rownames = FALSE, width = "500px")
 }
 
 # run rmd_association function to make rmd report
-rmd_immune(tar_file = tar_file, label = label)
+rmd_immune(tar_file = tar_file, yaml_file = yaml_file, label = label)
