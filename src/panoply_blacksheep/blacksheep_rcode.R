@@ -189,7 +189,8 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
         subset_fraction_table = deva_output$fraction_table[GOI,
                                                             rownames(annotations_ordered), drop=FALSE]
         
-        col_heatmap_annotations = annotationlist_builder(annotations_ordered)
+        color = lapply(yaml_params$groups.colors, unlist)
+        col_heatmap_annotations = annotationlist_builder(annotations_ordered, customcolorlist = color)
         
         heatmap = create_heatmap(counttab = subset_fraction_table,
                                  colmetatable = annotations_ordered,
