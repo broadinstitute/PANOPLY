@@ -777,10 +777,6 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
     cdesc.filt[, var] <- as.numeric(cdesc.filt[, var])
     
     cdesc.filt <- cdesc.filt %>% filter(NMF.cluster.membership > core_membership) 
-    #cdesc.filt <- 
-      
-    #p <-# cdesc %>% filter(NMF.cluster.membership > core_membership) %>%
-        #filter(!grepl('N/A', `var`)) %>%
       
     p <-  ggboxplot(cdesc.filt, x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
         ggtitle(var) +
@@ -788,17 +784,6 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
     
     
     plot(p)
-    
-    # p <- try(
-    #   cdesc %>% filter(NMF.cluster.membership > core_membership) %>%
-    #            filter(!grepl('N/A', var)) %>%
-    #       ggboxplot(., x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
-    #       ggtitle(var) +
-    #       stat_compare_means(comparisons=comps)
-    #   )
-    # 
-    # if(class(p) != 'try-error') plot(p)
-    # 
   }
   dev.off()
 

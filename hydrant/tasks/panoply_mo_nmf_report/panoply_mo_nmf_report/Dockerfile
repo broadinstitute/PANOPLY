@@ -1,0 +1,18 @@
+FROM broadcptacdev/panoply_rmd_report:latest
+
+LABEL maintainer="karsten@broadinstitute.org"
+LABEL description="Docker for generating Rmarkdown reports for different PGDAC modules."
+
+ENV wd /home/pgdac/
+
+COPY . $wd
+WORKDIR $wd
+
+
+RUN R -e "pacman::p_install('NMF')"
+
+
+
+
+
+

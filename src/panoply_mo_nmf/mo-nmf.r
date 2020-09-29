@@ -505,7 +505,7 @@ main <- function(opt){
       ## cophenic
       rank.coph <- sapply(res.rank, cophcor)
       
-      ## dispersion of sonsensus matrix
+      ## dispersion of consensus matrix
       rank.disp <- sapply(res.rank, dispersion)
       
       ## combine
