@@ -1,6 +1,0 @@
-{
-  "panoply_sampleqc_report_workflow.panoply_sampleqc_report.label": "panoply-lscc-3-2-acetylome-full-results",
-  "panoply_sampleqc_report_workflow.panoply_sampleqc_report.tarball": "testdata/acetylome-28a7ada4-4d04-46dd-8fe5-1c4e82449081-pgdac_main_full.tar",
-  "panoply_sampleqc_report_workflow.panoply_sampleqc_report.tmpDir": "tmp",
-  "panoply_sampleqc_report_workflow.panoply_sampleqc_report.type": "acetylome"
-}

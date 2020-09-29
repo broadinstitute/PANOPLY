@@ -11,13 +11,18 @@ err="${red}error.${reg}"
 not="${grn}----->${reg}" ## notification
 
 display_usage() {
-  echo "usage: release.sh -v release-version"
+  echo "usage: release.sh -v release-version [-l] [-u] [-h]"
+  echo "       -l  rebuild panoply_libs docker from scratch"
+  echo "       -u  rebuild panoply_utils docker from scratch"
+  echo "       -h  print usage"
   exit
 }
 
-while getopts "v:h" opt; do
+while getopts "v:luh" opt; do
     case $opt in
         v) VER="$OPTARG";;
+        l) l_flag="true";;
+        u) u_flag="true";;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
@@ -47,22 +52,26 @@ fi
 
 
 ## ** Get latest code version in dev branch, create release branch
-# cd $panoply
-# git checkout dev
-# git pull
-# # create new branch for release
-# rel_id="release-$VER"
-# git checkout -b $rel_id dev
-# git push origin $rel_id
+cd $panoply
+git checkout dev
+git pull
+# create new branch for release
+rel_id="release-$VER"
+git checkout -b $rel_id dev
+git push origin $rel_id
 
 
 ## ** Rebuild/update all docker images in $DEV
 # Build / update panoply_libs
 cd $panoply/hydrant
-# ./setup.sh -t panoply_libs -n $DEV -y -b -u 
+if [[ $l_flag == "true" ]]; then
+  ./setup.sh -t panoply_libs -n $DEV -y -b -u 
+fi
 
 # Build panoply_utils and panoply_common
-# ./setup.sh -t panoply_utils -n $DEV -y -b -u 
+if [[ $u_flag == "true" ]]; then
+  ./setup.sh -t panoply_utils -n $DEV -y -b -u 
+fi
 ./setup.sh -t panoply_common -n $DEV -y -b -u -x
 
 # Rebuild all other task dockers
@@ -71,6 +80,7 @@ modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename |  \
 for mod in "${modules[@]}"
 do
   ./setup.sh -t $mod -n $DEV -y -b -u -x
+  ./setup.sh -t $mod -z    # cleanup
 done
 
 

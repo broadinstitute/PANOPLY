@@ -211,7 +211,9 @@ if (type == "proteome") {
                   'subgroupNum', 
                   'entry_name',
                   'scoreUniqueSubgroupSpecificCI',
-                  'numPepsUniqueSubgroupSpecificCI')
+                  'numPepsUniqueSubgroupSpecificCI',
+		  'coverage_map',
+		  'coverage_maps')
   process.dataset (dataset = input.data.file,
                    out.prefix = 'proteome', proteome=TRUE, 
                    id.col = 'accession_number', additional.cols=info.cols,
@@ -242,7 +244,9 @@ if (type == "proteome") {
                   'accession_number',
                   'accession_numbers',
                   'protein_group_num',
-                  'entry_name')
+                  'entry_name',
+		  'coverage_map',
+		  'coverage_maps')
   process.dataset (dataset = input.data.file,
                    out.prefix = type, proteome=FALSE, additional.cols=info.cols,
                    id.col = 'accessionNumber_VMsites_numVMsitesPresent_numVMsitesLocalizedBest_earliestVMsiteAA_latestVMsiteAA',
