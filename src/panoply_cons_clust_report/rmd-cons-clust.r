@@ -1,117 +1,171 @@
-#!/usr/bin/env Rscript
-options( warn = -1 )
-args <- commandArgs(trailingOnly=T)
+### Create Rmarkdown report for consensus clustering module ###
 
-## get arguments
-tar.file <- args[1]
-label <- args[2]
-type <- args[3]
-tmp.dir <- args[4]
+# tar_file  - URL of tar file created by task panoply_cons_clust
+# yaml_file - URL of master parameters yaml file including output from startup notebook
+# label     - character, name of folder in tarball
+# type      - character, data type
 
-require(pacman)
-p_load(rmarkdown)
-p_load(cmapR)
-p_load(morpheus)
-p_load(dplyr)
+args = commandArgs(TRUE)
 
-## ###################################################################
-##      create a Rmarkdown report for consensus clustering results
-## tar.file   - url of tar file created by task 'parse_sm_table'
-## label      - character, name of folder in the tarball
-## tmp.dir    - folder used to untar and write output
+tar_file = args[1]
+yaml_file = args[2]
+label = args[3]
+type = args[4]
 
-rmd_cons_clust <- function(tar.file, label='pipeline-test', label.rmd='cons-clust', type, tmp.dir, res.dir='clustering'){    
+library(rmarkdown)
+library(yaml)
+library(dplyr)
+library(stringr)
+library(glue)
+library(ggplot)
 
-    wd <- getwd()
-    
-    ## prepare log file
-    logfile=paste0(label, '_rmd-', label.rmd)
-    start.time <- Sys.time()
-    cat(paste(rep('#', 40), collapse=''),'\n##', paste0(start.time), '--\'rmd_', label.rmd,'\'--\n\n', file=logfile ) 
-    cat('## parameters\ntar file:', tar.file, '\ntmp dir:', tmp.dir, '\nlabel:', label, '\nlog file:', logfile, '\n', file=logfile, append=T)
-    
- 
-    ## #################################
-    ## extract tar ball
-    if(!dir.exists(tmp.dir))
-        dir.create(tmp.dir)
-    cat('\n## Extracting tar file to', tmp.dir, '\n', file=logfile, append=T)
-    untar(tar.file, exdir=tmp.dir)
+rmd_cons_clust <- function(tar_file, label='pipeline-test', label.rmd='cons-clust', type, tmp.dir, res.dir='clustering'){
+
+  # extract files from tarball
+  untar(tar_file)
   
-    
-    ## ##################################
-    ## gather data for markdown file
-    ## - figures
-    
-    ## copy consenus matrix
-    fig.str <- file.path(tmp.dir, label, res.dir, 'acetylome_consensus_matrix_K3.png')
-    
-    
-    file.copy( fig.str, tmp.dir)
+  clust_dir = "clustering"
   
-    # save(label, est.cna.gct, est.rna.gct, est.pome.gct, est, signatures, 
-    #      data.rna, data.pome, data.cna, 
-    #      cm.rna.cna, cm.pome.cna, cm.pome.rna, 
-    save(label, label.rmd, fig.str, 
-           file=file.path( tmp.dir, 'data.RData'))                                  
+  rmd = paste0('---
+title: "Consensus clustering results for ', type, '"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+---\n
+## Overview
+This report summarizes the results of the consensus clustering module, which utilizes resampling-based consensus clustering ([Monti et al, 2003](https://doi.org/10.1023/A:1023949509487)) to derive robust proteome clusters. 
+1000 bootstrap sample data sets are clustered into *K* clusters using k-means, and a consensus matrix is constructed whose entries (i, j) record the number of times items i and j are assigned to the same cluster divided by the total number of times both items are selected.
+A range of possible cluster numbers *K* between 2 and 10 are evaluated and the best *K* is determined by comparing the *empirical cumulative distribution (CDF)* of the resulting consensus matrices. 
+To compare the clusterings, the increase of CDF area *K<sub>delta</sub>* is evaluated and the *K* with the largest *K<sub>delta</sub>* is defined as best *K*.
+               ')
+  
+  cm.all = read.csv(file.path(label, clust_dir, paste0(type, "_cluster_metrics.csv"))) %>%
+    rename(clust = X)
+  cm.best = read.csv(file.path(label, clust_dir, paste0(type, "_best_K.csv")), row.names = 1)
+  
+  k.max = rownames(cm.all) %>% as.numeric() %>% max()
+  k.min = rownames(cm.all) %>% as.numeric() %>% min()
+  n.clust = length(rownames(cm.all))
+  k.all = rownames(cm.all)
+  
+  ## number of rows in plot
+  #nr <- ceiling((nrow(cm.best)-1)/2)
+  
+  # recreate metrics plots as png
+  png(paste0(type, "_cluster_metrics.png"))
+  #par(mfrow=c(nr ,2))
+  plots = list()
+  loop = colnames(cm.all)[-1]
+  count = 1
+  for(i in loop){
+    print(i)
+    #best.idx <- cm.best[i, 'best.k.idx' ]
+    best.k.plot = cm.best[i, 'best.k' ]
+    metric <- cm.all[, i]
     
-    ## ####################################################
-    ## Rmarkdown
-    cat('## Generating Rmarkdown file\n', file=logfile, append=T)
+    if(i == 'delta.auc.diff'){
+      metric <- cm.all[, 'delta.auc']
+    }
+    print(metric)
+    cm.all2 = cm.all %>%
+      mutate(highlight = ifelse(cm.all$clust == best.k.plot, "best","not"))
     
-    rmd <- paste("\n# Consensus Clustering - ", label,"\n
-This document describes the results of the consenus clustering module.
-```{r echo=F, warning=F, message=F}\n
-library(pacman)
-p_load(plotly)
-p_load(dplyr)
+    if( !(i %in% c('delta.auc', 'cophenetic.correlation.diff') ) ) {
+      p = ggplot(data=cm.all2, aes(x=clust, y = metric, text = metric)) +
+        geom_line() +
+        geom_point(size = 3, aes(colour = highlight)) +
+        scale_color_manual(values=c("red", "black"), guide = FALSE) +
+        scale_x_continuous(breaks = cm.all2$clust) +
+        theme_classic() +
+        theme(legend.position = "none") +
+        labs(title = i, x = "Number of clusters", y = "Score") +
+        geom_text(aes(label = glue('k={cm.best[i, "best.k"]}'), x = Inf, y = Inf, hjust = 1, vjust = 1))
+      print(p)
+      plots[count] = p
+      count = count + 1
+    }
+  }
 
-## ##############################
-## prepare data set
-load(paste('data.RData', sep='/')) ## import data 
 
+  
+  save(cm.best, cm.all, file = "test.Rdata")
+  
+  rmd = '
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("test.RData")
+for (i in 1:length(plots)){
+  ggplotly(plots[i], tooltip = "text")
+}
 ```
-\n\n
+'
 
-***
+rmd = '
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("test.RData")
+for(i in colnames(cm.all)[-1]){
+  best.k.plot = cm.best[i, "best.k" ]
+  metric <- cm.all[, i]
 
-\n\n### Consensus matrix
-
-```{r, include=TRUE, fig.align='center', fig.cap=c('your caption'), echo=FALSE}
-#knitr::include_graphics('./acetylome_consensus_matrix_K3.png')
-knitr::include_graphics(fig.str)
+  if(i == "delta.auc.diff"){
+    metric <- cm.all[, "delta.auc"]
+  }
+  cm.all2 = cm.all %>%
+    mutate(highlight = ifelse(cm.all$clust == best.k.plot, "best","not"))
+  
+  if( !(i %in% c("delta.auc", "cophenetic.correlation.diff") ) ) {
+    p = ggplot(data=cm.all2, aes(x=clust, y = metric, text = metric)) +
+      geom_line() +
+      geom_point(size = 3, aes(colour = highlight)) +
+      scale_color_manual(values=c("red", "black"), guide = FALSE) +
+      scale_x_continuous(breaks = cm.all2$clust) +
+      theme_classic() +
+      theme(legend.position = "none") +
+      labs(title = i, x = "Number of clusters", y = "Score") +
+      geom_text(aes(label = paste0("k= ", cm.best[i, "best.k"]), x = Inf, y = Inf, hjust = 1, vjust = 1))
+    print(p)
+  }
+}
 ```
+'
+  
+  dev.off()
+  
+  best_pdf = grep(paste0(type, "_consensus_matrix.*\\.pdf"), list.files(file.path(label, clust_dir)), value = TRUE)
+  best_png = gsub("pdf", "png", best_pdf) %>%
+    tolower()
+  best_k = str_extract(best_png,"[:digit:]") %>% as.numeric()
+  
+  best_k_data = read.csv(file.path(label, clust_dir, paste0(type, "_best_K.csv"))) %>%
+    select(-best.k.idx) %>%
+    na.omit() %>%
+    rename(algorithm = X)
+  
+  save(best_k_data, file = "best_k_data.Rdata")
+  
+  rmd = paste0(rmd, '\n## Consensus matrix for best *K*: ', best_k, '
+![**Figure**: Consensus matrix for *K* = 3, determined by several algorithms to be the best *K*.](', file.path(label, clust_dir, best_png), ') \n
 
-XXX
-", sep="")
-    
-    ## ####################################
-    ## Footer
-    rmd <- paste(rmd, "\n\n
-<br>
+**Table**: Best *K* and score for different clustering algorithms.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("best_k_data.RData")
+library(DT)
+datatable(best_k_data, rownames = FALSE, width = "500px")
+```
 \n
-\n***
-\n
-\n**_Created on ", Sys.time(),"_**
-\n
-\n***
-\n<br>
-\n", sep='')
-    
-    
-    cat('## Rendering Rmarkdown file\n', file=logfile, append=T)
-    writeLines(rmd, con=paste(tmp.dir, paste0( label.rmd, '_', label,'.rmd'), sep='/'))
-    rmarkdown::render(paste(tmp.dir, paste(label.rmd, '_', label,'.rmd', sep=''), sep='/'))
-    file.copy(paste(tmp.dir, paste(label.rmd, '_', label,'.html', sep=''), sep='/'), paste(wd, paste(label.rmd, '_', label,'.html', sep=''), sep='/'))
-    
-    cat('## Output written to:', paste(wd, paste(label.rmd, '_', label,'.html', sep=''), sep='/'), file=logfile, append=T)
-    cat('\n\n## all done. ', format(Sys.time() - start.time), file=logfile, append=T )
-
+               ')
+  
+  rmd_name = paste(label, type, "cons_clust_rmd.rmd", sep = "_")
+  
+  # write .rmd file
+  writeLines(rmd, con = rmd_name)
+  
+  # render .rmd file
+  rmarkdown::render(rmd_name)
 
 }
 
-
-## ################################################
-## run
-rmd_sample_qc(tar.file=tar.file, label=label, tmp.dir=tmp.dir, type=type)
+rmd_cons_clust(tar.file=tar.file, label=label, tmp.dir=tmp.dir, type=type)
 
