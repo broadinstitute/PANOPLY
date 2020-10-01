@@ -94,12 +94,12 @@ rmd_immune = function(tar_file, yaml_file, label){
     rename(fdr = adj.pvalue)
   
   subtype = data.frame(Immune.Subtype = rep(1:6), 
-                             Immune.Subtype.Description = c("Wound healing",
-                                                            "IFN-gamma dominant",
-                                                            "Inflammatory",
-                                                            "Lymphocyte depleted",
-                                                            "Immunologically quiet",
-                                                            "TGF-beta dominant")) %>%
+                       Immune.Subtype.Description = c("Wound healing",
+                                                      "IFN-gamma dominant",
+                                                      "Inflammatory",
+                                                      "Lymphocyte depleted",
+                                                      "Immunologically quiet",
+                                                      "TGF-beta dominant")) %>%
     right_join(subtype_data)
 
   
