@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 # Filename: CNMF_Preprocess.R
 #  Authors: Pablo Tamayo (tamayo@genome.wi.mit.edu), R. Zupko II (rzupko@broadinstitute.org)
 #

@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 ver=14
 name=`basename $PWD`

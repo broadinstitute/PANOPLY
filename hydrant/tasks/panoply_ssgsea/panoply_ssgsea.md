@@ -1,0 +1,1 @@
+../../../../PANOPLY.wiki/Analysis-Modules:-panoply_ssgsea.md

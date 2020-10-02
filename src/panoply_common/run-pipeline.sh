@@ -1,6 +1,9 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
-### Broad Institute PGDAC PIPELINE
+### Broad Institute PANOPLY PIPELINE
 ### Script for invoking various pipeline components
 
 ##

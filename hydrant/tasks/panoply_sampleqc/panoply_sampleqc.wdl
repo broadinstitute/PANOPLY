@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_sampleqc {
   File tarball   # output from panoply_harmonize
   String type

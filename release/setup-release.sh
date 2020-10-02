@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 start_dir=`pwd`    # must be invoked from the PANOPLY/release directory
 panoply=$start_dir/..
 red='\033[0;31m'

@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 ## Release a new version of PANOPLY
 ##  (must be invoked from the release directory)

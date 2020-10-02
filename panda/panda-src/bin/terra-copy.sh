@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 echo -e "\n---------------------------"
 echo -e "copy input files to Terra -"

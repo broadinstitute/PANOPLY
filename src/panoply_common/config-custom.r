@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 # ### Pipeline parameters
 # # defaults shown below
 # # can be overridden by redefining the appropriate variable in the

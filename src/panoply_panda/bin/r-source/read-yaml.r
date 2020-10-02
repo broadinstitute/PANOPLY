@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
 p_load( yaml )
 p_load( optparse )

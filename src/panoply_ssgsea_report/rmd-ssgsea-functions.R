@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ## ###########################################################################
 ##               PTM-SEA / ssGSEA volcano plots
 gg_volc <- function(output.prefix, 

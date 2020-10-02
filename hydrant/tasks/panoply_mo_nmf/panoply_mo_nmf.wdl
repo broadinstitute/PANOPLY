@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 #########################################################################
 ## NMF
 task panoply_mo_nmf {
