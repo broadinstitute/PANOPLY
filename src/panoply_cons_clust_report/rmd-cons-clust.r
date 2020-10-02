@@ -18,6 +18,8 @@ library(dplyr)
 library(stringr)
 library(glue)
 library(ggplot)
+library(cmapR)
+library(factoextra)
 
 rmd_cons_clust <- function(tar_file, label='pipeline-test', label.rmd='cons-clust', type, tmp.dir, res.dir='clustering'){
 
@@ -25,6 +27,10 @@ rmd_cons_clust <- function(tar_file, label='pipeline-test', label.rmd='cons-clus
   untar(tar_file)
   
   clust_dir = "clustering"
+  
+  # source config.R
+  #source(file.path(label,clust_dir, "config.r"))
+  clustering.sd.threshold <- 2
   
   rmd = paste0('---
 title: "Consensus clustering results for ', type, '"
@@ -156,6 +162,81 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
 ```
 \n
                ')
+  
+  ###############################################
+  # PCA plot for best K
+  data = parse.gctx(file.path(label, clust_dir, paste0(type, "-Cluster.gct")))
+  mat = data.frame(data@mat)
+  
+  membership_full = read.csv(file.path(label, clust_dir, assoc.subgroups), row.names = 1) 
+  membership = pull(membership_full, Cluster)
+  
+  # eliminate features with not enough variation
+  min.feat.sd = 500
+  feature.sd <- apply (mat, 1, sd, na.rm=TRUE)
+  keep <- which( feature.sd > clustering.sd.threshold )
+  
+  if(length(keep) < min.feat.sd){ # if SD filtering returned too few features for clustering, switch to upper decile mode keeping the top 10 percent
+    upper.decile <- quantile(feature.sd, c(.9))
+    keep <- which( feature.sd >  upper.decile)
+  } 
+  mat2 <- mat[keep, ]
+  
+  p <- fviz_cluster(list(cluster=membership, data=t(na.omit(mat2))), palette='Dark2', text = colnames(mat), geom = "point", labelsize = 8)
+  ggplotly(p, tooltip = "text")
+  
+  p2 <- fviz_cluster(list(cluster=membership, data=t(na.omit(mat2))), palette='Dark2', text = colnames(mat), labelsize = 8)
+  ggplotly(p2, tooltip = "text")
+  
+  #########################################################
+  # heatmaps for marker selection in each cluster of best K
+  contrast_files = grep(paste0(type, "-Cluster-class\\..*-analysis-markers-fdr", assoc.fdr, "\\.csv"), list.files(file.path(label, clust_dir), full.names = TRUE), value = TRUE)
+  yaml_params = read_yaml(yaml_file)
+  
+  for (contrast in contrast_files){
+    ids = read.csv(contrast, stringsAsFactors = FALSE) %>%
+      pull(Gene.ID)
+    mat_filt = mat[ids,]
+    cluster_num = str_extract(contrast,"[:digit:]") %>% as.numeric()
+    
+    ## heatmap annotations
+    if (!is.null (cluster.enrichment.subgroups)) {
+      subgroup.table <- read.csv (file.path(label, clust_dir, basename(cluster.enrichment.subgroups)))
+      rownames (subgroup.table) <- subgroup.table[,'Sample.ID']
+      
+      samples <- as.character (subgroup.table[,'Sample.ID'])
+      samples <- samples [ samples %in% colnames (mat_filt) ]
+      annot <- subgroup.table [samples,]
+    } else {
+      samples <- colnames (mat_filt)
+      annot <- data.frame (Sample.ID=samples)
+    }
+    rownames (annot) <- samples
+    
+    annot <- annot %>%
+      mutate_at (names (.[, sapply (., function (x) length(unique(x)) <= 5)]), funs (factor(.))) %>%
+      mutate (Cluster =  as.character(membership_full[samples, "Cluster"])) %>%
+      column_to_rownames ("Sample.ID")
+    
+    color = lapply(yaml_params$groups.colors, unlist)
+    
+    annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.25, annotation_width = 0.5,
+                                     show_annotation_name=TRUE, col = color)
+    
+    heatmap <- Heatmap (mat_filt, top_annotation=annotation, 
+                        row_names_gp = gpar (fontsize=8), column_names_gp = gpar(fontsize=8), 
+                        clustering_distance_columns = 'pearson',
+                        clustering_distance_rows='pearson',
+                        show_row_names = F,
+                        column_title = paste0("Marker selection results for Cluster ", cluster_num),
+                        row_title = paste0( dim(mat_filt)[1], " features"),
+                        width = 15, height = 10)
+    
+    png (paste0("marker_hm_clust", cluster_num, ".png"), width = 1500, height = 1000)
+    draw (heatmap)
+    dev.off()
+    
+  }
   
   rmd_name = paste(label, type, "cons_clust_rmd.rmd", sep = "_")
   
