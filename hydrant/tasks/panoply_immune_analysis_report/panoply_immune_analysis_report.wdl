@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_immune_analysis_report {
     Float? ram_gb
     Int? local_disk_gb

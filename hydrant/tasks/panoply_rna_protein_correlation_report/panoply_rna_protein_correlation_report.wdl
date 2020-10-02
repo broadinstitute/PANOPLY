@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_rna_protein_correlation_report {
   File tarball
   File config_yaml

@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_cmap_annotate {
     Float? ram_gb
     Int? local_disk_gb
