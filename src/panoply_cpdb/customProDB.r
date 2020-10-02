@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 options( warn = -1 )
 args <- commandArgs(trailingOnly=T)
 

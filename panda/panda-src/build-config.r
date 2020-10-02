@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ## Loading libraries needed to run this notebook
 library( cmapR );
 library( pacman );

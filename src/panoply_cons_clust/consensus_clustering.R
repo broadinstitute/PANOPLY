@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 if(!require('pacman')) install.packages('pacman')
 p_load(ggplot2)

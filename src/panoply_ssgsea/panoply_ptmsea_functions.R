@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ## install pacman and cmapR packages
 if(!require(pacman)){install.packages("pacman");library(pacman)}
 

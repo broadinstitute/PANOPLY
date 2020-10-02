@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ## ##############################################################################
 ## Author:   Karsten Krug
 ## Purpose:  - collection of functions for reading/writing various data formats

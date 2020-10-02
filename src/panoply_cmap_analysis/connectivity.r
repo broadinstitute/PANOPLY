@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 
 summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dtype, nperm, 

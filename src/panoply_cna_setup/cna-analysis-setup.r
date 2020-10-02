@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 # check to make sure libraries needed by cna-analysis.r are already installed
 # (else, many jobs can fail before one of the jobs ends up installing the libraries)

@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 rm(list=ls())
 options( warn = -1, stringsAsFactors = F )
 suppressPackageStartupMessages(library("optparse"))

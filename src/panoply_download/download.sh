@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 while getopts ":c:o:r:a:s:l:p:" opt; do
     case $opt in
         c) cons_clust_tar="$OPTARG";;

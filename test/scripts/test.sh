@@ -1,4 +1,7 @@
 #!/bin/sh
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 # Commands to run to reasonably test the pipeline system
 # run from test/results subdirectory

@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ## Script to check your test input tarball against a gold-standard tarball
 ## Inputs:
 ## gold.tar  : gold standard tarball
