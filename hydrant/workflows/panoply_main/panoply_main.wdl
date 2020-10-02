@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_normalize_ms_data_MM/versions/11/plain-WDL/descriptor" as normalize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_rna_protein_correlation_MM/versions/2/plain-WDL/descriptor" as rna_prot_corr_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_harmonize_MM/versions/6/plain-WDL/descriptor" as harmonize_wdl
