@@ -207,7 +207,7 @@ load_unzipped_files <- function(){
   setwd( glue( "{home}/input" ) )
   gcts <- list.files( pattern = "*.gct" )
   csvs <- list.files( pattern = "*.csv" )
-  ymls <- list.files( pattern = "*.yml" )
+  ymls <- list.files( pattern = "*.yaml" )
   gmts <- list.files( pattern = "*.gmt" )
   typemap.gct <<- map_my_files( gcts )
   typemap.csv <<- map_my_files( csvs )
@@ -572,9 +572,12 @@ define_sample_sets <- function( all.groups, typemap.csv ){
   sample.sets$all$fil_col <- "Type"
   sample.sets$all$fil_val <- glue(
     "{paste0( unique( annot[[sample.sets$all$fil_col]] ), collapse = ';' )}" )
-  # add pathway databases as set-specific parameters
+  # add pathway databases and parameters file as set-specific parameters
   for (x in names (typemap.gmt))  
     sample.sets$all[[x]] <- typemap.gmt[[x]]
+  # code below doesn't work for adding yaml to data table -- need to get concatenated parameter file
+  # for (x in names (typemap.yml))  
+  #   sample.sets$all[[x]] <- typemap.yml[[x]]
   
   
   set.flag <- y2true( "\n$$ Add additional sample subsets?" )
@@ -598,10 +601,14 @@ define_sample_sets <- function( all.groups, typemap.csv ){
     sample.sets[[name]]$fil_col <- fil_col
     sample.sets[[name]]$fil_val <- fil_val
 
-    # add pathway databases as set-specific parameters for every set
+    # add pathway databases and parameters as set-specific parameters for every set
     for (x in names (typemap.gmt))  
       sample.sets[[name]][[x]] <- typemap.gmt[[x]]
-    # add.param.flag <- y2true("$$ Add set-specific parameters?")
+    # code below doesn't work for adding yaml to data table -- need to get concatenated parameter file
+    # for (x in names (typemap.yml))  
+    #   sample.sets[[name]][[x]] <- typemap.yml[[x]]
+
+        # add.param.flag <- y2true("$$ Add set-specific parameters?")
     # while( add.param.flag ){
     #   param.name <- as.character( readline(
     #     prompt = "$$ Enter Parameter Name: " ) )
