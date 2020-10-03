@@ -1,0 +1,1 @@
+Support method for assembling results on completion of pipeline run

@@ -1,0 +1,1 @@
+Analysis method for outlier analysis using BlackSheep algorithm
