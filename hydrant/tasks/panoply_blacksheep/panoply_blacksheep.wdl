@@ -50,7 +50,7 @@ task panoply_blacksheep {
 
     meta {
         author : "Karen Christianson"
-        email : "karen@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 

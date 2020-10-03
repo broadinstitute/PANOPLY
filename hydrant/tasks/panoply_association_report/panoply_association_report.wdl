@@ -37,7 +37,7 @@ task panoply_association_report {
 
     meta {
         author : "Karen Christianson"
-        email : "karen@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 

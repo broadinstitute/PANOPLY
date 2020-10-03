@@ -1,5 +1,5 @@
 FROM broadcptacdev/panoply_common:latest
-MAINTAINER karsten@broadinstitute.org
+MAINTAINER proteogenomics@broadinstitute.org
 
 LABEL description="Docker to create tar ball as input for panoply_mo_nmf"
 

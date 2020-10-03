@@ -49,7 +49,7 @@ task panoply_normalize_ms_data_report {
 
   meta {
     author : "Karsten Krug"
-    email : "karsten@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

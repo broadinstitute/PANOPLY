@@ -102,7 +102,7 @@ task panoply_normalize_ms_data {
 
   meta {
     author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

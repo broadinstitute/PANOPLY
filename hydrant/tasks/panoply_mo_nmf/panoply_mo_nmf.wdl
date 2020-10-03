@@ -57,7 +57,7 @@ task panoply_mo_nmf {
 
 	meta {
 		author : "Karsten Krug"
-		email : "karsten@broadinstitute.org"
+		email : "proteogenomics@broadinstitute.org"
 	}
 
 }

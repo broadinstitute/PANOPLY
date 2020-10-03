@@ -29,7 +29,7 @@ task panoply_immune_analysis_report {
 
     meta {
         author : "Karen Christianson"
-        email : "karen@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 

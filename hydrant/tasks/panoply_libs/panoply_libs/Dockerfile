@@ -1,5 +1,5 @@
 FROM r-base:3.6.3
-MAINTAINER rkothadi@broadinstitute.org
+MAINTAINER proteogenomics@broadinstitute.org
 
 RUN apt-get update
 RUN apt-get -t unstable install -y libssl-dev

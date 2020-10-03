@@ -39,7 +39,7 @@ task panoply_sampleqc {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

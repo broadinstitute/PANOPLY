@@ -27,7 +27,7 @@ task panoply_cmap_annotate {
 
     meta {
         author : "D R Mani"
-        email : "manidr@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 

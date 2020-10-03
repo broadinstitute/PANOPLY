@@ -42,7 +42,7 @@ task panoply_cna_setup {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

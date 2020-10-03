@@ -1,5 +1,5 @@
 FROM broadcptacdev/panoply_common:latest
-MAINTAINER karen@broadinstitute.org
+MAINTAINER proteogenomics@broadinstitute.org
 
 RUN apt-get update
 RUN apt-get -t unstable install -y pandoc

@@ -36,7 +36,7 @@ task panoply_cna_correlation_report {
 
   meta {
     author : "Karsten Krug"
-    email : "karsten@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

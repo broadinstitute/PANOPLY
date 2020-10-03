@@ -44,7 +44,7 @@ task panoply_cons_clust {
 
   meta {
     author : "D. R. Mani, Karsten Krug"
-    email : "karsten@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

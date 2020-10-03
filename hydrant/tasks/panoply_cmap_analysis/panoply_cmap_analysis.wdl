@@ -90,7 +90,7 @@ task panoply_cmap_connectivity {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -165,7 +165,7 @@ task panoply_cmap_input {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -240,7 +240,7 @@ task panoply_cmap_annotate {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -291,7 +291,7 @@ task panoply_cmap_ssgsea {
 
 	meta {
 		author : "Karsten Krug"
-		email : "karsten@broadinstitute.org"
+		email : "proteogenomics@broadinstitute.org"
 	}
 }
 
@@ -346,7 +346,7 @@ task panoply_cmap_annotate_ssgsea {
 
 	meta {
 		author : "Karsten Krug"
-		email : "karsten@broadinstitute.org"
+		email : "proteogenomics@broadinstitute.org"
 	}
 }
 

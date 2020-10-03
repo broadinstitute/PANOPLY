@@ -29,7 +29,7 @@ task panoply_ssgsea_report {
 
   meta {
     author : "Karsten Krug"
-    email : "karsten@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 
