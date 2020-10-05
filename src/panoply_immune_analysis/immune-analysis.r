@@ -60,9 +60,11 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
   runXCell <- function (ds, out.prefix) {
     # run xCell and save/return scores
     scores.table <- xCellAnalysis (ds)
-    scores <- t (scores.table) %>% data.frame %>% rownames_to_column("Sample.ID")
+    scores <- t (scores.table)
     
-    write.csv (scores, paste0 (out.prefix, '.csv'), row.names=FALSE)
+    scores_outfile <- t (scores.table) %>% data.frame %>% tibble::rownames_to_column("Sample.ID")
+    
+    write.csv (scores_outfile, paste0 (out.prefix, '.csv'), row.names=FALSE)
     return (scores)
   }
   rna.XC <- runXCell (rna@mat, 'xcell-scores')
@@ -125,7 +127,7 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
     
     # extract statistically significant enrichments
     e <- enrich
-    e.sig <- e [ e[,'fisher.test.pvalue'] < FDR, ]
+    e.sig <- e [ e[,'fisher.test.pvalue'] < FDR, , drop=FALSE] 
     write.csv (e.sig, sprintf ('immune-subtype-enrichment-pval%.2f.csv', FDR), row.names=FALSE)
   }
   
