@@ -76,6 +76,8 @@ installMethod() {
   echo -e "$not ... Installing method $meth"
 
   # install method on FireCloud/Terra with synopsis/documentation
+  # markdown documentation does not render in Terra -- use a URL to point to
+  #  the release-specific documentation on GitHub (added first line)
   syn=""
   doc=""
   if [[ -f $panoply/hydrant/$type/$meth/$meth-synopsis.txt ]]; then
@@ -84,7 +86,8 @@ installMethod() {
   orig_doc=`ls $doc_dir/*$meth.md`
   if [[ -f $orig_doc ]]; then
     doc="$meth.md"
-    cp $orig_doc $doc
+    echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_dir/release/$release_dir/$meth/$meth.md\n" > $doc
+    cat $orig_doc >> $doc
   fi
   fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $doc
     
@@ -189,7 +192,7 @@ createWkSpace $wkspace_pipelines
 
 
 ## TASKS
-release_dir=release-$release_tag
+release_dir=version-$release_tag
 modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
 snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
 

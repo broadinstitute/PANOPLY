@@ -13,6 +13,10 @@ reg='\033[0m'
 err="${red}Error:${reg}"
 warn="${grn}Warning:${reg}" ## notification
 
+## documentation location (assumes wiki repo is available in path)
+doc_dir="$panoply/../PANOPLY.wiki"
+
+
 display_usage() {
   echo "usage: release.sh -v <VER> [-f] [-l] [-u] [-h]"
   echo "       -v <VER>  specify version string (required)"
@@ -70,6 +74,12 @@ if ! fissfc space_exists -w $prod -p $proj -q; then
   fi
 fi
 
+# Check if documentation (from Wiki) has been checked out
+if [ ! -d $doc_dir ]; then
+  echo -e "$err Documentation not found in $doc_dir. Checkout wiki from GitHub."
+  exit 1
+fi
+
 
 ## ** Get latest code version in dev branch, create release branch
 cd $panoply
@@ -122,3 +132,8 @@ for wkflow in "${wkflows[@]}"
 do
   #----configure workflows
 done
+
+
+## ** Commit and push version branch to GitHub
+git commit -a -m "Release $VER"
+git push
