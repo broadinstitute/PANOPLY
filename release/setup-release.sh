@@ -189,7 +189,7 @@ createWkSpace $wkspace_pipelines
 
 
 ## TASKS
-release_dir=version-$release_tag
+release_dir=release-$release_tag
 modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
 snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
 
