@@ -2,43 +2,57 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_cmap_annotate {
-    Float? ram_gb
-    Int? local_disk_gb
-    Int? num_preemptions
+  File tarball                  # output from pgdac_cmap_connectivity
+  File cmap_data_file           # CMAP level 5 geneKD data (gctx)
+  File? cmap_enrichment_groups   # groups file (ala experiment design file)
+  File yaml
+  String? cmap_grp
+  String? cmap_typ
+  String outFile = "panoply_cmap-annotate-output.tar"
 
-    #**Define additional inputs here**
+  Float? cna_threshold
+  String? log_transform
+  String? alpha
 
-    command {
-        set -euo pipefail
+  Int? memory
+  Int? disk_space
+  Int? num_threads
+  Int? num_preemptions
 
-        #**Command goes here**
-    }
+  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
 
-    output {
-        #** Define outputs here**
-    }
+  command {
+    set -euo pipefail
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    --module cmap_analysis \
+    --master_yaml ${yaml} \
+    ${"--cna_threshold " + cna_threshold} \
+    ${"--log_transform " + log_transform} \
+    ${"--alpha " + alpha}
+    Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} "cmap-config-custom.r"
+  }
 
-    runtime {
-        docker : "<namespace>/panoply_cmap_annotate:1"
-        memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
-    }
+  output {
+    File outputs = "${outFile}"
+    File gsea_input = "${cmap_group}-cmap-${cmap_type}-gsea-input.gct"
+  }
 
-    meta {
-        author : "D R Mani"
-        email : "proteogenomics@broadinstitute.org"
-    }
+  runtime {
+    docker : "broadcptacdev/panoply_cmap_annotate:latest"
+    memory : select_first ([memory, 32]) + "GB"
+    disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
+    cpu : select_first ([num_threads, 1]) + ""
+    preemptible : select_first ([num_preemptions, 0])
+  }
+
+  meta {
+    author : "D R Mani"
+    email : "proteogenomics@broadinstitute.org"
+  }
 }
 
-workflow panoply_cmap_annotate {
 
-    call panoply_cmap_annotate {
-        input: #**Define call inputs for panoply_cmap_annotate here**
-    }
-
-    output {
-        #**Define workflow outputs here. If defined, these will be the only
-        #  outputs available in the Method Configuration**
-    }
+workflow panoply_cmap_annotate_workflow {
+  call panoply_cmap_annotate
 }
