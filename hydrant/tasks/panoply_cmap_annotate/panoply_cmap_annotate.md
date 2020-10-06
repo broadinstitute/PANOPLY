@@ -1,1 +1,0 @@
-../../../../PANOPLY.wiki/Support-Modules:-panoply_cmap_annotate.md
