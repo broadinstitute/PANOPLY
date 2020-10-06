@@ -10,20 +10,23 @@ panoply=`pwd`/..
 red='\033[0;31m'
 grn='\033[0;32m'
 reg='\033[0m'
-err="${red}error.${reg}"
-not="${grn}----->${reg}" ## notification
+err="${red}Error:${reg}"
+warn="${grn}Warning:${reg}" ## notification
 
 display_usage() {
-  echo "usage: release.sh -v release-version [-l] [-u] [-h]"
+  echo "usage: release.sh -v <VER> [-f] [-l] [-u] [-h]"
+  echo "       -v <VER>  specify version string (required)"
+  echo "       -f  force update of exisiting production workspaces"
   echo "       -l  rebuild panoply_libs docker from scratch"
   echo "       -u  rebuild panoply_utils docker from scratch"
   echo "       -h  print usage"
   exit
 }
 
-while getopts "v:luh" opt; do
+while getopts "v:fluh" opt; do
     case $opt in
         v) VER="$OPTARG";;
+        f) f_flag="true";;
         l) l_flag="true";;
         u) u_flag="true";;
         h) display_usage;;
@@ -36,6 +39,12 @@ if [[ -z $VER ]]; then
   exit 1
 fi
 
+# ensure that VER has only characters, numbers, _ and -
+if ! [[ "$VER" =~ ^[a-zA-Z0-9_\-]+$ ]]; then
+  echo -e "$err Invalid version. Must be alphanumeric with dash/unscore"
+  exit 1
+fi
+
 # default development and release namespaces
 DEV=broadcptacdev
 REL=broadcptac
@@ -45,12 +54,20 @@ prod_all="PANOPLY_Production_v$VER"
 
 # Before beginning, check production workspaces do not exist
 if ! fissfc space_exists -w $prod_all -p $proj -q; then
-  echo "Workspace $prod_all exists. Delete workspace and re-run."
-  exit 1
+  if [[ $f_flag == "true" ]]; then
+    echo -e "$warn Workspace $prod_all exists. Existing methods will be replaced."
+  else
+    echo -e "$err Workspace $prod_all exists. Delete workspace or use -f option."
+    exit 1
+  fi
 fi
 if ! fissfc space_exists -w $prod -p $proj -q; then
-  echo "Workspace $prod_all exists. Delete workspace and re-run."
-  exit 1
+  if [[ $f_flag == "true" ]]; then
+    echo -e "$warn Workspace $prod exists. Existing methods will be replaced."
+  else
+    echo -e "$err Workspace $prod exists. Delete workspace or use -f option."
+    exit 1
+  fi
 fi
 
 
