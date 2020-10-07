@@ -29,6 +29,64 @@ library(factoextra)
 library(ComplexHeatmap)
 library(RColorBrewer)
 
+hallmark_process_category <- c(
+  HALLMARK_TNFA_SIGNALING_VIA_NFKB='signaling',
+  HALLMARK_HYPOXIA='pathway',
+  HALLMARK_CHOLESTEROL_HOMEOSTASIS='metabolic',
+  HALLMARK_MITOTIC_SPINDLE='proliferation',
+  HALLMARK_WNT_BETA_CATENIN_SIGNALING='signaling',
+  HALLMARK_TGF_BETA_SIGNALING='signaling',
+  HALLMARK_IL6_JAK_STAT3_SIGNALING='immune',
+  HALLMARK_DNA_REPAIR='DNA damage',
+  HALLMARK_G2M_CHECKPOINT='proliferation',
+  HALLMARK_APOPTOSIS='pathway',
+  HALLMARK_NOTCH_SIGNALING='signaling',
+  HALLMARK_ADIPOGENESIS='development',
+  HALLMARK_ESTROGEN_RESPONSE_EARLY='signaling',
+  HALLMARK_ESTROGEN_RESPONSE_LATE='signaling',
+  HALLMARK_ANDROGEN_RESPONSE='signaling',
+  HALLMARK_MYOGENESIS='development',
+  HALLMARK_PROTEIN_SECRETION='pathway',
+  HALLMARK_INTERFERON_ALPHA_RESPONSE='immune',
+  HALLMARK_INTERFERON_GAMMA_RESPONSE='immune',
+  HALLMARK_APICAL_JUNCTION='cellular component',
+  HALLMARK_APICAL_SURFACE='cellular component',
+  HALLMARK_HEDGEHOG_SIGNALING='signaling',
+  HALLMARK_COMPLEMENT='immune',
+  HALLMARK_UNFOLDED_PROTEIN_RESPONSE='pathway',
+  HALLMARK_PI3K_AKT_MTOR_SIGNALING='signaling',
+  HALLMARK_MTORC1_SIGNALING='signaling',
+  HALLMARK_E2F_TARGETS='proliferation',
+  HALLMARK_MYC_TARGETS_V1='proliferation',
+  HALLMARK_MYC_TARGETS_V2='proliferation',
+  HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION='development',
+  HALLMARK_INFLAMMATORY_RESPONSE='immune',
+  HALLMARK_XENOBIOTIC_METABOLISM='metabolic',
+  HALLMARK_FATTY_ACID_METABOLISM='metabolic',
+  HALLMARK_OXIDATIVE_PHOSPHORYLATION='metabolic',
+  HALLMARK_GLYCOLYSIS='metabolic',
+  HALLMARK_REACTIVE_OXYGEN_SPECIES_PATHWAY='pathway',
+  HALLMARK_REACTIVE_OXIGEN_SPECIES_PATHWAY='pathway',
+  HALLMARK_P53_PATHWAY='proliferation',
+  HALLMARK_UV_RESPONSE_UP='DNA damage',
+  HALLMARK_UV_RESPONSE_DN='DNA damage',
+  HALLMARK_ANGIOGENESIS='development',
+  HALLMARK_HEME_METABOLISM='metabolic',
+  HALLMARK_COAGULATION='immune',
+  HALLMARK_IL2_STAT5_SIGNALING='signaling',
+  HALLMARK_BILE_ACID_METABOLISM='metabolic',
+  HALLMARK_PEROXISOME='cellular component',
+  HALLMARK_ALLOGRAFT_REJECTION='immune',
+  HALLMARK_SPERMATOGENESIS='development',
+  HALLMARK_KRAS_SIGNALING_UP='signaling',
+  HALLMARK_KRAS_SIGNALING_DN='signaling',
+  HALLMARK_PANCREAS_BETA_CELLS='development'
+)
+hallmark_category = as.data.frame(hallmark_process_category)
+names(hallmark_category) = "category"
+hallmark_category = hallmark_category %>%
+  rownames_to_column("pathway")
+
 rmd_cons_clust <- function(tar_file, yaml_file, label, type){
 
   # extract files from tarball
@@ -130,7 +188,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
     tolower()
   best_k = str_extract(best_png,"[:digit:]") %>% as.numeric()
   
-  rmd = paste0(rmd, '\n## Best *K* = ', best_k, '\n
+  rmd = paste0(rmd, '\n## Results for best *K* = ', best_k, '\n
 ### Consensus matrix for *K* = ', best_k, '\n
 ![**Figure**: Consensus matrix for *K* = 3, determined by several algorithms to be the best *K*.](', file.path(label, clust_dir, best_png), ') \n
                ')
@@ -164,8 +222,12 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("pca_data.RData")
 ggplotly(pca, tooltip = "text")
+```
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("pca_data.RData")
 ggplotly(pca2, tooltip = "text")
 ```
+
 **Figure**: PCA plot for *K* = 3. Clusters are separated by colors. Hover over each point to see the sample name it corresponds to.
                ')
   
@@ -207,7 +269,7 @@ ggplotly(pca2, tooltip = "text")
   column_order = rownames(annot)
   
   color = lapply(yaml_params$groups.colors, unlist)
-  clust.col = brewer.pal(n = best_k, "Dark2")
+  clust.col = brewer.pal(n = best_k, "Set3")
   names(clust.col) = 1:best_k
   color["Cluster"] = list(clust.col)
   
@@ -229,8 +291,66 @@ ggplotly(pca2, tooltip = "text")
   dev.off()
   
   rmd = paste0(rmd, '\n### Marker selection results for *K* = ', best_k, '\n
-![**Figure**: Heatmap showing marker selection results for *K* = 3 clusters. Columns (samples) are sorted by cluster number and rows are clustered by hierarchical clustering using the Pearson correlation method. Sample annotations, including cluster number, are labeled at the top of the heatmap.](marker_hm_clust.png)
+![**Figure**: Heatmap showing marker selection results for *K* = 3 clusters. Columns (samples) are sorted by cluster number and rows (features) are clustered by hierarchical clustering using the Pearson correlation method. Sample annotations, including cluster number, are labeled at the top of the heatmap.](marker_hm_clust.png)
                ')
+  
+  #############################
+  # Hallmark categories for each cluster
+  
+  gsea_dirs = grep(paste0(type, "-Cluster-class\\..*-analysis-gsea-analysis"), list.dirs(file.path(label, clust_dir), full.names = FALSE), value = TRUE)
+  gsea_pos = "gsea.SUMMARY.RESULTS.REPORT.0.txt"
+  gsea_neg = "gsea.SUMMARY.RESULTS.REPORT.1.txt"
+  for (dir_name in gsea_dirs){
+    cluster_num = str_extract(dir_name,"[:digit:]") %>% as.numeric()
+    hallmark_neg = read.delim(file.path(label, clust_dir, dir_name, gsea_neg))
+    hallmark = read.delim(file.path(label, clust_dir, dir_name, gsea_pos)) %>%
+      rbind(hallmark_neg) %>%
+      select(GS, NES, FDR.q.val) %>%
+      rename(pathway = GS, fdr = FDR.q.val) %>%
+      mutate(pathway = as.character(pathway)) %>%
+      left_join(hallmark_category) 
+    
+    hallmark_volc = hallmark %>%
+      mutate(group = ifelse(fdr<assoc.fdr, "Significant", "Not significant")) %>%
+      mutate(pathway = gsub("^HALLMARK_", "", pathway))
+    
+    hallmark_table = hallmark %>%
+      mutate(fdr = signif(fdr, 3),
+             NES = signif(NES, 3)) %>%
+      filter(fdr < assoc.fdr) %>%
+      arrange(fdr)
+    
+    save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".Rdata"))
+    
+    rmd = paste0(rmd, '\n
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("hallmark', cluster_num, '.RData")
+p = ggplot(hallmark_volc, aes(x = NES, y = -log10(fdr), colour = group, text = pathway, group = category)) +
+  geom_point() +
+  geom_hline(yintercept = -log10(', assoc.fdr, '), linetype = "dashed") +
+  scale_color_manual(values=c("black", "red"))
+ggplotly(p, tooltip = c("text", "category"))
+```
+                 ')
+    
+    if (dim(hallmark_table)[1]>= 1){
+      rmd = paste0(rmd, '\n
+**Table**: ', dim(hallmark_table)[1], ' significantly enriched pathways for cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.
+```{r echo=FALSE, warning=FALSE, message=FALSE}
+load("hallmark', cluster_num, '.RData")
+library(DT)
+datatable(hallmark_table, rownames = FALSE, width = "500px")
+```
+\n
+                 ')
+    } else {
+      rmd = paste0(rmd, '\n
+No significantly enriched pathways for cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.  
+\n
+                 ')
+    }
+      
+  }
   
   rmd_name = paste(label, type, "cons_clust_rmd.rmd", sep = "_")
   
