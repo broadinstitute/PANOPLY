@@ -21,6 +21,7 @@ library(ComplexHeatmap)
 library(tidyr)
 library(ggplot2)
 library(plotly)
+library(RColorBrewer)
 
 rmd_immune = function(tar_file, yaml_file, label){
   
@@ -67,6 +68,9 @@ rmd_immune = function(tar_file, yaml_file, label){
     select (-Sample.ID)
   
   color = lapply(yaml_params$groups.colors, unlist)
+  subtype_col = brewer.pal(n=6, "Dark2")
+  names(subtype_col) = 1:6
+  color["Immune.Subtype"] = list(subtype_col)
   
   annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.5, annotation_width = 0.5,
                                    show_annotation_name=TRUE, col = color)
@@ -92,9 +96,8 @@ rmd_immune = function(tar_file, yaml_file, label){
     spread (type, value)
   save(scatter.data, file = "XC_ES_scatterdata.Rdata")
   
-  # read immune subtype enrichment results filtered for fdr cutoff
-  subtype_data = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv"))) %>%
-    rename(fdr = adj.pvalue)
+  # read immune subtype enrichment results filtered for pval cutoff
+  subtype_data = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv")))
   
   subtype = data.frame(Immune.Subtype = rep(1:6), 
                              Immune.Subtype.Description = c("Wound healing",
@@ -117,7 +120,7 @@ output:
      collapsed: true
 ---\n
 ## Overview
-This report summarizes the results of the immune analysis module, which runs several algorithms assigning immune scores for understanding the tumor microenvironment. **E**stimation of **ST**romal and **I**mmune cells in **MA**lignant **T**umor tissues using **E**xpression data (**ESTIMATE**, [Yoshihara et al., 2013](https://doi.org/10.1038/ncomms3612)) uses gene expression signatures to calculate the fraction of stromal and immune cells and infer tumor purity. **xCell** ([Aran et al., 2017](https://doi.org/10.1186/s13059-017-1349-1)) uses a gene signature-based method to infer immune and stromal cell types. **ImmuneSubtypeClassifier** ([Thorrson et al., 2018](https://doi.org/10.1016/j.immuni.2018.03.023)) uses immune gene expression signatures to classify tumor samples into one of 6 immune subtypes. Enrichment analysis (Fisher\'s exact test) is performed on immune subtypes and significant results at FDR < ', immune.enrichment.fdr, ' reported.
+This report summarizes the results of the immune analysis module, which runs several algorithms assigning immune scores for understanding the tumor microenvironment. **E**stimation of **ST**romal and **I**mmune cells in **MA**lignant **T**umor tissues using **E**xpression data (**ESTIMATE**, [Yoshihara et al., 2013](https://doi.org/10.1038/ncomms3612)) uses gene expression signatures to calculate the fraction of stromal and immune cells and infer tumor purity. **xCell** ([Aran et al., 2017](https://doi.org/10.1186/s13059-017-1349-1)) uses a gene signature-based method to infer immune and stromal cell types. **ImmuneSubtypeClassifier** ([Thorrson et al., 2018](https://doi.org/10.1016/j.immuni.2018.03.023)) uses immune gene expression signatures to classify tumor samples into one of 6 immune subtypes. Enrichment analysis (Fisher\'s exact test) is performed on immune subtypes and significant results at p-value < ', immune.enrichment.fdr, ' reported.
 
 ## xCell scores
 
@@ -141,7 +144,7 @@ Number of significant enrichments between immune subtypes and annotation groups:
   if (dim(subtype)[1] >= 1){
     save(subtype, file = "subtype_enrichment.Rdata")
     rmd = paste0(rmd, '\n
-**Table**: significant (FDR < ', immune.enrichment.fdr, ') enrichment analyses between immune subtypes and annotation groups.\n
+**Table**: significant (p-value < ', immune.enrichment.fdr, ') enrichment analyses between immune subtypes and annotation groups.\n
 * Subtype 1 = Wound healing
 * Subtype 2 = IFN-gamma dominant
 * Subtype 3 = Inflammatory
