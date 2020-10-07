@@ -68,7 +68,7 @@ rmd_immune = function(tar_file, yaml_file, label){
     select (-Sample.ID)
   
   color = lapply(yaml_params$groups.colors, unlist)
-  subtype_col = brewer.pal(n=6, "Dark2")
+  subtype_col = brewer.pal(n=6, "Set3")
   names(subtype_col) = 1:6
   color["Immune.Subtype"] = list(subtype_col)
   
@@ -97,7 +97,9 @@ rmd_immune = function(tar_file, yaml_file, label){
   save(scatter.data, file = "XC_ES_scatterdata.Rdata")
   
   # read immune subtype enrichment results filtered for pval cutoff
-  subtype_data = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv")))
+  subtype_data = read.csv(file.path(label, immune_dir, paste0("immune-subtype-enrichment-pval", immune.enrichment.fdr, ".csv"))) %>%
+    mutate(fisher.test.pvalue = signif(fisher.test.pvalue, 3), 
+           adj.pvalue = signif(adj.pvalue, 3))
   
   subtype = data.frame(Immune.Subtype = rep(1:6), 
                              Immune.Subtype.Description = c("Wound healing",
