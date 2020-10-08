@@ -10,10 +10,11 @@ task panoply_ssgsea_report {
   Int? memory
   Int? disk_space
   Int? num_threads
+  Int? num_preemptions
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-ssgsea.R -t ${tarball} -l ${label} -y ${cfg_yaml} -f NA -n NA -p NA -z /home/pgdac/src/
+    Rscript /home/pgdac/src/rmd-ssgsea.R -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/
   }
 
   output {
@@ -25,6 +26,7 @@ task panoply_ssgsea_report {
     memory : select_first ([memory, 8]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
@@ -34,5 +36,6 @@ task panoply_ssgsea_report {
 }
 
 workflow panoply_ssgsea_report_workflow {
-	call panoply_ssgsea_report
+  call panoply_ssgsea_report
 }
+
