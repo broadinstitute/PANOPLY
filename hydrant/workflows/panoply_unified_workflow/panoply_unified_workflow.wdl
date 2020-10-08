@@ -1,12 +1,12 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_main_MM/versions/41/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_blacksheep_MM/versions/7/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/3/plain-WDL/descriptor" as mo_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_immune_analysis/versions/15/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:make_pairs_MM/versions/1/plain-WDL/descriptor" as make_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_unified_assemble_results_MM/versions/1/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_main_MM/versions/57/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_blacksheep_workflow_MM/versions/2/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/9/plain-WDL/descriptor" as mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_immune_analysis_workflow_MM/versions/3/plain-WDL/descriptor" as immune_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_make_pairs_workflow_MM/versions/1/plain-WDL/descriptor" as make_pairs_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_unified_assemble_results_MM/versions/19/plain-WDL/descriptor" as assemble_wdl
 
 
 workflow panoply_unified_workflow {
@@ -19,21 +19,23 @@ workflow panoply_unified_workflow {
   File? sample_annotation
   File? yaml
   String job_id
-  File? groupsFile
+  File? groupsFile    #for: main? / blacksheep / immune
   File? gene_set_database
-  
+  String? label     #nmf/immune label
+  String run_ptmsea
+  String run_cmap
   
   Array[File] omes = ["${prote_ome}", "${phospho_ome}", "${acetyl_ome}", "${ubiquityl_ome}"]
   Array[File] data = ["${rna_data}", "${cna_data}"]
   
-  call make_pairs.make_pairs as type_pairs {
+  call make_pairs_wdl.panoply_make_pairs_workflow as type_pairs {
     input:
       files = data,
       suffix = "-aggregate.gct"
 
   }
 
-  call make_pairs.make_pairs as ome_pairs {
+  call make_pairs_wdl.panoply_make_pairs_workflow as ome_pairs {
     input:
       files = omes,
       suffix = "-aggregate.gct"
@@ -43,14 +45,14 @@ workflow panoply_unified_workflow {
   ### MAIN:
   scatter (pair in ome_pairs.zipped) {
     if ("${pair.right}" != "") {
-      String ptmsea = if "${pair.left}"=="phosphoproteome" then "TRUE" else "FALSE"
         call main_wdl.panoply_main as pome {
           input:
             ## include all required arguments from above
             input_pome="${pair.right}",
             ome_type="${pair.left}",
             job_identifier="${job_id}-${pair.left}",
-            run_ptmsea="${ptmsea}",
+            run_ptmsea="${run_ptmsea}",
+            run_cmap = "${run_cmap}",
             input_cna="${cna_data}",
             input_rna_v3="${rna_data}",
             sample_annotation="${sample_annotation}",
@@ -61,7 +63,7 @@ workflow panoply_unified_workflow {
     }
   }
   
-  call make_pairs.make_pairs as norm_pairs {
+  call make_pairs_wdl.panoply_make_pairs_workflow as norm_pairs {
     input:
       files = pome.normalized_data_table,
       suffix = "-normalized_table-output.gct"
@@ -78,24 +80,9 @@ workflow panoply_unified_workflow {
           input_gct = "${pair.right}",
           master_yaml = "${yaml}",
           output_prefix = "${pair.left}",
-          groups_file = groupsFile
+          groups_file = groupsFile,
+          type = "${pair.left}"
       }
-    }
-  }
-  
-  # Get individual ome files for nmf:
-  scatter (f in all_pairs) {
-    if ("${f.left}" == "proteome") { 
-      File? nmf_proteome_gct = "${f.right}"
-    }
-    if ("${f.left}" == "phosphoproteome") {
-      File? nmf_phospho_gct = "${f.right}"
-    }
-    if ("${f.left}" == "ubiquitylome") {
-      File? nmf_ubiquityl_gct = "${f.right}"
-    }
-    if ("${f.left}" == "acetylome") {
-      File? nmf_acetyl_gct = "${f.right}"
     }
   }
   
@@ -104,24 +91,24 @@ workflow panoply_unified_workflow {
     input:
       gene_set_database = gene_set_database,
       yaml_file = yaml,
-      label = job_id,
-      prote_ome = nmf_proteome_gct,
-      phospho_ome = nmf_phospho_gct,
-      acetyl_ome = nmf_acetyl_gct,
-      ubiquityl_ome = nmf_ubiquityl_gct,
+      label = label,
+      omes = pome.normalized_data_table,
       rna_ome = rna_data,
       cna_ome = cna_data
   }
   
   ### IMMUNE:
-  call immune_wdl.panoply_immune_analysis as immune {
-    input:
-        inputData=rna_data,
-        standalone="true",
-        type="rna",
-        yaml=yaml,
-        analysisDir=job_id,
-        groupsFile=groupsFile
+  if ( "${rna_data}" != '' ) {
+    call immune_wdl.panoply_immune_analysis_workflow as immune {
+      input:
+          inputData=rna_data,
+          standalone="true",
+          type="rna",
+          yaml=yaml,
+          analysisDir=job_id,
+          groupsFile=groupsFile,
+            label=label
+    }
   }
   
   ## assemble final output combining results from panoply_main, blacksheep immune_analysis and mo_nmf
@@ -129,8 +116,8 @@ workflow panoply_unified_workflow {
     input:
       main_full = pome.panoply_full,
       main_summary = pome.summary_and_ssgsea,
-      #cmap_output = pome.cmap_output,
-      #cmap_ssgsea_output = pome.cmap_ssgsea_output,
+      cmap_output = pome.cmap_output,
+      cmap_ssgsea_output = pome.cmap_ssgsea_output,
       norm_report = pome.norm_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,
@@ -141,12 +128,13 @@ workflow panoply_unified_workflow {
       mo_nmf_tar = nmf.nmf_clust,
       mo_nmf_ssgsea_tar = nmf.nmf_ssgsea,
       mo_nmf_ssgsea_report = nmf.nmf_ssgsea_report,
-      immune_tar = immune.outputs
+      immune_tar = immune.outputs,
+      immune_report = immune.report
 
   }
   
   output {
-  	File all_results = panoply_unified_assemble_results.all_results
+    File all_results = panoply_unified_assemble_results.all_results
     File all_reports = panoply_unified_assemble_results.all_reports
   }
  }

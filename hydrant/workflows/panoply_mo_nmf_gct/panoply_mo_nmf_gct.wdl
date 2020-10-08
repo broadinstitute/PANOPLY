@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_pre/versions/1/plain-WDL/descriptor" as panoply_mo_nmf_pre_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_pre/versions/3/plain-WDL/descriptor" as panoply_mo_nmf_pre_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf/versions/2/plain-WDL/descriptor" as panoply_mo_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/9/plain-WDL/descriptor" as panoply_ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/12/plain-WDL/descriptor" as panoply_ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/1/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
 ################################################
@@ -11,12 +11,20 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_repor
 workflow panoply_mo_nmf_gct_workflow {
 
 	File gene_set_database
-        File yaml_file
+    File yaml_file
 	String label
+    
+    Array[File?] omes
+
+    File? rna_ome
+    File? cna_ome
 
 	call panoply_mo_nmf_pre_wdl.panoply_mo_nmf_pre {
 		input:
-			label=label
+			label=label,
+            omes=omes,
+            rna_ome=rna_ome,
+            cna_ome=cna_ome
 	}
 
 	call panoply_mo_nmf_wdl.panoply_mo_nmf {
@@ -36,9 +44,9 @@ workflow panoply_mo_nmf_gct_workflow {
 			
 	}
 
-    	call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
-	        input:
-		        tarball=panoply_ssgsea.results,
+    call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
+		input:
+			tarball=panoply_ssgsea.results,
 			cfg_yaml=yaml_file,
 			label=label
 		
@@ -48,5 +56,5 @@ workflow panoply_mo_nmf_gct_workflow {
 		File nmf_clust=panoply_mo_nmf.results
 		File nmf_ssgsea=panoply_ssgsea.results
 		File nmf_ssgsea_report=panoply_ssgsea_report.report
-		}
+	}
 }
