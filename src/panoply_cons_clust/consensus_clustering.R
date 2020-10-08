@@ -34,7 +34,6 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
   p_load(pheatmap)
   p_load( RColorBrewer)
   p_load(factoextra)
-  #p_load(doFuture)
   
   ## parse cluster method
   method <- match.arg(method)
@@ -57,7 +56,6 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
     ## make a matrix non-negative
     ## - separate up/down
     make.non.negative <- function(m){
-      #cat('\ntest..\n')
       ## up
       m.up <-  t( apply(m, 1, function(x){
         up=rep(0, length(x))
@@ -223,13 +221,13 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
   ## #################################
   ## final clustering on consensus matrix
   cat('\nPerforming clustering on consenus matrix\n', file=logfile, append=T)
-  #clust <- cluster(data=m, method=method, 
   clust <- cluster(data=NULL, 
                    d=as.dist(1 - M),
                    method='hclust', 
                    k=k, seed=seed, nmf.method=nmf.method,
                    nmf.nrun=nmf.nrun, nmf.opts=nmf.opts, make.nn=make.nn)
   cat('done\n', file=logfile, append=T)
+  
   ## ##################################
   ## plot
   if(plot){
@@ -276,7 +274,6 @@ consensus_clustering <- function(m,                 ## data matrix p x n
   
   method <- match.arg(method)
   
-  #cat('\n\ntest1\n')
   ## ################################
   ## loop over cluster numbers  
   cons.res <- lapply( k.min:k.max, function(k) 
@@ -284,21 +281,17 @@ consensus_clustering <- function(m,                 ## data matrix p x n
                                   make.nn=make.nn, ncore=ncore, plot=F, ...) 
   )
   names(cons.res) <- k.min:k.max
-  #cat('test2\n\n')
-  #save(cons.res, m, plot, prefix, file='cons_res.RData')
   
   ## #################################
   ## select best number of clusters  
   k_opt <- select_best_k(cons.res, data=m, plot=plot, prefix=prefix)
   K <- k_opt$k.opt[1]
-  #cat('test3\n\n')
   
   ## #################################
   ## extract results for optimal K
   res.opt <- cons.res[[as.character(K)]]
   write.table(k_opt$all.metrics, file=glue('{prefix}_cluster_metrics.csv'), row.names = T, quote = F, col.names = NA, sep=',')
   write.table(k_opt$best.metrics, file=glue('{prefix}_best_K.csv'), row.names = T, quote=F, col.names = NA, sep=',')
-  
   
 
   ## #################################

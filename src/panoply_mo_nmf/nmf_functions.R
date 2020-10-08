@@ -800,8 +800,8 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
                                 core_membership=0.5,      ## NMF.cluster.membership score to define core memebrship
                                                           ## cluster enrichment of clinical variables will be done on the core set 
                                 feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
-                                pval.ora= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
-                                max.categories=10,        ## max. number of levels in categorial metadata to be included on the 
+                                ora.pval= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
+                                ora.max.categories=10,    ## max. number of levels in categorial metadata to be included on the 
                                                           ## overrepresentation analysis
                                 organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
@@ -990,12 +990,13 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     variables.all <- unique(c(class.variable, variable.other))
     variables.all <- variables.all[variables.all %in% colnames(cdesc)]
     
-    ## fewer than 10 levels
-    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) <= max.categories, 1, 0)) == 1)
+    ## require max. number of levels in a category
+    enrich.idx <- which(sapply( variables.all, function(x) ifelse(length(unique(cdesc[, x])) <= ora.max.categories, 1, 0)) == 1)
     
+    ## stop if nothing left to test
+    if(length(enrich.idx) == 0) stop('No categorial variables left to perform enrichment analysis.')
+      
     ## exclude 'N/A' category
-    
-    
     clust.class.enrichment <- lapply(variables.all[enrich.idx], function(o){
       core.idx  <- which(!is.na(cdesc$NMF.consensus.core))
       
@@ -1007,11 +1008,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     
     ## make matrix
     cons.map.mat <- Reduce(cbind, clust.class.enrichment)
-    cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < pval.ora], collapse='|') )
+    cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < ora.pval], collapse='|') )
     cons.map.mat.signif <- data.frame(cluster=names(cons.map.mat.signif), enriched=cons.map.mat.signif)
 
     write.table(t(cons.map.mat), sep='\t', file=paste('cluster-enrichment.txt', sep=''), quote=F, row.names=T, col.names = NA)
-    write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-', pval.ora, '.txt', sep=''), quote=F, row.names=F)
+    write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-', ora.pval, '.txt', sep=''), quote=F, row.names=F)
 
     ###########################################################
     ## significantly enriched in 'class variable'
@@ -1020,7 +1021,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
  
     ## export
     write.table(cons.map.max, col.names = NA, sep='\t', file=paste('nmf_vs_', class.variable, '.txt', sep=''), quote=F)
-    cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < pval.ora], collapse='|'))
+    cons.map.max <- apply(cons.map.max, 1, function(x) paste(sub('.*\\:','', names(x))[x < ora.pval], collapse='|'))
     not.mapped.idx <- which(nchar(cons.map.max) == 0 )
     
     if(length(not.mapped.idx) > 0)

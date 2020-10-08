@@ -18,10 +18,10 @@ p_load(knitr)
 ##      create a Rmarkdown report for the mo_nmf module
 ## tar.file   - url of tar file created by task 'parse_sm_table'
 ## label      - character, name of folder in the tarball
-rmd_mo_nmf <- function(tar.file, label='pipeline-test', fn.ws='workspace_after_NMF.RData'){    
+rmd_mo_nmf <- function(tar.file, label='pipeline-test', fn.ws='workspace_after_NMF.RData', tmp.dir=tempdir()){    
 
     wd <- getwd()
-    tmp.dir <- tempdir()
+    #tmp.dir <- tempdir()
       
     ## prepare log file
     logfile=paste0('rmd-mo-nmf-', label, '.log')
@@ -91,7 +91,9 @@ rmd_mo_nmf <- function(tar.file, label='pipeline-test', fn.ws='workspace_after_N
       ## overrepresentation results
       enrich_all=dir(file.path(dir_name, dir_k), pattern=paste0('cluster-enrichment.txt'), full.names = T),
       ## cluster labels and sample annotation
-      clin_anno=dir(file.path(dir_name, dir_k), pattern=paste0('clin_anno_nmf.txt'), full.names = T)
+      clin_anno=dir(file.path(dir_name, dir_k), pattern=paste0('clin_anno_nmf.txt'), full.names = T),
+      ## Excel sheet with all features
+      nmf_feat_xlsx= dir(file.path(dir_name, dir_k), pattern=paste0('NMF_features_N.*'), full.names = T)
     )
     
     
@@ -177,7 +179,7 @@ To determine an optimal value **k** for the number of clusters, a range of **k**
 
 The metrics are summarized in **Figure `r fig_count`**. The optimal number of clusters is defined as the maximum of the product of **coph** and  **disp** between **k=`r ifelse(opt$exclude_2, max(c(opt$kmin, 3)), opt$kmin)`** and **k=`r opt$kmax`**.
 
-\n```{r cluster_metrics, echo=F, fig.cap=paste0('Figure ', fig_count,': Cluster metrics as a function of cluster numbers.')}
+\n```{r cluster_metrics, echo=F, fig.cap=paste0('**Figure ', fig_count,'**: Cluster metrics as a function of cluster numbers.')}
 
 ## cophenetic correlation
 rank.coph <- sapply(res.rank, cophcor)
@@ -230,7 +232,7 @@ clust_tab <- full_join(clust_tab, clust_core_tab)
 colnames(clust_tab) <- c('Cluster', '# samples', '# core samples')
 
 clust_tab %>%
-  kbl(caption=paste0('Table ', tab_count,': Cluster composition. The cluster core is defined as samples with a cluster membership score > ', opt$core_membership)) %>%
+  kbl(caption=paste0('**Table ', tab_count,'**: Cluster composition. The cluster core is defined as samples with a cluster membership score > ', opt$core_membership)) %>%
   kable_paper('hover', full_width = F) %>%
    column_spec(2:ncol(clust_tab), width = '10em')
    
@@ -294,7 +296,7 @@ if(length(keep) > 0){
     })
     ## insert table
     p <- tab_enrich %>%
-      kbl(caption=paste0('Table ', tab_count,': Overrepresentation analysis of sample metadata terms in each cluster.')) %>%
+      kbl(caption=paste0('**Table ', tab_count,'**: Overrepresentation analysis of sample metadata terms in each cluster.')) %>%
       kable_paper('hover', full_width = F) 
     for(i in 2:ncol(tab_enrich))  
       p <- p %>% column_spec(i, background = tab_enrich_cols[, (i-1)])
@@ -310,18 +312,72 @@ p
 \n", sep="")
     
     ########################################
-    ## consensus matrix
+    ## cluster-specific features
     rmd <- paste0(rmd, "\n# Cluster-specifc features
     
-    Matrix W containing the weights of each feature in a certain cluster can be used to derive a list of representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <1%   
-\n\n## Abundance heatmap\n
-
-```{r, include=TRUE, fig.align='center', fig.cap=c('Figure X: Heatmap depicting abundances of cluster specific features.'), echo=FALSE}
+Matrix W containing the weights of each feature in a certain cluster was used to derive a list of ```r ``` representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt$feat_fdr`are used in subsequent analyses.   
+")
+    ## all features, concatenated and ordered by ccluster
+    if('feat_hm_concat' %in% names(fig.str)){
+      rmd <- paste0(rmd, "\n
+```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
 knitr::include_graphics(fig.str[['feat_hm_concat']])
+```
+```{r inc_fig_3, echo=F}
+## increment
+fig_count <- fig_count + 1
+```
+\n\n
+***
+\n")} else if('feat_hm' %in% names(fig.str)){
+  ## all featurs
+  rmd <- paste0(rmd, "\n
+```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
+knitr::include_graphics(fig.str[['feat_hm']])
+```
+```{r inc_fig_3, echo=F}
+## increment
+fig_count <- fig_count + 1
 ```
 \n\n
 ***
 \n")
+} else {
+  rmd <- paste0(rmd, "\n
+
+**No cluster-specific fetaureas found.**
+
+")
+  }
+    
+  if('feat_barplot' %in% names(fig.str)){ 
+    rmd <- paste0(rmd, "
+```{r feat_barplot, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count,'**: Barpchart depicting the number of cluster specific features'), echo=FALSE}
+knitr::include_graphics(fig.str[['feat_barplot']])
+```
+
+```{r inc_fig_4, echo=F}
+## increment
+fig_count <- fig_count + 1
+```\n
+
+\n\n
+***
+\n")
+  }
+    
+  if('nmf_feat_xlsx' %in% names(tab.str)){   
+    
+    rmd <- paste0(rmd, "
+```{r feat_xlsx}
+#nmf_xlsx <- read_excel()
+```
+
+\n\n
+***
+\n")
+    
+  }
     
     ########################################
     ## consensus matrix
@@ -363,4 +419,4 @@ knitr::include_graphics(fig.str[['cons_map']])
 ## ################################################
 ## run
 rmd_mo_nmf(tar.file=tar.file, label=label)
-
+rmd_mo_nmf(tar.file=tar.file, label=label, tmp.dir = '.')
