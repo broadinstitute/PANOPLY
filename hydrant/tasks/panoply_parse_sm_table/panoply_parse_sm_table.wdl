@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_parse_sm_table {
   File SMtable
   File exptDesign
@@ -56,7 +59,7 @@ task panoply_parse_sm_table {
 
   meta {
     author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

@@ -1,4 +1,7 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 while getopts ":i:o:r:m:" opt; do
     case $opt in
         i) tarball="$OPTARG";;

@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ## 20151013 collection of plotting functions
 library(pacman)
 

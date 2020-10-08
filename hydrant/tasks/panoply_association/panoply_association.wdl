@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_association {
   File inputData
   String type
@@ -66,7 +69,7 @@ task panoply_association {
 
   meta {
     author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

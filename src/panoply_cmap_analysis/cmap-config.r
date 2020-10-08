@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 ## Configuration file for CMAP analysis
 ## Values set here supercede the defaults 

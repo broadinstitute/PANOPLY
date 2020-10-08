@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_main_MM/versions/41/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_blacksheep_MM/versions/7/plain-WDL/descriptor" as blacksheep_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/3/plain-WDL/descriptor" as mo_nmf_wdl

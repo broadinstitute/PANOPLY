@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_cna_correlation {
   File tarball   # output from panoply_cna_setup
   String type
@@ -36,7 +39,7 @@ task panoply_cna_correlation {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

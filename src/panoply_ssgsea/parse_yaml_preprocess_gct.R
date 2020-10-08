@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ################################################
 ## funtion to parse parse and update parameters
 ## - cmd line

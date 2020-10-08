@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ### Based on heatmap2 3.0.1 from the gplots package [https://cran.r-project.org/package=gplots]
 ### Fix: Avoid calculating dendrogram when Rowv or Colv are set to NA, FALSE, or NULL.
 ### License: GPL-2

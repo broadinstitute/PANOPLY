@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_cna_setup {
   File tarball   # output from panoply_harmonize
   File? groupsFile
@@ -39,7 +42,7 @@ task panoply_cna_setup {
 
   meta {
     author : "D. R. Mani"
-    email : "manidr@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

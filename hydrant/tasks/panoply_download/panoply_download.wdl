@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_download
 {
   File cons_clust_tar
@@ -70,7 +73,7 @@ task panoply_download
 
   meta {
     author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

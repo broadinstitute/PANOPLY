@@ -1,6 +1,6 @@
 #FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-r:0.0.13
 FROM broadcptacdev/panoply_common:latest
-MAINTAINER karsten@broadinstitute.org
+MAINTAINER proteogenomics@broadinstitute.org
 
 LABEL description="Docker running gene-centric single-sample Gene Set Enrichment Analysis (ssGSEA) and PTM Signature Enrichment Analysis (PTM-SEA)".
 

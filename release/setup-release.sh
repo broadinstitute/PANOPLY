@@ -1,17 +1,20 @@
 #!/bin/bash
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 start_dir=`pwd`    # must be invoked from the PANOPLY/release directory
 panoply=$start_dir/..
 red='\033[0;31m'
 grn='\033[0;32m'
 reg='\033[0m'
-err="${red}error.${reg}"
-not="${grn}----->${reg}" ## notification
+err="${red}Error:${reg}"
+not="${grn}====>>${reg}" ## notification
 
 ## users (for method permissions)
 proteomics_comp=(karsten@broadinstitute.org mmaynard@broadinstitute.org karen@broadinstitute.org)
 
-## documentation location
-doc_dir="$panoply/hydrant"
+## documentation location (assumes wiki repo is available in path)
+doc_dir="$panoply/../PANOPLY.wiki"
 
 
 display_usage() {
@@ -52,6 +55,19 @@ replaceWdlImports() {
 }
 
 
+put_method_config() {
+  w=$1
+  p=$2
+  m=$3
+
+  exists=`fissfc config_list -w $w -p $p | grep $m | wc -l`
+  if [ $exists -eq 1 ]; then
+    fissfc config_delete -c $m -w $w -p $p -n $release_dns
+  fi
+  fissfc config_put -w $w -p $p -c $m-template.json 
+}
+
+
 installMethod() {
   meth=$1
   meth_wdl=$2
@@ -60,15 +76,20 @@ installMethod() {
   echo -e "$not ... Installing method $meth"
 
   # install method on FireCloud/Terra with synopsis/documentation
+  # markdown documentation does not render in Terra -- use a URL to point to
+  #  the release-specific documentation on GitHub (added first line)
   syn=""
   doc=""
-  if [[ -f $doc_dir/$type/$meth/$meth-synopsis.txt ]]; then
-    syn=`cat $doc_dir/$type/$meth/$meth-synopsis.txt`
+  if [[ -f $panoply/hydrant/$type/$meth/$meth-synopsis.txt ]]; then
+    syn=`cat $panoply/hydrant/$type/$meth/$meth-synopsis.txt`
   fi
-  if [[ -f $doc_dir/$type/$meth/$meth-documentation.txt ]]; then
-    doc="$doc_dir/$type/$meth/$meth-documentation.txt"
+  orig_doc=`ls $doc_dir/*$meth.md`
+  if [[ -f $orig_doc ]]; then
+    doc="$meth.md"
+    echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_dir/release/$release_dir/$meth/$meth.md\n" > $doc
+    cat $orig_doc >> $doc
   fi
-  fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release $release_tag" $syn $doc
+  fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $doc
     
   # get method snapshot id and save release snapshot ids
   snap=$(fissfc meth_list -m $meth -n $release_dns | sort -n -k3 | tail -1 | cut -f3)
@@ -83,11 +104,12 @@ installMethod() {
   # copy method to workspace(s)
   #  there is no (?) direct way to copy a method to a workspace
   #  instead, create an empty config template and install it in the workspace
+  #  (delete method config if it exists)
   fissfc config_template -m $meth -n $release_dns -i $snap -t sample_set |  \
     sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
-  fissfc config_put -w $wkspace_all -p $project -c $meth-template.json
+  put_method_config $wkspace_all $project $meth
   if [ "$type" == "workflows" ]; then
-      fissfc config_put -w $wkspace_pipelines -p $project -c $meth-template.json
+      put_method_config $wkspace_pipelines $project $meth
   fi
 }
 
@@ -144,15 +166,23 @@ docker login
 ## WORKSPACES 
 createWkSpace() {
   ws=$1
-  echo -e "$not Creating workspace $ws"
   
-  fissfc space_new -w $ws -p $project
+  if fissfc space_exists -w $ws -p $proj -q; then
+    echo -e "$not Creating workspace $ws"
+    fissfc space_new -w $ws -p $project
+  else
+      echo -e "$not Workspace $ws exisits. Updating permissions"
+  fi
   # set permissions
   fissfc space_set_acl -w $ws -p $project -r OWNER --users ${proteomics_comp[@]}
-  fissfc space_set_acl -w $ws -p $project -r READER --users public
+  # setting workspace to PUBLIC is currently not functional -- need to contact Terra support
+  # fissfc space_set_acl -w $ws -p $project -r READER --users public
   
   # set workspace public using FireCloud API -- eg
-  # curl -X POST "https://api.firecloud.org/api/methods/broadcptac/panoply_main_copy/1/permissions" -H "accept: application/json" -H "Authorization: Bearer $(gcloud auth --account=manidr@broadinstitute.org print-access-token)" -H "Content-Type: application/json" -d "[{\"user\":\"public\",\"role\":\"READER\"}]"
+  # curl -X POST "https://api.firecloud.org/api/methods/broadcptac/panoply_main_copy/1/permissions" \
+  #      -H "accept: application/json" -H "Authorization: Bearer \
+  #         $(gcloud auth --account=manidr@broadinstitute.org print-access-token)" \
+  #      -H "Content-Type: application/json" -d "[{\"user\":\"public\",\"role\":\"READER\"}]"
   
 }
 # workspace for pipelines + all modules

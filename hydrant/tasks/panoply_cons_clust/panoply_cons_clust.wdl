@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_cons_clust {
   File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
   String type
@@ -41,7 +44,7 @@ task panoply_cons_clust {
 
   meta {
     author : "D. R. Mani, Karsten Krug"
-    email : "karsten@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ###################################################################################################################
 ## Filename: modT.r
 ## Created: June 16, 2016

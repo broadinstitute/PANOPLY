@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_ssgsea {
 
 	File input_ds
@@ -80,7 +83,7 @@ task panoply_ssgsea {
 
 	meta {
 		author : "Karsten Krug"
-		email : "karsten@broadinstitute.org"
+		email : "proteogenomics@broadinstitute.org"
 	}
 
 }

@@ -1,6 +1,9 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 
-### Broad Institute PGDAC PIPELINE
+### Broad Institute PANOPLY PIPELINE
 ### configuration and default parameters  
 
 ## Many parameters here are used and/or assumed to have specific values in

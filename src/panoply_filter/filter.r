@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 source ('config.r')
 pacman::p_load (dplyr)  # transition to dplyr to make data wranging more consistent and bug-free

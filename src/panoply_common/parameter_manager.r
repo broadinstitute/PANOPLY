@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 # test_parameter_manager_R.r
 ### Commandline inputs:
 library(optparse)

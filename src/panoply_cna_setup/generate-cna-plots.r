@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 ### Original code from Vanderbilt University. Author: Jing Wang 04212014
 ## cna_mrna is a matrix only containing 1, 0 and -1. 1 and -1 represent significant positive and negative spearman correlation between mRNA (each row) and CNA (each column)

@@ -1,4 +1,7 @@
 #!/usr/bin/env Rscript
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 
 ## install pacman and cmapR packages
 #  cmapR also requires the prada package which is not automatically installed

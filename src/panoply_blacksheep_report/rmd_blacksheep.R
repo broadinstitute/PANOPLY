@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 ### Create Rmarkdown report for BlackSheep module ###
 
 # tar_file  - URL of tar file created by task panoply_blacksheep

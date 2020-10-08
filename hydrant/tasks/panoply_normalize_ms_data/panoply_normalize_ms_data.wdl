@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_normalize_ms_data {
   File inputData
   String type
@@ -99,7 +102,7 @@ task panoply_normalize_ms_data {
 
   meta {
     author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

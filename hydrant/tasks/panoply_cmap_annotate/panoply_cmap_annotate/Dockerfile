@@ -1,5 +1,5 @@
 FROM broadcptacdev/panoply_common:latest
-MAINTAINER rkothadi@broadinstitute.org
+MAINTAINER proteogenomics@broadinstitute.org
 
 RUN Rscript -e "pacman::p_load (prada, cmapR)"
 

@@ -1,3 +1,6 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 library(optparse)
 library(doParallel)
 library(Cairo)

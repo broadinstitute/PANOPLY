@@ -1,7 +1,11 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
 task panoply_blacksheep {
     Int? memory
     Int? disk_space
     Int? num_threads
+    Int? num_preemptions
 
     File input_gct
     File master_yaml
@@ -43,11 +47,12 @@ task panoply_blacksheep {
         memory : select_first ([memory, 10]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
         cpu : select_first ([num_threads, 1]) + ""
+        preemptible : select_first ([num_preemptions, 0])
     }
 
     meta {
         author : "Karen Christianson"
-        email : "karen@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 

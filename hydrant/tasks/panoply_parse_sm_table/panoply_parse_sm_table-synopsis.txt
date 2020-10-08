@@ -1,0 +1,1 @@
+Support method for parsing Spectrum Mill output tables
