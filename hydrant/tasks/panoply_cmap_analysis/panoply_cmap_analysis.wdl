@@ -13,21 +13,12 @@ task panoply_cmap_connectivity {
   String permutation_dir = "cmap-permutation-scores"
   String outFile = "panoply_cmap-output.tar"
 
-  Float? cna_threshold
-  Int? cna_effects_threshold
-  Int? min_sigevents
-  Int? max_sigevents
-  Int? top_N
   Float? fdr_pvalue
-  String? log_transform
-  String? must_include_genes
   String? cis_fdr
   String? legacy_score
   Int? rankpt_n
   Int? mean_rankpt_threshold
   Float? cmap_fdr
-  String? alpha
-
 
   Int? memory
   Int? disk_space
@@ -42,20 +33,12 @@ task panoply_cmap_connectivity {
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module cmap_analysis \
     --master_yaml ${yaml} \
-    ${"--cna_threshold " + cna_threshold} \
-    ${"--cna_effects_threshold " + cna_effects_threshold} \
-    ${"--min_sigevents " + min_sigevents} \
-    ${"--max_sigevents " + max_sigevents} \
-    ${"--top_N " + top_N} \
     ${"--fdr_pvalue " + fdr_pvalue} \
-    ${"--log_transform " + log_transform} \
-    ${"--must_include_genes " + must_include_genes} \
     ${"--cis_fdr " + cis_fdr} \
     ${"--legacy_score " + legacy_score} \
     ${"--rankpt_n " + rankpt_n} \
     ${"--mean_rankpt_threshold " + mean_rankpt_threshold} \
-    ${"--cmap_fdr " + cmap_fdr} \
-    ${"--alpha " + alpha}
+    ${"--cmap_fdr " + cmap_fdr}
 
     # setup output scores directory ...
     if [ ! -d ${scores_dir} ]; then
@@ -85,7 +68,7 @@ task panoply_cmap_connectivity {
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, permutations+1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
+    preemptible : select_first ([num_preemptions, 1])
   }
 
   meta {
@@ -112,12 +95,6 @@ task panoply_cmap_input {
   Float? fdr_pvalue
   String? log_transform
   String? must_include_genes
-  String? cis_fdr
-  String? legacy_score
-  Int? rankpt_n
-  Int? mean_rankpt_threshold
-  Float? cmap_fdr
-  String? alpha
 
   Int? memory
   Int? disk_space
@@ -139,13 +116,8 @@ task panoply_cmap_input {
     ${"--top_N " + top_N} \
     ${"--fdr_pvalue " + fdr_pvalue} \
     ${"--log_transform " + log_transform} \
-    ${"--must_include_genes " + must_include_genes} \
-    ${"--cis_fdr " + cis_fdr} \
-    ${"--legacy_score " + legacy_score} \
-    ${"--rankpt_n " + rankpt_n} \
-    ${"--mean_rankpt_threshold " + mean_rankpt_threshold} \
-    ${"--cmap_fdr " + cmap_fdr} \
-    ${"--alpha " + alpha}
+    ${"--must_include_genes " + must_include_genes}
+    
     /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} -CMAPcfg "cmap-config-custom.r"
   }
 
@@ -160,7 +132,7 @@ task panoply_cmap_input {
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
+    preemptible : select_first ([num_preemptions, 1])
   }
 
   meta {
@@ -180,18 +152,7 @@ task panoply_cmap_annotate {
   String outFile = "panoply_cmap-annotate-output.tar"
 
   Float? cna_threshold
-  Int? cna_effects_threshold
-  Int? min_sigevents
-  Int? max_sigevents
-  Int? top_N
-  Float? fdr_pvalue
   String? log_transform
-  String? must_include_genes
-  String? cis_fdr
-  String? legacy_score
-  Int? rankpt_n
-  Int? mean_rankpt_threshold
-  Float? cmap_fdr
   String? alpha
 
   Int? memory
@@ -209,18 +170,7 @@ task panoply_cmap_annotate {
     --module cmap_analysis \
     --master_yaml ${yaml} \
     ${"--cna_threshold " + cna_threshold} \
-    ${"--cna_effects_threshold " + cna_effects_threshold} \
-    ${"--min_sigevents " + min_sigevents} \
-    ${"--max_sigevents " + max_sigevents} \
-    ${"--top_N " + top_N} \
-    ${"--fdr_pvalue " + fdr_pvalue} \
     ${"--log_transform " + log_transform} \
-    ${"--must_include_genes " + must_include_genes} \
-    ${"--cis_fdr " + cis_fdr} \
-    ${"--legacy_score " + legacy_score} \
-    ${"--rankpt_n " + rankpt_n} \
-    ${"--mean_rankpt_threshold " + mean_rankpt_threshold} \
-    ${"--cmap_fdr " + cmap_fdr} \
     ${"--alpha " + alpha}
     Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} "cmap-config-custom.r"
   }
@@ -235,7 +185,7 @@ task panoply_cmap_annotate {
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
+    preemptible : select_first ([num_preemptions, 1])
   }
 
   meta {
@@ -248,23 +198,24 @@ task panoply_cmap_annotate {
 
 task panoply_cmap_ssgsea {
   # task adapted from panoply_ssgsea; many inputs are set to specfic values for CMAP analysis
-	File input_ds
-	File gene_set_database
-	Int? permutation_num
-	String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
+  File input_ds
+  File gene_set_database
+  Int? permutation_num
+  String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
+  File yaml
 
-	# other ssgsea options (below) are fixed for CMAP analysis
-	String sample_norm_type = "rank"
-	String correl_type = "rank"
-	String statistic = "Kolmogorov-Smirnov"
-	String output_score_type = "NES"
+  # other ssgsea options (below) are fixed for CMAP analysis
+  String sample_norm_type = "rank"
+  String correl_type = "rank"
+  String statistic = "Kolmogorov-Smirnov"
+  String output_score_type = "NES"
 
-	Float weight = 0.0
-	Int min_overlap = 5
-	Int nperm = 0
-	String global_fdr = "TRUE"
-	String export_sigs = "FALSE"
-	String ext_output = "FALSE"
+  Float weight = 0.0
+  Int min_overlap = 5
+  Int nperm = 0
+  String global_fdr = "TRUE"
+  String export_sigs = "FALSE"
+  String ext_output = "FALSE"
 
 
   Int? memory
@@ -272,50 +223,51 @@ task panoply_cmap_ssgsea {
   Int? num_threads
   Int? num_preemptions
 
-	command {
-		set -euo pipefail
-		/home/pgdac/ssgsea-cli.R -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
-	}
+  command {
+    set -euo pipefail
+    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
+  }
 
-	output {
-		File scores="${output_prefix}-scores.gct"
-	}
+  output {
+    File scores="${output_prefix}-scores.gct"
+  }
 
-	runtime {
-		docker : "broadcptacdev/panoply_ssgsea:latest"
+  runtime {
+    docker : "broadcptacdev/panoply_ssgsea:latest"
     memory : select_first ([memory, 60]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 16]) + ""
     preemptible : select_first ([num_preemptions, 2])
-	}
+  }
 
-	meta {
-		author : "Karsten Krug"
-		email : "proteogenomics@broadinstitute.org"
-	}
+  meta {
+    author : "Karsten Krug"
+    email : "proteogenomics@broadinstitute.org"
+  }
 }
 
 
 
 task panoply_cmap_annotate_ssgsea {
-  # task adapted from pgdac_ssgsea; many inputs are set to specific values for CMAP annotation
-	File input_ds
-	File gene_set_database
-  	String outFile="panoply_cmap_annotate-ssgsea.tar"
-  	String output_prefix = "${basename (input_ds, '.gct')}"
+  # task adapted from panoply_ssgsea; many inputs are set to specific values for CMAP annotation
+  File input_ds
+  File gene_set_database
+  String outFile="panoply_cmap_annotate-ssgsea.tar"
+  String output_prefix = "${basename (input_ds, '.gct')}"
+  File yaml
 
-	# other ssgsea options (below) are fixed for CMAP analysis
-	String sample_norm_type = "rank"
-	String correl_type = "rank"
-	String statistic = "Kolmogorov-Smirnov"
-	String output_score_type = "NES"
+  # other ssgsea options (below) are fixed for CMAP analysis
+  String sample_norm_type = "rank"
+  String correl_type = "rank"
+  String statistic = "Kolmogorov-Smirnov"
+  String output_score_type = "NES"
 
-	Float weight = 0.0
-	Int min_overlap = 5
-	Int nperm = 1000
-	String global_fdr = "TRUE"
-	String export_sigs = "FALSE"
-	String ext_output = "FALSE"
+  Float weight = 0.0
+  Int min_overlap = 5
+  Int nperm = 1000
+  String global_fdr = "TRUE"
+  String export_sigs = "FALSE"
+  String ext_output = "FALSE"
 
 
   Int? memory
@@ -323,42 +275,42 @@ task panoply_cmap_annotate_ssgsea {
   Int? num_threads
   Int? num_preemptions
 
-	command {
-		set -euo pipefail
+  command {
+    set -euo pipefail
 
-		/home/pgdac/ssgsea-cli.R -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
+    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
 
     # assemble results into tar file
     find * -regextype posix-extended -regex "^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^.*.log.txt$|^.*parameters.txt$" -print0 | tar -cvf ${outFile} --null -T -
-	}
+  }
 
-	output {
-		File outputs="${outFile}"
-	}
+  output {
+    File outputs="${outFile}"
+  }
 
-	runtime {
-		docker : "broadcptacdev/panoply_ssgsea:latest"
+  runtime {
+    docker : "broadcptacdev/panoply_ssgsea:latest"
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 16]) + ""
     preemptible : select_first ([num_preemptions, 2])
-	}
+  }
 
-	meta {
-		author : "Karsten Krug"
-		email : "proteogenomics@broadinstitute.org"
-	}
+  meta {
+    author : "Karsten Krug"
+    email : "proteogenomics@broadinstitute.org"
+  }
 }
 
 
 workflow run_cmap_analysis {
   File CNAcorr_tarball
-  File subsetListFile
+  File subset_list_file
   File cmap_level5_data
   File annotation_pathway_db
   String subset_bucket
-  Int? n_permutations
-  Array[String] subset_files = read_lines ("${subsetListFile}")
+  Int n_permutations
+  Array[String] subset_files = read_lines ("${subset_list_file}")
   String? group
   String? data_type
   File yaml
@@ -394,33 +346,31 @@ workflow run_cmap_analysis {
       top_N=top_N,
       fdr_pvalue=fdr_pvalue,
       log_transform=log_transform,
-      must_include_genes=must_include_genes,
-      cis_fdr=cis_fdr,
-      legacy_score=legacy_score,
-      rankpt_n=rankpt_n,
-      mean_rankpt_threshold=mean_rankpt_threshold,
-      cmap_fdr=cmap_fdr,
-      alpha=alpha
+      must_include_genes=must_include_genes
+     
   }
 
   # run ssGSEA on the geneset
   scatter (f in subset_files) {
     call panoply_cmap_ssgsea {
       input:
-	      input_ds="${subset_bucket}/${f}",
-	      gene_set_database=panoply_cmap_input.genesets
+        input_ds="${subset_bucket}/${f}",
+        gene_set_database=panoply_cmap_input.genesets,
+          yaml=yaml
     }
   }
 
   # run ssGSEA on the permuted genesets (if any)
-  if (n_permutations > 0) {
-    Array[Pair[String,Int]] fxp = cross (subset_files, range (n_permutations))
+  if ( n_permutations > 0 ) {
+    Array[Int] n_perm_range = range( n_permutations )
+    Array[Pair[String,Int]] fxp = cross ( subset_files, n_perm_range )
     scatter (x in fxp) {
       call panoply_cmap_ssgsea as permutation {
         input:
           input_ds="${subset_bucket}/${x.left}",
-	        gene_set_database=panoply_cmap_input.permuted_genesets[x.right],
-	        permutation_num=x.right
+          gene_set_database=panoply_cmap_input.permuted_genesets[x.right],
+          permutation_num=x.right,
+            yaml=yaml
       }
     }
   }
@@ -434,20 +384,12 @@ workflow run_cmap_analysis {
       cmap_grp=group,
       cmap_typ=data_type,
       yaml=yaml,
-      cna_threshold=cna_threshold,
-      cna_effects_threshold=cna_effects_threshold,
-      min_sigevents=min_sigevents,
-      max_sigevents=max_sigevents,
-      top_N=top_N,
       fdr_pvalue=fdr_pvalue,
-      log_transform=log_transform,
-      must_include_genes=must_include_genes,
       cis_fdr=cis_fdr,
       legacy_score=legacy_score,
       rankpt_n=rankpt_n,
       mean_rankpt_threshold=mean_rankpt_threshold,
-      cmap_fdr=cmap_fdr,
-      alpha=alpha
+      cmap_fdr=cmap_fdr
   }
 
   call panoply_cmap_annotate {
@@ -459,25 +401,15 @@ workflow run_cmap_analysis {
       yaml=yaml,
       cmap_enrichment_groups=cmap_enrichment_groups,
       cna_threshold=cna_threshold,
-      cna_effects_threshold=cna_effects_threshold,
-      min_sigevents=min_sigevents,
-      max_sigevents=max_sigevents,
-      top_N=top_N,
-      fdr_pvalue=fdr_pvalue,
       log_transform=log_transform,
-      must_include_genes=must_include_genes,
-      cis_fdr=cis_fdr,
-      legacy_score=legacy_score,
-      rankpt_n=rankpt_n,
-      mean_rankpt_threshold=mean_rankpt_threshold,
-      cmap_fdr=cmap_fdr,
       alpha=alpha
   }
 
   call panoply_cmap_annotate_ssgsea {
     input:
       input_ds=panoply_cmap_annotate.gsea_input,
-  	  gene_set_database=annotation_pathway_db
+      gene_set_database=annotation_pathway_db,
+      yaml=yaml
   }
 
   output {
@@ -485,3 +417,4 @@ workflow run_cmap_analysis {
     File ssgseaOutput = panoply_cmap_annotate_ssgsea.outputs
   }
 }
+

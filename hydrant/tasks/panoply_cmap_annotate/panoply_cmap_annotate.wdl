@@ -22,6 +22,7 @@ task panoply_cmap_annotate {
   String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
   String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
 
+
   command {
     set -euo pipefail
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
@@ -43,7 +44,7 @@ task panoply_cmap_annotate {
     memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
-    preemptible : select_first ([num_preemptions, 0])
+    preemptible : select_first ([num_preemptions, 1])
   }
 
   meta {
