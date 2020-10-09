@@ -234,7 +234,7 @@ summarize.cmap.results <- function (subset.scores.dir, results.prefix, group, dt
       pacman::p_load(doParallel)
       pacman::p_load(foreach)
       
-      cl <- makeCluster (detectCores() - 1)
+      cl <- makeCluster (detectCores() - 1, outfile="")
       registerDoParallel (cl)
       permuted <- foreach (i = 0:(nperm-1), .combine='c') %dopar% {
         p <- cmap.connectivity (permuted.scores.dir, paste (group, 'cmap', dtype, 'permutation', i, sep='-'), group, dtype, permutation=i, ...)   
