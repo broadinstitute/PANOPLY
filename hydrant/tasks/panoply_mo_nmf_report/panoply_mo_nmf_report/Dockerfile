@@ -1,18 +1,19 @@
 FROM broadcptacdev/panoply_rmd_report:latest
 
-LABEL maintainer="karsten@broadinstitute.org"
-LABEL description="Docker for generating Rmarkdown reports for different PGDAC modules."
+# Install any libraries necessary to run the task
+# RUN set -ex \
+#     && apt-get update \
+#     && apt-get install -y --no-install-recommends \
+#         libcairo2-dev \
+#         libxt-dev \
+#     && rm -rf /var/lib/apt/lists/* \
+#     && install2.r -e \
+#         Cairo \
+#         data.table \
+#     && rm -rf /tmp/*
+RUN apt-get update && apt-get install -y dos2unix
 
 ENV wd /home/pgdac/
-
 COPY . $wd
 WORKDIR $wd
-
-
-RUN R -e "pacman::p_install('NMF')"
-
-
-
-
-
-
+RUN dos2unix src/*

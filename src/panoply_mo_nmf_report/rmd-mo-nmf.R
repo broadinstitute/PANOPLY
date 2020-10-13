@@ -408,7 +408,7 @@ knitr::include_graphics(fig.str[['cons_map']])
     
     cat('## Rendering Rmarkdown file\n', file=logfile, append=T)
     writeLines(rmd, con=file.path(tmp.dir, fn_out))
-    rmarkdown::render(file.path(tmp.dir, fn_out))
+    rmarkdown::render(file.path(tmp.dir, fn_out), output_format = "html_document")
     file.copy(file.path(tmp.dir, sub('\\.rmd', '.html', fn_out)), wd, overwrite = T)
     
     cat('## Output written to:', file.path(wd, sub('\\.rmd', '.html', fn_out)), file=logfile, append=T)
@@ -419,4 +419,4 @@ knitr::include_graphics(fig.str[['cons_map']])
 ## ################################################
 ## run
 rmd_mo_nmf(tar.file=tar.file, label=label)
-rmd_mo_nmf(tar.file=tar.file, label=label, tmp.dir = '.')
+#rmd_mo_nmf(tar.file=tar.file, label=label, tmp.dir = '.')
