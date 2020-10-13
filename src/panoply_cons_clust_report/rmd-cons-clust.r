@@ -118,6 +118,7 @@ This report summarizes the results of the consensus clustering module, which uti
 1000 bootstrap sample data sets are clustered into *K* clusters using k-means, and a consensus matrix is constructed whose entries (i, j) record the number of times items i and j are assigned to the same cluster divided by the total number of times both items are selected.
 A range of possible cluster numbers *K* between 2 and 10 are evaluated and the best *K* is determined by comparing the *empirical cumulative distribution (CDF)* of the resulting consensus matrices. 
 To compare the clusterings, the increase of CDF area *K<sub>delta</sub>* is evaluated and the *K* with the largest *K<sub>delta</sub>* is defined as best *K*.
+This report shows metrics comparing the clusterings used to determine the best *K*, the consensus matrix for the best *K*, and principal component analysis and marker selection results characterizing each cluster for the best *K*.
                ')
   
   #############################
@@ -133,42 +134,45 @@ To compare the clusterings, the increase of CDF area *K<sub>delta</sub>* is eval
   k.min = cm.all$clust %>% min()
   k.max = cm.all$clust %>% max() 
   
-  # recreate metrics plots 
+  # metrics plots 
   cm.all2 = cm.all %>% 
     gather(key = "algorithm", value = "value", -clust) %>%
     mutate(highlight = "none") %>%
     mutate(value = signif(value, 3))
-  
+
   for (i in rownames(cm.best)){
     best.k.plot = cm.best[i, 'best.k' ]
     index = which(cm.all2$clust == best.k.plot & cm.all2$algorithm == i)
     cm.all2[index, "highlight"] = "best"
+    cm.all2$algorithm[cm.all2$algorithm == i] = paste0(i, ", K = ", best.k.plot)
   }
-  
+
   metrics_plot = ggplot(data=cm.all2, aes(x=clust, y = value, text = value)) +
     geom_line() +
     geom_point(size = 3, aes(colour = highlight)) +
-    facet_wrap(~algorithm, ncol = 2) +
+    facet_wrap(~algorithm) +
     scale_color_manual(values=c("red", "black"), guide = FALSE) +
     scale_x_continuous(breaks = cm.all2$clust) +
     theme_classic() +
     theme(legend.position = "none") +
-    labs(title = "Clustering metrics", x = "Number of clusters", y = "Score") +
-    geom_text(aes(label = glue('k={cm.best[i, "best.k"]}'), x = Inf, y = Inf, hjust = 1, vjust = 1))
+    labs(title = "Plots of clustering metrics", x = "\r\nNumber of clusters", y = "Score\n\r") 
   
+  metrics_plotly = ggplotly(metrics_plot, tooltip = "text", width = 800, height = 400)
+  metrics_plotly$x$layout$margin$b = metrics_plotly$x$layout$margin$b + 5
+
   best_k_data = cm.best %>%
     rownames_to_column("algorithm") %>%
     select(-best.k.idx) %>%
     mutate(best.k.score = signif(best.k.score, 3))
   
-  save(metrics_plot, best_k_data, file = "metrics_plot.Rdata")
+  save(metrics_plotly, best_k_data, file = "metrics_plot.Rdata")
   
-  rmd = paste0(rmd, '\n## Metrics
+  rmd = paste0(rmd, '\n## Clustering metrics
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("metrics_plot.RData")
-ggplotly(metrics_plot, tooltip = "text")
+load("metrics_plot.Rdata")
+metrics_plotly
 ```
-**Figure**: Interactive plots of clustering metrics for *K* = ', k.min, ' through *K* = ', k.max, '. The best *K* is highlighted in red. Hover over each point to see the score value it corresponds to.
+**Figure**: Interactive plots of clustering metrics for *K* = ', k.min, ' through *K* = ', k.max, '. The best *K* is highlighted in red for each algorithm. Hover over each point to see the score value it corresponds to.
 
 
 **Table**: Best *K* and score for different clustering algorithms.
@@ -213,21 +217,16 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   mat2 <- mat[keep, ]
   
   pca <- fviz_cluster(list(cluster=membership, data=t(na.omit(mat2))), palette='Dark2', text = colnames(mat), geom = "point", labelsize = 8)
-  
-  pca2 <- fviz_cluster(list(cluster=membership, data=t(na.omit(mat2))), palette='Dark2', text = colnames(mat), labelsize = 8)
+  p_plotly = ggplotly(pca) %>%
+    add_trace(x = pca$data$x, y = pca$data$y, text = pca$data$name, hoverinfo = "text", mode = "markers")
 
-  save(pca, pca2, file = "pca_data.Rdata")
+  save(pca, file = "pca_data.Rdata")
   
   rmd = paste0(rmd, '\n### PCA plot for best *K* = ', best_k, '\n
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("pca_data.RData")
 ggplotly(pca, tooltip = "text")
 ```
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("pca_data.RData")
-ggplotly(pca2, tooltip = "text")
-```
-
 **Figure**: PCA plot for *K* = 3. Clusters are separated by colors. Hover over each point to see the sample name it corresponds to.
                ')
   
@@ -300,6 +299,7 @@ ggplotly(pca2, tooltip = "text")
   gsea_dirs = grep(paste0(type, "-Cluster-class\\..*-analysis-gsea-analysis"), list.dirs(file.path(label, clust_dir), full.names = FALSE), value = TRUE)
   gsea_pos = "gsea.SUMMARY.RESULTS.REPORT.0.txt"
   gsea_neg = "gsea.SUMMARY.RESULTS.REPORT.1.txt"
+  nperm = 1000
   for (dir_name in gsea_dirs){
     cluster_num = str_extract(dir_name,"[:digit:]") %>% as.numeric()
     hallmark_neg = read.delim(file.path(label, clust_dir, dir_name, gsea_neg))
@@ -312,7 +312,8 @@ ggplotly(pca2, tooltip = "text")
     
     hallmark_volc = hallmark %>%
       mutate(group = ifelse(fdr<assoc.fdr, "Significant", "Not significant")) %>%
-      mutate(pathway = gsub("^HALLMARK_", "", pathway))
+      mutate(pathway = gsub("^HALLMARK_", "", pathway)) %>%
+      mutate(fdr = ifelse(fdr == 0, 1/nperm, fdr))
     
     hallmark_table = hallmark %>%
       mutate(fdr = signif(fdr, 3),
