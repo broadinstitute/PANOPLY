@@ -95,11 +95,7 @@ rmd_cons_clust <- function(tar_file, yaml_file, label, type){
   clust_dir = "clustering"
   
   # source config.R
-  #source(file.path(label,clust_dir, "config.r"))
-  clustering.sd.threshold <- 2
-  cluster.enrichment.subgroups <- "/cromwell_root/fc-eaf370c1-9c61-4cd8-b54f-cccd2e316032/sample_sets/all/groups-aggregate.csv"
-  assoc.subgroups <- 'proteome-bestclus.csv'
-  assoc.fdr <- 0.01
+  source(file.path(label,clust_dir, "config.r"))
   
   #############################
   # Overview section
@@ -136,21 +132,21 @@ This report shows metrics comparing the clusterings used to determine the best *
   
   # metrics plots 
   cm.all2 = cm.all %>% 
-    gather(key = "algorithm", value = "value", -clust) %>%
+    gather(key = "metric", value = "value", -clust) %>%
     mutate(highlight = "none") %>%
     mutate(value = signif(value, 3))
 
   for (i in rownames(cm.best)){
     best.k.plot = cm.best[i, 'best.k' ]
-    index = which(cm.all2$clust == best.k.plot & cm.all2$algorithm == i)
+    index = which(cm.all2$clust == best.k.plot & cm.all2$metric == i)
     cm.all2[index, "highlight"] = "best"
-    cm.all2$algorithm[cm.all2$algorithm == i] = paste0(i, ", K = ", best.k.plot)
+    cm.all2$metric[cm.all2$metric == i] = paste0(i, ", K = ", best.k.plot)
   }
 
   metrics_plot = ggplot(data=cm.all2, aes(x=clust, y = value, text = value)) +
     geom_line() +
     geom_point(size = 3, aes(colour = highlight)) +
-    facet_wrap(~algorithm) +
+    facet_wrap(~metric) +
     scale_color_manual(values=c("red", "black"), guide = FALSE) +
     scale_x_continuous(breaks = cm.all2$clust) +
     theme_classic() +
@@ -161,7 +157,7 @@ This report shows metrics comparing the clusterings used to determine the best *
   metrics_plotly$x$layout$margin$b = metrics_plotly$x$layout$margin$b + 5
 
   best_k_data = cm.best %>%
-    rownames_to_column("algorithm") %>%
+    rownames_to_column("metric") %>%
     select(-best.k.idx) %>%
     mutate(best.k.score = signif(best.k.score, 3))
   
@@ -172,10 +168,10 @@ This report shows metrics comparing the clusterings used to determine the best *
 load("metrics_plot.Rdata")
 metrics_plotly
 ```
-**Figure**: Interactive plots of clustering metrics for *K* = ', k.min, ' through *K* = ', k.max, '. The best *K* is highlighted in red for each algorithm. Hover over each point to see the score value it corresponds to.
+**Figure**: Interactive plots of clustering metrics for *K* = ', k.min, ' through *K* = ', k.max, '. The best *K* is highlighted in red for each metric. Hover over each point to see the score value it corresponds to.
 
 
-**Table**: Best *K* and score for different clustering algorithms.
+**Table**: Best *K* and score for different clustering metrics.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("metrics_plot.RData")
 library(DT)
@@ -194,7 +190,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   
   rmd = paste0(rmd, '\n## Results for best *K* = ', best_k, '\n
 ### Consensus matrix for *K* = ', best_k, '\n
-![**Figure**: Consensus matrix for *K* = 3, determined by several algorithms to be the best *K*.](', file.path(label, clust_dir, best_png), ') \n
+![**Figure**: Consensus matrix for best *K* = 3.](', file.path(label, clust_dir, best_png), ') \n
                ')
   
   ###############################################
@@ -216,18 +212,13 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   } 
   mat2 <- mat[keep, ]
   
-  pca <- fviz_cluster(list(cluster=membership, data=t(na.omit(mat2))), palette='Dark2', text = colnames(mat), geom = "point", labelsize = 8)
-  p_plotly = ggplotly(pca) %>%
-    add_trace(x = pca$data$x, y = pca$data$y, text = pca$data$name, hoverinfo = "text", mode = "markers")
-
-  save(pca, file = "pca_data.Rdata")
+  pca <- fviz_cluster(list(cluster=membership, data=t(na.omit(mat2))), palette='Dark2', repel=TRUE, labelsize = 8, main = paste("PCA, K =", best_k))
+  png ("pca_plot.png", width = 800, height = 800)
+  print(pca)
+  dev.off()
   
   rmd = paste0(rmd, '\n### PCA plot for best *K* = ', best_k, '\n
-```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("pca_data.RData")
-ggplotly(pca, tooltip = "text")
-```
-**Figure**: PCA plot for *K* = 3. Clusters are separated by colors. Hover over each point to see the sample name it corresponds to.
+![**Figure**: Plot of principal component analysis for *K* = 3. Clusters are separated by colors and shapes. Sample names are labeled for each point.](pca_plot.png)
                ')
   
   #########################################################
@@ -294,7 +285,7 @@ ggplotly(pca, tooltip = "text")
   gsea_pos = "gsea.SUMMARY.RESULTS.REPORT.0.txt"
   gsea_neg = "gsea.SUMMARY.RESULTS.REPORT.1.txt"
   
-  nperm = yaml_params$panoply_ssgsea$nperm
+  nperm = 1000
   
   for (dir_name in gsea_dirs){
     cluster_num = str_extract(dir_name,"[:digit:]") %>% as.numeric()
@@ -319,21 +310,22 @@ ggplotly(pca, tooltip = "text")
     
     save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".Rdata"))
     
-    rmd = paste0(rmd, '\n#### **GSEA for selected markers in Cluster ', cluster_num, '**
+    rmd = paste0(rmd, '\n#### **GSEA results for Cluster ', cluster_num, '**
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("hallmark', cluster_num, '.RData")
 p = ggplot(hallmark_volc, aes(x = NES, y = -log10(fdr), colour = group, text = pathway, group = category)) +
   geom_point() +
   geom_hline(yintercept = -log10(', assoc.fdr, '), linetype = "dashed") +
-  scale_color_manual(values=c("black", "red"))
+  scale_color_manual(values=c("black", "red")) +
+  labs(x = "NES.Rest.over.Cluster', cluster_num, '")
 ggplotly(p, tooltip = c("text", "category"))
 ```
-**Figure**: Interactive volcano plot summarizing GSEA pathway results for the selected markers in cluster ', cluster_num, '. X axis represents the Normalized Enrichment Score (NES); Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', assoc.fdr , '. Hover over each point to see which pathway and category it corresponds to.
+**Figure**: Interactive volcano plot summarizing GSEA pathway results for cluster ', cluster_num, '. X axis represents the Normalized Enrichment Score (NES); negative NES values indicate enrichment in cluster ', cluster_num, ', and positive NES values indicate enrichment in the rest of the clusters. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', assoc.fdr , '. Hover over each point to see which pathway and category it corresponds to.
                  ')
     
     if (dim(hallmark_table)[1]>= 1){
       rmd = paste0(rmd, '\n
-**Table**: ', dim(hallmark_table)[1], ' significantly enriched pathways for cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.
+**Table**: ', dim(hallmark_table)[1], ' significantly enriched pathways in cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("hallmark', cluster_num, '.RData")
 library(DT)
@@ -343,7 +335,7 @@ datatable(hallmark_table, rownames = FALSE, width = "500px")
                  ')
     } else {
       rmd = paste0(rmd, '\n
-No significantly enriched pathways for cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.  
+No significantly enriched pathways in cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.  
 \n
                  ')
     }
@@ -360,5 +352,5 @@ No significantly enriched pathways for cluster ', cluster_num, ' with FDR < ', a
 
 }
 
-rmd_cons_clust(tar_file = tar_file, yaml_file = yaml_file, label=label, type=type)
+rmd_cons_clust(tar_file = tar_file, yaml_file = yaml_file, label = label, type = type)
 
