@@ -134,7 +134,7 @@ if ("category" %in% names(rdesc_volc)){
   ggplotly(p, tooltip = "text")
 }
 ```
-**Figure**: Interactive volcano plot summarizing ssGSEA pathway results for ', category, ', contrast ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(paste0(" ", split_word, ".*"), "", comparison), ' and negative NES values indicate enrichment in ', gsub(paste0(".*", split_word, " "), "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '. Hover over each point to see which pathway it corresponds to.
+**Figure**: Interactive volcano plot summarizing ssGSEA pathway results for ', category, ', contrast ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(paste0(" ", split_word, ".*"), "", comparison), ' and negative NES values indicate enrichment in ', gsub(paste0(".*", split_word, " "), "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '.
                ')
         
   rdesc_tab = rdesc2 %>% 
