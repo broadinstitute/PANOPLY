@@ -3,7 +3,7 @@
 #FROM r-base
 FROM broadcptac/panoply_common:latest
 
-LABEL maintainer="karsten@broadinstitute.org"
+LABEL maintainer="proteogenomics@broadinstitute.org"
 LABEL description="Docker for generating Rmarkdown reports for different Panoply modules."
 
 ENV wd /home/pgdac/

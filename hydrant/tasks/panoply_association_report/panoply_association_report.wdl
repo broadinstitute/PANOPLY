@@ -3,8 +3,9 @@
 #
 task panoply_association_report {
     Int? memory
-  	Int? disk_space
-  	Int? num_threads
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
 
     File input_tar
     File master_yaml
@@ -32,12 +33,13 @@ task panoply_association_report {
         docker : "broadcptacdev/panoply_association_report:latest"
         memory: select_first ([memory, 8]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
-        preemptible : select_first ([num_threads, 1]) + ""
+        cpu : select_first ([num_threads, 1]) + ""
+        preemptible : select_first ([num_preemptions, 0])
     }
 
     meta {
         author : "Karen Christianson"
-        email : "karen@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 

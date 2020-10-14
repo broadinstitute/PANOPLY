@@ -1,5 +1,5 @@
 FROM broadcptacdev/panoply_common:latest
-MAINTAINER rkothadi@broadinstitute.org
+MAINTAINER proteogenomics@broadinstitute.org
 
 RUN apt-get update 
 RUN echo Y | apt-get install libxml2 libxml2-dev

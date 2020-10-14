@@ -21,7 +21,7 @@ option_list <- list(
   make_option( c("-d", "--define_colors"), action='store', type='character', dest='cat_colors', help='Specifiy colors for each level in "categorial_annotation". Example: "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"'), # default = NA),
   make_option( c("-r", "--runonly"), action='store', type='logical', dest='nmf_only', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.'), # default=FALSE),
   make_option( c("-f", "--sdfilter"), action='store', type='numeric', dest='sd_filt', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed. Will be applied before z-scoring (optional)') , ## default=0),
-  make_option( c("-g", "--filt_mode"), action='store', type='character', dest='filt_mode', help='determines how the dataset will be filtered. XX'), # default='global'),
+  make_option( c("-g", "--filt_mode"), action='store', type='character', dest='filt_mode', help='Determines how the low variable features (paramater "sd_filt") will be removed from the dataset. "global": the filter will be applied to the entrire datasets. "separate": the will be applied separately to each data type (e.g. proteome, RNA, etc.). "equal": all data tables of different data types (e.g. proteome, RNA) will be filtered down to have the same number of features and ths is limited by the data type with the smallest number of features "N_feat". The data tables of other data types are filtered to retain the "N_feat" highest variable features.  Only relevant for multi-omics data.'), # default='global'),
   make_option( c("-u", "--z_score"), action='store', type='logical', dest='z_score', help='If TRUE, rows in th matrix will be z-scored.'), # default=TRUE),
   make_option( c("-i", "--impute"), action='store', type='logical', dest='impute', help='If TRUE, the matrix will be first filtered for features present in >70% of samples. The remaining missing values will be imputed via KNN (R packe impute).'), # default=TRUE),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
@@ -153,6 +153,11 @@ parse_yaml_mo_nmf <- function(cmd_option_list,
   opt$gene_col <- as.character(opt$gene_col)
   opt$organism <- as.character(opt$organism)
   
+  opt$feature_fdr <- as.numeric(opt$feature_fdr)
+  opt$ora_pval <- as.numeric(opt$ora_pval)
+  opt$ora_max_categories <- as.integer(opt$ora_max_categories)
+  
+  
   return(opt)
 } 
 
@@ -204,7 +209,7 @@ opt <- parse_yaml_mo_nmf(option_list)
 #opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/'
 #opt$organism <- 'human'
 #opt$blank_anno <- 'N/A'
-#opt$blank_anno_col <- 'white'
+#opt$blank_anno_col <- '#BFBEBE'
 #opt$core_membership <- 0
 
 ################################################
@@ -224,6 +229,9 @@ main <- function(opt){
     if(is.null(opt$organism)) opt$organism <- 'human'
     if(is.null(opt$blank_anno)) opt$blank_anno='N/A'
     if(is.null(opt$blank_anno_col)) opt$blank_anno_col='white'
+    if(is.null(opt$feature_fdr)) opt$feature_fdr <- 0.01
+    if(is.null(opt$ora_pval)) opt$ora_pval <- 0.01
+    if(is.null(opt$ora_max_categories)) opt$ora_max_categories <- 10
     
     
     ## ##################################################
@@ -508,7 +516,7 @@ main <- function(opt){
       ## cophenic
       rank.coph <- sapply(res.rank, cophcor)
       
-      ## dispersion of sonsensus matrix
+      ## dispersion of consensus matrix
       rank.disp <- sapply(res.rank, dispersion)
       
       ## combine
@@ -596,7 +604,10 @@ main <- function(opt){
                                    core_membership=opt$core_membership, 
                                    organism=opt$organism,
                                    blank.anno=opt$blank_anno,
-                                   blank.anno.col=opt$blank_anno_col))
+                                   blank.anno.col=opt$blank_anno_col,
+                                   feature.fdr=opt$feature_fdr,
+                                   ora.pval=opt$ora_pval,
+                                   ora.max.categories=opt$ora_max_categories))
     }
     
     return(0)

@@ -58,7 +58,7 @@ task panoply_rna_protein_correlation {
 
   meta {
     author : "Ramani Kothadia"
-    email  : "rkothadi@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -160,7 +160,7 @@ task panoply_ssgsea {
 
   meta {
     author : "Karsten Krug"
-    email  : "karsten@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 
 }
@@ -199,7 +199,7 @@ task panoply_rna_protein_correlation_report {
 
   meta {
     author : "Karsten Krug"
-    email  : "karsten@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -265,7 +265,7 @@ task panoply_harmonize {
 
   meta {
     author : "Ramani Kothadia"
-    email  : "rkothadi@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -307,7 +307,7 @@ task panoply_sampleqc {
 
   meta {
     author : "D. R. Mani"
-    email  : "manidr@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -343,7 +343,7 @@ task panoply_sampleqc_report {
 
   meta {
     author : "Karsten Krug"
-    email  : "karsten@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -388,7 +388,7 @@ task panoply_cna_setup {
 
   meta {
     author : "D. R. Mani"
-    email  : "manidr@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -431,7 +431,7 @@ task panoply_cna_correlation {
 
   meta {
     author : "D. R. Mani"
-    email  : "manidr@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -469,7 +469,7 @@ task panoply_cna_correlation_report {
 
   meta {
     author : "Karsten Krug"
-    email  : "karsten@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -528,7 +528,7 @@ task panoply_association {
 
   meta {
     author : "Ramani Kothadia"
-    email  : "rkothadi@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -567,7 +567,7 @@ task panoply_accumulate {
 
   meta {
     author : "Ramani Kothadia"
-    email  : "rkothadi@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -613,7 +613,7 @@ task panoply_cons_clust {
 
   meta {
     author : "D. R. Mani, Karsten Krug"
-    email  : "karsten@broadinstitute.org"
+    email  : "proteogenomics@broadinstitute.org"
   }
 }
 
@@ -687,7 +687,7 @@ task panoply_download
 
   meta {
     author : "Ramani Kothadia"
-    email : "rkothadi@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 

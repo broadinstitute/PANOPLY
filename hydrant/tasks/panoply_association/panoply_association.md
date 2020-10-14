@@ -1,1 +1,0 @@
-../../../../PANOPLY.wiki/Analysis-Modules:-panoply_association.md

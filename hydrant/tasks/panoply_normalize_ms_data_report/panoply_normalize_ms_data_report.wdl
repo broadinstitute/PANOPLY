@@ -12,6 +12,7 @@ task panoply_normalize_ms_data_report {
   Int? memory
   Int? disk_space
   Int? num_threads
+  Int? num_preemptions
 
   command {
     set -euo pipefail
@@ -45,14 +46,16 @@ task panoply_normalize_ms_data_report {
     memory : select_first ([memory, 8]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
+    preemptible : select_first ([num_preemptions, 0])
   }
 
   meta {
     author : "Karsten Krug"
-    email : "karsten@broadinstitute.org"
+    email : "proteogenomics@broadinstitute.org"
   }
 }
 
 workflow panoply_normalize_ms_data_report_workflow {
-	call panoply_normalize_ms_data_report
+  call panoply_normalize_ms_data_report
 }
+

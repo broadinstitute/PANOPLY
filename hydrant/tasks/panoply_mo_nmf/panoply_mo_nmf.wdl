@@ -1,29 +1,31 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-#########################################################################
+
+######################################
 ## NMF
 task panoply_mo_nmf {
 
 	#Inputs defined here
 	File tar_file
 	File yaml_file
+	String output_prefix="results_nmf"
 	
 	Int? kmin
 	Int? kmax
 	Int? nrun
 	
 	String? seed
-
-        String output_prefix="results_nmf"
 	
 	String? gene_column
-
+ 
 	Boolean? no_plot
 	Boolean? z_score
 	Boolean? impute
 
 	Boolean? exclude_2
+	
+	String? filt_mode
 	Float? sd_min
 
 	Int? memory
@@ -34,7 +36,9 @@ task panoply_mo_nmf {
 	command {
 		set -euo pipefail
 		#Command goes here
-		Rscript /home/pgdac/src/mo-nmf.r -t ${tar_file} -y ${yaml_file} -l ${default=NA kmin} -m ${default=NA kmax} -n ${default=NA nrun} -s ${default=NA seed} -r ${default=false no_plot} -f ${default=NA sd_min} -u ${default=NA z_score} -i ${default=NA impute} -a ${default=NA gene_column} -e ${default=NA exclude_2} -z /home/pgdac/src/
+		Rscript /home/pgdac/src/mo-nmf.r --tar ${tar_file} --yaml ${yaml_file} --lowrank ${default=NA kmin} --maxrank ${default=NA kmax} --nrun ${default=NA nrun} --seed ${default=NA seed} --runonly ${default=false no_plot} --sdfilter ${default=NA sd_min} --filt_mode ${default=NA filt_mode} --z_score ${default=NA z_score} --impute ${default=NA impute} --gene_column ${default=NA gene_column} --exclude_2 ${default=NA exclude_2} --libdir /home/pgdac/src/
+
+		#Rscript /home/pgdac/src/mo-nmf.r -t ${tar_file} -y ${yaml_file} -l ${default=NA kmin} -m ${default=NA kmax} -n ${default=NA nrun} -s ${default=NA seed} -r ${default=false no_plot} -f ${default=NA sd_min} -u ${default=NA z_score} -i ${default=NA impute} -a ${default=NA gene_column} -e ${default=NA exclude_2} --filt_mode ${default=NA filt_mode} -z /home/pgdac/src/
 		
 		find * -type d -name "[0-9]*" -print0 | tar -czvf ${output_prefix}.tar --null -T -
 		

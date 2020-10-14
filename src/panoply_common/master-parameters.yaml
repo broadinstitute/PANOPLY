@@ -117,17 +117,28 @@ panoply_blacksheep:
 panoply_mo_nmf:
 
   ## clustering
-  kmin: 2
-  kmax: 10
-  exclude_2: TRUE
-  core_membership: 0.5 
+  kmin: 2              ## minimum number of clusters    
+  kmax: 10             ## maximum number of clusters
+  exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
+  core_membership: 0.5 ## minimal cluster membership
  
   #########################
   ## NMF parameters
-  nrun: 50
-  seed: random
-  method: brunet
-  bnmf: FALSE
+  nrun: 50         ## number of iterations
+  seed: random     ## initialization method for the itertions
+  method: brunet   ## NMF method  
+  bnmf: FALSE      ## NOT SUPPORTED
+  
+  #########################
+  ## feature selection
+  feature_fdr: 0.01    ## max. FDR for 2-sample t-test
+  
+  #########################
+  ## overrepresentation 
+  ## analysis
+  ora_pval: 0.01         ## max. p-value for overrepresentation analysis (Fisher's exact test)
+  ora_max_categories: 10 ## max. number of levels in a annotation category to be included in the
+                         ## overrepresentation analysis
   
   ## heatmap parameters
   hm_cw: 5      ## cell width
@@ -138,19 +149,19 @@ panoply_mo_nmf:
   #########################
   ## filtering
   filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05
+  sd_filt: 0.05       ## 
   z_score: TRUE
  
   #########################
   ## imputation
-  impute: FALSE
-  impute_k: 5
+  impute: FALSE   ## If TRUE, kNN imputation will be used to impute missing values
+  impute_k: 5     ## k for kNN
   max_na_row: 0.3 ## (not working yet)
   max_na_col: 0.9 ## (not working yet)
  
   #########################
   ## misc
-  gene_col: geneSymbol     ##   
+  gene_col: geneSymbol     ##    
   nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
   organism: human
 

@@ -1,1 +1,0 @@
-../../../../PANOPLY.wiki/Report-Modules:-panoply_sampleqc_report.md
