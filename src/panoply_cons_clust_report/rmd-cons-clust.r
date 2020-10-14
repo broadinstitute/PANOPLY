@@ -118,7 +118,7 @@ This report summarizes the results of the consensus clustering module, which uti
 1000 bootstrap sample data sets are clustered into *K* clusters using k-means, and a consensus matrix is constructed whose entries (i, j) record the number of times items i and j are assigned to the same cluster divided by the total number of times both items are selected.
 A range of possible cluster numbers *K* between 2 and 10 are evaluated and the best *K* is determined by comparing the *empirical cumulative distribution (CDF)* of the resulting consensus matrices. 
 To compare the clusterings, the increase of CDF area *K<sub>delta</sub>* is evaluated and the *K* with the largest *K<sub>delta</sub>* is defined as best *K*.
-This report shows metrics comparing the clusterings used to determine the best *K*, the consensus matrix for the best *K*, and principal component analysis and marker selection results characterizing each cluster for the best *K*.
+This report shows metrics comparing the clusterings used to determine the best *K*, the consensus matrix for the best *K*, principal component analysis for the best *K* clusters, and marker selection & GSEA results for each cluster.
                ')
   
   #############################
@@ -238,12 +238,6 @@ ggplotly(pca, tooltip = "text")
   ids = read.csv(full_MS_file, stringsAsFactors = FALSE) %>%
         pull(Gene.ID)
   mat_filt = mat[ids,]
-  
-  # for (contrast in contrast_files){
-  #   ids = read.csv(contrast, stringsAsFactors = FALSE) %>%
-  #     pull(Gene.ID)
-  #   mat_filt = mat[ids,]
-  #   cluster_num = str_extract(contrast,"[:digit:]") %>% as.numeric()
     
   ## heatmap annotations
   if (!is.null (cluster.enrichment.subgroups)) {
@@ -299,7 +293,9 @@ ggplotly(pca, tooltip = "text")
   gsea_dirs = grep(paste0(type, "-Cluster-class\\..*-analysis-gsea-analysis"), list.dirs(file.path(label, clust_dir), full.names = FALSE), value = TRUE)
   gsea_pos = "gsea.SUMMARY.RESULTS.REPORT.0.txt"
   gsea_neg = "gsea.SUMMARY.RESULTS.REPORT.1.txt"
-  nperm = 1000
+  
+  nperm = yaml_params$panoply_ssgsea$nperm
+  
   for (dir_name in gsea_dirs){
     cluster_num = str_extract(dir_name,"[:digit:]") %>% as.numeric()
     hallmark_neg = read.delim(file.path(label, clust_dir, dir_name, gsea_neg))
@@ -323,7 +319,7 @@ ggplotly(pca, tooltip = "text")
     
     save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".Rdata"))
     
-    rmd = paste0(rmd, '\n
+    rmd = paste0(rmd, '\n#### **GSEA for selected markers in Cluster ', cluster_num, '**
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("hallmark', cluster_num, '.RData")
 p = ggplot(hallmark_volc, aes(x = NES, y = -log10(fdr), colour = group, text = pathway, group = category)) +
@@ -332,6 +328,7 @@ p = ggplot(hallmark_volc, aes(x = NES, y = -log10(fdr), colour = group, text = p
   scale_color_manual(values=c("black", "red"))
 ggplotly(p, tooltip = c("text", "category"))
 ```
+**Figure**: Interactive volcano plot summarizing GSEA pathway results for the selected markers in cluster ', cluster_num, '. X axis represents the Normalized Enrichment Score (NES); Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', assoc.fdr , '. Hover over each point to see which pathway and category it corresponds to.
                  ')
     
     if (dim(hallmark_table)[1]>= 1){
