@@ -185,7 +185,7 @@ output:
       smooth_scroll: true
 ---\n
 ## Overview
-This report summarizes the results of the Association module for ', type, ' at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways.
+This report summarizes the results of the Association module for ', type, ' at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways. Detailed documentation for the association analysis module can be found [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_association) and for the ssGSEA module [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_ssgsea). 
               ')
   
   if (dir.exists(file.path(label, gsea_dir))){
