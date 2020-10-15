@@ -2,8 +2,9 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_cons_clust_report {
-    Float? ram_gb
-    Int? local_disk_gb
+    Int? memory
+    Int? disk_space
+    Int? num_threads
     Int? num_preemptions
 
     File tar_file
@@ -14,7 +15,7 @@ task panoply_cons_clust_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_cons_clust.r "${tar_file}" "${yaml_file}" "${label}" "${type}"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd-cons-clust.r "${tar_file}" "${yaml_file}" "${label}" "${type}"
     }
 
     output {
@@ -23,9 +24,10 @@ task panoply_cons_clust_report {
 
     runtime {
         docker : "broadcptacdev/panoply_cons_clust_report:latest"
-        memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+        memory : select_first ([memory, 2]) + "GB"
+        disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
+        cpu   : select_first ([num_threads, 1]) + ""
+        preemptible : select_first ([num_preemptions, 0])
     }
 
     meta {

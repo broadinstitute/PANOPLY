@@ -6,14 +6,14 @@
 # tar_file  - URL of tar file created by task panoply_cons_clust
 # yaml_file - URL of master parameters yaml file including output from startup notebook
 # label     - character, name of folder in tarball
-# type      - character, data type
+# data_type - character, data type
 
 args = commandArgs(TRUE)
 
 tar_file = args[1]
 yaml_file = args[2]
 label = args[3]
-type = args[4]
+data_type = args[4]
 
 library(rmarkdown)
 library(yaml)
@@ -86,7 +86,7 @@ names(hallmark_category) = "category"
 hallmark_category = hallmark_category %>%
   rownames_to_column("pathway")
 
-rmd_cons_clust <- function(tar_file, yaml_file, label, type){
+rmd_cons_clust <- function(tar_file, yaml_file, label, data_type){
 
   # extract files from tarball
   untar(tar_file)
@@ -100,7 +100,7 @@ rmd_cons_clust <- function(tar_file, yaml_file, label, type){
   # Overview section
   
   rmd = paste0('---
-title: "Consensus clustering results for ', type, '"
+title: "Consensus clustering results for ', data_type, '"
 output: 
   html_document:
     toc: true
@@ -113,17 +113,18 @@ This report summarizes the results of the consensus clustering module, which uti
 1000 bootstrap sample data sets are clustered into *K* clusters using k-means, and a consensus matrix is constructed whose entries (i, j) record the number of times items i and j are assigned to the same cluster divided by the total number of times both items are selected.
 A range of possible cluster numbers *K* between 2 and 10 are evaluated and the best *K* is determined by comparing the *empirical cumulative distribution (CDF)* of the resulting consensus matrices. 
 To compare the clusterings, the increase of CDF area *K<sub>delta</sub>* is evaluated and the *K* with the largest *K<sub>delta</sub>* is defined as best *K*.
+Detailed documentation for the consensus clustering module can be found [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_cons_clust).
 This report shows metrics comparing the clusterings used to determine the best *K*, the consensus matrix for the best *K*, principal component analysis for the best *K* clusters, and marker selection & GSEA results for each cluster.
                ')
   
   #############################
   # Metrics plots
   
-  cm.all = read.csv(file.path(label, clust_dir, paste0(type, "_cluster_metrics.csv"))) %>%
+  cm.all = read.csv(file.path(label, clust_dir, paste0(data_type, "_cluster_metrics.csv"))) %>%
     rename(clust = X) %>%
     select(-c(delta.auc.diff, cophenetic.correlation.diff)) %>%
     rename(delta.auc.diff = delta.auc)
-  cm.best = read.csv(file.path(label, clust_dir, paste0(type, "_best_K.csv")), row.names = 1) %>%
+  cm.best = read.csv(file.path(label, clust_dir, paste0(data_type, "_best_K.csv")), row.names = 1) %>%
     na.omit()
   
   k.min = cm.all$clust %>% min()
@@ -182,7 +183,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   #######################
   # Consensus matrix for best K
   
-  best_pdf = grep(paste0(type, "_consensus_matrix.*\\.pdf"), list.files(file.path(label, clust_dir)), value = TRUE)
+  best_pdf = grep(paste0(data_type, "_consensus_matrix.*\\.pdf"), list.files(file.path(label, clust_dir)), value = TRUE)
   best_png = gsub("pdf", "png", best_pdf) %>%
     tolower()
   best_k = str_extract(best_png,"[:digit:]") %>% as.numeric()
@@ -194,7 +195,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   
   ###############################################
   # PCA plot for best K
-  data = parse.gctx(file.path(label, clust_dir, paste0(type, "-Cluster.gct")))
+  data = parse.gctx(file.path(label, clust_dir, paste0(data_type, "-Cluster.gct")))
   mat = data.frame(data@mat)
   
   membership_full = read.csv(file.path(label, clust_dir, assoc.subgroups), row.names = 1) 
@@ -222,9 +223,8 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   
   #########################################################
   # heatmaps for marker selection in each cluster of best K
-  # contrast_files = grep(paste0(type, "-Cluster-class\\..*-analysis-markers-fdr", assoc.fdr, "\\.csv"), list.files(file.path(label, clust_dir), full.names = TRUE), value = TRUE)
   yaml_params = read_yaml(yaml_file)
-  full_MS_file = file.path(label, clust_dir, paste0(type, "-Cluster-analysis-markers-fdr", assoc.fdr, ".csv"))
+  full_MS_file = file.path(label, clust_dir, paste0(data_type, "-Cluster-analysis-markers-fdr", assoc.fdr, ".csv"))
   ids = read.csv(full_MS_file, stringsAsFactors = FALSE) %>%
         pull(Gene.ID)
   mat_filt = mat[ids,]
@@ -280,7 +280,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   #############################
   # Hallmark categories for each cluster
   
-  gsea_dirs = grep(paste0(type, "-Cluster-class\\..*-analysis-gsea-analysis"), list.dirs(file.path(label, clust_dir), full.names = FALSE), value = TRUE)
+  gsea_dirs = grep(paste0(data_type, "-Cluster-class\\..*-analysis-gsea-analysis"), list.dirs(file.path(label, clust_dir), full.names = FALSE), value = TRUE)
   gsea_pos = "gsea.SUMMARY.RESULTS.REPORT.0.txt"
   gsea_neg = "gsea.SUMMARY.RESULTS.REPORT.1.txt"
   
@@ -341,7 +341,7 @@ No significantly enriched pathways in cluster ', cluster_num, ' with FDR < ', as
       
   }
   
-  rmd_name = paste(label, type, "cons_clust_rmd.rmd", sep = "_")
+  rmd_name = paste(label, data_type, "cons_clust_rmd.rmd", sep = "_")
   
   # write .rmd file
   writeLines(rmd, con = rmd_name)
@@ -351,5 +351,5 @@ No significantly enriched pathways in cluster ', cluster_num, ' with FDR < ', as
 
 }
 
-rmd_cons_clust(tar_file = tar_file, yaml_file = yaml_file, label = label, type = type)
+rmd_cons_clust(tar_file = tar_file, yaml_file = yaml_file, label = label, data_type = data_type)
 
