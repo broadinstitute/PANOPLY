@@ -1072,6 +1072,11 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
        pdf(paste('1.0_silhouette_K_', rank, '.pdf', sep=''), 10, 6)
        plot(rank.sil[[rank]], main=paste('K=', rank, sep=''), col=NMF.consensus.col)#col=palette()[1:as.numeric(rank)+1] )
        dev.off()
+       
+       png(paste('1.0_silhouette_K_', rank, '.png', sep=''), 10, 6)
+       plot(rank.sil[[rank]], main=paste('K=', rank, sep=''), col=NMF.consensus.col)#col=palette()[1:as.numeric(rank)+1] )
+       dev.off()
+       
     }
     
     #######################################################

@@ -13,6 +13,9 @@ p_load(morpheus)
 p_load(dplyr)
 p_load(yaml)
 p_load(knitr)
+p_load(readxl)
+p_load(DT)
+p_load(tibble)
 
 ## ###################################################################
 ##      create a Rmarkdown report for the mo_nmf module
@@ -84,7 +87,9 @@ rmd_mo_nmf <- function(tar.file, label='pipeline-test', fn.ws='workspace_after_N
       ## pca, all features
       pca_all=dir(file.path(dir_name, dir_k), pattern=paste0('9.0_PCA.png'), full.names = T),
       ## pca, nmf features
-      pca_nmf=dir(file.path(dir_name, dir_k), pattern=paste0('9.1_PCA_NMF_features.png'), full.names = T)
+      pca_nmf=dir(file.path(dir_name, dir_k), pattern=paste0('9.1_PCA_NMF_features.png'), full.names = T),
+      ## silhouette plot
+      sil_plot=dir(file.path(dir_name, dir_k), pattern=paste0('1.0_silhouette_K_.*.png'), full.names = T)
       )
     ## path to tables
     tab.str <- c(
@@ -311,16 +316,19 @@ p
 ***
 \n", sep="")
     
+    
+    
     ########################################
     ## cluster-specific features
     rmd <- paste0(rmd, "\n# Cluster-specifc features
     
 Matrix W containing the weights of each feature in a certain cluster was used to derive a list of ```r ``` representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt$feat_fdr`are used in subsequent analyses.   
 ")
+    
     ## all features, concatenated and ordered by ccluster
     if('feat_hm_concat' %in% names(fig.str)){
       rmd <- paste0(rmd, "\n
-```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
 knitr::include_graphics(fig.str[['feat_hm_concat']])
 ```
 ```{r inc_fig_3, echo=F}
@@ -330,9 +338,9 @@ fig_count <- fig_count + 1
 \n\n
 ***
 \n")} else if('feat_hm' %in% names(fig.str)){
-  ## all featurs
+  ## all features
   rmd <- paste0(rmd, "\n
-```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
 knitr::include_graphics(fig.str[['feat_hm']])
 ```
 ```{r inc_fig_3, echo=F}
@@ -350,9 +358,41 @@ fig_count <- fig_count + 1
 ")
   }
     
+  ########################################
+  ## import feature xlsx
+  if('nmf_feat_xlsx' %in% names(tab.str)){   
+      
+     rmd <- paste0(rmd, "
+```{r import_feat_xlsx, echo=F, message=F}
+## get all sheets
+nmf_xlsx_sheets <- excel_sheets(tab.str[['nmf_feat_xlsx']])
+## import all sheets
+nmf_xlsx <- lapply(nmf_xlsx_sheets, function(x) read_excel(tab.str[['nmf_feat_xlsx']], sheet=x) )
+names(nmf_xlsx) <- nmf_xlsx_sheets
+
+##
+cols <- c('Accession', 'Type', 'Direction','SYMBOL', 'ENZYME', 'CYTOBAND', 'NMF.Score')
+nmf_xlsx_slim <- lapply(nmf_xlsx, function(x) dplyr::select(x, one_of(cols)))
+nmf_xlsx_slim <- lapply(names(nmf_xlsx), function(x) add_column(nmf_xlsx_slim[[x]], Cluster=paste0('C', x), .before=1))
+nmf_xlsx_comb <- Reduce('rbind', nmf_xlsx_slim)
+write.table(nmf_xlsx_comb, sep='\t', file='debug.txt')
+```
+\n\n
+***
+\n")
+     
+  }
+    
+  ## feature barchart
   if('feat_barplot' %in% names(fig.str)){ 
+        
+    #######################################
+    ## barchart of NMF features
     rmd <- paste0(rmd, "
-```{r feat_barplot, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count,'**: Barpchart depicting the number of cluster specific features'), echo=FALSE}
+
+In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the method descibed above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
+    
+```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Barpchart depicting the number of cluster specific features'), echo=FALSE, out.width='50%'}
 knitr::include_graphics(fig.str[['feat_barplot']])
 ```
 
@@ -364,29 +404,97 @@ fig_count <- fig_count + 1
 \n\n
 ***
 \n")
-  }
-    
-  if('nmf_feat_xlsx' %in% names(tab.str)){   
-    
+    } ## end if feature barplot is present
+  
+  
+  if('nmf_feat_xlsx' %in% names(tab.str)){
+    ######################################
+    ## display xlsx    
     rmd <- paste0(rmd, "
-```{r feat_xlsx}
-#nmf_xlsx <- read_excel()
-```
+The data table below depicts all cluster specific features. The table is interactive and can be sorted and filtered. Please note that the table represents a condensed verison of the entire table which can be found the Excel sheet ```r sub('.*/', '',tab.str[['nmf_feat_xlsx']])```
 
+```{r display_feat_xlsx, echo=F}
+DT::datatable(nmf_xlsx_comb, width='1000', escape=F, filter='top', rownames=FALSE,
+                  options = list( pageLength = 10, scrollX = T, selection='none', 
+                                  autoWidth = F, paging=T, searchHighlight = TRUE,
+                                  initComplete = JS(
+                                      \"function(settings, json) {\",
+                                      \"$(this.api().table().header()).css({'font-size': '80%'});\",
+                                  \"}\"))
+) %>% DT::formatStyle(colnames(nmf_xlsx_comb), fontSize='80%')
+```
 \n\n
 ***
 \n")
     
-  }
+  } ## end if features were found   
+    
+    
     
     ########################################
     ## consensus matrix
     rmd <- paste0(rmd, "\n# Cluster stability
 \n\n## Consensus matrix\n
 
-```{r, include=TRUE, fig.align='center', fig.cap=c('Figure X: Consensus matrix'), echo=FALSE}
+ The entries in the sample-by-samle matrix shown in **Figure `r fig_count`** depict the relative frequences with which two samples were assigned to the same cluster across ```r opt$nrun``` iterations.
+
+
+```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count, '**: Consensus matrix derived from ', opt$nrun,' randomly initialized iterations.'), echo=FALSE}
 knitr::include_graphics(fig.str[['cons_map']])
 ```
+
+
+```{r inc_fig_5, echo=F}
+## increment
+fig_count <- fig_count + 1
+```\n
+
+
+\n\n
+***
+\n")
+    
+    ###########################
+    ## silhouette plot
+    if('sil_plot' %in% names(fig.str)){
+      rmd <- paste0(rmd, "\n## Silhouette plot
+      
+      The silhoutte plot shown in **Figure `fig_count`** depicts the consistency of the derived clusters. Samples with negative silhouette score indicate outliers in the respectvie cluster. 
+      
+      ```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silouette plot.'), echo=FALSE, out.width='50%'}
+      knitr::include_graphics(fig.str[['sil_plot']])
+      ```
+    
+      ```{r inc_fig_4, echo=F}
+      ## increment
+      fig_count <- fig_count + 1
+      ```\n
+      \n\n
+      ***
+        \n")
+ 
+      
+    }
+    
+    ##########################################
+    ## parameters
+    rmd <- paste0(rmd, "\n# Parameters
+    
+Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_mo_nmf).    
+    
+```{r params, include=TRUE, echo=FALSE, warning=T, message=F}
+tab_param <- data.frame(param=names(opt), value=unlist(opt))
+## insert table
+tab_param %>%
+      kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,'**: List of paramaeters.')) %>%
+      kable_paper('hover', full_width = F) 
+````
+
+```{r inc_tab_5, echo=F}
+## increment
+tab_count <- tab_count + 1
+```\n
+
 \n\n
 ***
 \n")
