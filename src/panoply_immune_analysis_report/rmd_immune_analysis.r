@@ -102,12 +102,12 @@ rmd_immune = function(tar_file, yaml_file, label){
            adj.pvalue = signif(adj.pvalue, 3))
   
   subtype = data.frame(Immune.Subtype = rep(1:6), 
-                             Immune.Subtype.Description = c("Wound healing",
-                                                            "IFN-gamma dominant",
-                                                            "Inflammatory",
-                                                            "Lymphocyte depleted",
-                                                            "Immunologically quiet",
-                                                            "TGF-beta dominant")) %>%
+                       Immune.Subtype.Description = c("Wound healing",
+                                                      "IFN-gamma dominant",
+                                                      "Inflammatory",
+                                                      "Lymphocyte depleted",
+                                                      "Immunologically quiet",
+                                                      "TGF-beta dominant")) %>%
     right_join(subtype_data)
 
   
@@ -122,7 +122,7 @@ output:
      collapsed: true
 ---\n
 ## Overview
-This report summarizes the results of the immune analysis module, which runs several algorithms assigning immune scores for understanding the tumor microenvironment. **E**stimation of **ST**romal and **I**mmune cells in **MA**lignant **T**umor tissues using **E**xpression data (**ESTIMATE**, [Yoshihara et al., 2013](https://doi.org/10.1038/ncomms3612)) uses gene expression signatures to calculate the fraction of stromal and immune cells and infer tumor purity. **xCell** ([Aran et al., 2017](https://doi.org/10.1186/s13059-017-1349-1)) uses a gene signature-based method to infer immune and stromal cell types. **ImmuneSubtypeClassifier** ([Thorrson et al., 2018](https://doi.org/10.1016/j.immuni.2018.03.023)) uses immune gene expression signatures to classify tumor samples into one of 6 immune subtypes. Enrichment analysis (Fisher\'s exact test) is performed on immune subtypes and significant results at p-value < ', immune.enrichment.fdr, ' reported.
+This report summarizes the results of the immune analysis module, which runs several algorithms assigning immune scores for understanding the tumor microenvironment. **E**stimation of **ST**romal and **I**mmune cells in **MA**lignant **T**umor tissues using **E**xpression data (**ESTIMATE**, [Yoshihara et al., 2013](https://doi.org/10.1038/ncomms3612)) uses gene expression signatures to calculate the fraction of stromal and immune cells and infer tumor purity. **xCell** ([Aran et al., 2017](https://doi.org/10.1186/s13059-017-1349-1)) uses a gene signature-based method to infer immune and stromal cell types. **ImmuneSubtypeClassifier** ([Thorrson et al., 2018](https://doi.org/10.1016/j.immuni.2018.03.023)) uses immune gene expression signatures to classify tumor samples into one of 6 immune subtypes. Enrichment analysis (Fisher\'s exact test) is performed on immune subtypes and significant results at p-value < ', immune.enrichment.fdr, ' reported. Documentation for the immune analysis module can be found [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_immune_analysis).
 
 ## xCell scores
 

@@ -134,7 +134,7 @@ if ("category" %in% names(rdesc_volc)){
   ggplotly(p, tooltip = "text")
 }
 ```
-**Figure**: Volcano plot summarizing ssGSEA pathway results for ', category, ', contrast ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(paste0(" ", split_word, ".*"), "", comparison), ' and negative NES values indicate enrichment in ', gsub(paste0(".*", split_word, " "), "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '.
+**Figure**: Interactive volcano plot summarizing ssGSEA pathway results for ', category, ', contrast ', comparison, '. X axis represents the Normalized Enrichment Score (NES) for ', comparison, '; positive NES values indicate enrichment in ', gsub(paste0(" ", split_word, ".*"), "", comparison), ' and negative NES values indicate enrichment in ', gsub(paste0(".*", split_word, " "), "", comparison), '. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', fdr_value, '.
                ')
         
   rdesc_tab = rdesc2 %>% 
@@ -185,7 +185,7 @@ output:
       smooth_scroll: true
 ---\n
 ## Overview
-This report summarizes the results of the Association module for ', type, ' at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways.
+This report summarizes the results of the Association module for ', type, ' at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways. Detailed documentation for the association analysis module can be found [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_association) and for the ssGSEA module [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_ssgsea). 
               ')
   
   if (dir.exists(file.path(label, gsea_dir))){
