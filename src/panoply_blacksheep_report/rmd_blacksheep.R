@@ -47,7 +47,7 @@ output:
       smooth_scroll: true
 ---\n
 ## Overview
-This report summarizes the significant results for ', type, ' (FDR < ', fdr_value, ') of the BlackSheep module, which uses the blacksheepr package for differential extreme value analysis. Briefly, this module counts outliers in user-submitted data, tabulates outliers per group, and runs enrichment analysis (Fisher\'s exact test) to identify significant outliers in the groups of interest. More information can be found in Blumenberg et al. (2019, [preprint](https://www.biorxiv.org/content/10.1101/825067v2.full.pdf)).
+This report summarizes the significant results for ', type, ' (FDR < ', fdr_value, ') of the BlackSheep module, which uses the blacksheepr package for differential extreme value analysis. Briefly, this module counts outliers in user-submitted data, tabulates outliers per group, and runs enrichment analysis (Fisher\'s exact test) to identify significant outliers in the groups of interest. More information about the BlackSheep algorithm can be found in Blumenberg et al. (2019, [preprint](https://www.biorxiv.org/content/10.1101/825067v2.full.pdf)), and detailed documentation of the panoply_blacksheep module can be found [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_blacksheep).
               ')
   
   if (apply_filtering & is.null(identifiers_file)){
