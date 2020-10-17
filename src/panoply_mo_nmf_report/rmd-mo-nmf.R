@@ -461,16 +461,16 @@ fig_count <- fig_count + 1
       
       The silhoutte plot shown in **Figure `fig_count`** depicts the consistency of the derived clusters. Samples with negative silhouette score indicate outliers in the respectvie cluster. 
       
-      ```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silouette plot.'), echo=FALSE, out.width='50%'}
-      knitr::include_graphics(fig.str[['sil_plot']])
-      ```
+```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silouette plot.'), echo=FALSE, out.width='50%'}
+knitr::include_graphics(fig.str[['sil_plot']])
+```
     
-      ```{r inc_fig_4, echo=F}
-      ## increment
-      fig_count <- fig_count + 1
-      ```\n
-      \n\n
-      ***
+```{r inc_fig_4, echo=F}
+## increment
+fig_count <- fig_count + 1
+```\n
+\n\n
+***
         \n")
  
       
