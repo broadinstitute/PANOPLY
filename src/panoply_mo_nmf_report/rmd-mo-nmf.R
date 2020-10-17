@@ -274,7 +274,7 @@ fig_count <- fig_count + 1
     rmd <- paste0(rmd, "\n
 \n## Overrepresentation analysis\n
 
-**Table `r tab_count`** summarizes the results of an overpresentation analysis of sample metadata terms (e.g. clinial annotation, inferred phenotypes, etc.) in each cluster. Shown are nominal p-values derived from a Fisher's exact test (<span style=\"background-color:#90ee90\">p<0.01</span>, <span style=\"background-color:#ffff00\">0.01<p<0.02</span>, <span style=\"background-color:#ffa500\">0.02<p<0.05</span>). Only samples with cluster memebrship score > ```r opt$core_membership``` were used to characterize the clusters.
+**Table `r tab_count`** summarizes the results of an overpresentation analysis of sample metadata terms (e.g. clinial annotation, inferred phenotypes, etc.) in each cluster. Shown are nominal p-values derived from a Fisher's exact test (<span style=\"background-color:#90ee90\">p<0.01</span>, <span style=\"background-color:#ffff00\">0.01<p<0.02</span>, <span style=\"background-color:#ffa500\">0.02<p<0.05</span>). All samples with cluster memebrship score > ```r opt$core_membership``` were used to characterize the clusters.
 
 ```{r, include=TRUE, echo=FALSE, warning=T, message=F}
 tab_enrich <- read_tsv(tab.str[['enrich_all']])
@@ -322,7 +322,7 @@ p
     ## cluster-specific features
     rmd <- paste0(rmd, "\n# Cluster-specifc features
     
-Matrix W containing the weights of each feature in a certain cluster was used to derive a list of ```r ``` representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt$feat_fdr`are used in subsequent analyses.   
+Matrix _W_ containing the weights of each feature in a certain cluster was used to derive a list of ```r ``` representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt$feat_fdr`are used in subsequent analyses.   
 ")
     
     ## all features, concatenated and ordered by ccluster
@@ -353,7 +353,11 @@ fig_count <- fig_count + 1
 } else {
   rmd <- paste0(rmd, "\n
 
-**No cluster-specific fetaureas found.**
+***
+
+**No cluster-specific features found.**
+
+***
 
 ")
   }
@@ -408,13 +412,15 @@ fig_count <- fig_count + 1
   
   
   if('nmf_feat_xlsx' %in% names(tab.str)){
+  
     ######################################
     ## display xlsx    
     rmd <- paste0(rmd, "
+    
 The data table below depicts all cluster specific features. The table is interactive and can be sorted and filtered. Please note that the table represents a condensed verison of the entire table which can be found the Excel sheet ```r sub('.*/', '',tab.str[['nmf_feat_xlsx']])```
 
 ```{r display_feat_xlsx, echo=F}
-DT::datatable(nmf_xlsx_comb, width='1000', escape=F, filter='top', rownames=FALSE,
+DT::datatable(nmf_xlsx_comb, width='800', escape=F, filter='top', rownames=FALSE,
                   options = list( pageLength = 10, scrollX = T, selection='none', 
                                   autoWidth = F, paging=T, searchHighlight = TRUE,
                                   initComplete = JS(
@@ -457,11 +463,10 @@ fig_count <- fig_count + 1
     ###########################
     ## silhouette plot
     if('sil_plot' %in% names(fig.str)){
-      rmd <- paste0(rmd, "\n## Silhouette plot
+      rmd <- paste0(rmd, "\n## Silhouette plot\n
+Silhouette scores indicate how similar a sample is to its own cluster compared to other clusters. The silhouette plot shown in **Figure `r fig_count`** depicts the consistency of the derived clusters. Samples with negative silhouette score indicate outliers in the respective cluster. 
       
-      The silhoutte plot shown in **Figure `fig_count`** depicts the consistency of the derived clusters. Samples with negative silhouette score indicate outliers in the respectvie cluster. 
-      
-```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silouette plot.'), echo=FALSE, out.width='50%'}
+```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silhouette plot illustrating the silhouette score (x-axis) for each sample (y-axis) grouped by each cluster (_K_=', rank.top, '). Number of samples and average silhouette scores per cluster are shown on the right side.'), echo=FALSE, out.width='70%'}
 knitr::include_graphics(fig.str[['sil_plot']])
 ```
     
@@ -527,4 +532,3 @@ tab_count <- tab_count + 1
 ## ################################################
 ## run
 rmd_mo_nmf(tar.file=tar.file, label=label)
-#rmd_mo_nmf(tar.file=tar.file, label=label, tmp.dir = '.')
