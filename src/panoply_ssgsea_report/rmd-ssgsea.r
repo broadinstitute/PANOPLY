@@ -104,6 +104,7 @@ p_load(cmapR)
 p_load(dplyr)
 p_load(glue)
 p_load(knitr)
+p_load(kableExtra)
 
 ## ###################################################################
 ##      create a Rmarkdown report for sGSEA results
@@ -166,30 +167,76 @@ rmd_ssgsea <- function(opt){
   ## Rmarkdown
   cat('## Generating Rmarkdown file\n', file=logfile, append=T)
   
-  rmd <- paste("\n# ssGSEA - ", label,"\n
 
-This document describes the results of the ```panoply_ssgsea``` module which performs single sample Gene Set Enrichment analysis (ssGSEA) on each column of the input data matrix.
+  rmd <- paste0("---
+title: ssGSEA report - ", label,"
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+---
+
+## Overview
+
+This document provides a high-level summary of the ```panoply_ssgsea``` module which performs single sample Gene Set Enrichment analysis (ssGSEA) on each column of the input data matrix. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_ssgsea). 
 
 ```{r echo=F, warning=F, message=F}\n
+options(knitr.table.format = 'pipe', stringsAsFactors=F)
 library(pacman)
 p_load(plotly)
 p_load(dplyr)
+p_load(kableExtra)
+
 source(file.path(opt$libdir, 'rmd-ssgsea-functions.R'))
 
 ## ##############################
 ## prepare data set
-load(paste('data.RData', sep='/')) ## import data 
+load('data.RData') ## import data 
+
+# counter variable for figures and tables
+fig_count <- 1
+tab_count <- 1
 ```
+
 \n\n
+***
+                
+\n")
+  
+  
+  rmd <- paste0( rmd, "\n
+  
+## Pathway heatmap
+
+The heatmap in **Figure `r fig_count`** depicts normalized enrichment scores (NES) of gene sets (y-axis) across columns of the input data matrix (x-axis). NES were calculated according to the type of analysis used to derive the input data matrix:
+
+* <u>NMF-clustering:</u> Columns represent NMF cluster. NES were derived from ssGSEA applied to feature weights determined by NMF. 
+
+* <u>Consenus clustering:</u> Columns represent consensus cluster. NES were derived from ssGSEA applied to signed -log transformed p-values of a two sample comparison  (one vs. other).
+
+* <u>ssGSEA projection:</u> Columns represent individual samples. NES were derived from ssGSEA applied the expression data.
+
+\n
+\n
 
 ***
 
-
-\n\n### Pathway heatmap
-
-```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure 1**: Enrichment of gene sets in NMF clusters (columns) detected by ssGSEA applied to feature weights determined by NMF. Shown are normalized enrichment scores (NES). Asterisk indicate gene sets with FDR < ', fdr,'. Only the top ', top.n,'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Normalized enrichment scores (NES) of gene sets across columns of the input data matrix. Asterisks indicate gene sets with FDR < ', fdr,'. Shown are up to ', top.n,' most significant gene sets per column.'), echo=FALSE}
 knitr::include_graphics(fn.png)
 ```
+
+
+```{r inc_fig_1, echo=F}
+## increment
+fig_count <- fig_count + 1
+```\n
+
+\n\n
+
+***
 
 ", sep="")
   
@@ -197,9 +244,9 @@ knitr::include_graphics(fn.png)
   ######################################
   ## parameters
   rmd <- paste(rmd, "\n\n
-\n### Parameters
-\n```{r param, warning=F, message=F, results='as.is'}
-kable(param)
+\n## Parameters
+\n```{r param, warning=F, message=F, results='as.is', echo=F}
+kbl(param, col.names=' ')
 \n```
 \n", sep='')  
   

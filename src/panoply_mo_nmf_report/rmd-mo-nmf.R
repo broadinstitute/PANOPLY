@@ -125,6 +125,7 @@ output:
 # Overview
 
 This document describes the results of the multi-omics non-negative factorization (NMF)-based clustering module. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_mo_nmf).
+
 ```{r echo=F, warning=F, message=F}\n
 options(knitr.table.format = 'pipe', stringsAsFactors=F)
 library(pacman)
@@ -491,7 +492,7 @@ Details about the parameters listed in **Table `r tab_count`** can be found in t
 tab_param <- data.frame(param=names(opt), value=unlist(opt))
 ## insert table
 tab_param %>%
-      kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,'**: List of paramaeters.')) %>%
+      kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,'**: List of parameters used in ```panoply_mo_nmf```.')) %>%
       kable_paper('hover', full_width = F) 
 ````
 
