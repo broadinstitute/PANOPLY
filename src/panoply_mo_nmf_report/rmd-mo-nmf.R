@@ -467,11 +467,11 @@ fig_count <- fig_count + 1
       rmd <- paste0(rmd, "\n## Silhouette plot\n
 Silhouette scores indicate how similar a sample is to its own cluster compared to other clusters. The silhouette plot shown in **Figure `r fig_count`** depicts the consistency of the derived clusters. Samples with negative silhouette score indicate outliers in the respective cluster. 
       
-```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silhouette plot illustrating the silhouette score (x-axis) for each sample (y-axis) grouped by each cluster (_K_=', rank.top, '). Number of samples and average silhouette scores per cluster are shown on the right side.'), echo=FALSE, out.width='70%'}
+```{r sil_plot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Silhouette plot illustrating the silhouette score (x-axis) for each sample (y-axis) grouped by each cluster (_K_=', rank.top, '). Number of samples and average silhouette scores per cluster are shown on the right side.'), echo=FALSE, out.width='70%'}
 knitr::include_graphics(fig.str[['sil_plot']])
 ```
     
-```{r inc_fig_4, echo=F}
+```{r inc_fig_6, echo=F}
 ## increment
 fig_count <- fig_count + 1
 ```\n
