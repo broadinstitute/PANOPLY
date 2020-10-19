@@ -9,11 +9,13 @@ task panoply_unified_assemble_results {
   Array[File?] cna_corr_report
   Array[File?] sampleqc_report
   Array[File?] assoc_report
+  Array[File?] cons_clust_report
   Array[File?] blacksheep_tar
   Array[File?] blacksheep_report
   Array[File?] cmap_output
   Array[File?] cmap_ssgsea_output
   File? mo_nmf_tar
+  File? mo_nmf_report
   File? mo_nmf_ssgsea_tar
   File? mo_nmf_ssgsea_report
   File? immune_tar
@@ -86,15 +88,20 @@ task panoply_unified_assemble_results {
       cp ${sep=' ' assoc_report} results/proteogenomics_analysis/all_html_reports
       mv ${sep=' ' assoc_report} reports/proteogenomics_analysis
     fi
+    
+    if [ ${sep='' cons_clust_report} != '' ]; then
+      cp ${sep=' ' cons_clust_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' cons_clust_report} reports/proteogenomics_analysis
+    fi
 
     # BLACKSHEEP
     if [ ${sep='' blacksheep_tar} != '' ]; then
       mv ${sep=' ' blacksheep_tar} results/blacksheep_outlier
       for filename in results/blacksheep_outlier/*.tar;
       do 
-      	folder=$(basename $filename _blacksheep.tar)
+        folder=$(basename $filename _blacksheep.tar)
         if [ ! -d $folder ]; then
-        	mkdir results/blacksheep_outlier/$folder
+          mkdir results/blacksheep_outlier/$folder
         fi
         tar -C results/blacksheep_outlier/$folder -xvf $filename
         rm $filename
@@ -114,13 +121,19 @@ task panoply_unified_assemble_results {
       for filename in results/mo-nmf/mo-nmf/*.tar;do tar -C results/mo-nmf/mo-nmf -xvf $filename;rm $filename;done
     fi
     
-	mkdir results/mo-nmf/mo-nmf_ssgsea
+    mkdir results/mo-nmf/mo-nmf_report
+    if [ ${mo_nmf_report} != '' ]; then
+      cp ${mo_nmf_report} results/mo-nmf/mo-nmf_report
+      mv ${mo_nmf_report} reports/mo-nmf
+    fi
+    
+  mkdir results/mo-nmf/mo-nmf_ssgsea
     if [ ${mo_nmf_ssgsea_tar} != '' ]; then
       mv ${mo_nmf_ssgsea_tar} results/mo-nmf/mo-nmf_ssgsea
       for filename in results/mo-nmf/mo-nmf_ssgsea/*.tar.gz;do tar -C results/mo-nmf/mo-nmf_ssgsea -zxvf $filename;rm $filename;done
     fi
 
-	mkdir results/mo-nmf/mo-nmf_ssgsea_report
+  mkdir results/mo-nmf/mo-nmf_ssgsea_report
     if [ ${mo_nmf_ssgsea_report} != '' ]; then
       cp ${mo_nmf_ssgsea_report} results/mo-nmf/mo-nmf_ssgsea_report
       mv ${mo_nmf_ssgsea_report} reports/mo-nmf
@@ -132,7 +145,7 @@ task panoply_unified_assemble_results {
       for filename in results/immune_analysis/*.tar;do tar -C results/immune_analysis -xvf $filename;rm $filename;done
     fi
     if [ ${immune_report} != '' ]; then
-    	cp ${immune_report} results/immune_analysis
+      cp ${immune_report} results/immune_analysis
         mv ${immune_report} reports/immune_analysis
     fi
 
@@ -163,5 +176,5 @@ task panoply_unified_assemble_results {
 }
 
 workflow panoply_unified_assemble_results_workflow {
-	call panoply_unified_assemble_results
+  call panoply_unified_assemble_results
 }

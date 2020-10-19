@@ -17,6 +17,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_rep
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/3/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/2/plain-WDL/descriptor" as normalize_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/3/plain-WDL/descriptor" as cons_clust_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cons_clust_report_MM/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/3/plain-WDL/descriptor" as cmap_wdl
 
 
@@ -231,6 +232,14 @@ workflow panoply_main {
       subType = data_sub_type,
       yaml=yaml
   }
+  
+  call cons_clust_report_wdl.panoply_cons_clust_report {
+    input:
+      tar_file = panoply_cons_clust.outputs,
+      yaml_file = yaml,
+      label = job_identifier,
+      type = ome_type
+  }
 
   call accum_wdl.panoply_accumulate as accumulate_clustering {
     input:
@@ -295,6 +304,7 @@ workflow panoply_main {
     File cna_corr_report = panoply_cna_correlation_report.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
+    File cons_clust_report = panoply_cons_clust_report.report_out
     File normalized_data_table = panoply_normalize_ms_data.outputs
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
