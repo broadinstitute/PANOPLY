@@ -161,11 +161,11 @@ This report shows metrics comparing the clusterings used to determine the best *
     select(-best.k.idx) %>%
     mutate(best.k.score = signif(best.k.score, 3))
   
-  save(metrics_plotly, best_k_data, file = "metrics_plot.Rdata")
+  save(metrics_plotly, best_k_data, file = "metrics_plot.RData")
   
   rmd = paste0(rmd, '\n## Clustering metrics
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("metrics_plot.Rdata")
+load("metrics_plot.RData")
 metrics_plotly
 ```
 **Figure**: Interactive plots of clustering metrics for *K* = ', k.min, ' through *K* = ', k.max, '. The best *K* is highlighted in red for each metric. Hover over each point to see the score value it corresponds to.
@@ -307,7 +307,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
       filter(fdr < assoc.fdr) %>%
       arrange(fdr)
     
-    save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".Rdata"))
+    save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".RData"))
     
     rmd = paste0(rmd, '\n#### **GSEA results for Cluster ', cluster_num, '**
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
