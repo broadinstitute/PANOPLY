@@ -197,6 +197,7 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   # PCA plot for best K
   data = parse.gctx(file.path(label, clust_dir, paste0(data_type, "-Cluster.gct")))
   mat = data.frame(data@mat)
+  rownames(mat) = make.names(rownames(mat))
   
   membership_full = read.csv(file.path(label, clust_dir, assoc.subgroups), row.names = 1) 
   membership = pull(membership_full, Cluster)
