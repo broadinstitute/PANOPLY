@@ -194,7 +194,7 @@ sample_set_attr <- function()
     process_other_attributes( set )
     process_additional_parameters( set )
     process_types( set )
-    process_gmts( set )
+    # process_gmts( set )
 
   }
 }
