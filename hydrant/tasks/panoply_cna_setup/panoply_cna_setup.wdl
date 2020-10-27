@@ -5,11 +5,9 @@ task panoply_cna_setup {
   File tarball   # output from panoply_harmonize
   File? groupsFile
   String type
-  String? subType
   File yaml
   Int? peMaxDefault
   Int? minCnaN
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_cna_setup-output.tar"
 
   Int? memory
@@ -20,12 +18,13 @@ task panoply_cna_setup {
 
   command {
     set -euo pipefail
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module cna_analysis \
     --master_yaml ${yaml} \
     ${"--pe_max_default " + peMaxDefault} \
     ${"--min_cna_N " + minCnaN}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-g " + groupsFile} ${"-m " + subType} -p "config-custom.r"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -t ${type} -c $codeDir -o ${outFile} ${"-g " + groupsFile} -p "config-custom.r"
   }
 
   output {

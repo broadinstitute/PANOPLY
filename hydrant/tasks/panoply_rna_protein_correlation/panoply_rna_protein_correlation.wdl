@@ -6,14 +6,11 @@ task panoply_rna_protein_correlation {
   File rnaExpr
   String type
   String standalone
-  String? subType
   File yaml
   Int? rnaSDthreshold
   Int? profilePlotTopN
   String? analysisDir
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_rna_protein_correlation-output.tar"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
   Int? memory
   Int? disk_space
@@ -23,6 +20,9 @@ task panoply_rna_protein_correlation {
 
   command {
     set -euo pipefail
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    dataDir = "/prot/proteomics/Projects/PGDAC/data"
+
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module rna_protein_correlation \
     --master_yaml ${yaml} \
@@ -32,21 +32,19 @@ task panoply_rna_protein_correlation {
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr \
                   -i ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
+                  -c $codeDir \
                   -rna ${rnaExpr} \
                   -o ${outFile} \
-                  ${"-m " + subType} \
                   -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr \
                   -f ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
-                  -d ${dataDir} \
+                  -c $codeDir \
+                  -d $dataDir \
                   -rna ${rnaExpr} \
                   -r ${analysisDir} \
                   -o ${outFile} \
-                  ${"-m " + subType} \
                   -p "config-custom.r";
     fi
   }

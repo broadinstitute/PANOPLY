@@ -8,7 +8,6 @@ task panoply_harmonize {
   String type
   String standalone
   String? analysisDir
-  String? subType
   File yaml
   String? pomeGeneIdCol
   String? cnaGeneIdCol
@@ -17,9 +16,6 @@ task panoply_harmonize {
   String? duplicate_gene_policy
   String? gene_id_col
 
-
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
   String outFile = "panoply_harmonize-output.tar"
 
   Int? memory
@@ -30,6 +26,8 @@ task panoply_harmonize {
 
   command {
     set -euo pipefail
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    dataDir = "/prot/proteomics/Projects/PGDAC/data"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module harmonize \
     --master_yaml ${yaml} \
@@ -44,24 +42,22 @@ task panoply_harmonize {
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -i ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
-                  -d ${dataDir} \
+                  -c $codeDir \
+                  -d $dataDir \
                   -rna ${rnaExpr} \
                   -cna ${cnaExpr} \
                   -o ${outFile} \
-                  ${"-m " + subType} \
                   -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -f ${inputData} \
                   -r ${analysisDir} \
                   -t ${type} \
-                  -c ${codeDir} \
-                  -d ${dataDir} \
+                  -c $codeDir \
+                  -d $dataDir \
                   -rna ${rnaExpr} \
                   -cna ${cnaExpr} \
                   -o ${outFile} \
-                  ${"-m " + subType} \
                   -p "config-custom.r";
     fi
   }
