@@ -149,9 +149,14 @@ function createConfig {
   # copy config and concat parameters
   # pull default master yaml or cp provided yaml
   if [ "$param_file" = "" ]; then
-    cp $code_dir/config.r config.r
+    if [ "$code_dir" != "" ]; then
+      cp $code_dir/config.r config.r
+    fi
   else
     cat $code_dir/config.r $param_file > config.r
+  fi
+  if [ "$cmap_config_file" != "" ]; then
+    cp $cmap_config_file cmap-config-custom.r
   fi
   if [ "$yaml" != "" ]; then
     cp $yaml master-parameter.yaml
@@ -168,6 +173,9 @@ function createSubdirs {
     (cd $d; cp ../config.r config.r)
     if [ "$yaml" != "" ]; then
       (cd $d; cp ../master-parameter.yaml master-parameter.yaml)
+    fi
+    if [ "$cmap_config_file" != "" ]; then
+      (cd $d; cp ../cmap-config-custom.r cmap-config-custom.r)
     fi
   done
 }
@@ -514,6 +522,7 @@ else
   cd $analysis_dir
   ## data directory (in case previously not specified)
   initDataDir
+  createConfig
 fi
 
 
@@ -605,7 +614,7 @@ case $op in
                    Rscript cna-analysis.r 0 1 $group_prefix NULL NULL NULL
                  done)
              ;;
-#   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creats input files (genesets)
+#   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creates input files (genesets)
 #            input must be tar file obtained after CNAcorr
     CMAPsetup ) analysisInit "CMAPsetup"
                 for f in cmap-input.r connectivity.r; do cp $code_dir/$f $cmap_dir/$f; done

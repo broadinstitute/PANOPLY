@@ -2,10 +2,12 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_cons_clust {
-  File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
+  File inputData   # output from panoply_harmonize or panoply_normalize_ms_data
   String type
   File? groupsFile
   File yaml
+  String standalone
+  String? analysisDir
   Int? clustering_sd_threshold
   Float? clustering_na_threshold
   String outFile = "panoply_cluster-output.tar"
@@ -25,8 +27,24 @@ task panoply_cons_clust {
     ${"--clustering_sd_threshold " + clustering_sd_threshold} \
     ${"--clustering_na_threshold " + clustering_na_threshold} 
     echo ${type}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c $codeDir -o ${outFile} -p "config-custom.r" ${"-g " + groupsFile}
-   
+    
+    if [[ ${standalone} = false ]]; then
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster \
+          -i ${inputData} \
+            -t ${type} \
+            -c $codeDir \
+            -o ${outFile} \
+            -p "/prot/proteomics/Projects/PGDAC/src/config-custom.r" \
+            ${"-g " + groupsFile}
+   else
+     /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster \
+        -f ${inputData} \ 
+            -t ${type} \ 
+            -c $codeDir \
+            -r ${analysisDir} \
+            -o ${outFile} \
+            -p "/prot/proteomics/Projects/PGDAC/src/config-custom.r" \
+            ${"-g " + groupsFile}
   }
 
   output {
