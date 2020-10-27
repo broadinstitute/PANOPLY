@@ -83,7 +83,6 @@ task panoply_cmap_input {
   String? cmap_grp
   String? cmap_typ
   Int? cmap_permutations
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_cmapsetup-output.tar"
   String outGmtFile = "cmap-trans-genesets.gmt"
 
@@ -106,6 +105,7 @@ task panoply_cmap_input {
 
   command {
     set -euo pipefail
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module cmap_analysis \
     --master_yaml ${yaml} \
@@ -118,7 +118,7 @@ task panoply_cmap_input {
     ${"--log_transform " + log_transform} \
     ${"--must_include_genes " + must_include_genes}
     
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c ${codeDir} -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} -CMAPcfg "cmap-config-custom.r"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c $codeDir -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} -CMAPcfg "cmap-config-custom.r"
   }
 
   output {

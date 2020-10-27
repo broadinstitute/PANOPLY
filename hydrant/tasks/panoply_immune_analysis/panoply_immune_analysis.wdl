@@ -8,12 +8,10 @@ task panoply_immune_analysis {
   File yaml
   String? analysisDir
   File? groupsFile
-  String? subType
   Float? fdr
   Int? heatmapWidth
   Int? heatmapHeight
 
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_immune_analysis-output.tar"
 
   Int? memory
@@ -23,27 +21,26 @@ task panoply_immune_analysis {
 
   command {
     set -euo pipefail
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r --module immune_analysis --master_yaml ${yaml} ${"--immune_enrichment_subgroups " + groupsFile} ${"--immune_enrichment_fdr " + fdr} ${"--immune_heatmap_width " + heatmapWidth} ${"--immune_heatmap_height " + heatmapHeight}
     
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh immune \
                   -i ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
+                  -c $codeDir \
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
-                  ${"-m " + subType} \
                   ${"-z " + fdr} \
                   -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh immune \
                   -rna ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
+                  -c $codeDir \
                   -r ${analysisDir} \
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
-                  ${"-m " + subType} \
                   ${"-z " + fdr} \
                   -p "config-custom.r"
     fi

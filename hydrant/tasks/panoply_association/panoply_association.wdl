@@ -7,7 +7,6 @@ task panoply_association {
   String standalone
   String? analysisDir
   File? groupsFile
-  String? subType
   File yaml
   Float? fdr_assoc
   Float? sample_na_max
@@ -15,7 +14,6 @@ task panoply_association {
   String? duplicate_gene_policy
   String? gene_id_col
 
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_association-output.tar"
 
   Int? memory
@@ -25,6 +23,7 @@ task panoply_association {
 
   command {
     set -euo pipefail
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module association \
     --master_yaml ${yaml} \
@@ -37,20 +36,18 @@ task panoply_association {
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -i ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
+                  -c $codeDir \
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
-                  ${"-m " + subType} \
                   -p "config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -f ${inputData} \
                   -t ${type} \
-                  -c ${codeDir} \
+                  -c $codeDir \
                   -r ${analysisDir} \
                   -o ${outFile} \
                   -g ${groupsFile} \
-                  ${"-m " + subType} \
                   -p "config-custom.r"
     fi
   }

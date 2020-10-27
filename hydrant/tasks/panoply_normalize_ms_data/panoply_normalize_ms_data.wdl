@@ -6,7 +6,6 @@ task panoply_normalize_ms_data {
   String type
   String standalone
   String? analysisDir
-  String? subType
   File yaml
   String? normalizeProteomics
   String? normMethod
@@ -17,10 +16,8 @@ task panoply_normalize_ms_data {
   Float? sd_filter_threshold
   Float? min_numratio_fraction
 
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outTar = "panoply_normalize_ms_data-output.tar"
   String outTable = "normalized_table-output.gct"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
   Int? memory
   Int? disk_space
@@ -29,6 +26,9 @@ task panoply_normalize_ms_data {
 
   command  <<<
     set -euo pipefail
+    
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    dataDir = "/prot/proteomics/Projects/PGDAC/data"
     
     if [ ${normalizeProteomics} ]; then
       if [ ${normalizeProteomics} = "FALSE" ]; then
@@ -65,19 +65,17 @@ task panoply_normalize_ms_data {
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -i ${inputData} \
               -t ${type} \
-              -c ${codeDir} \
+              -c $codeDir \
               -o ${outTar} \
-              ${"-m " + subType} \
               -p "config-custom.r"
       else
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -a ${inputData} \
               -r ${analysisDir} \
               -t ${type} \
-              -c ${codeDir} \
-              -d ${dataDir} \
+              -c $codeDir \
+              -d $dataDir \
               -o ${outTar} \
-              ${"-m " + subType} \
               -p "config-custom.r"
       fi
       # Grab the norm/filtered gct to set as output with appropriate name

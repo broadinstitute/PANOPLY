@@ -5,11 +5,9 @@ task panoply_cons_clust {
   File tarball   # output from pgdac_harmonize or pgdac_normalize_ms_data
   String type
   File? groupsFile
-  String? subType
   File yaml
   Int? clustering_sd_threshold
   Float? clustering_na_threshold
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outFile = "panoply_cluster-output.tar"
 
   Int? memory
@@ -20,13 +18,14 @@ task panoply_cons_clust {
 
   command {
     set -euo pipefail
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module cons_clust \
     --master_yaml ${yaml} \
     ${"--clustering_sd_threshold " + clustering_sd_threshold} \
     ${"--clustering_na_threshold " + clustering_na_threshold} 
     echo ${type}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c ${codeDir} -o ${outFile} ${"-m " + subType} -p "config-custom.r" ${"-g " + groupsFile}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster -i ${tarball} -t ${type} -c $codeDir -o ${outFile} -p "config-custom.r" ${"-g " + groupsFile}
    
   }
 
