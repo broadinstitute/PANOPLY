@@ -73,7 +73,7 @@ task panoply_normalize_ms_data {
               -t ${type} \
               -c $codeDir \
               -o ${outTar} \
-              -p "/prot/proteomics/Projects/PGDAC/src/config-custom.r" \
+              -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
               -y "final_output_params.yaml"
       else
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
@@ -83,7 +83,7 @@ task panoply_normalize_ms_data {
               -c $codeDir \
               -d $dataDir \
               -o ${outTar} \
-              -p "/prot/proteomics/Projects/PGDAC/src/config-custom.r" \
+              -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
               -y "final_output_params.yaml"
       fi
       # Grab the norm/filtered gct to set as output with appropriate name

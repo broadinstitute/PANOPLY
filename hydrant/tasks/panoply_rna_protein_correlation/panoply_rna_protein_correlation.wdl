@@ -35,7 +35,7 @@ task panoply_rna_protein_correlation {
                   -c $codeDir \
                   -rna ${rnaExpr} \
                   -o ${outFile} \
-                  -p "config-custom.r" \
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
                   -y "final_output_params.yaml";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh RNAcorr \
@@ -46,7 +46,7 @@ task panoply_rna_protein_correlation {
                   -rna ${rnaExpr} \
                   -r ${analysisDir} \
                   -o ${outFile} \
-                  -p "config-custom.r" \
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
                   -y "final_output_params.yaml";
     fi
   }
