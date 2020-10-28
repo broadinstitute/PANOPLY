@@ -159,7 +159,7 @@ function createConfig {
     cp $cmap_config_file cmap-config-custom.r
   fi
   if [ "$yaml" != "" ]; then
-    cp $yaml master-parameter.yaml
+    cp $yaml updated-master-parameter.yaml
   fi
 }
 
@@ -172,7 +172,7 @@ function createSubdirs {
     fi
     (cd $d; cp ../config.r config.r)
     if [ "$yaml" != "" ]; then
-      (cd $d; cp ../master-parameter.yaml master-parameter.yaml)
+      (cd $d; cp ../updated-master-parameter.yaml updated-master-parameter.yaml)
     fi
     if [ "$cmap_config_file" != "" ]; then
       (cd $d; cp ../cmap-config-custom.r cmap-config-custom.r)

@@ -39,7 +39,8 @@ task panoply_association {
                   -c $codeDir \
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
-                  -p "config-custom.r";
+                  -y "final_output_params.yaml" \
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh assoc \
                   -f ${inputData} \
@@ -48,7 +49,8 @@ task panoply_association {
                   -r ${analysisDir} \
                   -o ${outFile} \
                   -g ${groupsFile} \
-                  -p "config-custom.r"
+                  -y "final_output_params.yaml" \
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r"
     fi
   }
 

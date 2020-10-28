@@ -56,7 +56,7 @@ task panoply_cmap_connectivity {
     fi
 
     # combine shards/gather and run conectivity score calculations
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${default="0" permutations} -CMAPpmt ${permutation_dir} -CMAPcfg "cmap-config-custom.r" ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${default="0" permutations} -CMAPpmt ${permutation_dir} -CMAPcfg "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r" ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} -y "final_output_params.yaml"
   }
 
   output {
@@ -118,7 +118,7 @@ task panoply_cmap_input {
     ${"--log_transform " + log_transform} \
     ${"--must_include_genes " + must_include_genes}
     
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c $codeDir -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} -CMAPcfg "cmap-config-custom.r"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPsetup -i ${tarball} -c $codeDir -o ${outFile} ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} ${"-CMAPnperm " + cmap_permutations} -CMAPcfg "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r" -y "final_output_params.yaml"
   }
 
   output {
@@ -172,7 +172,7 @@ task panoply_cmap_annotate {
     ${"--cna_threshold " + cna_threshold} \
     ${"--log_transform " + log_transform} \
     ${"--alpha " + alpha}
-    Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} "cmap-config-custom.r"
+    Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r"
   }
 
   output {

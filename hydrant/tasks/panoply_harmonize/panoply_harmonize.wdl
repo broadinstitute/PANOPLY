@@ -47,7 +47,8 @@ task panoply_harmonize {
                   -rna ${rnaExpr} \
                   -cna ${cnaExpr} \
                   -o ${outFile} \
-                  -p "config-custom.r";
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
+                  -y "final_output_params.yaml";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -f ${inputData} \
@@ -58,7 +59,8 @@ task panoply_harmonize {
                   -rna ${rnaExpr} \
                   -cna ${cnaExpr} \
                   -o ${outFile} \
-                  -p "config-custom.r";
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
+                  -y "final_output_params.yaml";
     fi
   }
 

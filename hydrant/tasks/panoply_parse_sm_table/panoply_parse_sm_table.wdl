@@ -27,7 +27,7 @@ task panoply_parse_sm_table {
     ${"--label_type " + labelType} \
     ${"--species_filter " + speciesFilter} \
     ${"--ndigits " + ndigits}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -t ${type} -r ${analysisDir} -c $codeDir -d $dataDir -e ${exptDesign} -o ${outFile} -p "config-custom.r"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -t ${type} -r ${analysisDir} -c $codeDir -d $dataDir -e ${exptDesign} -o ${outFile} -p "config-custom.r" -y "final_output_params.yaml"
   }
 
   output {

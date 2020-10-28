@@ -21,7 +21,7 @@ task panoply_sampleqc {
     --module sample_qc \
     --master_yaml ${yaml} \
     ${"--cor_threshold " + corThreshold} 
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh sampleQC -i ${tarball} -t ${type} -c $codeDir -o ${outFile}  -p "config-custom.r"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh sampleQC -i ${tarball} -t ${type} -c $codeDir -o ${outFile}  -p "config-custom.r" -y "final_output_params.yaml"
   }
 
   output {

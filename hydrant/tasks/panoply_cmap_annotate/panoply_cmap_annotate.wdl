@@ -31,7 +31,7 @@ task panoply_cmap_annotate {
     ${"--cna_threshold " + cna_threshold} \
     ${"--log_transform " + log_transform} \
     ${"--alpha " + alpha}
-    Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} "cmap-config-custom.r"
+    Rscript /prot/proteomics/Projects/PGDAC/src/cmap-annotate.R  ${tarball} ${cmap_data_file} ${cmap_group} ${cmap_type} ${cmap_enrichment_groups} ${outFile} "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r"
   }
 
   output {

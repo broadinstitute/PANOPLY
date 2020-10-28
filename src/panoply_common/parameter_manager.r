@@ -699,7 +699,7 @@ write_custom_config <- function(yaml){
                 paste('cna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$cna_data_file, "'", sep = ''), ')', sep = ''),
                 sep = "\n")
   write(output, 'config-custom.r')
-  write(output, file.path(custom_config_path, "config-custom.r"))
+  write(output, file.path(custom_config_path, "new-config-custom.r"))
 }
 
 # Write parameters to cmap config:

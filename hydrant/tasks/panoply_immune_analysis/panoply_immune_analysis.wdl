@@ -32,7 +32,8 @@ task panoply_immune_analysis {
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
                   ${"-z " + fdr} \
-                  -p "config-custom.r";
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
+                  -y "final_output_params.yaml";
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh immune \
                   -rna ${inputData} \
@@ -42,7 +43,8 @@ task panoply_immune_analysis {
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
                   ${"-z " + fdr} \
-                  -p "config-custom.r"
+                  -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
+                  -y "final_output_params.yaml"
     fi
   }
 

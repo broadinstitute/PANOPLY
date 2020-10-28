@@ -24,7 +24,7 @@ task panoply_cna_setup {
     --master_yaml ${yaml} \
     ${"--pe_max_default " + peMaxDefault} \
     ${"--min_cna_N " + minCnaN}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -t ${type} -c $codeDir -o ${outFile} ${"-g " + groupsFile} -p "config-custom.r"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAsetup -i ${tarball} -t ${type} -c $codeDir -o ${outFile} ${"-g " + groupsFile} -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" -y "final_output_params.yaml"
   }
 
   output {

@@ -8,7 +8,6 @@ task panoply_cna_correlation_report {
   String label
   String type
   String tmpDir
-  #Float fdr
 
   Int? memory
   Int? disk_space

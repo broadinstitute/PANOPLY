@@ -4,7 +4,7 @@
 task panoply_cna_correlation {
   File tarball   # output from panoply_cna_setup
   String type
-  Float fdr_cna_corr
+  Float? fdr_cna_corr
   File yaml
 
   String outFile = "panoply_cna_correlation-output.tar"
@@ -21,7 +21,7 @@ task panoply_cna_correlation {
     --module cna_analysis \
     --master_yaml ${yaml} \
     ${"--fdr_cna_corr " + fdr_cna_corr}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} -p "config-custom.r" -z ${fdr_cna_corr}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" -y "final_output_params.yaml"
   }
 
   output {
