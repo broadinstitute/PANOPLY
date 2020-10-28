@@ -117,17 +117,28 @@ panoply_blacksheep:
 panoply_mo_nmf:
 
   ## clustering
-  kmin: 2
-  kmax: 10
-  exclude_2: TRUE
-  core_membership: 0.5 
+  kmin: 2              ## minimum number of clusters    
+  kmax: 10             ## maximum number of clusters
+  exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
+  core_membership: 0.5 ## minimal cluster membership
  
   #########################
   ## NMF parameters
-  nrun: 50
-  seed: random
-  method: brunet
-  bnmf: FALSE
+  nrun: 50         ## number of iterations
+  seed: random     ## initialization method for the itertions
+  method: brunet   ## NMF method  
+  bnmf: FALSE      ## NOT SUPPORTED
+  
+  #########################
+  ## feature selection
+  feature_fdr: 0.01    ## max. FDR for 2-sample t-test
+  
+  #########################
+  ## overrepresentation 
+  ## analysis
+  ora_pval: 0.01         ## max. p-value for overrepresentation analysis (Fisher's exact test)
+  ora_max_categories: 10 ## max. number of levels in a annotation category to be included in the
+                         ## overrepresentation analysis
   
   ## heatmap parameters
   hm_cw: 5      ## cell width
@@ -138,19 +149,19 @@ panoply_mo_nmf:
   #########################
   ## filtering
   filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05
+  sd_filt: 0.05       ## 
   z_score: TRUE
  
   #########################
   ## imputation
-  impute: FALSE
-  impute_k: 5
+  impute: FALSE   ## If TRUE, kNN imputation will be used to impute missing values
+  impute_k: 5     ## k for kNN
   max_na_row: 0.3 ## (not working yet)
   max_na_col: 0.9 ## (not working yet)
  
   #########################
   ## misc
-  gene_col: geneSymbol     ##   
+  gene_col: geneSymbol     ##    
   nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
   organism: human
 
@@ -259,269 +270,3 @@ DEV_directory_and_file_names:
   rna_data_file: "rna-data.gct" 
   # affects cna.data.file in config.r :     
   cna_data_file: "cna-data.gct" 
-=======
-
-
-global_parameters:
-   ### Output precision for gct tables
-  output_precision:
-    ndigits: 5                  # used by: panoply_normalize_ms_data
-
-  missing_values_and_filtering:
-    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction. Used by: panoply_harmonize 
-    sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated. Used by: panoply_association
-    min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
-    nmiss_factor: 0.5            # for some situations, a more stringent condition is needed. Used by: panoply_association
-    sd_filter_threshold: 0.5     # SD threshold for SD filtering
-
-
-  ### Gene mapping
-  # gene mapping not needed -- use SM geneSymbol (but map to official symbols for CNA analysis)
-  gene_mapping:
-    # Policy for combining/collapsing duplicate gene names:
-    duplicate_gene_policy: maxvar # used by: panoply_association, panoply_harmonize
-    gene_id_col: geneSymbol       # used by: panoply_association, panoply_harmonize, panoply_normalize_ms_data
-
-  organism: human
-
-panoply_parse_sm_table:
-  label_type_for_ms_exp:
-    label_type: TMT10          # alternatives: iTRAQ4, TMT10.126, TMT11
-  apply_sm_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
-  species_filter: TRUE
-
-
-panoply_normalize_ms_data:
-  normalization:
-    norm_method: '2comp'           # options: 2comp (default), median, mean
-    alt_method: 'median'           # alt.method for comparison -- filtered datasets not generated
-
-
-panoply_rna_protein_correlation:
-  rna:
-    rna_sd_threshold: 1            # for variation filter (set to NA to disable)
-    profile_plot_top_n: 25
-
-
-panoply_harmonize:
-  pome_gene_id_col: 'GeneSymbol'
-  cna_gene_id_col: 'id' # This and below get assigned to the same thing within the script I seperated here for clarity?
-  rna_gene_id_col: 'id'
-
-
-panoply_association:
-  fdr_assoc: 0.01
-  
-panoply_association_report:
-  fdr_value: 0.01
-
-panoply_sample_qc:
-  cor_threshold: 0.4
-  #?heatmap_palette: "RdYlBu"
-  #?put sample colors on here?
-
-
-panoply_cna_analysis:
-  cna_parallelism:
-    pe_max_default: 250            # default maximum processors/jobs
-  fdr_cna_corr: 0.05
-  min_cna_N: 5 #cna-analysis-setup.r
-
-
-panoply_cna_correlation_report:
-  fdr: 0.05
-
-
-panoply_rna_protein_correlation_report:
-  fdr: 0.05
-
-
-panoply_cons_cluster:
-  clustering_sd_threshold: 2   # threshold for filtering data before consensus clustering
-  clustering_na_threshold: 0.5 # max fraction of missing values for clustering; rest are imputed
-
-
-panoply_cmap_analysis:
-  # CMAP setup/initialization:
-  cna_threshold: 0.3               # copy number up/down if abs (log2(copy number) - 1) is > cna.threshold (default: 0.3)
-  cna_effects_threshold: 15        # min number of samples with up/down copy number to include gene for CMAP analysis (default: 15)
-  min_sigevents: 20                # gene must have at least this many significant trans events to be considered (default: 20)  
-  max_sigevents: 1800              # if a gene has more then max.sigevents, the top max.sigevents will be chosen
-  top_N: 500                       # maximum number of genes to run CMAP enrichment on (default: 500)
-  fdr_pvalue: 0.05                 # FDR for CNA correlations (default: 0.05)
-  log_transform: FALSE      # if TRUE, log transform input data
-  must_include_genes: NULL         # genes that must be included in the CMAP analysis (vector, default: NULL)
-  # CMAP connectivity score and statistical significance:
-  cis_fdr: fdr.pvalue              # FDR for cis-correlations (default: 0.05)
-  legacy_score: FALSE              # if TRUE, legacy connectivity score will be calculated (using mean rank points), with permutation FDR
-                                   # if FALSE, enrichement will be based on fisher test of outlier scores, with BH-FDR (default)
-  rankpt_n: 4                      # number of CMAP profiles to consider when calculating mean rank point (default: 4)
-  mean_rankpt_threshold: 85        # min value of mean rank point for gene signature to be considered enriched (default: 85)
-  cmap_fdr: 0.25                   # BH-FDR threshold for fisher test of outlier scores, for gene to be considered enriched
-  # CMAP annotation
-  alpha: fdr.pvalue      # p-value threshold for cmap profile zscores and enrichments
-
-
-
-panoply_immune_analysis:
-  immune_enrichment_fdr: 0.05
-  immune_enrichment_subgroups: NULL
-  immune_heatmap_width: 10
-  immune_heatmap_height: 15
-
-panoply_blacksheep:
-  apply_filtering: FALSE
-  identifiers_file: NULL
-  groups_file: NULL
-  fraction_samples_cutoff: 0.3
-  fdr_value: 0.05
-
-########################################
-## multi-omics NMF clustering
-panoply_mo_nmf:
-
-  ## clustering
-  kmin: 3
-  kmax: 4
-  exclude_2: TRUE
-  core_membership: 0.5 
- 
-  #########################
-  ## NMF parameters
-  nrun: 2
-  seed: random
-  method: brunet
-  bnmf: FALSE
-  
-  ## heatmap parameters
-  hm_cw: 5      ## cell width
-  hm_ch: 8      ## cell height 
-  hm_max_val: 10   ## max value at which the data will be capped in heatmap 
-  hm_max_val_z: 4  ## max value if z-scored 
-
-  #########################
-  ## filtering
-  filt_mode: equal   ## global, separate, equal
-  sd_filt: 0.7
-  z_score: TRUE
- 
-  #########################
-  ## imputation
-  impute: FALSE
-  impute_k: 5
-  max_na_row: 0.3 ## (not working yet)
-  max_na_col: 0.9 ## (not working yet)
- 
-  #########################
-  ## misc
-  gene_col: geneSymbol     ##   
-  nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
-  organism: human
-  #lib_dir: 'C:/Users/karsten/Dropbox/Devel/PGDAC/src/pgdac_mo_nmf/'
-
-################################
-## ssGSEA default  parameters (projection)
-panoply_ssgsea:
-  nperm: 1000
-  weight: 0.75
-  sample_norm_type: "rank"      ## rank, log, log.rank, none
-  correl_type: "z.score"        ## "rank", "z.score", "symm.rank"
-  statistic: "area.under.RES"   ## "area.under.RES", "Kolmogorov-Smirnov" 
-  output_score_type: "NES"      ## 'Score type: "ES" - enrichment score,  "NES" - normalized ES'
-  min_overlap: 10               ## 'Minimal overlap between signature and data set.'
-  extended_output: TRUE         ## 'If TRUE additional stats on signature coverage etc. will be included as row annotations in the GCT results files.'
-  export_signat_gct: TRUE       ## For each signature export expression GCT files.
-  global_fdr: FALSE             ## If TRUE global FDR across all data columns is calculated.
-  multi_core: TRUE              ## If TRUE processing will be parallelized across gene sets using (N-1) CPU cores.
-
-
-######################################
-## ssgsea preprocessGCT parameters   
-panoply_preprocess_gct:
- level: gc                      ## Mode of report, 'ssc' - single-site-centric, 'gc' - gene-centric, 'gcr' - gene-centric-redundant.
- id_type: sm                    ## Notation of site-ids: 'sm' - Spectrum Mill; 'wg' - Web Gestalt; 'ph' - Philosopher
- id_type_out: seqwin            ## Type of site id for output: 'uniprot', 'refseq', 'seqwin', 'psp' (psp not implemented yet).
- acc_type_in: refseq            ## Type of accession number in 'rid' object in GCT file (uniprot, refseq, symbol).
- seqwin_column: VMsiteFlanks    ## Column containing flanking sequences, separated by '|'. Only relevant if '--id_type_out' = 'seqwin'
- gene_symbol_column: geneSymbol ## Name of column listing gene names; used for gene centric reports.
- sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
- localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
- mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
- residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
- ptm: p                         ## Type of modification, e.g "p" or "ac".
- preprocess_gct: TRUE           ## If FALSE nothing will be done; probably needed for to make this step optional in WDL.
- 
-################################
-## ssSGEA report
-panoply_ssgsea_report:
-  fdr: 0.05                     ## max. FDR
-  top_n: 20                     ## max. number of significant hits to plot/label
-
-###################################
-## DEV_ parameters for developers 
-## - DO NOT EDIT
-DEV_sample_annotation:
-  sample_id_col_name: "Sample.ID"
-  experiment_col_name: "Experiment"
-  channel_col_name: "Channel"
-  participant_col_name: "Participant"
-  type_col_name: "Type"
-  
-  QC:
-    sampleQC_cls: "NULL"
-    qc_col: QC.status
-    qc_pass_label: QC.pass
-
-  gct_file_ids: #used in config.r 
-    proteome:
-      id_col: 1
-      desc_col: 2
-      min_numratio: 2
-    phosphoproteome:
-      id_col: 1
-      desc_col: 2
-      min_numratio: 1
-
-DEV_directory_and_file_names:
-  # only run-pipeline.sh cmap values:
-  cmap_group: 'all'
-  cmap_type: 'pome'
-  cmap_scores: ''
-  cmap_nperm: '0'
-  cmap_permutation: 'tmp'
-  cmap_config_file: ''
-  # other:
-  rna_output_prefix: "rna-seq"
-  gene_mapping:
-    official_genesyms: "gene-symbol-map.csv"
-    protein_gene_map: "RefSeq-GeneName-Map-20170701.txt"
-
-  # data.dir in config.r:
-  data_dir: "data" 
-  # pre.dir in config.r:                 
-  parse_dir: "parsed-data" 
-  # norm.dir in config.r:         
-  norm_dir: "normalized-data" 
-  # harmonize.dir in config.r:      
-  harmonize_dir: "harmonized-data" 
-  # only run-pipeline.sh: 
-  rna_dir: "rna"
-  cna_dir: "cna"
-  cmap_dir: "cmap"
-  cmap_prefix: "$cmap_group-$cmap_type"
-  qc_dir: "sample-qc"
-  assoc_dir: "association"
-  cluster_dir: "clustering"
-  code_dir: ''
-  common_data: ''
-
-  # affects expt.design.file in config.r:
-  expt_design_file: "exptdesign.csv"  
-  parsed_output: "$prefix-ratio.gct"
-  normalized_output: "$prefix-ratio-norm.gct"
-  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
-  # affects rna.data.file in config.r:
-  rna_data_file: "rna-data.gct" 
-  # affects cna.data.file in config.r :     
-  cna_data_file: "cna-data.gct" 
->>>>>>> 7d59a5872225f36796e0dc44cd76d8a80844ba5e

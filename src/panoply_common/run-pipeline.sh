@@ -47,7 +47,7 @@ function usage {
   echo "             -e <expt-design-file> -r <analysis_directory>"
   echo "             -c <common-code-dir>  -d <common-data-dir>"
   echo "             -p <parameters-file>  -t <type>  -z <FDR>"
-  echo "             -m <data> -g <groups> -pe <#processors>"
+  echo "             -m <data> -g <groups> -pe <#processors> -y <yaml>"
   echo "             -rna <rna-expression> -cna <copy-number-data>"
   echo "             -CMAPgroup <CMAP-group-name>  -CMAPtype <CMAP-data-type>"
   echo "             -CMAPnperm <CMAP # permutations> -CMAPpmt <CMAP-permutation-scores-directory>"
@@ -69,6 +69,7 @@ function usage {
   echo "   <copy-number-data> GCT file with CNA data"
   echo "   <groups> is a expt-design-like-file used for subsetting CNA analysis"
   echo "   <#processors> is the number of processors (jobs) to use for CNA/correlation analysis"
+  echo "   <yaml> is the master yaml parameter file for the proteogenomic analysis"
   echo "   <CMAP-group-name> is group name for which CNA analysis was performed; defaults to 'all'"
   echo "   <CMAP-data-type> is data type for CMAP analysis; 'pome' or 'mrna'"
   echo "   <CMAP # permutations> is number of CMAP permutations to derive FDR"
@@ -89,7 +90,7 @@ function usage {
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
   echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
-  echo "     OPERATION immune required (-i, -c) OR (-rna, -r, -c), optional (-g, -z); -i is tar output from harmonize (with RNA data)"
+  echo "     OPERATION immune required (-i, -c) OR (-rna, -r, -c), optional (-g, -z, -y); -i is tar output from harmonize (with RNA data)"
   echo "   Use -h to print this message."
 }
 
@@ -106,7 +107,7 @@ Input filtered data: $filt_data
 Input tar file: $input_tar
 Code directory: $code_dir
 Common data directory: $common_data
-Parameters file: $param_file
+Yaml parameters file: $yaml
 Data prefix: $prefix
 Data type: $data
 Data source: $data_source
@@ -146,21 +147,36 @@ function initDataDir {
 
 function createConfig {
   # copy config and concat parameters
+  # pull default master yaml or cp provided yaml
   if [ "$param_file" = "" ]; then
-    cp $code_dir/config.r config.r
+    if [ "$code_dir" != "" ]; then
+      cp $code_dir/config.r config.r
+    fi
   else
     cat $code_dir/config.r $param_file > config.r
+  fi
+  if [ "$cmap_config_file" != "" ]; then
+    cp $cmap_config_file cmap-config-custom.r
+  fi
+  if [ "$yaml" != "" ]; then
+    cp $yaml master-parameter.yaml
   fi
 }
 
 
 function createSubdirs {
-  # create subdirectories (if they do not exisit) and copy config file
+  # create subdirectories (if they do not exisit) and copy config file and yaml file if provided
   for d in $1; do
     if [ ! -d $d ]; then
       mkdir $d
     fi
     (cd $d; cp ../config.r config.r)
+    if [ "$yaml" != "" ]; then
+      (cd $d; cp ../master-parameter.yaml master-parameter.yaml)
+    fi
+    if [ "$cmap_config_file" != "" ]; then
+      (cd $d; cp ../cmap-config-custom.r cmap-config-custom.r)
+    fi
   done
 }
 
@@ -313,6 +329,7 @@ rna_data=
 cna_data=
 groups=
 pe=
+yaml=
 fdr=
 cmap_group="all"
 cmap_type="pome"
@@ -354,6 +371,7 @@ while [ "$1" != "" ]; do
 	-s )     shift; sm_file=`readlink -f $1` ;;
 	-t )     shift; prefix=$1 ;;
 	-pe )    shift; pe=$1 ;;
+	-y )     shift; yaml=`readlink -f $1` ;;
   -z )     shift; fdr=$1 ;;
 	-rna )   shift; rna_data=`readlink -f $1` ;;
 	-cna )   shift; cna_data=`readlink -f $1` ;;
@@ -504,6 +522,7 @@ else
   cd $analysis_dir
   ## data directory (in case previously not specified)
   initDataDir
+  createConfig
 fi
 
 
@@ -595,7 +614,7 @@ case $op in
                    Rscript cna-analysis.r 0 1 $group_prefix NULL NULL NULL
                  done)
              ;;
-#   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creats input files (genesets)
+#   CMAPsetup: run initialization for CMAP analysis -- sets up directories and creates input files (genesets)
 #            input must be tar file obtained after CNAcorr
     CMAPsetup ) analysisInit "CMAPsetup"
                 for f in cmap-input.r connectivity.r; do cp $code_dir/$f $cmap_dir/$f; done

@@ -22,11 +22,13 @@ option_list <- list(
   # All Command line possibles:
     # parse_SM_table:
   make_option(c("--label_type"), type="character", dest = 'label_type', help="label type for MS experiment. ex: TMT10", metavar="character"),
-  make_option(c("--apply_sm_filter"), type="logical", dest = 'apply_sm_filter', help="if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)"),
   make_option(c("--species_filter"), type="logical", dest = 'species_filter', help="if TRUE will discard all proteins/peptides not from homo sapiens"),
     #normalize_ms_data:
   make_option(c("--norm_method"), type = "character", dest = 'norm_method', help = "normalization method ex: '2comp', median, mean"),
   make_option(c("--alt_method"), type = "character", dest = 'alt_method', help = "alt.method for comparison -- filtered datasets not generated"),
+  make_option(c("--min_numratio_proteome", type = "integer", dest = 'min_numratio_proteome', help = "min_numratio value for proteome analysis")),
+  make_option(c("--min_numratio_ptms", type = "integer", dest = 'min_numratio_ptms', help = "min_numratio value for PTM analysis (all types except proteome)")),
+  make_option(c("--apply_sm_filter"), type="logical", dest = 'apply_sm_filter', help="if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)"),
     #rna_protein_correlation:
   make_option(c("--rna_sd_threshold"), type = "integer", dest = 'rna_sd_threshold', help = "for variation filter (set to NA to disable)"),
   make_option(c("--profile_plot_top_n"), type = "integer", dest = 'profile_plot_top_n', help = "defined in rna-seq-correlation.r"),
@@ -226,7 +228,7 @@ change_global_params <- function(opt,yaml){
 
 # parse_sm_table:
 check_parse_sm_params <- function(opt, yaml){
-  if (!is.null(opt$label_type) | !is.null(opt$apply_sm_filter) | !is.null(opt$species_filter)){
+  if (!is.null(opt$label_type) | !is.null(opt$species_filter)){
     if (!is.null(opt$label_type)){
       yaml$panoply_parse_sm_table$label_type_for_ms_exp$label_type <- opt$label_type
     }
@@ -244,12 +246,21 @@ check_parse_sm_params <- function(opt, yaml){
 
 # normalize_sm_data:
 check_normalize_sm_params <- function(opt, yaml){
-  if (!is.null(opt$norm_method) | !is.null(opt$alt_method)){
+  if (!is.null(opt$norm_method) | !is.null(opt$alt_method) | !is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$apply_sm_filter)){
     if (!is.null(opt$norm_method)){
       yaml$panoply_normalize_ms_data$normalization$norm_method <- opt$norm_method
     }
     if (!is.null(opt$alt_method)) {
       yaml$panoply_normalize_ms_data$normalization$alt_method <- opt$alt_method
+    }
+    if (!is.null(opt$min_numratio_proteome)) {
+      yaml$panoply_normalize_ms_data$gct_file_ids$proteome$min_numratio <- opt$min_numratio_proteome
+    }
+    if (!is.null(opt$min_numratio_ptms)) {
+      yaml$panoply_normalize_ms_data$gct_file_ids$phosphoproteome$min_numratio <- opt$min_numratio_ptms
+    }
+    if (!is.null(opt$apply_sm_filter)) {
+      yaml$panoply_normalize_ms_data$apply_sm_filter <- opt$apply_sm_filter
     }
     return(yaml)
   }else{
@@ -609,7 +620,7 @@ check_pipeline_params <- function(opt,yaml){
 # Write to config functions:
 # For all modules other than cmap:
 write_custom_config <- function(yaml){
-  #custom_config_path <- '/prot/proteomics/Projects/PGDAC/src/'
+  custom_config_path <- "/prot/proteomics/Projects/PGDAC/src"
   #custom_config_path <- '/output/'
   output <- paste(paste('ndigits', '<-', yaml$global_parameters$output_precision$ndigits),
                 paste('na.max', '<-', yaml$global_parameters$missing_values_and_filtering$na_max), 
@@ -623,9 +634,9 @@ write_custom_config <- function(yaml){
                 #parse_sm_table:
                 paste('label.type', '<-', paste('"', yaml$panoply_parse_sm_table$label_type_for_ms_exp$label_type, '"', sep = '')),
                 'set.label.type (label.type)', #This needs to be run after label.type in config.r!
-                paste('apply.sm.filter', '<-', yaml$panoply_parse_sm_table$apply_sm_filter),
                 paste('species.filter', '<-', yaml$panoply_parse_sm_table$species_filter),
                 #normalize_sm_data:
+                paste('apply.sm.filter', '<-', yaml$panoply_normalize_ms_data$apply_sm_filter),
                 paste('norm.method', '<-', paste('"', yaml$panoply_normalize_ms_data$normalization$norm_method, '"', sep = '')),
                 paste('alt.method', '<-', paste('"', yaml$panoply_normalize_ms_data$normalization$alt_method, '"', sep = '')),
                 'if (norm.method == alt.method) alt.method <- NULL', #This should be run after norm and alt methods are defined
@@ -669,11 +680,11 @@ write_custom_config <- function(yaml){
                 "if (type == 'proteome') {",
                 paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$id_col),
                 paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$desc_col),
-                paste('  min.numratio', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$min_numratio),
+                paste('  min.numratio', '<-', yaml$panoply_normalize_ms_data$gct_file_ids$proteome$min_numratio),
                 "} else {",
                 paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$id_col),
                 paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$desc_col),
-                paste('  min.numratio', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$min_numratio),
+                paste('  min.numratio', '<-', yaml$panoply_normalize_ms_data$gct_file_ids$phosphoproteome$min_numratio),
                 '}',
                 #DEV_directory_and_file_names:
                 paste('rna.output.prefix', '<-', paste('"', yaml$DEV_directory_and_file_names$rna_output_prefix, '"', sep = '')),
@@ -688,11 +699,12 @@ write_custom_config <- function(yaml){
                 paste('cna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$cna_data_file, "'", sep = ''), ')', sep = ''),
                 sep = "\n")
   write(output, 'config-custom.r')
+  write(output, file.path(custom_config_path, "config-custom.r"))
 }
 
 # Write parameters to cmap config:
 write_custom_cmap_config <- function(yaml){
-  #custom_config_path <- '/prot/proteomics/Projects/PGDAC/src/'
+  custom_config_path <- "/prot/proteomics/Projects/PGDAC/src"
   #custom_config_path <- '~/output/'
   output <- paste(paste('cna.threshold', '<-', yaml$panoply_cmap_analysis$cna_threshold),
                   paste('cna.effects.threshold', '<-', yaml$panoply_cmap_analysis$cna_effects_threshold), 
@@ -709,6 +721,7 @@ write_custom_cmap_config <- function(yaml){
                   paste('cmap.fdr', '<-', yaml$panoply_cmap_analysis$cmap_fdr),
                   paste('alpha', '<-', yaml$panoply_cmap_analysis$alpha),
                   sep = "\n")
+  write(output, file.path(custom_config_path, "cmap-config-custom.r"))
   write(output, 'cmap-config-custom.r')
 }
 

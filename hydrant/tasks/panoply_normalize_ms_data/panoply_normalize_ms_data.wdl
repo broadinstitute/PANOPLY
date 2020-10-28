@@ -5,22 +5,22 @@ task panoply_normalize_ms_data {
   File inputData
   String type
   String standalone
-  String? analysisDir
-  String? subType
+  String analysisDir
   File yaml
   String? normalizeProteomics
   String? normMethod
   String? altMethod
   Int? ndigits
-  Float? na_max
-  String? gene_id_col
-  Float? sd_filter_threshold
-  Float? min_numratio_fraction
+  Float? naMax
+  String? geneIdCol
+  Float? sdFilterThreshold
+  Float? minNumratioFraction
+  Int? minNumratioProteome
+  Int? minNumratioPTMs
+  String? applySMfilter
 
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
   String outTar = "panoply_normalize_ms_data-output.tar"
   String outTable = "normalized_table-output.gct"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
 
   Int? memory
   Int? disk_space
@@ -29,6 +29,9 @@ task panoply_normalize_ms_data {
 
   command  <<<
     set -euo pipefail
+    
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    dataDir = "/prot/proteomics/Projects/PGDAC/data"
     
     if [ ${normalizeProteomics} ]; then
       if [ ${normalizeProteomics} = "FALSE" ]; then
@@ -56,29 +59,30 @@ task panoply_normalize_ms_data {
       ${"--norm_method " + normMethod} \
       ${"--alt_method " + altMethod} \
       ${"--ndigits " + ndigits} \
-      ${"--gene_id_col " + gene_id_col} \
-      ${"--na_max " + na_max} \
-      ${"--sd_filter_threshold " + sd_filter_threshold} \
-      ${"--min_numratio_fraction " + min_numratio_fraction}
+      ${"--gene_id_col " + geneIdCol} \
+      ${"--na_max " + naMax} \
+      ${"--sd_filter_threshold " + sdFilterThreshold} \
+      ${"--min_numratio_fraction " + minNumratioFraction} \
+      ${"--min_numratio_proteome " + minNumratioProteome} \
+      ${"--min_numratio_ptms " + minNumratioPTMs} \
+      ${"--apply_sm_filter " + applySMfilter}
       
       if [[ ${standalone} = false ]]; then
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -i ${inputData} \
               -t ${type} \
-              -c ${codeDir} \
+              -c $codeDir \
               -o ${outTar} \
-              ${"-m " + subType} \
-              -p "config-custom.r"
+              -p "/prot/proteomics/Projects/PGDAC/src/config-custom.r"
       else
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -a ${inputData} \
               -r ${analysisDir} \
               -t ${type} \
-              -c ${codeDir} \
-              -d ${dataDir} \
+              -c $codeDir \
+              -d $dataDir \
               -o ${outTar} \
-              ${"-m " + subType} \
-              -p "config-custom.r"
+              -p "/prot/proteomics/Projects/PGDAC/src/config-custom.r"
       fi
       # Grab the norm/filtered gct to set as output with appropriate name
       outGCT=`find ${analysisDir}/normalized-data -type f -iname "*-ratio-norm-NArm*"`
@@ -110,13 +114,13 @@ workflow panoply_normalize_ms_data_workflow {
   File inputData
   String dataType
   String standalone
-  String? analysisDir
+  String analysisDir
   File yaml
   Int? ndigits
-  String? gene_id_col
-  Float? na_max
-  Float? sd_filter_threshold
-  Float? min_numratio_fraction
+  String? geneIdCol
+  Float? naMax
+  Float? sdFilterThreshold
+  Float? minNumratioFraction
 
   call panoply_normalize_ms_data {
     input:
@@ -126,9 +130,9 @@ workflow panoply_normalize_ms_data_workflow {
       analysisDir=analysisDir,
       yaml=yaml,
       ndigits=ndigits,
-      gene_id_col=gene_id_col,
-      na_max=na_max,
-      sd_filter_threshold=sd_filter_threshold,
-      min_numratio_fraction=min_numratio_fraction
+      geneIdCol=geneIdCol,
+      naMax=naMax,
+      sdFilterThreshold=sdFilterThreshold,
+      minNumratioFraction=minNumratioFraction
   }
 }

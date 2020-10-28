@@ -6,7 +6,7 @@ source ('config.r')
 
 
 if (!require("pacman")) install.packages ("pacman")
-pacman::p_load (RColorBrewer, ComplexHeatmap, circlize, cluster, ape, tidyr, ggplot2, dplyr, devtools)
+pacman::p_load (RColorBrewer, ComplexHeatmap, circlize, cluster, ape, tidyr, ggplot2, dplyr, devtools, yaml)
 if (! require (estimate)) {
   # only available at R forge
   install.packages("estimate", repos="http://r-forge.r-project.org", dependencies=TRUE)
@@ -157,8 +157,19 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
     mutate (ESTIMATE.TumorPurity = rna.ES[samples, 'TumorPurity']) %>%
     mutate (Immune.Subtype = factor (rna.subtype[samples, 'Immune.Subtype'])) %>%
     select (-Sample.ID)
-  annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.5, annotation_width = 0.5,
-                                   show_annotation_name=TRUE)
+  
+  # Read yaml colors if provided:
+  if ( file.exists("master-parameter.yaml") ) {
+    yaml_params <- read_yaml('master-parameter.yaml')
+    color = lapply(yaml_params$groups.colors, unlist)
+    annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.5, annotation_width = 0.5,
+                                   show_annotation_name=TRUE, col = color)
+  } else {
+    annotation <- HeatmapAnnotation (df=annot, annotation_height = 0.5, annotation_width = 0.5,
+                                     show_annotation_name=TRUE)
+    print("No yaml colors found, using original color scheme!")
+  }
+  
   heatmap <- Heatmap (results, top_annotation=annotation, 
                       row_names_gp = gpar (fontsize=8), column_names_gp = gpar(fontsize=8),
                       clustering_distance_columns='pearson', clustering_distance_rows='pearson',

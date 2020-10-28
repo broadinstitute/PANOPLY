@@ -7,19 +7,9 @@ task panoply_parse_sm_table {
   String analysisDir
   String type
   File yaml
-  String? subType
   String? labelType
-  String? applySMfilter
   String? speciesFilter
   Int? ndigits
-  Float? naMax
-  Float? sampleNaMax
-  Float? minNumratioFraction
-  Float? nmissFactor
-  Float? sdFilterThreshold
-  String? duplicateGenePolicy
-  String codeDir = "/prot/proteomics/Projects/PGDAC/src"
-  String dataDir = "/prot/proteomics/Projects/PGDAC/data"
   String outFile = "panoply_parse_sm_table-output.tar"
 
   Int? memory
@@ -29,20 +19,15 @@ task panoply_parse_sm_table {
 
   command {
     set -euo pipefail
+    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    dataDir = "/prot/proteomics/Projects/PGDAC/data"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module parse_sm_table \
     --master_yaml ${yaml} \
     ${"--label_type " + labelType} \
-    ${"--apply_sm_filter " + applySMfilter} \
     ${"--species_filter " + speciesFilter} \
-    ${"--ndigits " + ndigits} \
-    ${"--na_max " + naMax} \
-    ${"--sample_na_max " + sampleNaMax} \
-    ${"--min_numratio_fraction " + minNumratioFraction} \
-    ${"--nmiss_factor " + nmissFactor} \
-    ${"--sd_filter_threshold " + sdFilterThreshold} \
-    ${"--duplicate_gene_policy " + duplicateGenePolicy}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -t ${type} -r ${analysisDir} -c ${codeDir} -d ${dataDir} -e ${exptDesign} -o ${outFile} ${"-m " + subType} -p "config-custom.r"
+    ${"--ndigits " + ndigits}
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh inputSM -s ${SMtable} -t ${type} -r ${analysisDir} -c $codeDir -d $dataDir -e ${exptDesign} -o ${outFile} -p "config-custom.r"
   }
 
   output {
@@ -50,7 +35,7 @@ task panoply_parse_sm_table {
   }
 
   runtime {
-    docker : "broadcptac/panoply_parse_sm_table:dev"
+    docker : "broadcptacdev/panoply_parse_sm_table:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
