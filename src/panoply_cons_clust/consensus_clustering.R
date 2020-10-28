@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-
 if(!require('pacman')) install.packages('pacman')
 p_load(ggplot2)
 p_load(NMF)
@@ -15,10 +14,10 @@ p_load(doParallel)
 
 ## ###########################################################################################
 ## consensus clustering
-consensus_clustering_single_k <- function(m,                 ## data matrix p x n
+consensus_clustering_single_k <- function(m,                   ## data matrix p x n
                           method=c('hclust', 'nmf', 'kmeans'), ## cluster method  
-                          nmf.nrun=10,         ## number of random restarts for NMF
-                          bs.nrun=5,           ## number of bootstrap runs for consensus
+                          nmf.nrun=50,         ## number of random restarts for NMF
+                          bs.nrun=1000,        ## number of bootstrap runs for consensus
                           nmf.opts=NULL,       ## additional options for function NMF
                           nmf.method='brunet', ## nmf method
                           seed='random',       ## nmf seed method
@@ -136,6 +135,7 @@ consensus_clustering_single_k <- function(m,                 ## data matrix p x 
     
     return(out)
   } ## end function cluster
+  
   ## ###############################
   cat(glue('\nk={k} \n'))
   cat(glue('\n\n{paste(rep("#", 20), collapse="")}\nPartitioning data in k={k} clusters using {method}-clustering.\n'), file=logfile, append=T)
@@ -342,10 +342,8 @@ consensus_clustering <- function(m,                 ## data matrix p x n
                    main=glue("{nrow(m)} most variable features"))
       })
   }
-  
-  
+
   ## assemble output
-  
   return(cons.res)
   
 }
@@ -533,7 +531,6 @@ hm.consensus <- function(M,
         brew.tmp <- brewer.pal(n.cat, brew.tmp.name)
         brew.tmp <- brew.tmp[1:n.cat]
       }
-      #names(brew.tmp) <- unique(cdesc[, anno.track.tmp])
       names(brew.tmp) <- cats
       
       anno.col <- append(anno.col, list( brew.tmp))
@@ -542,11 +539,10 @@ hm.consensus <- function(M,
   }
 
   ## heatmap colors  
-  #hm.col <- colorRampPalette(rev(brewer.pal(7, "RdYlBu")))(100)
-    hm.col <- colorRampPalette(c('darkblue', 'yellow'))(100)
-    breaks <- seq(0, 1, length.out = length(hm.col) + 1)
+  hm.col <- colorRampPalette(c('darkblue', 'yellow'))(100)
+  breaks <- seq(0, 1, length.out = length(hm.col) + 1)
   
-    pheatmap(M, symm=T, 
+  pheatmap(M, symm=T, 
            col=hm.col,
            breaks=breaks,
            annotation_col = anno,
@@ -604,9 +600,6 @@ auc_cdf_cons <- function(M){
     
   return(auc)
 }
-
-## #################################################################
-## 
 
 ## #################################################################
 ## consensus clustering:

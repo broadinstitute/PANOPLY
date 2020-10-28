@@ -2,7 +2,6 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-#options( warn = -1 )
 library(optparse)
 
 options(stringsAsFactors=FALSE)
@@ -29,28 +28,11 @@ opt  <- parse_args(OptionParser(option_list=option.list, usage = "Rscript %prog 
 source(file.path(opt$lib.dir, 'consensus_clustering.R'))
 
 
-# opt <- c()
-# opt$tar.file = 'cluster-test.tar'
-# opt$label = 'cluster-test'
-# opt$k_min =2
-# opt$k_max =4
-# opt$type = 'proteome'
-# opt$clust.dir <- 'cons-clust'
-# opt$bs.nrun <- 100
-# opt$tmp.dir = 'tmp'
-# opt$norm.dir = 'normalized-data' 
-# opt$clustering.sd.threshold <-0
-#opt$class.var='class'
-
-
 ## ###########################################################################################
 ## main
 main <- function(opt) {
-  
-  ## analysis_dir = opt$tmp.dir/opt$label
-  
+
   wd <- getwd()
-  
   
   ## prepare log file
   logfile <- paste(opt$label, '_consensus_clustering.log', sep='')
@@ -86,27 +68,11 @@ main <- function(opt) {
       gct.str <- opt$tar.file
       cluster.path.full <- opt$clust.dir
       
-      #cat('#### ', cluster.path.full, '\n')
-      
     } else {
-      ## source 'config.r' to get all parameters  
-      #system(glue('R CMD BATCH --vanilla "--args {opt$type}" config.r;'))
-      #source(glue('config.r'))
-      
-      #opt$clustering.sd.threshold <- clustering.sd.threshold
       cat(glue('Using minimal sd of: {opt$clustering.sd.threshold}\n\n'))
       
-      ## assume the current folder is the clustering-folder
-      #if(opt$x){
         cluster.path.full <- getwd()
-        ## path to GCT file
         gct.str <- file.path('..', opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
-      #} else {
-        
-       # gct.str <- i
-        
-      #}
-      
     }
   
   if(!dir.exists(cluster.path.full))
