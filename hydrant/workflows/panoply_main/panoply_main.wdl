@@ -6,7 +6,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_setup/versions/4/plain-WDL/descriptor" as cna_setup_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cna_correlation_MM/versions/5/plain-WDL/descriptor" as cna_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation/versions/1/plain-WDL/descriptor" as cna_corr_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/5/plain-WDL/descriptor" as assoc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/4/plain-WDL/descriptor" as accum_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/3/plain-WDL/descriptor" as download_wdl
@@ -17,7 +17,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_rep
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/3/plain-WDL/descriptor" as normalize_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/6/plain-WDL/descriptor" as cons_clust_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cons_clust_report_MM/versions/2/plain-WDL/descriptor" as cons_clust_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust_report/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
 
 
