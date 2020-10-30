@@ -24,8 +24,8 @@ task panoply_cons_clust_report {
 
     runtime {
         docker : "broadcptacdev/panoply_cons_clust_report:latest"
-        memory : select_first ([memory, 2]) + "GB"
-        disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
+        memory : select_first ([memory, 10]) + "GB"
+        disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""
         preemptible : select_first ([num_preemptions, 0])
     }
@@ -40,3 +40,4 @@ workflow panoply_cons_clust_report_workflow {
 
     call panoply_cons_clust_report
 }
+
