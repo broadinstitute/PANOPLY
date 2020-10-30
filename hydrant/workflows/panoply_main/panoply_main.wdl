@@ -1,24 +1,24 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/4/plain-WDL/descriptor" as normalize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/3/plain-WDL/descriptor" as rna_prot_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/3/plain-WDL/descriptor" as harmonize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/3/plain-WDL/descriptor" as sampleqc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_setup/versions/3/plain-WDL/descriptor" as cna_setup_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cna_correlation_MM/versions/4/plain-WDL/descriptor" as cna_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/4/plain-WDL/descriptor" as assoc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/9/plain-WDL/descriptor" as normalize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/4/plain-WDL/descriptor" as rna_prot_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_setup/versions/4/plain-WDL/descriptor" as cna_setup_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cna_correlation_MM/versions/5/plain-WDL/descriptor" as cna_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/5/plain-WDL/descriptor" as assoc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/4/plain-WDL/descriptor" as accum_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/3/plain-WDL/descriptor" as download_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/12/plain-WDL/descriptor" as ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation_report/versions/1/plain-WDL/descriptor" as rna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/1/plain-WDL/descriptor" as cna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/1/plain-WDL/descriptor" as sampleqc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/3/plain-WDL/descriptor" as assoc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/2/plain-WDL/descriptor" as normalize_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/3/plain-WDL/descriptor" as cons_clust_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cons_clust_report_MM/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/3/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/14/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation_report/versions/3/plain-WDL/descriptor" as rna_corr_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/3/plain-WDL/descriptor" as normalize_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/6/plain-WDL/descriptor" as cons_clust_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_cons_clust_report_MM/versions/2/plain-WDL/descriptor" as cons_clust_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
 
 
 workflow panoply_main {
@@ -35,10 +35,10 @@ workflow panoply_main {
   File input_cna
   File yaml
 
-  String? data_sub_type
   File? cna_groups
   File? association_groups
   File? cluster_enrichment_groups
+  String? normalizeProteomics # "TRUE" or "FALSE"
 
   ## cmap inputs
   Int cmap_n_permutations = 5
@@ -71,10 +71,11 @@ workflow panoply_main {
       analysisDir = job_identifier,
       yaml = yaml,
       ndigits = ndigits,
-      na_max = na_max,
-      gene_id_col=gene_id_col,
-      sd_filter_threshold=sd_filter_threshold,
-      min_numratio_fraction=min_numratio_fraction
+      naMax = na_max,
+      geneIdCol=gene_id_col,
+      sdFilterThreshold=sd_filter_threshold,
+      minNumratioFraction=min_numratio_fraction,
+      normalizeProteomics=normalizeProteomics
   }
 
   call normalize_report_wdl.panoply_normalize_ms_data_report {
@@ -83,7 +84,8 @@ workflow panoply_main {
       label = job_identifier,
       type = ome_type,
       tmpDir = "tmp",
-      yaml = yaml
+      yaml = yaml,
+      normalizeProteomics=normalizeProteomics
   }
   
   call rna_prot_corr_wdl.panoply_rna_protein_correlation {
@@ -143,7 +145,6 @@ workflow panoply_main {
       cnaExpr = input_cna,
       standalone = standalone,
       type = ome_type,
-      subType = data_sub_type,
       yaml = yaml,
       na_max=na_max,
       duplicate_gene_policy=duplicate_gene_policy,
@@ -154,7 +155,6 @@ workflow panoply_main {
     input:
       tarball = panoply_harmonize.outputs,
       type = ome_type,
-      subType = data_sub_type,
       yaml = yaml
   }
 
@@ -171,7 +171,6 @@ workflow panoply_main {
       tarball = panoply_sampleqc.outputs,
       groupsFile = cna_groups,
       type = ome_type,
-      subType = data_sub_type,
       yaml = yaml
   }
 
@@ -179,7 +178,6 @@ workflow panoply_main {
     input:
       tarball = panoply_cna_setup.outputs,
       type = ome_type,
-      subType = data_sub_type,
       yaml = yaml
   }
 
@@ -197,7 +195,6 @@ workflow panoply_main {
       inputData = panoply_cna_correlation.outputs, 
       groupsFile = association_groups,
       type = ome_type,
-      subType = data_sub_type,
       standalone = standalone,
       yaml = yaml,
       sample_na_max=sample_na_max,
@@ -226,10 +223,10 @@ workflow panoply_main {
 
   call cons_clust_wdl.panoply_cons_clust {
     input:
-      tarball = panoply_association.outputs,
+      inputData = panoply_association.outputs,
       type = ome_type,
       groupsFile = cluster_enrichment_groups,
-      subType = data_sub_type,
+      standalone = "false",
       yaml=yaml
   }
   

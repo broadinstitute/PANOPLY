@@ -21,7 +21,7 @@ task panoply_immune_analysis {
 
   command {
     set -euo pipefail
-    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r --module immune_analysis --master_yaml ${yaml} ${"--immune_enrichment_subgroups " + groupsFile} ${"--immune_enrichment_fdr " + fdr} ${"--immune_heatmap_width " + heatmapWidth} ${"--immune_heatmap_height " + heatmapHeight}
     
     if [[ ${standalone} = false ]]; then
