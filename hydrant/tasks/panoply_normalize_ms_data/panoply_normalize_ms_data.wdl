@@ -30,8 +30,8 @@ task panoply_normalize_ms_data {
   command  <<<
     set -euo pipefail
     
-    codeDir = "/prot/proteomics/Projects/PGDAC/src"
-    dataDir = "/prot/proteomics/Projects/PGDAC/data"
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
+    dataDir="/prot/proteomics/Projects/PGDAC/data"
     
     if [ ${normalizeProteomics} ]; then
       if [ ${normalizeProteomics} = "FALSE" ]; then

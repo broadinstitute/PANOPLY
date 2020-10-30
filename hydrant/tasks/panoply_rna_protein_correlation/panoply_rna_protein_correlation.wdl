@@ -20,8 +20,8 @@ task panoply_rna_protein_correlation {
 
   command {
     set -euo pipefail
-    codeDir = "/prot/proteomics/Projects/PGDAC/src"
-    dataDir = "/prot/proteomics/Projects/PGDAC/data"
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
+    dataDir="/prot/proteomics/Projects/PGDAC/data"
 
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module rna_protein_correlation \

@@ -16,7 +16,7 @@ task panoply_sampleqc {
 
   command {
     set -euo pipefail
-    codeDir = "/prot/proteomics/Projects/PGDAC/src"
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module sample_qc \
     --master_yaml ${yaml} \
