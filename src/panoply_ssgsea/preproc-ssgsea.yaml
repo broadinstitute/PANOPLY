@@ -1,7 +1,7 @@
 ####################################
 ## ssgsea parameters 
 panoply_ssgsea: 
- nperm: 3
+ nperm: 1000
  weight: 0.75
  output_prefix: "ssgsea-results"
  sample_norm_type: "rank"        ## rank, log, log.rank, none
@@ -29,5 +29,3 @@ panoply_preprocess_gct:
  residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
  ptm: p                         ## Type of modification, e.g "p" or "ac".
  preprocess_gct: TRUE           ## If FALSE nothing will be done; probably needed for to make this step optional in WDL.
- #libdir: "c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_ssgsea/" ## Folder to source from.
- 

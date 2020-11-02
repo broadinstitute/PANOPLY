@@ -70,7 +70,6 @@ task panoply_ssgsea {
 	output {
 		# Outputs defined here
 		File results="${output_prefix}.tar.gz"
-		#File input_gct_processed="$input_ds_proc"
 		}
 
 	runtime {
