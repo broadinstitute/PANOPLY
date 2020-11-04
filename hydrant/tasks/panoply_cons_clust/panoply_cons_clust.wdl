@@ -30,16 +30,16 @@ task panoply_cons_clust {
     
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster \
-          -i ${inputData} \
+            -i ${inputData} \
             -t ${type} \
             -c $codeDir \
             -o ${outFile} \
             -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
             ${"-g " + groupsFile} \
-            -y "final_output_params.yaml"
+            -y "final_output_params.yaml";
    else
      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh cluster \
-        -f ${inputData} \ 
+            -f ${inputData} \ 
             -t ${type} \ 
             -c $codeDir \
             -r ${analysisDir} \
@@ -47,6 +47,7 @@ task panoply_cons_clust {
             -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
             ${"-g " + groupsFile} \
             -y "final_output_params.yaml"
+  fi
   }
 
   output {

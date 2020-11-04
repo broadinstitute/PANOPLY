@@ -85,7 +85,7 @@ function usage {
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
   echo "     OPERATION CNAsetup requires (-i, -c), optional (-g, -pe); -i is tar output from harmonize"
-  echo "     OPERATION CNAcorr requires (-i,), optional (-z); -i is tar output from CNAsetup"
+  echo "     OPERATION CNAcorr requires (-i, -c), optional (-z); -i is tar output from CNAsetup"
   echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
   echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"

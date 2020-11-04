@@ -17,11 +17,12 @@ task panoply_cna_correlation {
 
   command {
     set -euo pipefail
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module cna_analysis \
     --master_yaml ${yaml} \
     ${"--fdr_cna_corr " + fdr_cna_corr}
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -o ${outFile} -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" -y "final_output_params.yaml"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CNAcorr -i ${tarball} -t ${type} -c $codeDir -o ${outFile} -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" -y "final_output_params.yaml"
   }
 
   output {
