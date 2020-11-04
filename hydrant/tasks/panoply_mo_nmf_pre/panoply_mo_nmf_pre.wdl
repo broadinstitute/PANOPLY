@@ -29,7 +29,8 @@ task panoply_mo_nmf_pre {
         for f in ${sep=" " omes}; do
             if [ "$f" ]; then
                 echo $f "FILE"
-                ome="$(basename $f -normalized_table-output.gct)"
+                base="$(basename $f)"
+                ome=`echo $base | cut -d '-' -f 1`
                 echo $ome "OME"
             else
                 ome=''
@@ -99,3 +100,4 @@ workflow panoply_mo_nmf_pre_wf {
         File nmf_tar=panoply_mo_nmf_pre.tar
     }
 }
+
