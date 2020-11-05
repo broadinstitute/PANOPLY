@@ -33,29 +33,10 @@ task panoply_normalize_ms_data {
     codeDir="/prot/proteomics/Projects/PGDAC/src"
     dataDir="/prot/proteomics/Projects/PGDAC/data"
     
-    if [ ${normalizeProteomics} ]; then
-      if [ ${normalizeProteomics} = "FALSE" ]; then
-        norm=FALSE
-      fi
-      if [ ${normalizeProteomics} = "TRUE" ]; then
-        norm=TRUE
-      fi
-    else
-      # Find the flag for normalize.proteomics in the yaml:
-      cfg=${yaml}
-      echo "library(yaml);yaml=read_yaml('$cfg');norm=yaml[['normalize.proteomics']];writeLines(as.character(norm), con='norm.txt')" > cmd.r
-      Rscript cmd.r
-      norm=`cat norm.txt`
-    fi
-    
-    # If not normalizing input is the normalized tab and becomes the output, else run normalizing:
-    if [ $norm = FALSE ]; then
-      cp ${inputData} ${type}-${outTable}
-      tar -c -f ${outTar} ${type}-${outTable}
-    else
-      Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+    Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
       --module normalize_ms_data \
       --master_yaml ${yaml} \
+      ${"--normalize_proteomics " + normalizeProteomics} \
       ${"--norm_method " + normMethod} \
       ${"--alt_method " + altMethod} \
       ${"--ndigits " + ndigits} \
@@ -66,7 +47,18 @@ task panoply_normalize_ms_data {
       ${"--min_numratio_proteome " + minNumratioProteome} \
       ${"--min_numratio_ptms " + minNumratioPTMs} \
       ${"--apply_sm_filter " + applySMfilter}
-      
+
+    # Find the flag for normalize.proteomics in the yaml:
+    cfg='final_output_params.yaml'
+    echo "library(yaml);yaml=read_yaml('$cfg');norm=yaml[['normalize.proteomics']];writeLines(as.character(norm), con='norm.txt')" > cmd.r
+    Rscript cmd.r
+    norm=`cat norm.txt`
+    
+    # If not normalizing input is the normalized tab and becomes the output, else run normalizing:
+    if [ $norm = FALSE ]; then
+      cp ${inputData} ${type}-${outTable}
+      tar -c -f ${outTar} ${type}-${outTable}
+    else
       if [[ ${standalone} = false ]]; then
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
               -i ${inputData} \
@@ -96,6 +88,7 @@ task panoply_normalize_ms_data {
   output {
     File outputs = "${type}-${outTable}"
     File output_tar = "${outTar}"
+    File output_yaml = "final_output_params.yaml"
   }
 
   runtime {

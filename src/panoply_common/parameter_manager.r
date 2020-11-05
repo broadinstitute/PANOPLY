@@ -24,6 +24,7 @@ option_list <- list(
   make_option(c("--label_type"), type="character", dest = 'label_type', help="label type for MS experiment. ex: TMT10", metavar="character"),
   make_option(c("--species_filter"), type="logical", dest = 'species_filter', help="if TRUE will discard all proteins/peptides not from homo sapiens"),
     #normalize_ms_data:
+  make_option(c("--normalize_proteomics"), type = "logical", dest = 'normalize_proteomics', help = "true/false indicating if input data should be normalized"),
   make_option(c("--norm_method"), type = "character", dest = 'norm_method', help = "normalization method ex: '2comp', median, mean"),
   make_option(c("--alt_method"), type = "character", dest = 'alt_method', help = "alt.method for comparison -- filtered datasets not generated"),
   make_option(c("--min_numratio_proteome", type = "integer", dest = 'min_numratio_proteome', help = "min_numratio value for proteome analysis")),
@@ -246,7 +247,7 @@ check_parse_sm_params <- function(opt, yaml){
 
 # normalize_sm_data:
 check_normalize_sm_params <- function(opt, yaml){
-  if (!is.null(opt$norm_method) | !is.null(opt$alt_method) | !is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$apply_sm_filter)){
+  if (!is.null(opt$norm_method) | !is.null(opt$alt_method) | !is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$apply_sm_filter) | !is.null(opt$normalize_proteomics)){
     if (!is.null(opt$norm_method)){
       yaml$panoply_normalize_ms_data$normalization$norm_method <- opt$norm_method
     }
@@ -261,6 +262,9 @@ check_normalize_sm_params <- function(opt, yaml){
     }
     if (!is.null(opt$apply_sm_filter)) {
       yaml$panoply_normalize_ms_data$apply_sm_filter <- opt$apply_sm_filter
+    }
+    if (!is.null(opt$normalize_proteomics)) {
+      yaml$normalize.proteomics <- opt$normalize_proteomics
     }
     return(yaml)
   }else{

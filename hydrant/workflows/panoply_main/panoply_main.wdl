@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/9/plain-WDL/descriptor" as normalize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/10/plain-WDL/descriptor" as normalize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/4/plain-WDL/descriptor" as rna_prot_corr_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
@@ -15,7 +15,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/3/plain-WDL/descriptor" as normalize_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/5/plain-WDL/descriptor" as normalize_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/9/plain-WDL/descriptor" as cons_clust_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust_report/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
@@ -38,7 +38,7 @@ workflow panoply_main {
   File? cna_groups
   File? association_groups
   File? cluster_enrichment_groups
-  String? normalizeProteomics # "TRUE" or "FALSE"
+  String? normalizeProteomics # "true" or "false"
 
   ## cmap inputs
   Int cmap_n_permutations = 5
@@ -84,8 +84,7 @@ workflow panoply_main {
       label = job_identifier,
       type = ome_type,
       tmpDir = "tmp",
-      yaml = yaml,
-      normalizeProteomics=normalizeProteomics
+      yaml = panoply_normalize_ms_data.output_yaml
   }
   
   call rna_prot_corr_wdl.panoply_rna_protein_correlation {
