@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_main_MM/versions/67/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_main_MM/versions/68/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_blacksheep_workflow_MM/versions/3/plain-WDL/descriptor" as blacksheep_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/14/plain-WDL/descriptor" as mo_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_immune_analysis_workflow_MM/versions/8/plain-WDL/descriptor" as immune_wdl
@@ -21,7 +21,6 @@ workflow panoply_unified_workflow {
   String job_id
   File? groupsFile    #for: main? / blacksheep / immune
   File? gene_set_database
-  String? label     #nmf/immune label
   String run_ptmsea
   String run_cmap
   
@@ -91,7 +90,7 @@ workflow panoply_unified_workflow {
     input:
       gene_set_database = gene_set_database,
       yaml_file = yaml,
-      label = label,
+      label = job_id,
       omes = pome.normalized_data_table,
       rna_ome = rna_data,
       cna_ome = cna_data
@@ -107,7 +106,7 @@ workflow panoply_unified_workflow {
           yaml=yaml,
           analysisDir=job_id,
           groupsFile=groupsFile,
-            label=label
+          label=job_id
     }
   }
   
