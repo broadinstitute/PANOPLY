@@ -60,8 +60,8 @@ workflow panoply_main {
   String? organism
 
   String standalone = "false"
-  String geneset_db = "gs://fc-e9c1f751-c433-464e-936e-c795faf4eca0/msigdb_v7.0_h.all.v7.0.symbols.gmt"
-  String ptm_db = "gs://fc-e9c1f751-c433-464e-936e-c795faf4eca0/ptm.sig.db.all.uniprot.human.v1.9.0.gmt"
+  String geneset_db
+  String ptm_db
   
   call normalize_wdl.panoply_normalize_ms_data {
     input:
