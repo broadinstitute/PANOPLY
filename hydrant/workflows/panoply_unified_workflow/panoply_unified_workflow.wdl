@@ -72,12 +72,14 @@ workflow panoply_unified_workflow {
   ### BLACKSHEEP:
   scatter (pair in all_pairs) {
     if ("${pair.right}" != "") {
-      call blacksheep_wdl.panoply_blacksheep_workflow as outlier {
-        input:
-          input_gct = "${pair.right}",
-          master_yaml = "${yaml}",
-          output_prefix = "${pair.left}",
-          type = "${pair.left}"
+      if ("${pair.right}" != "cna") {
+        call blacksheep_wdl.panoply_blacksheep_workflow as outlier {
+          input:
+            input_gct = "${pair.right}",
+            master_yaml = "${yaml}",
+            output_prefix = "${pair.left}",
+            type = "${pair.left}"
+        }
       }
     }
   }
