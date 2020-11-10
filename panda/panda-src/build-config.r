@@ -40,6 +40,11 @@ proteome.types <- c(
   "ubiquitylome"
 )
 
+required.genomics.types <- c(
+  "cna",
+  "rna"
+)
+
 required.cols <- c(
   "Sample.ID",
   "Type" )
@@ -270,6 +275,8 @@ validate_input <- function () {
     stop( printX ("ERROR", "No gct files specified") )
   if ( all (names (typemap.gct) %in% proteome.types == FALSE) )
     stop( printX ("ERROR", "No proteomics dataset specified") )
+  if ( ! all (required.genomics.types %in% names (typemap.gct)) )
+    stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
   print( glue( "\n.. INFO. Validating sample IDs in other files ..\n" ) )
   flush.console ()  # without this, the display shows up later
   sapply (names (typemap.gct),   # gct files

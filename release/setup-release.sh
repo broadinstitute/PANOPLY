@@ -60,12 +60,74 @@ put_method_config() {
   p=$2
   m=$3
 
-  exists=`fissfc config_list -w $w -p $p | grep $m | wc -l`
+  exists=`fissfc config_list -w $w -p $p | cut -f 2 | grep "^$m$" | wc -l`
   if [ $exists -eq 1 ]; then
     fissfc config_delete -c $m -w $w -p $p -n $release_dns
   fi
+
   fissfc config_put -w $w -p $p -c $m-template.json 
 }
+
+
+configure_primary_workflow() {
+  ws=$1  # workspace
+  wp=$2  # project
+  wf=$3  # workflow
+  
+  bucket=`fissfc space_info -w $ws -p $wp | jq -r '.workspace.bucketName'`
+  
+  if [ "$wf" == "panoply_main" ]; then
+    # configure panoply_main for one-click execution using data model metadata
+    cat $wf-template.json |  \
+      jq '.inputs."panoply_main.yaml" = $val' --arg val "\"gs://$bucket/panoply_parameters.yaml\"" |  \
+      jq '.inputs."panoply_main.input_cna" = $val' --arg val "this.cna_ss" |  \
+      jq '.inputs."panoply_main.input_rna_v3" = $val' --arg val "this.rna_v3_ss" |  \
+      jq '.inputs."panoply_main.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
+      jq '.inputs."panoply_main.run_cmap" = $val' --arg val "\"false\"" |  \
+      jq '.inputs."panoply_main.run_ptmsea" = $val' --arg val "\"false\"" |  \
+      jq '.inputs."panoply_main.annotation_pathway_db" = $val' --arg val "this.gseaDB" |  \
+      jq '.inputs."panoply_main.geneset_db" = $val' --arg val "this.gseaDB" |  \
+      jq '.inputs."panoply_main.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
+      jq '.inputs."panoply_main.association_groups" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_main.cluster_enrichment_groups" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_main.cmap_enrichment_groups" = $val' --arg val "this.groups_ss" > new-template.json
+    mv new-template.json $wf-template.json  
+    put_method_config $ws $wp $wf
+    
+    # in addition to a generic workflow include verisons for proteome and phosphoproteome
+    for t in proteome phosphoproteome 
+    do
+      cat $wf-template.json |  \
+        jq '.name = $val' --arg val "${wf}_${t}" |  \
+        jq '.inputs."panoply_main.ome_type" = $val' --arg val "\"${t}\"" |  \
+        jq '.inputs."panoply_main.input_pome" = $val' --arg val "this.${t}_ss" > ${wf}_${t}-template.json
+      put_method_config $ws $wp ${wf}_${t} 
+    done
+  fi
+  
+  if [ "$wf" == "panoply_unified_workflow" ]; then
+    # configure panoply_unified_workflow for one-click execution using data model metadata
+    cat $wf-template.json |  \
+      jq '.inputs."panoply_unified_workflow.yaml" = $val' --arg val "\"gs://$bucket/panoply_parameters.yaml\"" |  \
+      jq '.inputs."panoply_unified_workflow.cna_data" = $val' --arg val "this.cna_ss" |  \
+      jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_v3_ss" |  \
+      jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
+      jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
+      jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
+      jq '.inputs."panoply_unified_workflow.gene_set_database" = $val' --arg val "this.gseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.groupsFile" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.acetyl_ome" = $val' --arg val "this.acetylome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.prote_ome" = $val' --arg val "this.proteome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.ubiquityl_ome" = $val' --arg val "this.ubiquitylome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.pome.cmap_enrichment_groups" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.pome.association_groups" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.pome.cluster_enrichment_groups" = $val' --arg val "this.groups_ss" > new-template.json
+    mv new-template.json $wf-template.json  
+    put_method_config $ws $wp $wf
+  fi
+} 
 
 
 installMethod() {
@@ -109,7 +171,11 @@ installMethod() {
     sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
   put_method_config $wkspace_all $project $meth
   if [ "$type" == "workflows" ]; then
+    if [ "$meth" == "panoply_main" || "$meth" == "panoply_unified_workflow" ]; then
+      configure_primary_workflow $wkspace_pipelines $project $meth
+    else 
       put_method_config $wkspace_pipelines $project $meth
+    fi
   fi
 }
 

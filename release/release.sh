@@ -54,7 +54,7 @@ DEV=broadcptacdev
 REL=broadcptac
 proj=broad-firecloud-cptac
 prod="PANOPLY_Production_Pipelines_v$VER"
-prod_all="PANOPLY_Production_v$VER"
+prod_all="PANOPLY_Production_Modules_v$VER"
 
 # Before beginning, check production workspaces do not exist
 if ! fissfc space_exists -w $prod_all -p $proj -q; then
@@ -117,6 +117,7 @@ done
 ## ** Create production workspaces and release dockers;
 ##    copy/update WDLs and install methods on Terra
 ## ** Also populate $prod and $prod_all workspaces with methods
+## ** Configure panoply_main panoply_unified_workflow in $prod
 cd $panoply/release
 ./setup-release.sh -p $DEV -N $REL -T $VER -r $proj -w $prod_all -y $prod 
 
@@ -126,14 +127,9 @@ cd $panoply/panda
 ./build-notebook-docker.sh -n $REL -g $VER -u
 
 
-## ** Configure pipeline/workflows listed below in $prod
-wkflows=( panoply_main panoply_unified_pipeline )
-for wkflow in "${wkflows[@]}"
-do
-  #----configure workflows
-done
-
-
-## ** Commit and push version branch to GitHub
+## ** Commit and push version branch to GitHub (do not merge with dev)
 git commit -a -m "Release $VER"
-git push
+git push origin $rel_id
+
+
+echo -e "${red}### \n### COPY PANOPLY-startup-notebook to Production Workspaces \n###${reg}"
