@@ -276,7 +276,10 @@ do
              jq '."results"[]["name"]' | \
              sed -n 1p | cut -d'"' -f2 ) )
   if [[ -z $lat ]]; then
-    continue;
+    continue
+  else
+    # this module present -- set tag to "latest"
+    lat="latest"
   fi
   
   mkdir -p $release_dir/$mod
