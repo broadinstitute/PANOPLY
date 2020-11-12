@@ -45,7 +45,7 @@ workflow panoply_main {
   File? cmap_enrichment_groups
   File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt"
   File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx"
-  File? annotation_pathway_db #this.geneset_db
+  File? annotation_pathway_db #this.gseaDB
   String subset_bucket = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets"
   
   ## global params
@@ -60,8 +60,8 @@ workflow panoply_main {
   String? organism
 
   String standalone = "false"
-  String geneset_db
-  String ptm_db
+  String geneset_db #this.gseaDB
+  String ptm_db #this.ptmseaDB
   
   call normalize_wdl.panoply_normalize_ms_data {
     input:

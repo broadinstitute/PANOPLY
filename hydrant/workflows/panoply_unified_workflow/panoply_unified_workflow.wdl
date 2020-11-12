@@ -3,7 +3,7 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/3/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_blacksheep_workflow_MM/versions/3/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/14/plain-WDL/descriptor" as mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/16/plain-WDL/descriptor" as mo_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_immune_analysis_workflow_MM/versions/8/plain-WDL/descriptor" as immune_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_make_pairs_workflow_MM/versions/1/plain-WDL/descriptor" as make_pairs_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac_MM:panoply_unified_assemble_results_MM/versions/22/plain-WDL/descriptor" as assemble_wdl
