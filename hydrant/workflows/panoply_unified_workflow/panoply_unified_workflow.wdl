@@ -72,7 +72,7 @@ workflow panoply_unified_workflow {
   ### BLACKSHEEP:
   scatter (pair in all_pairs) {
     if ("${pair.right}" != "") {
-      if ("${pair.right}" != "cna") {
+      if ("${pair.left}" != "cna") {
         call blacksheep_wdl.panoply_blacksheep_workflow as outlier {
           input:
             input_gct = "${pair.right}",
