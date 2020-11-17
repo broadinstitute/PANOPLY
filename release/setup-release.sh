@@ -94,7 +94,7 @@ configure_primary_workflow() {
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
     
-    # in addition to a generic workflow include verisons for proteome and phosphoproteome
+    # in addition to a generic workflow include versions for proteome and phosphoproteome
     for t in proteome phosphoproteome 
     do
       cat $wf-template.json |  \

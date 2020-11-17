@@ -19,8 +19,8 @@ task panoply_parse_sm_table {
 
   command {
     set -euo pipefail
-    codeDir = "/prot/proteomics/Projects/PGDAC/src"
-    dataDir = "/prot/proteomics/Projects/PGDAC/data"
+    codeDir="/prot/proteomics/Projects/PGDAC/src"
+    dataDir="/prot/proteomics/Projects/PGDAC/data"
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module parse_sm_table \
     --master_yaml ${yaml} \

@@ -79,7 +79,7 @@ task panoply_normalize_ms_data {
               -y "final_output_params.yaml"
       fi
       # Grab the norm/filtered gct to set as output with appropriate name
-      outGCT=`find ${analysisDir}/normalized-data -type f -iname "*-ratio-norm-NArm*"`
+      outGCT=`find ${analysisDir}/normalized-data -type f -iname "*-ratio-norm-NArm.gct"`
       outTableName=${type}-${outTable} 
       cp $outGCT $outTableName
     fi

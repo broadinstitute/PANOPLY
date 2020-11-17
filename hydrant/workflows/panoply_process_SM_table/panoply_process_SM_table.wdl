@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_parse_sm_table/versions/1/plain-WDL/descriptor" as parse_sm_table
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/1/plain-WDL/descriptor" as normalize
-
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_parse_sm_table/versions/7/plain-WDL/descriptor" as parse_sm_table
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/11/plain-WDL/descriptor" as normalize
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/5/plain-WDL/descriptor" as normalize_report
 
 workflow panoply_process_SM_table {
 
@@ -12,7 +12,7 @@ workflow panoply_process_SM_table {
   String ome_type
   File sample_annotation
   File input_ssv
-  File? custom_parameters
+  File yaml
 
 
   call parse_sm_table.panoply_parse_sm_table as parse {
@@ -21,19 +21,31 @@ workflow panoply_process_SM_table {
       exptDesign = sample_annotation,
       analysisDir = job_identifier,
       type = ome_type,
-      params = custom_parameters
+      yaml = yaml
   }
 
-  call normalize.panoply_normalize_ms_data  as norm {
+  call normalize.panoply_normalize_ms_data as norm {
     input:
       inputData = parse.outputs, 
-      type = ome_type,
+      normalizeProteomics = "true",
       standalone = "false",
-      params = custom_parameters
+      type = ome_type,
+      analysisDir = job_identifier,
+      yaml = yaml
   }
 
+  call normalize_report.panoply_normalize_ms_data_report as report {
+    input:
+      tarball = norm.output_tar,
+      label = job_identifier,
+      type = ome_type,
+      tmpDir = "tmp",
+      yaml = norm.output_yaml
+  }
+  
   output {
     File output_tar = norm.outputs
+    File output_report = report.report
   }
 
 }
