@@ -22,7 +22,9 @@ Users can also [customize or create new pipelines and add their own tasks](https
 
 
 ## Quick Start
-For a quick introduction and tour of PANOPLY, follow the [tutorial](https://github.com/broadinstitute/PANOPLY/wiki/PANOPLY-Tutorial). Detailed documentation can be found [here](https://github.com/broadinstitute/PANOPLY/wiki).
+
+* For a quick introduction and tour of PANOPLY, follow the [tutorial](https://github.com/broadinstitute/PANOPLY/wiki/PANOPLY-Tutorial). 
+* Detailed documentation can be found [here](https://github.com/broadinstitute/PANOPLY/wiki).
 
 ### Contact
 
