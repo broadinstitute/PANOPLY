@@ -132,4 +132,4 @@ git commit -a -m "Release $VER"
 git push origin $rel_id
 
 
-echo -e "${red}### \n### COPY PANOPLY-startup-notebook to Production Workspaces \n###${reg}"
+echo -e "${red}### \n### COPY PANOPLY-startup-notebook (from PANOPLY_Startup_Notebook Workspace) \n    to Production Workspaces \n###${reg}"
