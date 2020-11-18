@@ -1,4 +1,4 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/version-1_0/release/version-1_0/panoply_mo_nmf/panoply_mo_nmf.md
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_mo_nmf/panoply_mo_nmf.md
 
 # ```panoply_mo_nmf```
 

@@ -1,4 +1,4 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/version-1_0/release/version-1_0/panoply_blacksheep/panoply_blacksheep.md
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_blacksheep/panoply_blacksheep.md
 
 # ```panoply_blacksheep```
 

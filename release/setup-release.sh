@@ -148,10 +148,12 @@ installMethod() {
   orig_doc=`ls $doc_dir/*$meth.md`
   if [[ -f $orig_doc ]]; then
     doc="$meth.md"
-    echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_dir/release/$release_dir/$meth/$meth.md\n" > $doc
-    cat $orig_doc >> $doc
+    echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_ver/release/$release_dir/$meth/$meth.md\n" > $doc
+    # cat $orig_doc >> $doc    # this results in documentation too large error for some modules
+    fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $doc
+  else
+    fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn"
   fi
-  fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $doc
     
   # get method snapshot id and save release snapshot ids
   snap=$(fissfc meth_list -m $meth -n $release_dns | sort -n -k3 | tail -1 | cut -f3)
@@ -170,11 +172,10 @@ installMethod() {
   fissfc config_template -m $meth -n $release_dns -i $snap -t sample_set |  \
     sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
   put_method_config $wkspace_all $project $meth
-  if [ "$type" == "workflows" ]; then
-    if [ "$meth" == "panoply_main" || "$meth" == "panoply_unified_workflow" ]; then
+  if [ "$type" = "workflows" ]; then
+    if [[ "$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow" ]]; then
+      # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
       configure_primary_workflow $wkspace_pipelines $project $meth
-    else 
-      put_method_config $wkspace_pipelines $project $meth
     fi
   fi
 }
@@ -259,6 +260,7 @@ createWkSpace $wkspace_pipelines
 
 ## TASKS
 release_dir=version-$release_tag
+release_ver=release-$release_tag
 modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
 snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
 

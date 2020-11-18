@@ -7,6 +7,7 @@
     "panoply_mo_nmf_gct_workflow.omes": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf.disk_space": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf.exclude_2": "",
+    "panoply_mo_nmf_gct_workflow.panoply_mo_nmf.filt_mode": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf.gene_column": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf.impute": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf.kmax": "",
@@ -60,8 +61,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf_gct",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_mo_nmf_gct/16",
-    "methodVersion": 16,
+    "methodUri": "agora://broadcptac/panoply_mo_nmf_gct/17",
+    "methodVersion": 17,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf_gct",

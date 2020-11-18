@@ -2,10 +2,10 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/4/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/1/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/16/plain-WDL/descriptor" as mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/2/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/17/plain-WDL/descriptor" as mo_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_immune_analysis_workflow/versions/2/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_make_pairs_workflow/versions/1/plain-WDL/descriptor" as make_pairs_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_make_pairs_workflow/versions/2/plain-WDL/descriptor" as make_pairs_wdl
 import "" as assemble_wdl
 
 

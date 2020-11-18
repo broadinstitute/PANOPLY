@@ -1,4 +1,4 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/version-1_0/release/version-1_0/panoply_cmap_annotate/panoply_cmap_annotate.md
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_cmap_annotate/panoply_cmap_annotate.md
 
 # ```panoply_cmap_annotate```
 

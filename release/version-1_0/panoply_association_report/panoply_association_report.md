@@ -1,4 +1,4 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/version-1_0/release/version-1_0/panoply_association_report/panoply_association_report.md
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_association_report/panoply_association_report.md
 
 # ```panoply_association_report```
 

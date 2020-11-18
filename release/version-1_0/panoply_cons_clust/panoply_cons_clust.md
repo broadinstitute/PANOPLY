@@ -1,4 +1,4 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/version-1_0/release/version-1_0/panoply_cons_clust/panoply_cons_clust.md
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_cons_clust/panoply_cons_clust.md
 
 # ```panoply_cons_clust```
 

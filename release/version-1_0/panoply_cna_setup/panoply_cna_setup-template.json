@@ -17,8 +17,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_cna_setup",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_cna_setup/5",
-    "methodVersion": 5,
+    "methodUri": "agora://broadcptac/panoply_cna_setup/6",
+    "methodVersion": 6,
     "sourceRepo": "agora"
   },
   "name": "panoply_cna_setup",
