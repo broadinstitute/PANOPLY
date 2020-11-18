@@ -48,8 +48,8 @@ replaceWdlImports() {
   modules=$( grep import $wdl_f | sed -n 's|.*:\(panoply_.*\)/versions.*|\1|p' )
   for mod in $modules
   do
-    new_snap=$( grep $mod $repl )
-    sed -i -e "s|https.*$mod.*descriptor|$new_snap|" $wdl_f
+    new_snap=$( grep ":$mod/" $repl )
+    sed -i -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
   done
   rm $wdl_f-e
 }

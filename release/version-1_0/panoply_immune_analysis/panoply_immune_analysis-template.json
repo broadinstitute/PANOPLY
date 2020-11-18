@@ -1,0 +1,34 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.analysisDir": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.disk_space": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.fdr": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.groupsFile": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.heatmapHeight": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.heatmapWidth": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.inputData": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.memory": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.num_preemptions": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.num_threads": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.outFile": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.standalone": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.type": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_immune_analysis",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_immune_analysis/22",
+    "methodVersion": 22,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_immune_analysis",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

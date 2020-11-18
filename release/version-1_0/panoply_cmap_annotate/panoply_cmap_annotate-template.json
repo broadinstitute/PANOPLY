@@ -1,0 +1,35 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.alpha": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.cmap_data_file": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.cmap_enrichment_groups": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.cmap_grp": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.cmap_typ": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.cna_threshold": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.disk_space": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.log_transform": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.memory": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.num_preemptions": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.num_threads": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.outFile": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.tarball": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_cmap_annotate",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_cmap_annotate/4",
+    "methodVersion": 4,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_cmap_annotate",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.gsea_input": "",
+    "panoply_cmap_annotate_workflow.panoply_cmap_annotate.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
