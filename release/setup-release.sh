@@ -179,12 +179,12 @@ installMethod() {
   #  (delete method config if it exists)
   fissfc config_template -m $meth -n $release_dns -i $snap -t sample_set |  \
     sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
-  put_method_config $wkspace_all $project $meth
-  if [ "$type" = "workflows" ]; then
-    if [[ "$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow" ]]; then
-      # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
-      configure_primary_workflow $wkspace_pipelines $project $meth
-    fi
+  
+  if [[ ("$type" = "workflows") && ("$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow") ]]; then
+    # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
+    configure_primary_workflow $wkspace_pipelines $project $meth
+  else
+    put_method_config $wkspace_all $project $meth
   fi
 }
 
@@ -297,10 +297,10 @@ do
   
   if [ "$lat" != "NO_DOCKER" ]; then
     # build release docker
-    echo -e "FROM $pull_dns/$mod:$lat" #> Dockerfile
-    # docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
-    # docker images | grep "$mod"
-    # docker push $release_dns/$mod:$release_tag
+    echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
+    docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
+    docker images | grep "$mod"
+    docker push $release_dns/$mod:$release_tag
   fi
   
   # copy and update task WDL, install method and save snapshot id
