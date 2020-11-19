@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_cna_correlation](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_cna_correlation) module.
+This module creates an [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_cna_correlation](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_cna_correlation) module.
 
 The report provides:
 

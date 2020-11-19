@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_sampleqc](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_sampleqc) module. 
+This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_sampleqc](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_sampleqc) module. 
 
 The report provides:
 

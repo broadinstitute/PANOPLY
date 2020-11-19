@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an interactive [R Markown](https://rmarkdown.rstudio.com/) report of the GSEA results of the [panoply_association](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_association) module. For each contrast, an interactive volcano plot shows the Normalized Enrichment Score (NES) vs -log10 of the FDR value for each database pathway analyzed. Hovering over a point reveals which pathway it corresponds to. Any significantly enriched pathways (determined by the ```fdr_value``` input) are highlighted in red and described in an interactive, searchable table. For multi-contrast categories, an overview heatmap shows NES values for all contrasts, with asterisks denoting signficant enrichment.
+This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) report of the GSEA results of the [panoply_association](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_association) module. For each contrast, an interactive volcano plot shows the Normalized Enrichment Score (NES) vs -log10 of the FDR value for each database pathway analyzed. Hovering over a point reveals which pathway it corresponds to. Any significantly enriched pathways (determined by the ```fdr_value``` input) are highlighted in red and described in an interactive, searchable table. For multi-contrast categories, an overview heatmap shows NES values for all contrasts, with asterisks denoting signficant enrichment.
 
 ## Input
 
