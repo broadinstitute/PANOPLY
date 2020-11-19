@@ -36,9 +36,15 @@ replaceDockerInWdl() {
   task=$1
   new_ns=$2
   new_tag=$3
-  wdl_dns=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d'/' -f 1`
-  wdl_tag=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d':' -f 2`
-  sed -i '' "s|$wdl_dns/$task:$wdl_tag|$new_ns/$task:$new_tag|g" $task.wdl
+  old_ns=$4
+
+  # wdl_dns=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d'/' -f 1`
+  # wdl_tag=`grep "/$task:" $task.wdl | cut -d'"' -f2 | cut -d':' -f 2`
+  # sed -i '' "s|$wdl_dns/$task:$wdl_tag|$new_ns/$task:$new_tag|g" $task.wdl
+  
+  # need to handle WDLs where the docker name(s) do not match $task
+  sed -i -e "s|\(docker.*\)\"$old_ns/\(panoply_.*\):.*\"|\1\"$new_ns/\2:$new_tag\"|g" $task.wdl
+  rm $task.wdl-e
 }
 
 
@@ -48,8 +54,8 @@ replaceWdlImports() {
   modules=$( grep import $wdl_f | sed -n 's|.*:\(panoply_.*\)/versions.*|\1|p' )
   for mod in $modules
   do
-    new_snap=$( grep $mod $repl )
-    sed -i -e "s|https.*$mod.*descriptor|$new_snap|" $wdl_f
+    new_snap=$( grep ":$mod/" $repl )
+    sed -i -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
   done
   rm $wdl_f-e
 }
@@ -114,9 +120,11 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
-      jq '.inputs."panoply_unified_workflow.gene_set_database" = $val' --arg val "this.gseaDB" |  \
-      jq '.inputs."panoply_unified_workflow.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
-      jq '.inputs."panoply_unified_workflow.groupsFile" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.nmf.gene_set_database" = $val' --arg val "this.gseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.pome.geneset_db" = $val' --arg val "this.gseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.pome.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.immune.groupsFile" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.outlier.group_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.acetyl_ome" = $val' --arg val "this.acetylome_ss" |  \
       jq '.inputs."panoply_unified_workflow.prote_ome" = $val' --arg val "this.proteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
@@ -147,11 +155,13 @@ installMethod() {
   fi
   orig_doc=`ls $doc_dir/*$meth.md`
   if [[ -f $orig_doc ]]; then
-    doc="$meth.md"
-    echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_dir/release/$release_dir/$meth/$meth.md\n" > $doc
-    cat $orig_doc >> $doc
+    cp $orig_doc $meth.md    
+    # documentation too large error for some modules -- hence just use URL for method
+    echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_ver/release/$release_dir/$meth/$meth.md\n" > $meth-doc-URL.txt
+    fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $meth-doc-URL.txt
+  else
+    fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn"
   fi
-  fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $doc
     
   # get method snapshot id and save release snapshot ids
   snap=$(fissfc meth_list -m $meth -n $release_dns | sort -n -k3 | tail -1 | cut -f3)
@@ -170,11 +180,10 @@ installMethod() {
   fissfc config_template -m $meth -n $release_dns -i $snap -t sample_set |  \
     sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
   put_method_config $wkspace_all $project $meth
-  if [ "$type" == "workflows" ]; then
-    if [ "$meth" == "panoply_main" || "$meth" == "panoply_unified_workflow" ]; then
+  if [ "$type" = "workflows" ]; then
+    if [[ "$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow" ]]; then
+      # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
       configure_primary_workflow $wkspace_pipelines $project $meth
-    else 
-      put_method_config $wkspace_pipelines $project $meth
     fi
   fi
 }
@@ -233,7 +242,7 @@ docker login
 createWkSpace() {
   ws=$1
   
-  if fissfc space_exists -w $ws -p $proj -q; then
+  if fissfc space_exists -w $ws -p $project -q; then
     echo -e "$not Creating workspace $ws"
     fissfc space_new -w $ws -p $project
   else
@@ -259,6 +268,7 @@ createWkSpace $wkspace_pipelines
 
 ## TASKS
 release_dir=version-$release_tag
+release_ver=release-$release_tag
 modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
 snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
 
@@ -276,7 +286,7 @@ do
              jq '."results"[]["name"]' | \
              sed -n 1p | cut -d'"' -f2 ) )
   if [[ -z $lat ]]; then
-    continue
+    lat="NO_DOCKER"
   else
     # this module present -- set tag to "latest"
     lat="latest"
@@ -285,18 +295,20 @@ do
   mkdir -p $release_dir/$mod
   cd $release_dir/$mod
   
-  # build release docker
-  echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-  docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
-  docker images | grep "$mod"
-  docker push $release_dns/$mod:$release_tag
+  if [ "$lat" != "NO_DOCKER" ]; then
+    # build release docker
+    echo -e "FROM $pull_dns/$mod:$lat" #> Dockerfile
+    # docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
+    # docker images | grep "$mod"
+    # docker push $release_dns/$mod:$release_tag
+  fi
   
   # copy and update task WDL, install method and save snapshot id
   wdl_dir=$panoply/hydrant/tasks/$mod/
   wdl=$mod.wdl
   if [[ -f $wdl_dir/$wdl ]]; then
     cp $wdl_dir/$wdl $wdl
-    replaceDockerInWdl $mod $release_dns $release_tag
+    replaceDockerInWdl $mod $release_dns $release_tag $pull_dns
     installMethod $mod $wdl "tasks"
   fi
   cd $start_dir

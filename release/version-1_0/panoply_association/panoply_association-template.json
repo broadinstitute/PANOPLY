@@ -1,0 +1,36 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_association_workflow.analysisDir": "",
+    "panoply_association_workflow.dataType": "",
+    "panoply_association_workflow.duplicate_gene_policy": "",
+    "panoply_association_workflow.fdr_assoc": "",
+    "panoply_association_workflow.gene_id_col": "",
+    "panoply_association_workflow.groupsFile": "",
+    "panoply_association_workflow.inputData": "",
+    "panoply_association_workflow.nmiss_factor": "",
+    "panoply_association_workflow.panoply_association.disk_space": "",
+    "panoply_association_workflow.panoply_association.memory": "",
+    "panoply_association_workflow.panoply_association.num_preemptions": "",
+    "panoply_association_workflow.panoply_association.num_threads": "",
+    "panoply_association_workflow.panoply_association.outFile": "",
+    "panoply_association_workflow.sample_na_max": "",
+    "panoply_association_workflow.standalone": "",
+    "panoply_association_workflow.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_association",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_association/11",
+    "methodVersion": 11,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_association",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_association_workflow.panoply_association.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
