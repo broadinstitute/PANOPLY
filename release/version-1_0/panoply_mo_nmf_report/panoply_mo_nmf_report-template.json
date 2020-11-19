@@ -1,18 +1,19 @@
 {
   "deleted": false,
   "inputs": {
+    "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.disk_space": "",
     "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.label": "",
-    "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.local_disk_gb": "",
+    "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.memory": "",
     "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.num_preemptions": "",
-    "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.ram_gb": "",
+    "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.num_threads": "",
     "panoply_mo_nmf_report_workflow.panoply_mo_nmf_report.tarball": ""
   },
   "methodConfigVersion": 1,
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf_report",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_mo_nmf_report/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptac/panoply_mo_nmf_report/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf_report",

@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_blacksheep_report/panoply_blacksheep_report.md
-
 # ```panoply_blacksheep_report```
 
 ## Description

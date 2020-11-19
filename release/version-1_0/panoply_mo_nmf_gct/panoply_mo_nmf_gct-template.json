@@ -25,9 +25,10 @@
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_pre.memory": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_pre.num_preemptions": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_pre.num_threads": "",
-    "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_report.local_disk_gb": "",
+    "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_report.disk_space": "",
+    "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_report.memory": "",
     "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_report.num_preemptions": "",
-    "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_report.ram_gb": "",
+    "panoply_mo_nmf_gct_workflow.panoply_mo_nmf_report.num_threads": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.SGT_col": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.acc_type": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.correl_type": "",
@@ -61,8 +62,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf_gct",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_mo_nmf_gct/17",
-    "methodVersion": 17,
+    "methodUri": "agora://broadcptac/panoply_mo_nmf_gct/20",
+    "methodVersion": 20,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf_gct",

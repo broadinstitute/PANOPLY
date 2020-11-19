@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_cna_setup/panoply_cna_setup.md
-
 # ```panoply_cna_setup```
 
 ## Description

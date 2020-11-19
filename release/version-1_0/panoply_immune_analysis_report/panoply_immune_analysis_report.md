@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_immune_analysis_report/panoply_immune_analysis_report.md
-
 # ```panoply_immune_analysis_report```
 
 ## Description

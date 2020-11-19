@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_normalize_ms_data_report/panoply_normalize_ms_data_report.md
-
 # ```panoply_normalize_ms_data_report```
 
 ## Description

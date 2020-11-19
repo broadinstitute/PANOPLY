@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_sampleqc_report/panoply_sampleqc_report.md
-
 # ```panoply_sampleqc_report```
 
 ## Description

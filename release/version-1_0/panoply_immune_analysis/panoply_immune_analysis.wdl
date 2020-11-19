@@ -50,6 +50,7 @@ task panoply_immune_analysis {
 
   output {
     File outputs = "${outFile}"
+    File yaml_file = "final_output_params.yaml"
   }
 
   runtime {

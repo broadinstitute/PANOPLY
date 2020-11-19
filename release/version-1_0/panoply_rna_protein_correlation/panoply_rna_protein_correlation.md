@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_rna_protein_correlation/panoply_rna_protein_correlation.md
-
 # ```panoply_rna_protein_correlation```
 
 ## Description

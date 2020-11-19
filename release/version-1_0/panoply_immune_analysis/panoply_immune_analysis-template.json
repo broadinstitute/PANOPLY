@@ -20,14 +20,15 @@
   "methodRepoMethod": {
     "methodName": "panoply_immune_analysis",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_immune_analysis/23",
-    "methodVersion": 23,
+    "methodUri": "agora://broadcptac/panoply_immune_analysis/26",
+    "methodVersion": 26,
     "sourceRepo": "agora"
   },
   "name": "panoply_immune_analysis",
   "namespace": "broadcptac",
   "outputs": {
-    "panoply_immune_analysis_workflow.panoply_immune_analysis.outputs": ""
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.outputs": "",
+    "panoply_immune_analysis_workflow.panoply_immune_analysis.yaml_file": ""
   },
   "prerequisites": {},
   "rootEntityType": "sample_set"

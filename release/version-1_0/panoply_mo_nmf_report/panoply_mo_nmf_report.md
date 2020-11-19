@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_mo_nmf_report/panoply_mo_nmf_report.md
-
 # ```panoply_mo_nmf_report```
 
 ## Description

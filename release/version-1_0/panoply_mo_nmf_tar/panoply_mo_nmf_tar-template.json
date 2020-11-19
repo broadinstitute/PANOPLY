@@ -19,9 +19,10 @@
     "panoply_mo_nmf_tar_workflow.panoply_mo_nmf.sd_min": "",
     "panoply_mo_nmf_tar_workflow.panoply_mo_nmf.seed": "",
     "panoply_mo_nmf_tar_workflow.panoply_mo_nmf.z_score": "",
-    "panoply_mo_nmf_tar_workflow.panoply_mo_nmf_report.local_disk_gb": "",
+    "panoply_mo_nmf_tar_workflow.panoply_mo_nmf_report.disk_space": "",
+    "panoply_mo_nmf_tar_workflow.panoply_mo_nmf_report.memory": "",
     "panoply_mo_nmf_tar_workflow.panoply_mo_nmf_report.num_preemptions": "",
-    "panoply_mo_nmf_tar_workflow.panoply_mo_nmf_report.ram_gb": "",
+    "panoply_mo_nmf_tar_workflow.panoply_mo_nmf_report.num_threads": "",
     "panoply_mo_nmf_tar_workflow.panoply_ssgsea.SGT_col": "",
     "panoply_mo_nmf_tar_workflow.panoply_ssgsea.acc_type": "",
     "panoply_mo_nmf_tar_workflow.panoply_ssgsea.correl_type": "",
@@ -55,8 +56,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf_tar",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_mo_nmf_tar/4",
-    "methodVersion": 4,
+    "methodUri": "agora://broadcptac/panoply_mo_nmf_tar/7",
+    "methodVersion": 7,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf_tar",

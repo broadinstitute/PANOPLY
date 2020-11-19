@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_unified_workflow/panoply_unified_workflow.md
-
 # ```panoply_unified_workflow```
 
 ## Description

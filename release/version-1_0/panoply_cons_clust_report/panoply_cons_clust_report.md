@@ -1,5 +1,3 @@
-Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_0/release/version-1_0/panoply_cons_clust_report/panoply_cons_clust_report.md
-
 # ```panoply_cons_clust_report```
 
 ## Description
