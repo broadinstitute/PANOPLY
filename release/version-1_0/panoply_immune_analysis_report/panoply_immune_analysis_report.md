@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an interactive  [R Markdown](https://rmarkdown.rstudio.com/) report of the [panoply_immune_analysis](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_immune_analysis) module. xCell scores are shown in an annotated heatmap and compared to ESTIMATE scores in interactive scatter plots. Significant (defined by FDR value given in ```panoply_immune_analysis```) results, if any, of enrichment analysis using Fisher\'s exact test between immune subtypes and annotation groups are shown in an interactive table.
+This module creates an interactive  [R Markdown](https://rmarkdown.rstudio.com/) report of the [panoply_immune_analysis](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_immune_analysis) module. xCell scores are shown in an annotated heatmap and compared to ESTIMATE scores in interactive scatter plots. Significant (defined by FDR value given in ```panoply_immune_analysis```) results, if any, of enrichment analysis using Fisher\'s exact test between immune subtypes and annotation groups are shown in an interactive table.
 
 ## Input
 

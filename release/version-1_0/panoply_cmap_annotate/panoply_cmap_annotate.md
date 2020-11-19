@@ -30,4 +30,4 @@ Optional inputs:
 * ```outFile```: (String, default = "panoply_cmap-annotate-output.tar") output `.tar` file name
 
 ## Output
-Tarball with annotated CMAP analysis results. See [Analysis-Modules: panoply_cmap_analysis](./Analysis-Modules%3A-panoply_cmap_analysis) for details.
+Tarball with annotated CMAP analysis results. See [Data Analysis Modules: panoply_cmap_analysis](./Data-Analysis-Modules%3A-panoply_cmap_analysis) for details.

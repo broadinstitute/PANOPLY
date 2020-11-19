@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an [R markdown](https://rmarkdown.rstudio.com/) report for the [panoply_normalize_ms_data](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_normalize_ms_data) module.
+This module creates an [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_normalize_ms_data](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_normalize_ms_data) module.
 
 The report provides:
 

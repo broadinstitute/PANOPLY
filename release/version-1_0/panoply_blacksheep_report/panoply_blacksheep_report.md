@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an interactive [R Markown](https://rmarkdown.rstudio.com/) report of the significant results of the [panoply_blacksheep](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_blacksheep) module, if a groups file was provided for outlier analysis. Signficance is determined by the ```fdr_value``` input to [panoply_blacksheep](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_blacksheep). For each comparison group, the number of genes significantly enriched for outliers is listed. If there are one or more significant genes, an interactive, searchable table showing the gene names and their corresponding FDR values is displayed, as well as the heatmap showing the fraction of outliers in these genes for visualization of the enrichment of outliers in the group of interest.
+This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) report of the significant results of the [panoply_blacksheep](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_blacksheep) module, if a groups file was provided for outlier analysis. Signficance is determined by the ```fdr_value``` input to [panoply_blacksheep](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_blacksheep). For each comparison group, the number of genes significantly enriched for outliers is listed. If there are one or more significant genes, an interactive, searchable table showing the gene names and their corresponding FDR values is displayed, as well as the heatmap showing the fraction of outliers in these genes for visualization of the enrichment of outliers in the group of interest.
 
 ## Input
 

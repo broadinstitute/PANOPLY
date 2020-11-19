@@ -3,7 +3,7 @@
 
 ## Description
 
-This module assembles the input for the [panoply_mo_nmf](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_mo_nmf) module.
+This module assembles the input for the [panoply_mo_nmf](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_mo_nmf) module.
 
 ## Input
 

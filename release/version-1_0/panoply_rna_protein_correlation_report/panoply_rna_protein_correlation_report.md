@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an interactive [R markdown](https://rmarkdown.rstudio.com/) report for the [panoply_rna_protein_correlation](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_rna_protein_correlation). The report provides:
+This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_rna_protein_correlation](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_rna_protein_correlation). The report provides:
 
 * Interactive histogram visualizing the distribution of gene-level RNA-protein correlation.
 
