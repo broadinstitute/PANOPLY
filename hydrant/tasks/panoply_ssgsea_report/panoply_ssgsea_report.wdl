@@ -14,7 +14,7 @@ task panoply_ssgsea_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-ssgsea.R -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/
+    Rscript /home/pgdac/src/rmd-ssgsea.r -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/
   }
 
   output {
