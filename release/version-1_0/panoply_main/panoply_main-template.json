@@ -293,14 +293,14 @@
     "panoply_main.standalone": "",
     "panoply_main.subset_bucket": "",
     "panoply_main.subset_list_file": "",
-    "panoply_main.yaml": "\"gs://fc-cc86c8d5-bb5a-4155-bb55-f37cb3567c5e/panoply_parameters.yaml\""
+    "panoply_main.yaml": "this.parameters"
   },
   "methodConfigVersion": 1,
   "methodRepoMethod": {
     "methodName": "panoply_main",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_main/6",
-    "methodVersion": 6,
+    "methodUri": "agora://broadcptac/panoply_main/7",
+    "methodVersion": 7,
     "sourceRepo": "agora"
   },
   "name": "panoply_main",

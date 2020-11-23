@@ -124,11 +124,12 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.pome.geneset_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
       jq '.inputs."panoply_unified_workflow.immune.groupsFile" = $val' --arg val "this.groups_ss" |  \
-      jq '.inputs."panoply_unified_workflow.outlier.group_file" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.outlier.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.acetyl_ome" = $val' --arg val "this.acetylome_ss" |  \
       jq '.inputs."panoply_unified_workflow.prote_ome" = $val' --arg val "this.proteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.ubiquityl_ome" = $val' --arg val "this.ubiquitylome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.pome.annotation_pathway_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.cmap_enrichment_groups" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.pome.association_groups" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.pome.cluster_enrichment_groups" = $val' --arg val "this.groups_ss" > new-template.json
@@ -295,13 +296,13 @@ do
   mkdir -p $release_dir/$mod
   cd $release_dir/$mod
   
-  if [ "$lat" != "NO_DOCKER" ]; then
-    # build release docker
-    echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-    docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
-    docker images | grep "$mod"
-    docker push $release_dns/$mod:$release_tag
-  fi
+  # if [ "$lat" != "NO_DOCKER" ]; then
+  #   # build release docker
+  #   echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
+  #   docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
+  #   docker images | grep "$mod"
+  #   docker push $release_dns/$mod:$release_tag
+  # fi
   
   # copy and update task WDL, install method and save snapshot id
   wdl_dir=$panoply/hydrant/tasks/$mod/
