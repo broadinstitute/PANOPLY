@@ -85,7 +85,7 @@ configure_primary_workflow() {
   if [ "$wf" == "panoply_main" ]; then
     # configure panoply_main for one-click execution using data model metadata
     cat $wf-template.json |  \
-      jq '.inputs."panoply_main.yaml" = $val' --arg val "\"gs://$bucket/panoply_parameters.yaml\"" |  \
+      jq '.inputs."panoply_main.yaml" = $val' --arg val "this.parameters" |  \
       jq '.inputs."panoply_main.input_cna" = $val' --arg val "this.cna_ss" |  \
       jq '.inputs."panoply_main.input_rna_v3" = $val' --arg val "this.rna_v3_ss" |  \
       jq '.inputs."panoply_main.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
@@ -114,7 +114,7 @@ configure_primary_workflow() {
   if [ "$wf" == "panoply_unified_workflow" ]; then
     # configure panoply_unified_workflow for one-click execution using data model metadata
     cat $wf-template.json |  \
-      jq '.inputs."panoply_unified_workflow.yaml" = $val' --arg val "\"gs://$bucket/panoply_parameters.yaml\"" |  \
+      jq '.inputs."panoply_unified_workflow.yaml" = $val' --arg val "this.parameters" |  \
       jq '.inputs."panoply_unified_workflow.cna_data" = $val' --arg val "this.cna_ss" |  \
       jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_v3_ss" |  \
       jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \

@@ -124,6 +124,7 @@ cd $panoply/release
 
 ## ** Update notebook docker
 cd $panoply/panda
+cp $panoply/src/panoply_common/master-parameters.yaml panda-src/defaults/.
 ./build-notebook-docker.sh -n $REL -g $VER -u
 
 
