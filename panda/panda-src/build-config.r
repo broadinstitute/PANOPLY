@@ -121,7 +121,10 @@ printX <- function (type, line1, line2=NULL, line3=NULL) {
 ### Section. Inputs
 ### ====
 
-panda_initialize <- function () {
+panda_initialize <- function (workspace.type) {
+  # identiry workspace type ('modules' or 'pipelines')
+  modules.workspace <<- ifelse (workspace.type == 'modules', TRUE, FALSE)
+  
   # initialize system variables
   terra.wkspace <<- Sys.getenv( 'WORKSPACE_NAME' )
   google.bucket <<- Sys.getenv( 'WORKSPACE_BUCKET' )
@@ -273,10 +276,12 @@ validate_input <- function () {
   # check for sample id matches to ensure proper harmonization
   if ( (!exists ("typemap.gct")) || length (typemap.gct) == 0 )
     stop( printX ("ERROR", "No gct files specified") )
-  if ( all (names (typemap.gct) %in% proteome.types == FALSE) )
-    stop( printX ("ERROR", "No proteomics dataset specified") )
-  if ( ! all (required.genomics.types %in% names (typemap.gct)) )
-    stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
+  if (!modules.workspace) {
+    if ( all (names (typemap.gct) %in% proteome.types == FALSE) )
+      stop( printX ("ERROR", "No proteomics dataset specified") )
+    if ( ! all (required.genomics.types %in% names (typemap.gct)) )
+      stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
+  }
   print( glue( "\n.. INFO. Validating sample IDs in other files ..\n" ) )
   flush.console ()  # without this, the display shows up later
   sapply (names (typemap.gct),   # gct files
@@ -585,9 +590,9 @@ define_sample_sets <- function( all.groups, typemap.csv ){
   # add pathway databases and parameters file as set-specific parameters
   for (x in names (typemap.gmt))  
     sample.sets$all[[x]] <- typemap.gmt[[x]]
-  # code below doesn't work for adding yaml to data table -- need to get concatenated parameter file
-  # for (x in names (typemap.yml))  
-  #   sample.sets$all[[x]] <- typemap.yml[[x]]
+  # this will be the concatenated parameter file
+  for (x in names (typemap.yml))  
+    sample.sets$all[[x]] <- typemap.yml[[x]]
   
   
   set.flag <- y2true( "\n$$ Add additional sample subsets?" )
@@ -614,11 +619,11 @@ define_sample_sets <- function( all.groups, typemap.csv ){
     # add pathway databases and parameters as set-specific parameters for every set
     for (x in names (typemap.gmt))  
       sample.sets[[name]][[x]] <- typemap.gmt[[x]]
-    # code below doesn't work for adding yaml to data table -- need to get concatenated parameter file
-    # for (x in names (typemap.yml))  
-    #   sample.sets[[name]][[x]] <- typemap.yml[[x]]
+    # this will be the concatenated parameter file
+    for (x in names (typemap.yml))  
+      sample.sets[[name]][[x]] <- typemap.yml[[x]]
 
-        # add.param.flag <- y2true("$$ Add set-specific parameters?")
+    # add.param.flag <- y2true("$$ Add set-specific parameters?")
     # while( add.param.flag ){
     #   param.name <- as.character( readline(
     #     prompt = "$$ Enter Parameter Name: " ) )
@@ -696,11 +701,12 @@ panda_finalize <- function (internal=FALSE) {
               }))
   system( glue( "gsutil cp {home}/{cfg} {google.bucket}/{cfg}" ) )
   new.config <<- FALSE
-  # concatenate master parameter file and copy to google bucket
-  prm <- defaults$all_parameters_file_name
-  catcmd <- glue ("cat {cfg} {home}/input/{typemap.yml$parameters} > {home}/{prm}")
+  # concatenate master parameter (or input parameter) file -- will be included in sample_set
+  original.params <- glue ("{home}/input/{typemap.yml$parameters}.orig")
+  params <- glue ("{home}/input/{typemap.yml$parameters}")
+  if (! file.exists (original.params)) file.copy (params, original.params)
+  catcmd <- glue ("cat {cfg} {original.params} > {params}")
   system (catcmd)
-  system( glue( "gsutil cp {home}/{prm} {google.bucket}/{prm}" ) )
   if (!internal) print( DONE )
 }
 
