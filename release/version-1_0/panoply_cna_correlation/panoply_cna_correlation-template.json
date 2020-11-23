@@ -15,8 +15,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_cna_correlation",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_cna_correlation/4",
-    "methodVersion": 4,
+    "methodUri": "agora://broadcptac/panoply_cna_correlation/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_cna_correlation",

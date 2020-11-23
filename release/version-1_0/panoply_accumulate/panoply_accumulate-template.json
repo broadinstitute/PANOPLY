@@ -14,8 +14,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_accumulate",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_accumulate/11",
-    "methodVersion": 11,
+    "methodUri": "agora://broadcptac/panoply_accumulate/12",
+    "methodVersion": 12,
     "sourceRepo": "agora"
   },
   "name": "panoply_accumulate",
