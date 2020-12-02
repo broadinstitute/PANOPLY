@@ -29,7 +29,7 @@ displayUsage() {
 }
 
 
-while getopts ":n:gauh" opt; do
+while getopts "n:g:auh" opt; do
   case $opt in
     n) docker_ns="$OPTARG";;
     g) docker_tag="$OPTARG";;
@@ -72,8 +72,10 @@ docker build --rm --no-cache -t $final_docker1 -t $final_docker2 .
 if [[ $u_flag == "true" ]]; then
   docker login
   echo -e "Pushing images to dockerhub...";
-  docker push $docker_ns/panda_config_libs:$docker_tag
-  docker push $docker_ns/panda_config_libs:latest
+  if [[ $a_flag == "true" ]]; then
+    docker push $docker_ns/panda_config_libs:$docker_tag
+    docker push $docker_ns/panda_config_libs:latest
+  fi
   docker push $docker_ns/panda:$docker_tag
   docker push $docker_ns/panda:latest
 fi
