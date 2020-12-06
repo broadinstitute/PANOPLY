@@ -275,7 +275,7 @@ fig_count <- fig_count + 1
     rmd <- paste0(rmd, "\n
 \n## Overrepresentation analysis\n
 
-**Table `r tab_count`** summarizes the results of an overpresentation analysis of sample metadata terms (e.g. clinial annotation, inferred phenotypes, etc.) in each cluster. Shown are nominal p-values derived from a Fisher's exact test (<span style=\"background-color:#90ee90\">p<0.01</span>, <span style=\"background-color:#ffff00\">0.01<p<0.02</span>, <span style=\"background-color:#ffa500\">0.02<p<0.05</span>). All samples with cluster memebrship score > ```r opt$core_membership``` were used to characterize the clusters.
+**Table `r tab_count`** summarizes the results of an overrepresentation analysis of sample metadata terms (e.g. clinical annotation, inferred phenotypes, etc.) in each cluster. Shown are nominal p-values derived from a Fisher's exact test (<span style=\"background-color:#90ee90\">p<0.01</span>, <span style=\"background-color:#ffff00\">0.01<p<0.02</span>, <span style=\"background-color:#ffa500\">0.02<p<0.05</span>). All samples with cluster membership score > ```r opt$core_membership``` were used to characterize the clusters.
 
 ```{r, include=TRUE, echo=FALSE, warning=T, message=F}
 tab_enrich <- read_tsv(tab.str[['enrich_all']])
