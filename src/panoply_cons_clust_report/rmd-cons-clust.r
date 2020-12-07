@@ -256,6 +256,9 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   clust.col = brewer.pal(n = best_k, "Set3")
   names(clust.col) = 1:best_k
   color["Cluster"] = list(clust.col)
+  if (best_k == 2) {
+    color$Cluster <- color$Cluster[1:2]
+  }
   
   mat_filt2 = mat_filt[,column_order]
   
