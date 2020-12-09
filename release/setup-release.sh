@@ -296,13 +296,13 @@ do
   mkdir -p $release_dir/$mod
   cd $release_dir/$mod
   
-  # if [ "$lat" != "NO_DOCKER" ]; then
-  #   # build release docker
-  #   echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-  #   docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
-  #   docker images | grep "$mod"
-  #   docker push $release_dns/$mod:$release_tag
-  # fi
+  if [ "$lat" != "NO_DOCKER" ]; then
+    # build release docker
+    echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
+    docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
+    docker images | grep "$mod"
+    docker push $release_dns/$mod:$release_tag
+  fi
   
   # copy and update task WDL, install method and save snapshot id
   wdl_dir=$panoply/hydrant/tasks/$mod/
