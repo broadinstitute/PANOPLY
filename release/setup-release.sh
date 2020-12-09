@@ -15,6 +15,7 @@ proteomics_comp=(karsten@broadinstitute.org mmaynard@broadinstitute.org karen@br
 
 ## documentation location (assumes wiki repo is available in path)
 doc_dir="$panoply/../PANOPLY.wiki"
+generic_docs="PANOPLY-Tutorial.md Navigating-Results.md PANOPLY-without-Terra.md"
 
 
 display_usage() {
@@ -335,3 +336,12 @@ do
   fi
   cd $start_dir
 done
+
+
+## DOCUMENTATION
+mkdir -p $release_dir/docs
+for f in $generic_docs
+do
+  cp $doc_dir/$f $release_dir/docs/$f
+done
+
