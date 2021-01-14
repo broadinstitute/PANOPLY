@@ -9,7 +9,7 @@
 # 
 # 
 # ## Label type for MS experiment (set.label.type must be called to initialize variables)
-# label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126
+# label.type <- 'TMT10'   # alternatives: iTRAQ4, TMT10.126, TMT11, TMT11.126, TMT11.126C
 # set.label.type (label.type) 
 # 
 # ## QC
