@@ -218,7 +218,7 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
             select(all_of(name))
           
           rdesc_1 = rdesc %>%
-            select(contains(name))
+            select(all_of(paste0("fdr.pvalue.", name)))
           
           rmd = volcano_plot(mat = mat_1, rdesc = rdesc_1, rid = file@rid, split_word = "vs", fdr_value = fdr_value, category = category, category_filename = category_filename, rmd = rmd)
         }
