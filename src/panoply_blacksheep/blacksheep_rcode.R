@@ -57,10 +57,13 @@ create_values_input = function(gct, GeneSymbol_column, apply_identifiers_filter,
   return(genesymbol_values)
 }
 
-create_groupsfile_annotations = function(gct, groups_file, SampleID_column){
+create_groupsfile_annotations = function(gct, groups_file, SampleID_column, data_values){
   
-  annotations = read.csv(groups_file) %>%
+  annotations = read.csv(groups_file, stringsAsFactors = F, na.strings=c("", "NA")) %>%
     column_to_rownames(SampleID_column)
+  annotations[is.na(annotations)] = "NA"
+  
+  annotations = annotations[names(data_values),]
   
   return(annotations)
 }
@@ -256,7 +259,7 @@ run_blacksheep_analysis = function(gct_path,
 
     #format data and annotations
     data_values = create_values_input(gct, GeneSymbol_column, apply_identifiers_filter, identifiers_file)
-    heatmap_annotations = create_groupsfile_annotations(gct, groups_file, SampleID_column)
+    heatmap_annotations = create_groupsfile_annotations(gct, groups_file, SampleID_column, data_values)
 
     # binarize annotations
     binary_annotations = create_binary_annotations(heatmap_annotations)
