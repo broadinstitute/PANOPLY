@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/10/plain-WDL/descriptor" as normalize_wdl
+
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/4/plain-WDL/descriptor" as rna_prot_corr_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
@@ -15,7 +15,6 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/5/plain-WDL/descriptor" as normalize_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/9/plain-WDL/descriptor" as cons_clust_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust_report/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
@@ -38,7 +37,6 @@ workflow panoply_main {
   File? cna_groups
   File? association_groups
   File? cluster_enrichment_groups
-  String? normalizeProteomics # "true" or "false"
 
   ## cmap inputs
   Int cmap_n_permutations = 5
@@ -63,33 +61,9 @@ workflow panoply_main {
   String geneset_db #this.gseaDB
   String ptm_db #this.ptmseaDB
   
-  call normalize_wdl.panoply_normalize_ms_data {
-    input:
-      inputData = input_pome,
-      type = ome_type,
-      standalone = "true",
-      analysisDir = job_identifier,
-      yaml = yaml,
-      ndigits = ndigits,
-      naMax = na_max,
-      geneIdCol=gene_id_col,
-      sdFilterThreshold=sd_filter_threshold,
-      minNumratioFraction=min_numratio_fraction,
-      normalizeProteomics=normalizeProteomics
-  }
-
-  call normalize_report_wdl.panoply_normalize_ms_data_report {
-    input:
-      tarball = panoply_normalize_ms_data.output_tar,
-      label = job_identifier,
-      type = ome_type,
-      tmpDir = "tmp",
-      yaml = panoply_normalize_ms_data.output_yaml
-  }
-  
   call rna_prot_corr_wdl.panoply_rna_protein_correlation {
     input:
-      inputData = panoply_normalize_ms_data.outputs,
+      inputData = input_pome,
       type = ome_type,
       rnaExpr = input_rna_v3,
       analysisDir = job_identifier,
@@ -108,7 +82,7 @@ workflow panoply_main {
 
   call ssgsea_wdl.panoply_ssgsea as ssgsea_ome {
     input:
-      input_ds = panoply_normalize_ms_data.outputs,
+      input_ds = input_pome,
       gene_set_database = geneset_db,
       output_prefix = job_identifier,
       level = "gc",
@@ -119,7 +93,7 @@ workflow panoply_main {
     if ( ome_type == "phosphoproteome" ){
       call ssgsea_wdl.panoply_ssgsea as ptmsea_ome {
         input:
-          input_ds = panoply_normalize_ms_data.outputs,
+          input_ds = input_pome,
           gene_set_database = ptm_db,
           output_prefix = job_identifier,
           level = "ssc",
@@ -295,13 +269,11 @@ workflow panoply_main {
   output {
     File summary_and_ssgsea = panoply_download.summary
     File panoply_full = panoply_download.full
-    File norm_report = panoply_normalize_ms_data_report.report
     File rna_corr_report = panoply_rna_protein_correlation_report.report
     File cna_corr_report = panoply_cna_correlation_report.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
     File cons_clust_report = panoply_cons_clust_report.report_out
-    File normalized_data_table = panoply_normalize_ms_data.outputs
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
   }
