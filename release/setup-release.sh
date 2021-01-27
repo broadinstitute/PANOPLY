@@ -19,8 +19,8 @@ generic_docs="PANOPLY-Tutorial.md Navigating-Results.md PANOPLY-without-Terra.md
 
 
 display_usage() {
-  echo "usage: ./release.sh -p pull_dns -T release_tag -N release_dns "
-  echo "                    -w workspace_all -y workspace_pipelines -r project[-h]"
+  echo "usage: ./setup-release.sh -p pull_dns -T release_tag -N release_dns "
+  echo "                          -w workspace_all -y workspace_pipelines -r project [-h]"
   echo "-N | string | Docker namespace for building and pushing release"
   echo "-T | string | Docker release tag"
   echo "-p | string | Docker namespace to pull latest dev images from"
