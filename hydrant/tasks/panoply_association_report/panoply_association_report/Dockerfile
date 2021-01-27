@@ -1,10 +1,7 @@
-FROM broadcptacdev/panoply_common:latest
+FROM broadcptacdev/panoply_rmd_report:latest
 MAINTAINER proteogenomics@broadinstitute.org
 
-RUN apt-get update
-RUN apt-get -t unstable install -y pandoc
-
-RUN R -e "install.packages(c('yaml', 'tibble', 'dplyr', 'tidyr', 'rmarkdown', 'ggplot2', 'plotly', 'glue'),\
+RUN R -e "install.packages(c('yaml', 'tibble', 'tidyr'),\
     dependencies=TRUE,\
     repos = 'http://cran.rstudio.com/')"
 
