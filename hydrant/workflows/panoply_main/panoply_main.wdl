@@ -39,7 +39,7 @@ workflow panoply_main {
   File? cluster_enrichment_groups
 
   ## cmap inputs
-  Int cmap_n_permutations = 5
+  Int cmap_n_permutations = 10
   File? cmap_enrichment_groups
   File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt"
   File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx"
