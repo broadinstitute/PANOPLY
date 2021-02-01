@@ -1,0 +1,48 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_ssgsea_workflow.panoply_ssgsea.SGT_col": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.acc_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.correl_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.disk_space": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.gene_col": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.gene_set_database": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.global_fdr": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.id_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.id_type_out": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.input_ds": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.level": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.loc": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.memory": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.min_overlap": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.mod_res": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.mod_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.mode": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.nperm": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.num_preemtions": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.num_threads": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.output_prefix": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.output_score_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.preprocess_gct": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.sample_norm_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.seqwin_col": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.statistic": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.weight": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_ssgsea",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_ssgsea/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_ssgsea",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_ssgsea_workflow.panoply_ssgsea.results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,0 +1,38 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.disk_space": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.exclude_2": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.filt_mode": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.gene_column": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.impute": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.kmax": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.kmin": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.memory": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.no_plot": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.nrun": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.num_preemtions": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.num_threads": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.output_prefix": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.sd_min": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.seed": "",
+    "panoply_mo_nmf_workflow.panoply_mo_nmf.z_score": "",
+    "panoply_mo_nmf_workflow.tar_file": "",
+    "panoply_mo_nmf_workflow.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_mo_nmf",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_mo_nmf/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_mo_nmf",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_mo_nmf_workflow.nmf_clust": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

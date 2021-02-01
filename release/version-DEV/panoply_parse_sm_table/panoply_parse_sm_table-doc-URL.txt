@@ -1,0 +1,2 @@
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-DEV/release/version-DEV/panoply_parse_sm_table/panoply_parse_sm_table.md
+
