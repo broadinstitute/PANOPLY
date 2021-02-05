@@ -96,6 +96,7 @@ volcano_plot = function(mat, rdesc, rid, split_word, fdr_value, category, catego
   rdesc2 = rdesc %>%
     rownames_to_column("pathway") %>%
     rename(fdr = all_of(contains("fdr"))) %>%
+    mutate(fdr = as.numeric(fdr)) %>%
     select(pathway, fdr) %>%
     left_join(mat2) %>%
     arrange(fdr)
