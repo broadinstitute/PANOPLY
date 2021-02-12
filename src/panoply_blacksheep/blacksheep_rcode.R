@@ -7,6 +7,7 @@ library(dplyr)
 library(tibble)
 library(stringr)
 library(yaml)
+library(RColorBrewer)
 
 args <- commandArgs(TRUE)
 
@@ -148,10 +149,60 @@ outlier_count_and_analysis = function(groupings, data_values, fraction_samples_c
   return(results)
 }
 
+check_annot_colors = function(color_list, annotations, blank.color = "#FFFFFF"){
+  # color_list: colors from yaml parsed as list
+  # annotations: groups file annotations
+  # blank.color: color for blank values, default = white
+  ## note: blank values in groups annotations should already be converted to "NA" by create_groupsfile_annotations function
+  
+  keep.idx <- names(color_list) %in% colnames(annotations)
+  cdesc.color <- color_list[ keep.idx ]
+  
+  for(i in 1:length(cdesc.color)){
+    
+    ## cdesc column
+    cdesc.column <- names(cdesc.color)[i]
+    
+    cdesc.levels <- annotations[, cdesc.column] %>% unique
+    
+    #replace any blank or NA values to character "NA"
+    cdesc.levels[ nchar(as.character(cdesc.levels)) == 0 | is.na(cdesc.levels) ] <- "NA"
+    
+    ## extract colors specified for levels of cdesc.column
+    color.tmp <- color_list[[i]]
+    
+    ## check whether all levels were assigned
+    ## fill with random colors
+    if(sum(!cdesc.levels %in% names(color.tmp)) > 0){
+      missed_names = cdesc.levels[which(!cdesc.levels %in% names(color.tmp))]
+      
+      if("NA" %in% missed_names){
+        color.tmp["NA"] <- blank.color
+        missed_names = missed_names[-which(missed_names == "NA")]
+      }
+      
+      if(length(missed_names)>0){
+        missed_colors = brewer.pal(length(missed_names), "Set3")[1:length(missed_names)]
+        names(missed_colors) = missed_names
+        
+        color.tmp = append(color.tmp, missed_colors)
+      }
+
+      cdesc.color[[i]] <- color.tmp
+    }
+  }
+  
+  return(cdesc.color)
+}
+
 generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_neg, fdrcutoffvalue, annotations){
   
   csv_name = c("negative", "positive")
   category_names = names(data.frame(binary_annotations))
+  
+  # parse colors from yaml file for heatmap annotation label
+  color = lapply(yaml_params$groups.colors, unlist)
+  color2 = check_annot_colors(color_list = color, annotations = annotations)
   
   for (pos_neg in 1:length(outliers_results_pos_neg)){
     deva_output = outliers_results_pos_neg[[pos_neg]]
@@ -195,8 +246,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
         subset_fraction_table = deva_output$fraction_table[GOI,
                                                             rownames(annotations_ordered), drop=FALSE]
         
-        color = lapply(yaml_params$groups.colors, unlist)
-        col_heatmap_annotations = annotationlist_builder(annotations_ordered, customcolorlist = color)
+        col_heatmap_annotations = annotationlist_builder(annotations_ordered, customcolorlist = color2)
         
         heatmap = create_heatmap(counttab = subset_fraction_table,
                                  colmetatable = annotations_ordered,
