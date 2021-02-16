@@ -71,6 +71,15 @@ workflow panoply_main {
       yaml = yaml
   }
 
+  call rna_corr_report_wdl.panoply_rna_protein_correlation_report {
+    input:
+      tarball = panoply_rna_protein_correlation.outputs,
+      config_yaml = yaml,
+      label = job_identifier,
+      type = ome_type,
+      tmpDir = "tmp"
+  }
+
   call ssgsea_wdl.panoply_ssgsea as ssgsea_rna {
     input:
       input_ds = input_rna_v3,
@@ -101,15 +110,6 @@ workflow panoply_main {
       }
     }
   } 
-
-  call rna_corr_report_wdl.panoply_rna_protein_correlation_report {
-    input:
-      tarball = panoply_rna_protein_correlation.outputs,
-      config_yaml = yaml,
-      label = job_identifier,
-      type = ome_type,
-      tmpDir = "tmp"
-  }
 
   call harmonize_wdl.panoply_harmonize {
     input:
@@ -203,13 +203,6 @@ workflow panoply_main {
       yaml=yaml
   }
   
-  call cons_clust_report_wdl.panoply_cons_clust_report {
-    input:
-      tar_file = panoply_cons_clust.outputs,
-      yaml_file = yaml,
-      label = job_identifier,
-      type = ome_type
-  }
 
   call accum_wdl.panoply_accumulate as accumulate_clustering {
     input:
@@ -227,6 +220,14 @@ workflow panoply_main {
         level = "gc",
         yaml_file = yaml
     }
+  }
+
+  call cons_clust_report_wdl.panoply_cons_clust_report {
+    input:
+      tar_file = panoply_cons_clust.outputs,
+      yaml_file = yaml,
+      label = job_identifier,
+      type = ome_type
   }
   
   if ( run_cmap == "true" ){

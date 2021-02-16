@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/17/plain-WDL/descriptor" as normalize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_report/versions/5/plain-WDL/descriptor" as normalize_report_wdl
 
@@ -8,21 +9,22 @@ workflow panoply_normalize_ms_data_workflow {
 	File input_pome
 	String ome_type
 	String job_identifier
-	File yaml
+  String standalone = "true"
+	File yaml = '/prot/proteomics/Projects/PGDAC/src/master-parameters.yaml'
 	String? normalizeProteomics # "true" or "false"
 
 	Int? ndigits
-  	Float? na_max
-  	String? gene_id_col
-  	Float? sd_filter_threshold
-  	Float? min_numratio_fraction
+  Float? na_max
+  String? gene_id_col
+  Float? sd_filter_threshold
+  Float? min_numratio_fraction
   	
 
 	call normalize_wdl.panoply_normalize_ms_data {
     	input:
       		inputData = input_pome,
       		type = ome_type,
-      		standalone = "true",
+      		standalone = standalone,
       		analysisDir = job_identifier,
       		yaml = yaml,
       		ndigits = ndigits,
