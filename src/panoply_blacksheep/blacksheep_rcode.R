@@ -254,14 +254,28 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
                                  colclusterparam = FALSE,
                                  rowclusterparam = FALSE,
                                  nameparam = paste0(csv_name[pos_neg], " outlier analysis for ", heatmap_name, ", FDR cutoff value = ", fdrcutoffvalue))
-        
-        pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".pdf")))
-        print(heatmap)
-        dev.off()
-
-        png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".png")), width = 2200, height = 2200, res = 300)
-        print(heatmap)
-        dev.off()
+        if (dim(annotations_ordered)[1] > 11){
+          pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".pdf")), 
+              height = unit(10, "cm"),
+              width = unit(10, "cm"))
+          print(heatmap)
+          dev.off()
+          
+          png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".png")), 
+              width = 3000,
+              height = 3000,
+              res = 300)
+          print(heatmap)
+          dev.off()
+        } else {
+          pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".pdf")))
+          print(heatmap)
+          dev.off()
+          
+          png(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".png")), width = 2200, height = 2200, res = 300)
+          print(heatmap)
+          dev.off()
+        }
         
         print(paste0(csv_name[pos_neg], " outlier analysis heatmap for ", heatmap_name, " complete"))
         
