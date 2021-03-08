@@ -224,7 +224,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
       
       # select column that contains fdr values for the "in" group, get rownames (genes) that meet fdr cutoff
       fdrcols = grep("fdr", colnames(intable), value = TRUE)
-      fdrcols = fdrcols[which(str_detect(fdrcols, "not", negate = TRUE))]
+      fdrcols = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
       intable[,fdrcols] = as.numeric(intable[,fdrcols])
       
       # genes of interest for heatmap
