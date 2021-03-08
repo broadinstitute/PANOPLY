@@ -78,7 +78,7 @@ This report summarizes the significant results for ', type, ' (FDR < ', fdr_valu
             category = gsub(paste0(".*", group_name, "_(.+?)_.*"), "\\1", file)
             
             fdrcols = grep("fdr", colnames(outlier_analysis), value = TRUE)
-            fdr_col = fdrcols[which(str_detect(fdrcols, "not", negate = TRUE))]
+            fdr_col = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
             
             outlier_analysis = outlier_analysis %>%
               select(gene, all_of(fdr_col)) %>%
