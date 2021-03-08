@@ -1,7 +1,7 @@
 #FROM broadcptac/r-util:1
 #because of problems with knitr version
 #FROM r-base
-FROM broadcptac/panoply_common:latest
+FROM broadcptacdev/panoply_common:latest
 
 LABEL maintainer="proteogenomics@broadinstitute.org"
 LABEL description="Docker for generating Rmarkdown reports for different Panoply modules."
