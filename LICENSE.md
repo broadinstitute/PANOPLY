@@ -1,4 +1,4 @@
-#### PANOPLY License
+### PANOPLY License
 
 PANOPLY is distributed under the following BSD-style license:
 
