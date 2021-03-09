@@ -214,7 +214,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
     for (i in 1:length(outlier_analysis_out)){
       
       for (name in category_names){
-        if(grepl(name, names(outlier_analysis_out[i]))){
+        if(grepl(paste0(name, "_"), names(outlier_analysis_out[i]))){
           heatmap_name = name
         }
       }
@@ -255,7 +255,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
                                  colclusterparam = FALSE,
                                  rowclusterparam = FALSE,
                                  nameparam = paste0(csv_name[pos_neg], " outlier analysis for ", heatmap_name, ", FDR cutoff value = ", fdrcutoffvalue))
-        if (dim(annotations_ordered)[1] > 11){
+        if (length(col_heatmap_annotations) > 11){
           pdf(file.path(csv_name[pos_neg], paste0(csv_name[pos_neg], "_outlier_analysis_", heatmap_name, ".pdf")), 
               height = unit(10, "cm"),
               width = unit(10, "cm"))
