@@ -214,7 +214,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
     for (i in 1:length(outlier_analysis_out)){
       
       for (name in category_names){
-        if(grepl(paste0(name, "_"), names(outlier_analysis_out[i]))){
+        if(grepl(paste0("_", name, "_"), names(outlier_analysis_out[i]))){
           heatmap_name = name
         }
       }
@@ -223,7 +223,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
       intable[intable == ""] = NA
       
       # select column that contains fdr values for the "in" group, get rownames (genes) that meet fdr cutoff
-      fdrcols = grep("fdr", colnames(intable), value = TRUE)
+      fdrcols = grep("fdr_more_", colnames(intable), value = TRUE)
       fdrcols = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
       intable[,fdrcols] = as.numeric(intable[,fdrcols])
       

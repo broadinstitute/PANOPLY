@@ -77,7 +77,7 @@ This report summarizes the significant results for ', type, ' (FDR < ', fdr_valu
             outlier_analysis = read.csv(file.path("blacksheep", i, file))
             category = gsub(paste0(".*", group_name, "_(.+?)_.*"), "\\1", file)
             
-            fdrcols = grep("fdr", colnames(outlier_analysis), value = TRUE)
+            fdrcols = grep("fdr_more_", colnames(outlier_analysis), value = TRUE)
             fdr_col = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
             
             outlier_analysis = outlier_analysis %>%
@@ -108,7 +108,7 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
 ```
 
 **Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ', group_name, '. Note: row names may not be annotated if there are more than 100 significant genes.
-![](', file.path("blacksheep", i, grep(paste0(group_name, "_", category, ".png"), list.files(file.path("blacksheep", i)), value = TRUE)), ')
+![](', file.path("blacksheep", i, paste0(i, "_outlier_analysis_", group_name, "_", category, ".png")), ')
   
   
                        ')
