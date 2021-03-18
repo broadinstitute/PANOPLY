@@ -67,6 +67,12 @@ rmd_immune = function(tar_file, yaml_file, label){
     mutate (Immune.Subtype = factor (rna.subtype[samples, 'Immune.Subtype'])) %>%
     select (-Sample.ID)
   
+  for (i in names(annot)){
+    if (length(which(is.na(annot[,i]))) > dim(annot)[1]/2){
+      annot = annot %>% select(-all_of(i))
+    }
+  }
+  
   color = lapply(yaml_params$groups.colors, unlist)
   subtype_col = brewer.pal(n=6, "Set3")
   names(subtype_col) = 1:6
