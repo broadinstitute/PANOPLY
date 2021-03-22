@@ -551,71 +551,71 @@ panda_groups()</code></pre>
 </div>
 <div id="time-and-cost" class="section level2">
 <h2>Time and Cost</h2>
-<p>The table below summarizes expected time and cost for running various components of PANOPLY on the tutorial dataset. The table also provides ball park estimates and ranges for each component assuming default parameter settings.</p>
+<p>The table below summarizes expected time and cost for running various components of PANOPLY on the tutorial dataset. The table also provides ballpark estimates and ranges for each component assuming default parameter settings.</p>
 <p>The time and cost can vary depending on runtime conditions, pre-emption of running jobs, and parameter settings. For example, increasing the number of random permutations for multi-omics NMF clusters (<code>panoply_mo_nmf</code>) or CMAP analysis (<code>panoply_cmap_analysis</code>) will result in proportional increase in cost and time. Terra also includes a caching mechanism that reuses results for modules with no changes (to the module and input data/parameters). Enabling call caching can result in significant cost and time savings when only a few modules in a pipeline need to be rerun. In addition, Terra dispatches modules in parallel – modules with input data available are run in parallel. This reduces total pipeline run time when compared to the cumulative time needed to run all modules.</p>
 <table>
 <colgroup>
-<col width="40%"></col>
-<col width="15%"></col>
-<col width="21%"></col>
-<col width="21%"></col>
+<col width="32%"></col>
+<col width="16%"></col>
+<col width="25%"></col>
+<col width="25%"></col>
 </colgroup>
 <thead>
 <tr class="header">
 <th>Item</th>
 <th></th>
-<th>Approx. Time (Range)</th>
-<th>Approx. Cost (Range)</th>
+<th align="center">Approx. Time (Range)</th>
+<th align="center">Approx. Cost (Range)</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td>Startup Notebook to prepare workspace (<code>panda</code>)</td>
 <td></td>
-<td>45 min (30-60 min)</td>
-<td>$1 ($0-$1)</td>
+<td align="center">45 min <br />(30-60 min)</td>
+<td align="center">$1 <br />($0-$1)</td>
 </tr>
 <tr class="even">
 <td>Main pipeline for proteome data (<code>panoply_main</code>)</td>
 <td></td>
-<td>3.5 hours (3-4 hours)</td>
-<td>$2 ($1-$5)</td>
+<td align="center">3.5 hr <br />(3-4 hr)</td>
+<td align="center">$2 <br />($1-$5)</td>
 </tr>
 <tr class="odd">
 <td>Unified pipeline for proteome+PTM, including NMF multi-omics clustering and CMAP analysis (<code>panoply_unified_workflow</code>)</td>
 <td></td>
-<td></td>
-<td></td>
+<td align="center"></td>
+<td align="center"></td>
 </tr>
 <tr class="even">
 <td></td>
 <td>Total</td>
-<td>9.5 hours (8-10 hours)</td>
-<td>$55 ($50-$75)</td>
+<td align="center">9.5 hr <br />(8-10 hr)</td>
+<td align="center">$55 <br />($50-$75)</td>
 </tr>
 <tr class="odd">
 <td></td>
 <td>Main pipeline on proteome+PTM (<code>panoply_main</code>)</td>
-<td>4.5 hours (3-5 hours)</td>
-<td>$5 ($1-$10)</td>
+<td align="center">4.5 hr <br />(3-5 hr)</td>
+<td align="center">$5 <br />($1-$10)</td>
 </tr>
 <tr class="even">
 <td></td>
 <td>Multi-omics NMF clustering (<code>panoply_mo_nmf</code>)</td>
-<td>4 hours (3-4 hours)</td>
-<td>$25 ($15-$50)</td>
+<td align="center">4 hr <br />(3-4 hr)</td>
+<td align="center">$25 <br />($15-$50)</td>
 </tr>
 <tr class="odd">
 <td></td>
 <td>CMAP analysis (<code>panoply_cmap_analysis</code>)</td>
-<td>3 hours (2-3 hours)</td>
-<td>$25 ($15-$50)</td>
+<td align="center">3 hr <br />(2-3 hr)</td>
+<td align="center">$25 <br />($15-$50)</td>
 </tr>
 <tr class="even">
 <td>Storage for input data + results of pipeline runs (~15 GB)</td>
 <td></td>
-<td></td>
-<td>$2-$3 / month</td>
+<td align="center"></td>
+<td align="center">$2-$3 / month</td>
 </tr>
 </tbody>
 </table>
