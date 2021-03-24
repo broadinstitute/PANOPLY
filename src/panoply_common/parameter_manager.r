@@ -118,8 +118,12 @@ option_list <- list(
   make_option(c("--blacksheep_identifiers_file"), dest = 'blacksheep_identifiers_file', help = "blacksheep_identifiers_file"),
   make_option(c("--blacksheep_groups_file"), dest = 'blacksheep_groups_file', help = "blacksheep_groups_file"),
   make_option(c("--blacksheep_fraction_samples_cutoff"), type = "double", dest = 'blacksheep_fraction_samples_cutoff', help = "blacksheep_fraction_samples_cutoff"),
-  make_option(c("--blacksheep_fdr_value"), type = "double", dest = 'blacksheep_fdr_value', help = "blacksheep_fdr_value")
-  )
+  make_option(c("--blacksheep_fdr_value"), type = "double", dest = 'blacksheep_fdr_value', help = "blacksheep_fdr_value"),
+  make_option(c("--accession_number_colname"), type = "character", dest = 'accession_number_colname', help = "column with accession number (for proteome or PTM data)"),
+  make_option(c("--accession_numbers_colname"), type = "character", dest = 'accession_numbers_colname', help = "column with list of accession numbers (for subgroup)"),
+  make_option(c("--accession_numbers_separator"), type = "character", dest = 'accession_numbers_separator', help = "separator used in accession numbers column"),
+  make_option(c("--score_colname"), type = "character", dest = 'score_colname', help = "column with protein score")
+)
 
 
 opt_parser <- OptionParser(option_list=option_list)
@@ -147,6 +151,7 @@ p_load('yaml')
 # blacksheep
 # mo_nmf
 # ssgsea_projection
+# ptm_normalization
 
 ### FUNCTIONS:
 
@@ -582,6 +587,23 @@ check_blacksheep_params <- function(opt, yaml){
   return(yaml)
 }
 
+# ptm_normalization:
+check_ptm_normalization_params <- function(opt, yaml){
+  if (!is.null(opt$accession_number_colname)){
+    yaml$panoply_ptm_normalization$accession_number_colname <- opt$accession_number_colname
+  }
+  if (!is.null(opt$accession_numbers_colname)){
+    yaml$panoply_ptm_normalization$accession_numbers_colname <- opt$accession_numbers_colname
+  }
+  if (!is.null(opt$accession_numbers_separator)){
+    yaml$panoply_ptm_normalization$accession_numbers_separator <- opt$accession_numbers_separator
+  }
+  if (!is.null(opt$score_colname)){
+    yaml$panoply_ptm_normalization$score_colname <- opt$score_colname
+  }
+  return(yaml)
+}
+
 # association:
 check_association_params <- function(opt, yaml){
   if (!is.null(opt$fdr_assoc)){
@@ -617,6 +639,7 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_mo_nmf_params(opt, yaml)
   yaml <- check_ssgsea_projection_params(opt, yaml)
   yaml <- check_blacksheep_params(opt, yaml)
+  yaml <- check_ptm_normalization_params(opt, yaml)
   return(yaml)
 }
 
@@ -819,6 +842,10 @@ parse_command_line_parameters <- function(opt){
     
   }else if (opt$module == 'ssgsea_projection' & check_if_any_command_line(opt)){
     yaml <- check_ssgsea_projection_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+    
+  }else if (opt$module == 'ptm_normalization' & check_if_any_command_line(opt)){
+    yaml <- check_ptm_normalization_params(opt,yaml)
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'pipeline'){

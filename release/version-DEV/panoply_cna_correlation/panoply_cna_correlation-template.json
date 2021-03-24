@@ -1,0 +1,29 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.disk_space": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.fdr_cna_corr": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.memory": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.num_preemptions": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.num_threads": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.outFile": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.tarball": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.type": "",
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_cna_correlation",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_cna_correlation/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_cna_correlation",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_cna_correlation_workflow.panoply_cna_correlation.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -15,11 +15,12 @@ proteomics_comp=(karsten@broadinstitute.org mmaynard@broadinstitute.org karen@br
 
 ## documentation location (assumes wiki repo is available in path)
 doc_dir="$panoply/../PANOPLY.wiki"
+generic_docs="PANOPLY-Tutorial.md Navigating-Results.md PANOPLY-without-Terra.md"
 
 
 display_usage() {
-  echo "usage: ./release.sh -p pull_dns -T release_tag -N release_dns "
-  echo "                    -w workspace_all -y workspace_pipelines -r project[-h]"
+  echo "usage: ./setup-release.sh -p pull_dns -T release_tag -N release_dns "
+  echo "                          -w workspace_all -y workspace_pipelines -r project [-h]"
   echo "-N | string | Docker namespace for building and pushing release"
   echo "-T | string | Docker release tag"
   echo "-p | string | Docker namespace to pull latest dev images from"
@@ -296,13 +297,13 @@ do
   mkdir -p $release_dir/$mod
   cd $release_dir/$mod
   
-  # if [ "$lat" != "NO_DOCKER" ]; then
-  #   # build release docker
-  #   echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-  #   docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
-  #   docker images | grep "$mod"
-  #   docker push $release_dns/$mod:$release_tag
-  # fi
+  if [ "$lat" != "NO_DOCKER" ]; then
+    # build release docker
+    echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
+    docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
+    docker images | grep "$mod"
+    docker push $release_dns/$mod:$release_tag
+  fi
   
   # copy and update task WDL, install method and save snapshot id
   wdl_dir=$panoply/hydrant/tasks/$mod/
@@ -335,3 +336,12 @@ do
   fi
   cd $start_dir
 done
+
+
+## DOCUMENTATION
+mkdir -p $release_dir/docs
+for f in $generic_docs
+do
+  cp $doc_dir/$f $release_dir/docs/$f
+done
+

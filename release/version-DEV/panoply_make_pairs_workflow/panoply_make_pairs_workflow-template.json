@@ -1,0 +1,22 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_make_pairs_workflow.files": "",
+    "panoply_make_pairs_workflow.suffix": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_make_pairs_workflow",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_make_pairs_workflow/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_make_pairs_workflow",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_make_pairs_workflow.zipped": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
