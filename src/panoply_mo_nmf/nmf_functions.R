@@ -113,10 +113,6 @@ CalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
       x21 <- sum( class.vec.not.clust %in%  class.level )
       x22 <- sum(!(class.vec.not.clust %in% class.level ))
         
-      #n <- length(class.vec.clust)
-      #p <- sum( (class.vec %in% class.level)/length(class.vec) )
-    
-      
       # Fisher's p
       res.per.clust[clust, class.level] <- fisher.test( rbind(c(x11, x12), c(x21, x22)), alternative = 'greater')$p.value
       
@@ -1091,7 +1087,6 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
               )
     }
     
-
     ## ########################################
     ## heatmap coefficients
 

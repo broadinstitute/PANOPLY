@@ -357,7 +357,7 @@ main <- function(opt){
     write.gct(gct.comb, ofile = 'mo-data-matrix')
     
     ## ###################################################
-    ##       calculate SD accross samples
+    ##       calculate SD across samples
     ## ###################################################
     ## sd.expr <- apply(gct.comb@mat, 1, sd, na.rm=T)
     
@@ -372,9 +372,22 @@ main <- function(opt){
     ## ###################################################
     ## Z-score
     ## ###################################################
-    if(z_score)
-      expr <- scale(expr)
-   
+    if(z_score){
+      pdf('0_boxplot-data-distribution.pdf')
+      expr_org <- expr
+      boxplot(expr_org, cex=0.5, main='before z-scoring')
+      
+      expr <- t(scale(t(expr))) ## row
+      boxplot(expr, cex=0.5, main='after z-scoring (row)')
+      
+      expr_z_col <- scale(expr_org)
+      boxplot(expr_z_col, cex=0.5, main='after z-scoring (column)')
+      
+      expr <- scale(expr) ## row + column
+      boxplot(expr, cex=0.5, main='after z-scoring (row + column)')
+      dev.off()
+    
+      }
     # ## #########################
     # ## density kernel
     # sd.d <- density( sd.expr )
