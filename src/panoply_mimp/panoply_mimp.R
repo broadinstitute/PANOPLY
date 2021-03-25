@@ -9,6 +9,7 @@ library(S4Vectors)
 library(data.table)
 library(ComplexHeatmap)
 library(circlize)
+library(stringr)
 
 #args <- commandArgs(TRUE)
 
@@ -20,17 +21,22 @@ setwd("C:/Users/karen/mimp")
 mut_data_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-BRCA-freeze-v5.final_analysis_set.maf.txt"
 phospho_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-phosphoproteome-ratio-norm-NArm.gct"
 ids_path = "P:/LabMembers/Abhijeet Mavi/MIMP_final/ids.RData"
-fasta_path = "P:/LabMembers/Abhijeet Mavi/MIMP_final/prospective_breast_cancer/fasta/RefSeq.20160914_Human_ucsc_hg19_customProDBnr_mito_150contams.fasta"
+fasta_path = "S:/CPTAC2/RefSeq_20160914/RefSeq.20160914_Human_ucsc_hg19_customProDBnr_mito_150contams.fasta"
+report_type = "SpectrumMill"
 
 ## mutation file column names
 protein_change_colname = "Protein_Change"
 #protein_change_colname = "HGVSp_Short"
 mutation_type_col = "Variant_Classification"
 patient_id_col = "Tumor_Sample_Barcode"
+RefSeq_col = "refseq_mrna_id"
 
 ## phospho file column names
-phosphosite_col = "variableSites"
-accession_number_col = "accession_number"
+report_type = "SpectrumMill"
+if (report_type == "SpectrumMill"){
+  phosphosite_col = "variableSites"
+  accession_number_col = "accession_number"
+} 
   
 
 dir.create("results_dir")
@@ -59,9 +65,11 @@ phos_cid <- phospho_gct@cid %>% sub('^X', '', .)
 
 
 # filter for fully localized sites (# localized = # actual sites)
-phos_rdesc2 = phos_rdesc %>%
-  filter(Best_numActualVMSites_sty == Best_numLocalizedVMsites_sty)
-rownames(phos_rdesc2) = phos_rdesc2$id
+if (report_type == "SpectrumMill"){
+  phos_rdesc2 = phos_rdesc %>%
+    filter(Best_numActualVMSites_sty == Best_numLocalizedVMsites_sty)
+  rownames(phos_rdesc2) = phos_rdesc2$id
+}
 
 phos_mat2 = phos_mat[rownames(phos_rdesc2),]
 
@@ -73,7 +81,7 @@ mut_data[, mutation_type_col] = as.character(mut_data[, mutation_type_col])
 mut_data2 = mut_data[which(grepl("missense",mut_data[, mutation_type_col], ignore.case = TRUE)),]
 
 # map NP numbers to NM
-mut_data2$NM_revised = sub('\\..*','',mut_data2$RefSeq)
+mut_data2$NM_revised = sub('\\..*','',mut_data2[, RefSeq_col])
 
 keep.idx = !is.na(mut_data2$NM_revised)
 
@@ -95,8 +103,12 @@ full_results = data.frame(pwm = as.character(),
 # Algorithm to run MIMP on whole dataset, patient-wise
 for (i in phos_cid){
   
+  dir.create("patient_mutation_data")
+  dir.create(file.path("patient_mutation_data", i))
+  
   # select patient-specific mutation entries
   mut_i = mut_data3[which(grepl(i,mut_data3[, patient_id_col])),]
+  write.csv(mut_i, file.path("patient_mutation_data", i, paste0(i, "_mutation_data_all.csv")), row.names = FALSE)
   
   if(dim(mut_i)[1] > 0){
     
@@ -114,7 +126,61 @@ for (i in phos_cid){
     
     # This will be used as an input into MIMP algorithm. Eg: NP_0976666 K226R
     df_mut2 <- df_mut[ mut_rows,]
+    write.csv(df_mut, file.path("patient_mutation_data", i, paste0(i, "_mutation_mimp_input.csv")), row.names = FALSE)
     
+    gain_site = df_mut2 %>%
+      filter(grepl("S|T|Y$", mutation))
+    if (dim(gain_site)[1] > 0){
+      dir.create(file.path("mimp_results", i))
+      write.csv(gain_site, file.path("mimp_results", i, paste0(i, "_central_residue_gain_STY.csv")), row.names = FALSE)
+    }
+    
+    lose_site = df_mut2 %>%
+      filter(grepl("^S|T|Y", mutation))
+    if (dim(lose_site)[1] > 0){
+      if (!dir.exists(file.path("mimp_results", i))) {
+        dir.create(file.path("mimp_results", i))
+      }
+      write.csv(lose_site, file.path("mimp_results", i, paste0(i, "_central_residue_lose_STY.csv")), row.names = FALSE)
+    }
+    
+    # save list of mutation reference AAs that don't match with fasta sequence
+    # save list of mutations that fall in +/- 7 AA window of STY
+    AA_mismatch = data.frame(protein = as.character(),
+                             mutation = as.character(),
+                             mutation_position = as.numeric(),
+                             mutation_reference_AA = as.character(),
+                             fasta_AA = as.character())
+    AA_windows = data.frame(protein = as.character(),
+                            mutation = as.character(),
+                            window_containing_STY = as.character())
+    for (j in 1:length(df_mut2$NP_id)){
+      AA_pos = as.numeric(gsub("[A-Z]", "", df_mut2$mutation[j]))
+      if (str_sub(seqdata[df_mut2$NP_id[j]], AA_pos, AA_pos) != str_sub(df_mut2$mutation[j], 1, 1)){
+        j_df = data.frame(protein = df_mut2$NP_id[j],
+                          mutation = df_mut2$mutation[j],
+                          AA_position = AA_pos,
+                          AA_mutation_reference = str_sub(df_mut2$mutation[j], 1, 1),
+                          AA_fasta = str_sub(seqdata[df_mut2$NP_id[j]], AA_pos, AA_pos))
+        AA_mismatch = rbind(AA_mismatch, j_df)
+      }
+      AA_window = str_sub(seqdata[df_mut2$NP_id[j]], AA_pos - 7, AA_pos + 7)
+      if (grepl("S|T|Y", AA_window)){
+        new_df = data.frame(protein = df_mut2$NP_id[j],
+                            mutation = df_mut2$mutation[j],
+                            window_containing_STY = AA_window)
+        AA_windows = rbind(AA_windows, new_df)
+      }
+    }
+    
+    if (dim(AA_mismatch)[1] > 0){
+      write.csv(AA_mismatch, file.path("mimp_results", i, paste0(i, "_mismatchedAA_mutation_vs_fasta.csv")), row.names = FALSE)
+    }
+    
+    if (dim(AA_windows)[1] > 0){
+      write.csv(AA_windows, file.path("mimp_results", i, paste0(i, "_mutations_with_neighboring_STY.csv")), row.names = FALSE)
+    }
+  
     # Creating the phospho data in MIMP format
     phos_mat_id = !is.na(phos_mat2[,i])
     
@@ -128,10 +194,17 @@ for (i in phos_cid){
       unnest(phosphosite) %>%
       filter(grepl("S|T|Y|s|t|y", phosphosite)) %>%
       mutate(phosphosite = gsub("S|T|Y|s|t|y", "", phosphosite))
-
+    write.csv(df_phospho, file.path("patient_mutation_data", i, paste0(i, "_phospho_mimp_input.csv")), row.names = FALSE)
+    
+    # note any protein identifiers from phospho data that are not in the fasta file
+    prot_not_in_fasta = list(df_phospho$NP_revised[which(!(df_phospho$NP_revised %in% names(fasta)))])
+    if (length(prot_not_in_fasta[[1]]) > 0){
+      names(prot_not_in_fasta) = "phospho identifiers without fasta match"
+      write.csv(prot_not_in_fasta, file.path("patient_mutation_data", i, paste0(i, "_phospho_identifiers_not_in_fasta.csv")), row.names = FALSE)
+    }
     
     # Run MIMP (patient-specific)
-    results_i = mimp(muts = df_mut2, seqs = seqdata, psites = df_phospho, include.cent = TRUE)
+    results_i = mimp(muts = df_mut2, seqs = seqdata, psites = df_phospho)
     if (!is.null(results_i)){
       write.csv(results_i, file = file.path("mimp_results", paste(i, "results.csv", sep = "_")), row.names = FALSE)
       
