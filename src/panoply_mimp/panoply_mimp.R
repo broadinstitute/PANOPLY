@@ -41,7 +41,8 @@ if (report_type == "SpectrumMill"){
 
 dir.create("results_dir")
 setwd("results_dir")
-dir.create("mimp_results")
+dir.create("results_by_sample")
+
 
 # Loading NP data, different for different datatypes
 load(ids_path)
@@ -93,22 +94,33 @@ mut_data3 = mut_data2[keep.idx, ] %>%
   left_join(ids2) %>%
   filter(NP_id %in% names(seqdata))
 
-log_no_mut = 'Samples with no mutations (mimp not run): \n'
-log_mut_no_mimp = 'Samples with mutations, but no mimp results: \n'
+log_no_mut = "Samples with no mutations (mimp not run): \n"
+log_no_psnv = "Samples with no pSNV's: \n"
+log_no_rewiring = "Samples with no kinase rewiring events: \n"
+log_all_filtered = "Samples with no phosphorylation or sequence data remaining after filtering: \n"
 
 full_results = data.frame(pwm = as.character(),
                           log_ratio = as.numeric(),
                           patient_id = as.character())
 
+gain_site_all = data.frame(NP_id = as.character(),
+                           mutation = as.character(),
+                           patient_id = as.character())
+loss_site_all = data.frame(NP_id = as.character(),
+                           mutation = as.character(),
+                           patient_id = as.character())
+
 # Algorithm to run MIMP on whole dataset, patient-wise
 for (i in phos_cid){
   
-  dir.create("patient_mutation_data")
-  dir.create(file.path("patient_mutation_data", i))
+  dir.create(i)
+  dir.create("mimp_results_per_sample")
+  dir.create("mimp_input")
+  dir.create("mimp_results")
   
   # select patient-specific mutation entries
   mut_i = mut_data3[which(grepl(i,mut_data3[, patient_id_col])),]
-  write.csv(mut_i, file.path("patient_mutation_data", i, paste0(i, "_mutation_data_all.csv")), row.names = FALSE)
+  write.csv(mut_i, file.path(i, "mimp_input", paste0(i, "_mutation_data_all.csv")), row.names = FALSE)
   
   if(dim(mut_i)[1] > 0){
     
@@ -126,23 +138,25 @@ for (i in phos_cid){
     
     # This will be used as an input into MIMP algorithm. Eg: NP_0976666 K226R
     df_mut2 <- df_mut[ mut_rows,]
-    write.csv(df_mut, file.path("patient_mutation_data", i, paste0(i, "_mutation_mimp_input.csv")), row.names = FALSE)
+    write.csv(df_mut, file.path(i, "mimp_input", paste0(i, "_mutation_mimp_input.csv")), row.names = FALSE)
     
     gain_site = df_mut2 %>%
-      filter(grepl("S|T|Y$", mutation))
+      filter(!(str_sub(mutation, 1, 1) %in% c("S", "T", "Y"))) %>%
+      filter(str_sub(mutation, -1) %in% c("S", "T", "Y"))
     if (dim(gain_site)[1] > 0){
-      dir.create(file.path("mimp_results", i))
-      write.csv(gain_site, file.path("mimp_results", i, paste0(i, "_central_residue_gain_STY.csv")), row.names = FALSE)
+      write.csv(gain_site, file.path(i, "mimp_results", paste0(i, "_central_residue_STY_gain.csv")), row.names = FALSE)
     }
+    gain_site = gain_site %>% mutate(patient_id = i)
+    gain_site_all = rbind(gain_site_all, gain_site)
     
     lose_site = df_mut2 %>%
-      filter(grepl("^S|T|Y", mutation))
+      filter(!(str_sub(mutation, -1) %in% c("S", "T", "Y"))) %>%
+      filter(str_sub(mutation, 1, 1) %in% c("S", "T", "Y"))
     if (dim(lose_site)[1] > 0){
-      if (!dir.exists(file.path("mimp_results", i))) {
-        dir.create(file.path("mimp_results", i))
-      }
-      write.csv(lose_site, file.path("mimp_results", i, paste0(i, "_central_residue_lose_STY.csv")), row.names = FALSE)
+      write.csv(lose_site, file.path(i, "mimp_results", paste0(i, "_central_residue_STY_loss.csv")), row.names = FALSE)
     }
+    lose_site = lose_site %>% mutate(patient_id = i)
+    loss_site_all = rbind(loss_site_all, lose_site)
     
     # save list of mutation reference AAs that don't match with fasta sequence
     # save list of mutations that fall in +/- 7 AA window of STY
@@ -174,11 +188,11 @@ for (i in phos_cid){
     }
     
     if (dim(AA_mismatch)[1] > 0){
-      write.csv(AA_mismatch, file.path("mimp_results", i, paste0(i, "_mismatchedAA_mutation_vs_fasta.csv")), row.names = FALSE)
+      write.csv(AA_mismatch, file.path(i, "mimp_input", paste0(i, "_mismatchedAA_mutation_vs_fasta.csv")), row.names = FALSE)
     }
     
     if (dim(AA_windows)[1] > 0){
-      write.csv(AA_windows, file.path("mimp_results", i, paste0(i, "_mutations_with_neighboring_STY.csv")), row.names = FALSE)
+      write.csv(AA_windows, file.path(i, "mimp_results", paste0(i, "_mutations_with_neighboring_STY.csv")), row.names = FALSE)
     }
   
     # Creating the phospho data in MIMP format
@@ -194,19 +208,21 @@ for (i in phos_cid){
       unnest(phosphosite) %>%
       filter(grepl("S|T|Y|s|t|y", phosphosite)) %>%
       mutate(phosphosite = gsub("S|T|Y|s|t|y", "", phosphosite))
-    write.csv(df_phospho, file.path("patient_mutation_data", i, paste0(i, "_phospho_mimp_input.csv")), row.names = FALSE)
+    write.csv(df_phospho, file.path(i, "mimp_input", paste0(i, "_phospho_mimp_input.csv")), row.names = FALSE)
     
     # note any protein identifiers from phospho data that are not in the fasta file
     prot_not_in_fasta = list(df_phospho$NP_revised[which(!(df_phospho$NP_revised %in% names(fasta)))])
     if (length(prot_not_in_fasta[[1]]) > 0){
       names(prot_not_in_fasta) = "phospho identifiers without fasta match"
-      write.csv(prot_not_in_fasta, file.path("patient_mutation_data", i, paste0(i, "_phospho_identifiers_not_in_fasta.csv")), row.names = FALSE)
+      write.csv(prot_not_in_fasta, file.path(i, "mimp_input", paste0(i, "_phospho_identifiers_not_in_fasta.csv")), row.names = FALSE)
     }
     
     # Run MIMP (patient-specific)
+    warning(paste0("Running MIMP for ", i))
     results_i = mimp(muts = df_mut2, seqs = seqdata, psites = df_phospho)
+    
     if (!is.null(results_i)){
-      write.csv(results_i, file = file.path("mimp_results", paste(i, "results.csv", sep = "_")), row.names = FALSE)
+      write.csv(results_i, file = file.path(i, "mimp_results", paste(i, "mimp_output_kinase_rewiring_events.csv", sep = "_")), row.names = FALSE)
       
       res_filt = results_i %>%
         distinct() %>%
@@ -216,7 +232,13 @@ for (i in phos_cid){
       full_results = rbind(full_results, res_filt)
         
     } else {
-      log_mut_no_mimp = paste(log_mut_no_mimp, i, sep = "\n")
+      if (length(which(grepl("No pSNVs were found!", names(last.warning))))>0){
+        log_no_psnv = paste(log_no_psnv, i, sep = "\n")
+      } else if (length(which(grepl("No phosphorylation or sequence data remaining after filtering!", names(last.warning))))>0){
+        log_all_filtered = paste(log_all_filtered, i, sep = "\n")
+      } else if (length(which(grepl("No rewiring events found, returning NULL", names(last.warning))))>0){
+        log_no_rewiring = paste(log_no_rewiring, i, sep = "\n")
+      }
     }
     
   } else {
@@ -225,8 +247,13 @@ for (i in phos_cid){
   
 }
 
-writeLines(log_no_mut, con = "samples_no_mutations.txt")
-writeLines(log_mut_no_mimp, con = "samples_no_mimp_results.txt")
+write.csv(full_results, "mimp_output_kinase_rewiring_events_all.csv", row.names = FALSE)
+write.csv(gain_site_all, "all_central_residue_STY_gain.csv", row.names = FALSE)
+write.csv(loss_site_all, "all_central_residue_STY_loss.csv", row.names = FALSE)
+writeLines(log_no_mut, con = "samples_without_mutations.txt")
+writeLines(log_no_psnv, con = "samples_without_pSNVs.txt")
+writeLines(log_no_rewiring, con = "samples_without_kinase_rewiring.txt")
+writeLines(log_all_filtered, con = "samples_all_data_filtered.txt")
 
 full_results_edit = full_results %>%
   filter(!is.na(log_ratio)) %>%
