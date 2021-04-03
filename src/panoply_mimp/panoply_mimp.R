@@ -20,12 +20,10 @@ library(stringr)
 # yaml_file = as.character(args[5])
 
 # yaml_params = read_yaml(yaml_file)
-# ids = whatever the name of the ids file within the .Rdata file is. default ids?
 
 # phospho file column names
-SpectrumMill = TRUE
-phosphosite_col = "variableSites"
-accession_number_col = "accession_number"
+phosphosite_col = NULL
+accession_number_col = NULL
 
 ## mutation file column names - should this be required or in yaml?
 protein_change_colname = "Protein_Change"
@@ -34,17 +32,28 @@ patient_id_col = "Tumor_Sample_Barcode"
 RefSeq_col = "refseq_mrna_id"
 
 setwd("C:/Users/karen/mimp")
+#required inputs
 mut_data_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-BRCA-freeze-v5.final_analysis_set.maf.txt"
 phospho_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-phosphoproteome-ratio-norm-NArm.gct"
 ids_path = "P:/LabMembers/Abhijeet Mavi/MIMP_final/ids.RData"
 fasta_path = "S:/CPTAC2/RefSeq_20160914/RefSeq.20160914_Human_ucsc_hg19_customProDBnr_mito_150contams.fasta"
+search_engine = "SpectrumMill" #other option is "other"
 
-## phospho file column names - if multiple search engines, uncomment and add other options via if
-# if (SpectrumMill){
-#   phosphosite_col = "variableSites"
-#   accession_number_col = "accession_number"
-# } 
-#   
+## phospho file column names - can add other options as we add new search engines
+if (search_engine == "SpectrumMill"){
+  phosphosite_col = "variableSites"
+  accession_number_col = "accession_number"
+} else if (search_engine == "other"){
+  if (is.null(phosphosite_col)){
+    stop("Please update the 'phosphosite_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates phosphosite information e.g. S18s.")
+  }
+  if (is.null(accession_number_col)){
+    stop("Please update the 'accession_number_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates protein accession number e.g. NP_001611.1.")
+  }
+} else {
+  stop("Please enter a valid option for 'search_engine' parameter. Options are 'SpectrumMill' or 'other.'")
+}
+
 
 # this function prepares fasta file for mimp input
 format_fasta_file = function(fasta_path){
@@ -57,6 +66,31 @@ format_fasta_file = function(fasta_path){
   return(seqdata)
 }
 
+# this function formats the phospho GCT row metadata
+format_phospho_rdesc = function(gct, search_engine, accession_number_col){
+  phos_rdesc = gct@rdesc
+  
+  # filter for fully localized sites if SpectrumMill (# localized = # actual sites)
+  if (search_engine == "SpectrumMill"){
+    phos_rdesc = phos_rdesc %>%
+      filter(Best_numActualVMSites_sty == Best_numLocalizedVMsites_sty)
+    rownames(phos_rdesc) = phos_rdesc$id
+  }
+
+  phos_rdesc$protein_id = sub('\\..*','',phos_rdesc[, accession_number_col])
+  
+  return(phos_rdesc)
+}
+
+# this function formats the phopsho data matrix
+format_phospho_mat = function(gct, rdesc){
+  phos_mat = phospho_gct@mat
+  colnames(phos_mat) <- sub('^X','', colnames(phos_mat))
+  phos_mat = phos_mat[rownames(phos_rdesc),]
+  
+  return(phos_mat)
+}
+
 # this function prepares the mutation maf file before sample-wise filtering
 format_mutation_full = function(mut_data_path, ids, mutation_type_col, RefSeq_col){
   mut_maf = read_tsv(mut_data_path)
@@ -65,17 +99,17 @@ format_mutation_full = function(mut_data_path, ids, mutation_type_col, RefSeq_co
   mut_data2 = mut_data[which(grepl("missense",mut_data[, mutation_type_col], ignore.case = TRUE)),]
   
   # map NP numbers to NM
-  mut_data2$NM_revised = sub('\\..*','',mut_data2[, RefSeq_col])
+  mut_data2$transcript_id = sub('\\..*','',mut_data2[, RefSeq_col])
   
-  keep.idx = !is.na(mut_data2$NM_revised)
+  keep.idx = !is.na(mut_data2$transcript_id)
   
   ids2 = ids %>%
     select(tx_name, pro_name)
-  names(ids2) = c("NM_revised", "NP_id")
+  names(ids2) = c("transcript_id", "protein_id")
   
   mut_data3 = mut_data2[keep.idx, ] %>%
     left_join(ids2) %>%
-    filter(NP_id %in% names(seqdata))
+    filter(protein_id %in% names(seqdata))
   
   return (mut_data3)
 }
@@ -84,7 +118,7 @@ format_mutation_full = function(mut_data_path, ids, mutation_type_col, RefSeq_co
 create_mutation_input = function(mut_sample, loop_id, protein_change_colname, sample_input_path){
   # Creating the dataframe for mutation file in MIMP format from respective columns of mutation file
   df_mut = mut_sample %>%
-    select(NP_id,
+    select(protein_id,
            all_of(protein_change_colname))
   names(df_mut)[2] = "mutation"
   df_mut = df_mut %>%  
@@ -92,7 +126,7 @@ create_mutation_input = function(mut_sample, loop_id, protein_change_colname, sa
   
   #Validating if df_mut is in correct format. Eg: NP_027626728
   mut_rows <- which(grepl('^[A-Z][0-9]+[A-Z]$',df_mut$mutation) &
-                      (!is.na(df_mut$NP_id)) & (df_mut$NP_id!=''))
+                      (!is.na(df_mut$protein_id)) & (df_mut$protein_id!=''))
   
   # This will be used as an input into MIMP algorithm. Eg: NP_0976666 K226R
   df_mut2 <- df_mut[ mut_rows,]
@@ -128,7 +162,7 @@ create_phospho_input = function(phospho_mat, phospho_rdesc, loop_id, phosphosite
   phos_mat_id = !is.na(phospho_mat[,loop_id])
   
   df_phospho = phospho_rdesc[phos_mat_id,] %>%
-    select(NP_revised,
+    select(protein_id,
            all_of(phosphosite_col))
   names(df_phospho)[2] = "phosphosite"
   df_phospho = df_phospho %>%
@@ -165,15 +199,15 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
                             effect = as.character(),
                             patient_id = as.character())
   
-  gain_STY_all = data.frame(NP_id = as.character(),
+  gain_STY_all = data.frame(protein_id = as.character(),
                              mutation = as.character(),
                              patient_id = as.character())
-  lose_STY_all = data.frame(NP_id = as.character(),
+  lose_STY_all = data.frame(protein_id = as.character(),
                              mutation = as.character(),
                              patient_id = as.character())
   
   # Algorithm to run MIMP on whole dataset, patient-wise
-  for (i in phosho_cid){
+  for (i in phospho_cid){
     
     dir.create(file.path("results_by_sample", i))
     
@@ -207,19 +241,19 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
       # AA_windows = data.frame(protein = as.character(),
       #                         mutation = as.character(),
       #                         window_containing_STY = as.character())
-      for (j in 1:length(df_mut$NP_id)){
+      for (j in 1:length(df_mut$protein_id)){
         AA_pos = as.numeric(gsub("[A-Z]", "", df_mut$mutation[j]))
-        if (str_sub(seqdata[df_mut$NP_id[j]], AA_pos, AA_pos) != str_sub(df_mut$mutation[j], 1, 1)){
-          j_df = data.frame(protein = df_mut$NP_id[j],
+        if (str_sub(seqdata[df_mut$protein_id[j]], AA_pos, AA_pos) != str_sub(df_mut$mutation[j], 1, 1)){
+          j_df = data.frame(protein = df_mut$protein_id[j],
                             mutation = df_mut$mutation[j],
                             AA_position = AA_pos,
                             AA_mutation_reference = str_sub(df_mut$mutation[j], 1, 1),
-                            AA_fasta = str_sub(seqdata[df_mut$NP_id[j]], AA_pos, AA_pos))
+                            AA_fasta = str_sub(seqdata[df_mut$protein_id[j]], AA_pos, AA_pos))
           AA_mismatch = rbind(AA_mismatch, j_df)
         }
-        # AA_window = str_sub(seqdata[df_mut2$NP_id[j]], AA_pos - 7, AA_pos + 7)
+        # AA_window = str_sub(seqdata[df_mut2$protein_id[j]], AA_pos - 7, AA_pos + 7)
         # if (grepl("S|T|Y", AA_window)){
-        #   new_df = data.frame(protein = df_mut2$NP_id[j],
+        #   new_df = data.frame(protein = df_mut2$protein_id[j],
         #                       mutation = df_mut2$mutation[j],
         #                       window_containing_STY = AA_window)
         #   AA_windows = rbind(AA_windows, new_df)
@@ -234,10 +268,10 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
       #   write.csv(AA_windows, file.path(sample_mutinfo_path, paste0(i, "_mutations_with_neighboring_STY.csv")), row.names = FALSE)
       # }
       
-      df_phospho = create_phospho_input(phos_mat2, phos_rdesc, i, phosphosite_col, sample_input_path)
+      df_phospho = create_phospho_input(phos_mat, phos_rdesc, i, phosphosite_col, sample_input_path)
 
       # note any protein identifiers from phospho data that are not in the fasta file
-      prot_not_in_fasta = list(df_phospho$NP_revised[which(!(df_phospho$NP_revised %in% names(seqdata)))])
+      prot_not_in_fasta = list(df_phospho$protein_id[which(!(df_phospho$protein_id %in% names(seqdata)))])
       if (length(prot_not_in_fasta[[1]]) > 0){
         names(prot_not_in_fasta) = "phospho identifiers without fasta match"
         write.csv(prot_not_in_fasta, file.path(sample_mutinfo_path, paste0(i, "_phospho_identifiers_not_in_fasta.csv")), row.names = FALSE)
@@ -249,8 +283,9 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
       if (!is.null(results_i)){
         
         # generate HTML report
+        BASE_DIR = system.file("extdata", "", package = "rmimp")
         if (file.exists(file.path(BASE_DIR, 'html', 'MIMP_results.html'))){
-          file.copy(file.path(BASE_DIR, 'html', 'MIMP_results.html'), paste0(i, "_mimp_output_kinase_rewiring_events.html"))
+          file.copy(file.path(BASE_DIR, 'html'), sample_results_path, recursive = TRUE)
         }
         
         results_i = results_i %>%
@@ -274,16 +309,16 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
     print("No predicted kinase rewiring events in any samples")
   }
   
-  if(dim(gain_site_all)[1]>0){
-    write.csv(gain_site_all, "all_central_residue_STY_gain.csv", row.names = FALSE)
+  if(dim(gain_STY_all)[1]>0){
+    write.csv(gain_STY_all, "all_central_residue_STY_gain.csv", row.names = FALSE)
   } else{
-    print("No mutations in any sample that cause gain of new phosphosite")
+    print("No mutations in any sample that cause gain of new central STY")
   }
   
-  if(dim(loss_site_all)[1]>0){
-    write.csv(loss_site_all, "all_central_residue_STY_loss.csv", row.names = FALSE)
+  if(dim(lose_STY_all)[1]>0){
+    write.csv(lose_STY_all, "all_central_residue_STY_loss.csv", row.names = FALSE)
   } else{
-    print("No mutations in any sample that cause loss of a phosphosite")
+    print("No mutations in any sample that cause loss of central STY")
   }
   
   writeLines(log_no_mut, con = "samples_without_mutations.txt")
@@ -315,8 +350,8 @@ mimp_heatmap_function = function(df, kinase_column){
                         row_names_side = "left", row_names_gp = gpar(fontsize=6),
                         column_names_gp = gpar(fontsize = 6), 
                         heatmap_legend_param = list(title = "log_ratio"),
-                        width = ncol(full_results_edit)*unit(2, "mm"),
-                        height = nrow(full_results_edit)*unit(2, "mm"))
+                        width = ncol(heatmap_df)*unit(2, "mm"),
+                        height = nrow(heatmap_df)*unit(2, "mm"))
   
   # print heatmap
   pdf(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.pdf', sep = "_"))
@@ -338,12 +373,10 @@ generate_mimp_heatmap = function(full_results){
   
   #generate kinase + mutation level heatmap
   mimp_heatmap_function(full_results_edit, "kinase_gene_mut")
-  
-
 }
 
 run_mimp = function(fasta_path, phospho_path, SpectrumMill, accession_number_col,
-                    mut_data_path, ids, mutation_type_col, RefSeq_col, 
+                    mut_data_path, ids_path, mutation_type_col, RefSeq_col, 
                     phosphosite_col, protein_change_colname){
 
   dir.create("results_dir")
@@ -356,28 +389,17 @@ run_mimp = function(fasta_path, phospho_path, SpectrumMill, accession_number_col
   # prepare fasta file for mimp input
   seqdata = format_fasta_file(fasta_path)
 
-  # read phospho gct file and remove Xs in front of patient IDs
+  # read phospho gct file, format rdesc and mat
   phospho_gct = parse.gctx(phospho_path)
-  phos_rdesc <- phospho_gct@rdesc
-  phos_mat <- phospho_gct@mat
-  colnames(phos_mat) <- sub('^X','', colnames(phos_mat))
-  phos_cid <- phospho_gct@cid %>% sub('^X', '', .)
-  
-  # filter for fully localized sites if SpectrumMill (# localized = # actual sites)
-  if (SpectrumMill){
-    phos_rdesc = phos_rdesc %>%
-      filter(Best_numActualVMSites_sty == Best_numLocalizedVMsites_sty)
-    rownames(phos_rdesc) = phos_rdesc$id
-  }
-  
-  phos_mat2 = phos_mat[rownames(phos_rdesc),]
-  phos_rdesc$NP_revised = sub('\\..*','',phos_rdesc[, accession_number_col])
+  phos_cid = phospho_gct@cid %>% sub('^X', '', .)
+  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, accession_number_col)
+  phos_mat = format_phospho_mat(phospho_gct, phos_rdesc)
   
   # prepare mutation maf file before for loop sample-wise processing
   mut_data = format_mutation_full(mut_data_path, ids, mutation_type_col, RefSeq_col)
 
   # prepare sample-wise mutation and phospho dfs, and then run mimp on each sample
-  heatmap_df = run_mimp_samplewise(phos_cid, mut_data, seqdata, phos_rdesc, phos_mat2,
+  heatmap_df = run_mimp_samplewise(phos_cid, mut_data, seqdata, phos_rdesc, phos_mat,
                                    phosphosite_col, protein_change_colname)
 
   # create heatmap of predicted kinases results
@@ -388,7 +410,7 @@ run_mimp = function(fasta_path, phospho_path, SpectrumMill, accession_number_col
 
 mimp_results = run_mimp(fasta_path = fasta_path, 
                         phospho_path = phospho_path,
-                        SpectrumMill = SpectrumMill, 
+                        search_engine = search_engine, 
                         accession_number_col = accession_number_col,
                         mut_data_path = mut_data_path, 
                         ids = ids,
