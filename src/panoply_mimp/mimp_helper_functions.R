@@ -12,7 +12,7 @@ format_fasta_file = function(fasta_path){
 }
 
 # this function formats the phospho GCT row metadata
-format_phospho_rdesc = function(gct, search_engine, accession_number_col){
+format_phospho_rdesc = function(gct, search_engine, protein_id_col){
   phos_rdesc = gct@rdesc
   
   # filter for fully localized sites if SpectrumMill (# localized = # actual sites)
@@ -22,7 +22,7 @@ format_phospho_rdesc = function(gct, search_engine, accession_number_col){
     rownames(phos_rdesc) = phos_rdesc$id
   }
   
-  phos_rdesc$protein_id = sub('\\..*','',phos_rdesc[, accession_number_col])
+  phos_rdesc$protein_id = sub('\\..*','',phos_rdesc[, protein_id_col])
   
   return(phos_rdesc)
 }
@@ -37,14 +37,14 @@ format_phospho_mat = function(gct, rdesc){
 }
 
 # this function prepares the mutation maf file before sample-wise filtering
-format_mutation_full = function(mut_data_path, ids, mutation_type_col, RefSeq_col, seqdata){
+format_mutation_full = function(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata){
   mut_maf = read_tsv(mut_data_path)
   mut_data = as.data.frame(mut_maf) 
   mut_data[, mutation_type_col] = as.character(mut_data[, mutation_type_col])
   mut_data2 = mut_data[which(grepl("missense",mut_data[, mutation_type_col], ignore.case = TRUE)),]
   
   # map NP numbers to NM
-  mut_data2$transcript_id = sub('\\..*','',mut_data2[, RefSeq_col])
+  mut_data2$transcript_id = sub('\\..*','',mut_data2[, transcript_id_col])
   
   keep.idx = !is.na(mut_data2$transcript_id)
   
@@ -60,11 +60,11 @@ format_mutation_full = function(mut_data_path, ids, mutation_type_col, RefSeq_co
 }
 
 # create sample-wise mutation mimp input, executed in run_mimp_samplewise
-create_mutation_input = function(mut_sample, loop_id, protein_change_colname, sample_input_path){
+create_mutation_input = function(mut_sample, loop_id, mutation_AA_change_colname, sample_input_path){
   # Creating the dataframe for mutation file in MIMP format from respective columns of mutation file
   df_mut = mut_sample %>%
     select(protein_id,
-           all_of(protein_change_colname))
+           all_of(mutation_AA_change_colname))
   names(df_mut)[2] = "mutation"
   df_mut = df_mut %>%  
     mutate(mutation = gsub('p\\.','', mutation))
@@ -185,7 +185,7 @@ muts_in_phosphosite_window = function(df_phospho, df_mut, loop_id, AA_mismatch, 
   return(pSNV)
 }
 
-mimp_heatmap_function = function(df, kinase_column){
+mimp_heatmap_function = function(df, kinase_column, groups_file_path, groups_file_SampleID_column){
   
   heatmap_df = df %>%
     select(all_of(kinase_column),log_ratio, patient_id) %>%
@@ -201,22 +201,77 @@ mimp_heatmap_function = function(df, kinase_column){
   
   color = colorRamp2(c(results.min, 0, results.max), c("blue", "white", "red"))
   
-  heatmap_all = Heatmap(heatmap_df, cluster_rows = FALSE, cluster_columns = FALSE, 
-                        col = color, column_title = "Sample", row_title = "Kinase",
-                        column_title_side = "bottom", column_title_gp = gpar(fontsize = 10),
-                        row_title_side = "left", row_title_gp = gpar(fontsize = 10),
-                        row_names_side = "left", row_names_gp = gpar(fontsize=6),
-                        column_names_gp = gpar(fontsize = 6), 
-                        heatmap_legend_param = list(title = "log_ratio"))
-  
-  # print heatmap
-  pdf(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.pdf', sep = "_"))
-  draw(heatmap_all)
-  # barplot(t(unmatched_NP),xlab = 'Patient_ID', ylab = 'Percentage of RefSeq IDs matched')
-  dev.off()
+  if (is.null(groups_file_path)){
+    heatmap_all = Heatmap(heatmap_df, cluster_rows = FALSE, cluster_columns = FALSE, 
+                          col = color, column_title = "Sample", row_title = kinase_column,
+                          column_title_side = "bottom", column_title_gp = gpar(fontsize = 12),
+                          row_title_side = "left", row_title_gp = gpar(fontsize = 12),
+                          row_names_side = "left", row_names_gp = gpar(fontsize=10),
+                          show_row_names = nrow(heatmap_df) <=100,
+                          column_names_gp = gpar(fontsize = 10), 
+                          heatmap_legend_param = list(title = "log_ratio"))
+    
+    pdf(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.pdf', sep = "_"))
+    draw(heatmap_all)
+    dev.off()
+    
+    png(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.png', sep = "_")) 
+    draw(heatmap_all)
+    dev.off()
+        
+  } else {
+    groups_file = read.csv(groups_file_path) %>%
+      column_to_rownames(groups_file_SampleID_column)
+    rownames(groups_file) = sub('^X','', rownames(groups_file))
+    
+    groups_file2 = groups_file[colnames(heatmap_df),]
+    
+    color_annot = lapply(yaml_params$groups.colors, unlist)
+    
+    annotation <- HeatmapAnnotation (df=groups_file2, annotation_height = 0.25, annotation_width = 0.25,
+                                     show_annotation_name=TRUE, col = color_annot, annotation_name_side = "left",
+                                     annotation_name_gp = gpar(fontsize=10))
+    
+    heatmap_all = Heatmap(heatmap_df, top_annotation=annotation, cluster_rows = FALSE, cluster_columns = FALSE, 
+                          col = color, column_title = "Sample", row_title = kinase_column,
+                          column_title_side = "bottom", column_title_gp = gpar(fontsize = 12),
+                          row_title_side = "left", row_title_gp = gpar(fontsize = 12),
+                          row_names_side = "left", row_names_gp = gpar(fontsize=10),
+                          show_row_names = nrow(heatmap_df) <=100,
+                          column_names_gp = gpar(fontsize = 10), 
+                          heatmap_legend_param = list(title = "log_ratio"))
+    
+    # print heatmap
+    if(nrow(heatmap_df)>100){
+      pdf(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.pdf', sep = "_"),
+          height = unit(15, "cm"),
+          width = unit(12, "cm"))
+    } else{
+      pdf(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.pdf', sep = "_"),
+          height = unit(max(nrow(heatmap_df)/4, 10), "cm"),
+          width = unit(max(ncol(heatmap_df)/3, 10), "cm"))
+    }
+    draw(heatmap_all)
+    dev.off()
+    
+    if(ncol(groups_file2)>11){
+      png(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.png', sep = "_"), 
+          width = 5000,
+          height = 5000,
+          res = 300)
+    } else {
+      png(paste('mimp_results_predicted_kinase_rewiring', kinase_column, 'level_heatmap.png', sep = "_"), 
+          width = 3000,
+          height = 3000,
+          res = 300)
+    }
+    draw(heatmap_all)
+    dev.off()
+    
+  }
 }
 
-generate_mimp_heatmap = function(full_results){
+generate_mimp_heatmap = function(full_results, groups_file_path, groups_file_SampleID_column){
   
   full_results_edit = full_results %>%
     select(pwm, gene, mut, log_ratio, patient_id) %>%
@@ -225,8 +280,8 @@ generate_mimp_heatmap = function(full_results){
     mutate(kinase_gene_mut = paste(kinase, gene, mut, sep = "_"))
   
   #generate kinase-level heatmap
-  mimp_heatmap_function(full_results_edit, "kinase")
+  mimp_heatmap_function(full_results_edit, "kinase", groups_file_path, groups_file_SampleID_column)
   
   #generate kinase + mutation level heatmap
-  mimp_heatmap_function(full_results_edit, "kinase_gene_mut")
+  mimp_heatmap_function(full_results_edit, "kinase_gene_mut", groups_file_path, groups_file_SampleID_column)
 }

@@ -10,6 +10,7 @@ library(data.table)
 library(ComplexHeatmap)
 library(circlize)
 library(stringr)
+library(yaml)
 
 #args <- commandArgs(TRUE)
 
@@ -19,36 +20,35 @@ library(stringr)
 # ids_path = as.character(args[4])
 # yaml_file = as.character(args[5])
 
-# yaml_params = read_yaml(yaml_file)
-
-# phospho file column names
-phosphosite_col = NULL
-accession_number_col = NULL
-
-## mutation file column names - should this be required or in yaml?
-protein_change_colname = "Protein_Change"
-mutation_type_col = "Variant_Classification"
-patient_id_col = "Tumor_Sample_Barcode"
-RefSeq_col = "refseq_mrna_id"
-
-#setwd("C:/Users/karen/mimp")
+setwd("C:/Users/karen/mimp")
 #required inputs
-mut_data_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-BRCA-freeze-v5.final_analysis_set.maf.txt"
-phospho_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-phosphoproteome-ratio-norm-NArm.gct"
-ids_path = "P:/LabMembers/Abhijeet Mavi/MIMP_final/ids.RData"
-fasta_path = "S:/CPTAC2/RefSeq_20160914/RefSeq.20160914_Human_ucsc_hg19_customProDBnr_mito_150contams.fasta"
-search_engine = "SpectrumMill" #other option is "other"
+mut_data_path = "S:/CPTAC3/PGDAC/lscc/v3.2/data-freeze/lscc-v3.2-mutsig-2cv-umich-v2-lscc-poncptac3-lscc-v3beta.final-analysis-set.maf"
+phospho_path = "S:/CPTAC3/PGDAC/lscc/v3.2/data-freeze/lscc-v3.2-phosphoproteome-ratio-norm-NArm.gct"
+ids_path = "S:/CPTAC3/RefSeq_20180629/intermediate_2018-06-29_hg38/2_annotation_files_customProDB/ids.RData"
+fasta_path = "S:/CPTAC3/RefSeq_20180629/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams.fasta"
+yaml_file = "C:/Users/karen/Downloads/panoply-params_formimp_lscc.yaml"
+
+yaml_params = read_yaml(yaml_file)
+groups_file_path = yaml_params$panoply_mimp$groups_file_path
+groups_file_SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_name
+search_engine = yaml_params$panoply_mimp$search_engine
+phosphosite_col = yaml_params$panoply_mimp$phosphosite_col
+protein_id_col = yaml_params$panoply_mimp$protein_id_col
+mutation_AA_change_colname = yaml_params$panoply_mimp$mutation_AA_change_colname
+mutation_type_col = yaml_params$panoply_mimp$mutation_type_col
+patient_id_col = yaml_params$panoply_mimp$patient_id_col 
+transcript_id_col = yaml_params$panoply_mimp$transcript_id_col
 
 ## phospho file column names - can add other options as we add new search engines
 if (search_engine == "SpectrumMill"){
   phosphosite_col = "variableSites"
-  accession_number_col = "accession_number"
+  protein_id_col = "accession_number"
 } else if (search_engine == "other"){
   if (is.null(phosphosite_col)){
     stop("Please update the 'phosphosite_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates phosphosite information e.g. S18s.")
   }
-  if (is.null(accession_number_col)){
-    stop("Please update the 'accession_number_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates protein accession number e.g. NP_001611.1.")
+  if (is.null(protein_id_col)){
+    stop("Please update the 'protein_id_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates protein accession number e.g. NP_001611.1.")
   }
 } else {
   stop("Please enter a valid option for 'search_engine' parameter. Options are 'SpectrumMill' or 'other.'")
@@ -58,7 +58,7 @@ if (search_engine == "SpectrumMill"){
 source("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_mimp/mimp_helper_functions.R")
 
 run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_mat, 
-                               phosphosite_col, protein_change_colname){
+                               phosphosite_col, mutation_AA_change_colname){
   
   # set up empty lists/data frames to save or concatenate loop output
   log_no_mut = "Samples with no mutations (MIMP not run): \n"
@@ -105,7 +105,7 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
     
     if(dim(mut_i)[1] > 0){
       
-      df_mut = create_mutation_input(mut_i, i, protein_change_colname, sample_input_path)
+      df_mut = create_mutation_input(mut_i, i, mutation_AA_change_colname, sample_input_path)
       
       gain_STY = central_STY_change(df_mut, i, "gain", sample_mutinfo_path)     
       gain_STY_all = rbind(gain_STY_all, gain_STY)
@@ -191,9 +191,9 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
   return(full_results)
 }  
 
-run_mimp = function(fasta_path, phospho_path, search_engine, accession_number_col,
-                    mut_data_path, ids_path, mutation_type_col, RefSeq_col, 
-                    phosphosite_col, protein_change_colname){
+run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
+                    mut_data_path, ids_path, mutation_type_col, transcript_id_col, 
+                    phosphosite_col, mutation_AA_change_colname){
 
   dir.create("results_dir")
   setwd("results_dir")
@@ -208,18 +208,18 @@ run_mimp = function(fasta_path, phospho_path, search_engine, accession_number_co
   # read phospho gct file, format rdesc and mat
   phospho_gct = parse.gctx(phospho_path)
   phos_cid = phospho_gct@cid %>% sub('^X', '', .)
-  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, accession_number_col)
+  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, protein_id_col)
   phos_mat = format_phospho_mat(phospho_gct, phos_rdesc)
   
   # prepare mutation maf file before for loop sample-wise processing
-  mut_data = format_mutation_full(mut_data_path, ids, mutation_type_col, RefSeq_col, seqdata)
+  mut_data = format_mutation_full(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata)
 
   # prepare sample-wise mutation and phospho dfs, and then run mimp on each sample
   heatmap_df = run_mimp_samplewise(phos_cid, mut_data, seqdata, phos_rdesc, phos_mat,
-                                   phosphosite_col, protein_change_colname)
+                                   phosphosite_col, mutation_AA_change_colname)
 
   # create heatmap of predicted kinases results
-  generate_mimp_heatmap(heatmap_df)
+  generate_mimp_heatmap(heatmap_df, groups_file_path, groups_file_SampleID_column)
   
   return(heatmap_df)
 }
@@ -227,10 +227,10 @@ run_mimp = function(fasta_path, phospho_path, search_engine, accession_number_co
 mimp_results = run_mimp(fasta_path = fasta_path, 
                         phospho_path = phospho_path,
                         search_engine = search_engine, 
-                        accession_number_col = accession_number_col,
+                        protein_id_col = protein_id_col,
                         mut_data_path = mut_data_path, 
                         ids_path = ids_path,
                         mutation_type_col = mutation_type_col, 
-                        RefSeq_col = RefSeq_col,
+                        transcript_id_col = transcript_id_col,
                         phosphosite_col = phosphosite_col, 
-                        protein_change_colname = protein_change_colname)
+                        mutation_AA_change_colname = mutation_AA_change_colname)
