@@ -64,17 +64,17 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
   log_no_mut = "Samples with no mutations (MIMP not run): \n"
   log_no_mimp_res = "Samples with no predicted kinase rewiring results from MIMP: \n"
   
-  full_results = data.frame(gene = as.character(),
-                            wt = as.character(),
-                            mt = as.character(),
-                            mut = as.character(),
-                            psite_pos	= as.numeric(),
+  full_results = data.frame(protein_id = as.character(),
+                            wild_type_seq = as.character(),
+                            mut_seq = as.character(),
+                            mutation = as.character(),
+                            phosphosite_position = as.numeric(),
                             mut_dist = as.numeric(),
                             score_wt = as.numeric(),
                             score_mt = as.numeric(),
                             log_ratio	= as.numeric(),
-                            pwm = as.character(),
-                            pwm_fam = as.character(),
+                            kinase_pwm = as.character(),
+                            kinase_pwm_fam = as.character(),
                             nseqs = as.numeric(),
                             prob = as.numeric(),
                             effect = as.character(),
@@ -86,6 +86,12 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
   lose_STY_all = data.frame(protein_id = as.character(),
                             mutation = as.character(),
                             patient_id = as.character())
+  
+  AA_mismatch_all = data.frame(protein_id = as.character(),
+                               mutation = as.character(),
+                               mutation_AA_position = as.numeric(),
+                               mutation_reference_AA = as.character(),
+                               fasta_AA = as.character())
   
   # Algorithm to run MIMP on whole dataset, patient-wise
   for (i in phospho_cid){
@@ -107,14 +113,15 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
       
       df_mut = create_mutation_input(mut_i, i, mutation_AA_change_colname, sample_input_path)
       
-      gain_STY = central_STY_change(df_mut, i, "gain", sample_mutinfo_path)     
+      gain_STY = STY_change(df_mut, i, "gain", sample_mutinfo_path)     
       gain_STY_all = rbind(gain_STY_all, gain_STY)
       
-      lose_STY = central_STY_change(df_mut, i, "loss", sample_mutinfo_path)
+      lose_STY = STY_change(df_mut, i, "loss", sample_mutinfo_path)
       lose_STY_all = rbind(lose_STY_all, lose_STY)
       
       # save list of mutation reference AAs that don't match with fasta sequence
       AA_mismatch = save_mismatch_AA(df_mut, seqdata, sample_mutinfo_path, i)
+      AA_mismatch_all = rbind(AA_mismatch_all, AA_mismatch)
       
       # create phospho input to mimp
       df_phospho = create_phospho_input(phos_mat, phos_rdesc, i, phosphosite_col, sample_input_path)
@@ -142,21 +149,29 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
         
         results_i = results_i %>%
           distinct() %>%
-          mutate(patient_id = i)
+          mutate(patient_id = i) %>%
+          dplyr::rename(kinase_pwm = pwm,
+                        kinase_pwm_fam = pwm_fam,
+                        protein_id = gene,
+                        wild_type_seq = wt,
+                        mut_seq = mt,
+                        mutation = mut,
+                        phosphosite_position = psite_pos)
         write.csv(results_i, file = file.path(sample_results_path, paste(i, "mimp_output_kinase_rewiring_events.csv", sep = "_")), row.names = FALSE)
         full_results = rbind(full_results, results_i)
         
         # add kinase rewiring events to pSNV CSV file
         for_psnv = results_i %>%
-          dplyr::rename(protein_id = gene,
-                        mutation = mut,
-                        phosphosite_position = psite_pos) %>%
-          mutate(kinase_rewiring_event = paste(pwm, effect, sep = "_")) %>%
-          select(protein_id, mutation, phosphosite_position, kinase_rewiring_event) %>%
+          mutate(kinase_rewiring_events = paste(kinase_pwm, effect, sep = "_")) %>%
+          select(protein_id, mutation, phosphosite_position, kinase_rewiring_events) %>%
           group_by(protein_id, mutation, phosphosite_position) %>%
-          summarise(kinase_rewiring_event = paste(kinase_rewiring_event, collapse = ", "))
+          summarise(num_kinase_rewiring_events = n(),
+                    kinase_rewiring_events = paste(kinase_rewiring_events, collapse = ", "))
         
-        pSNV = left_join(pSNV, for_psnv)
+        pSNV = left_join(pSNV, for_psnv) 
+        pSNV$num_kinase_rewiring_events[is.na(pSNV$num_kinase_rewiring_events)] = ""
+        pSNV$kinase_rewiring_events[is.na(pSNV$kinase_rewiring_events)] = ""
+        
         write.csv(pSNV, file.path(sample_mutinfo_path, paste0(i, "_pSNV_mutations_within_7AA_of_phosphosite_including_kinase_rewiring.csv")), row.names = FALSE)
         
       } else {
@@ -174,15 +189,21 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
   }
   
   if(dim(gain_STY_all)[1]>0){
-    write.csv(gain_STY_all, "all_central_residue_STY_gain.csv", row.names = FALSE)
+    write.csv(gain_STY_all, "all_STY_gain_mutation.csv", row.names = FALSE)
   } else{
-    print("No mutations in any sample that cause gain of new central STY")
+    print("No mutations in any sample that cause gain of new STY")
   }
   
   if(dim(lose_STY_all)[1]>0){
-    write.csv(lose_STY_all, "all_central_residue_STY_loss.csv", row.names = FALSE)
+    write.csv(lose_STY_all, "all_STY_loss_mutation.csv", row.names = FALSE)
   } else{
-    print("No mutations in any sample that cause loss of central STY")
+    print("No mutations in any sample that cause loss of STY")
+  }
+  
+  if(dim(AA_mismatch_all)[1]>0){
+    write.csv(AA_mismatch_all, "all_mismatchedAA_mutation_vs_fasta.csv", row.names = FALSE)
+  } else{
+    print("No mismatches between mutation reference and fasta sequence amino acid")
   }
   
   writeLines(log_no_mut, con = "samples_without_mutations.txt")

@@ -81,7 +81,7 @@ create_mutation_input = function(mut_sample, loop_id, mutation_AA_change_colname
 }
 
 # find mutations that directly remove or add an STY, executed in run_mimp_samplewise
-central_STY_change = function(mimp_mut_input, loop_id, gain_or_loss, sample_results_path){
+STY_change = function(mimp_mut_input, loop_id, gain_or_loss, sample_results_path){
   if (gain_or_loss == "gain"){
     STY_change = mimp_mut_input %>%
       filter(!(str_sub(mutation, 1, 1) %in% c("S", "T", "Y"))) %>%
@@ -93,7 +93,7 @@ central_STY_change = function(mimp_mut_input, loop_id, gain_or_loss, sample_resu
   }
   
   if (dim(STY_change)[1] > 0){
-    write.csv(STY_change, file.path(sample_results_path, paste0(loop_id, "_central_residue_STY_", gain_or_loss, ".csv")), row.names = FALSE)
+    write.csv(STY_change, file.path(sample_results_path, paste0(loop_id, "_STY_", gain_or_loss, "_mutation.csv")), row.names = FALSE)
   }
   
   STY_change = STY_change %>% mutate(patient_id = loop_id)
@@ -124,6 +124,8 @@ save_mismatch_AA = function(df_mut, seqdata, sample_mutinfo_path, loop_id){
   if (dim(AA_mismatch)[1] > 0){
     write.csv(AA_mismatch, file.path(sample_mutinfo_path, paste0(loop_id, "_mismatchedAA_mutation_vs_fasta.csv")), row.names = FALSE)
   }
+  
+  AA_mismatch = AA_mismatch %>% mutate(patient_id = loop_id)
   
   return(AA_mismatch)
 }
@@ -174,13 +176,17 @@ muts_in_phosphosite_window = function(df_phospho, df_mut, loop_id, AA_mismatch, 
   
   if (dim(pSNV)[1] > 0){
     pSNV = pSNV %>% mutate(patient_id = loop_id)
-    write.csv(pSNV, file.path(sample_mutinfo_path, paste0(loop_id, "_pSNV_mutations_within_7AA_of_phosphosite.csv")), row.names = FALSE)
-    
+
     if (length(intersect(as.character(pSNV$mutation), as.character(AA_mismatch$mutation))) > 0){
-      pSNV2 = pSNV %>% left_join(AA_mismatch)
-      write.csv(pSNV2, file.path(sample_mutinfo_path, paste0(loop_id, "_pSNV_mutations_within_7AA_of_phosphosite_including_mismatch_info.csv")), row.names = FALSE)
+      pSNV = pSNV %>% 
+        left_join(AA_mismatch) %>%
+        select(-c(mutation_AA_position, mutation_reference_AA)) %>%
+        dplyr::rename(fasta_AA_if_mismatch = fasta_AA)
+      pSNV$fasta_AA_if_mismatch[is.na(pSNV$fasta_AA_if_mismatch)] = ""
     }
   }
+  
+  write.csv(pSNV, file.path(sample_mutinfo_path, paste0(loop_id, "_pSNV_mutations_within_7AA_of_phosphosite.csv")), row.names = FALSE)
   
   return(pSNV)
 }
@@ -274,10 +280,10 @@ mimp_heatmap_function = function(df, kinase_column, groups_file_path, groups_fil
 generate_mimp_heatmap = function(full_results, groups_file_path, groups_file_SampleID_column){
   
   full_results_edit = full_results %>%
-    select(pwm, gene, mut, log_ratio, patient_id) %>%
-    rename_(kinase = "pwm") %>%
+    select(kinase_pwm, protein_id, mutation, log_ratio, patient_id) %>%
+    rename_(kinase = "kinase_pwm") %>%
     filter(!is.na(log_ratio)) %>%
-    mutate(kinase_gene_mut = paste(kinase, gene, mut, sep = "_"))
+    mutate(kinase_gene_mut = paste(kinase, protein_id, mutation, sep = "_"))
   
   #generate kinase-level heatmap
   mimp_heatmap_function(full_results_edit, "kinase", groups_file_path, groups_file_SampleID_column)
