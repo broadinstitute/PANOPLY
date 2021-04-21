@@ -85,7 +85,7 @@ swap.accession.numbers <- function (PTM.rdesc, prot.rdesc, accession_number,
         matches <- prot.rdesc.expanded[which(unlist(prot.rdesc.expanded[,accession_numbers]) %in% accession.numbers),]
         if (nrow(matches) >= 1) {
           best_index <- ifelse (!is.null(score), which.max(unlist (matches[,score])), 1)
-          PTM.rdesc[row, accession_number] <- matches[,accession_number]
+          PTM.rdesc[row, accession_number] <- matches[best_index,accession_number]
         } 
       }
     }
