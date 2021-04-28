@@ -20,13 +20,13 @@ library(yaml)
 # ids_path = as.character(args[4])
 # yaml_file = as.character(args[5])
 
-setwd("C:/Users/karen/mimp")
+setwd("G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/MIMP_results/results_dir_brca/")
 #required inputs
-mut_data_path = "S:/CPTAC3/PGDAC/lscc/v3.2/data-freeze/lscc-v3.2-mutsig-2cv-umich-v2-lscc-poncptac3-lscc-v3beta.final-analysis-set.maf"
-phospho_path = "S:/CPTAC3/PGDAC/lscc/v3.2/data-freeze/lscc-v3.2-phosphoproteome-ratio-norm-NArm.gct"
-ids_path = "S:/CPTAC3/RefSeq_20180629/intermediate_2018-06-29_hg38/2_annotation_files_customProDB/ids.RData"
-fasta_path = "S:/CPTAC3/RefSeq_20180629/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams.fasta"
-yaml_file = "C:/Users/karen/Downloads/panoply-params_formimp_lscc.yaml"
+mut_data_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-BRCA-freeze-v5.final_analysis_set.maf.txt"
+phospho_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-phosphoproteome-ratio-norm-NArm.gct"
+ids_path = "S:/CPTAC2/RefSeq_20160914/intermediate_20160914_hg19/ids.RData"
+fasta_path = "S:/CPTAC2/RefSeq_20160914/RefSeq.20160914_Human_ucsc_hg19_customProDBnr_mito_150contams.fasta"
+yaml_file = "C:/Users/karen/Downloads/panoply-parameters_formimp_brca.yaml"
 
 yaml_params = read_yaml(yaml_file)
 groups_file_path = yaml_params$panoply_mimp$groups_file_path

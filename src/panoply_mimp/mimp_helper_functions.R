@@ -184,10 +184,11 @@ muts_in_phosphosite_window = function(df_phospho, df_mut, loop_id, AA_mismatch, 
         dplyr::rename(fasta_AA_if_mismatch = fasta_AA)
       pSNV$fasta_AA_if_mismatch[is.na(pSNV$fasta_AA_if_mismatch)] = ""
     }
+    
+    write.csv(pSNV, file.path(sample_mutinfo_path, paste0(loop_id, "_pSNV_mutations_within_7AA_of_phosphosite.csv")), row.names = FALSE)
+    
   }
-  
-  write.csv(pSNV, file.path(sample_mutinfo_path, paste0(loop_id, "_pSNV_mutations_within_7AA_of_phosphosite.csv")), row.names = FALSE)
-  
+
   return(pSNV)
 }
 
