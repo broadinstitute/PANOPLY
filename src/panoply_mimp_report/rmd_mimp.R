@@ -8,7 +8,6 @@ args = commandArgs(TRUE)
 tar_file = as.character(args[1])
 output_prefix = as.character(args[2])
 
-library(yaml)
 library(rmarkdown)
 library(stringr)
 library(dplyr)
