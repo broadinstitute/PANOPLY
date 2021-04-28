@@ -96,7 +96,7 @@ STY_change = function(mimp_mut_input, loop_id, gain_or_loss, sample_results_path
     write.csv(STY_change, file.path(sample_results_path, paste0(loop_id, "_STY_", gain_or_loss, "_mutation.csv")), row.names = FALSE)
   }
   
-  STY_change = STY_change %>% mutate(patient_id = loop_id)
+  STY_change = STY_change %>% mutate(sample_id = loop_id)
   
   return(STY_change)
 }
@@ -125,7 +125,7 @@ save_mismatch_AA = function(df_mut, seqdata, sample_mutinfo_path, loop_id){
     write.csv(AA_mismatch, file.path(sample_mutinfo_path, paste0(loop_id, "_mismatchedAA_mutation_vs_fasta.csv")), row.names = FALSE)
   }
   
-  AA_mismatch = AA_mismatch %>% mutate(patient_id = loop_id)
+  AA_mismatch = AA_mismatch %>% mutate(sample_id = loop_id)
   
   return(AA_mismatch)
 }
@@ -175,7 +175,7 @@ muts_in_phosphosite_window = function(df_phospho, df_mut, loop_id, AA_mismatch, 
   }
   
   if (dim(pSNV)[1] > 0){
-    pSNV = pSNV %>% mutate(patient_id = loop_id)
+    pSNV = pSNV %>% mutate(sample_id = loop_id)
 
     if (length(intersect(as.character(pSNV$mutation), as.character(AA_mismatch$mutation))) > 0){
       pSNV = pSNV %>% 
@@ -195,11 +195,11 @@ muts_in_phosphosite_window = function(df_phospho, df_mut, loop_id, AA_mismatch, 
 mimp_heatmap_function = function(df, kinase_column, groups_file_path, groups_file_SampleID_column){
   
   heatmap_df = df %>%
-    select(all_of(kinase_column),log_ratio, patient_id) %>%
-    group_by_at(c(kinase_column, "patient_id")) %>%
+    select(all_of(kinase_column),log_ratio, sample_id) %>%
+    group_by_at(c(kinase_column, "sample_id")) %>%
     slice(which.max(abs(log_ratio))) %>%
     spread_(key = kinase_column, value = "log_ratio") %>%
-    column_to_rownames("patient_id") %>%
+    column_to_rownames("sample_id") %>%
     t()
   write.csv(heatmap_df, paste("kinase_rewiring_events_matrix", kinase_column, "level.csv", sep = "_"))
   
@@ -281,7 +281,7 @@ mimp_heatmap_function = function(df, kinase_column, groups_file_path, groups_fil
 generate_mimp_heatmap = function(full_results, groups_file_path, groups_file_SampleID_column){
   
   full_results_edit = full_results %>%
-    select(kinase_pwm, protein_id, mutation, log_ratio, patient_id) %>%
+    select(kinase_pwm, protein_id, mutation, log_ratio, sample_id) %>%
     rename_(kinase = "kinase_pwm") %>%
     filter(!is.na(log_ratio)) %>%
     mutate(kinase_gene_mut = paste(kinase, protein_id, mutation, sep = "_"))

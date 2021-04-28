@@ -12,21 +12,13 @@ library(circlize)
 library(stringr)
 library(yaml)
 
-#args <- commandArgs(TRUE)
+args <- commandArgs(TRUE)
 
-# mut_data_path = as.character(args[1])
-# phospho_path = as.character(args[2])
-# fasta_path = as.character(args[3])
-# ids_path = as.character(args[4])
-# yaml_file = as.character(args[5])
-
-setwd("G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/MIMP_results/results_dir_brca/")
-#required inputs
-mut_data_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-BRCA-freeze-v5.final_analysis_set.maf.txt"
-phospho_path = "S:/CPTAC3/PGDAC/brca/prospective/v5.4-public/data-freeze/prosp-brca-v5.4-public-phosphoproteome-ratio-norm-NArm.gct"
-ids_path = "S:/CPTAC2/RefSeq_20160914/intermediate_20160914_hg19/ids.RData"
-fasta_path = "S:/CPTAC2/RefSeq_20160914/RefSeq.20160914_Human_ucsc_hg19_customProDBnr_mito_150contams.fasta"
-yaml_file = "C:/Users/karen/Downloads/panoply-parameters_formimp_brca.yaml"
+mut_data_path = as.character(args[1])
+phospho_path = as.character(args[2])
+fasta_path = as.character(args[3])
+ids_path = as.character(args[4])
+yaml_file = as.character(args[5])
 
 yaml_params = read_yaml(yaml_file)
 groups_file_path = yaml_params$panoply_mimp$groups_file_path
@@ -36,7 +28,7 @@ phosphosite_col = yaml_params$panoply_mimp$phosphosite_col
 protein_id_col = yaml_params$panoply_mimp$protein_id_col
 mutation_AA_change_colname = yaml_params$panoply_mimp$mutation_AA_change_colname
 mutation_type_col = yaml_params$panoply_mimp$mutation_type_col
-patient_id_col = yaml_params$panoply_mimp$patient_id_col 
+sample_id_col = yaml_params$panoply_mimp$sample_id_col 
 transcript_id_col = yaml_params$panoply_mimp$transcript_id_col
 
 ## phospho file column names - can add other options as we add new search engines
@@ -78,14 +70,14 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
                             nseqs = as.numeric(),
                             prob = as.numeric(),
                             effect = as.character(),
-                            patient_id = as.character())
+                            sample_id = as.character())
   
   gain_STY_all = data.frame(protein_id = as.character(),
                             mutation = as.character(),
-                            patient_id = as.character())
+                            sample_id = as.character())
   lose_STY_all = data.frame(protein_id = as.character(),
                             mutation = as.character(),
-                            patient_id = as.character())
+                            sample_id = as.character())
   
   AA_mismatch_all = data.frame(protein_id = as.character(),
                                mutation = as.character(),
@@ -93,7 +85,7 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
                                mutation_reference_AA = as.character(),
                                fasta_AA = as.character())
   
-  # Algorithm to run MIMP on whole dataset, patient-wise
+  # Algorithm to run MIMP on whole dataset, sample-wise
   for (i in phospho_cid){
     
     dir.create(file.path("results_by_sample", i))
@@ -105,8 +97,8 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
     dir.create(sample_results_path)
     dir.create(sample_mutinfo_path)
     
-    # select patient-specific mutation entries
-    mut_i = mut_data[which(grepl(i,mut_data[, patient_id_col])),]
+    # select sample-specific mutation entries
+    mut_i = mut_data[which(grepl(i,mut_data[, sample_id_col])),]
     write.csv(mut_i, file.path(sample_mutinfo_path, paste0(i, "_mutation_data_all.csv")), row.names = FALSE)
     
     if(dim(mut_i)[1] > 0){
@@ -136,7 +128,7 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
         write.csv(prot_not_in_fasta, file.path(sample_mutinfo_path, paste0(i, "_phospho_identifiers_not_in_fasta.csv")), row.names = FALSE)
       }
       
-      # Run MIMP (patient-specific)
+      # Run MIMP (sample-specific)
       results_i = mimp(muts = df_mut, seqs = seqdata, psites = df_phospho, display.results = TRUE)
       
       if (!is.null(results_i)){
@@ -149,7 +141,7 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
         
         results_i = results_i %>%
           distinct() %>%
-          mutate(patient_id = i) %>%
+          mutate(sample_id = i) %>%
           dplyr::rename(kinase_pwm = pwm,
                         kinase_pwm_fam = pwm_fam,
                         protein_id = gene,
@@ -216,8 +208,8 @@ run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
                     mut_data_path, ids_path, mutation_type_col, transcript_id_col, 
                     phosphosite_col, mutation_AA_change_colname){
 
-  dir.create("results_dir")
-  setwd("results_dir")
+  dir.create("mimp_results_dir")
+  setwd("mimp_results_dir")
   dir.create("results_by_sample")
 
   # Loading NP data, different for different datatypes
