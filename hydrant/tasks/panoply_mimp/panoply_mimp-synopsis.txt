@@ -1,0 +1,1 @@
+Analysis method for predicting impact of mutations on kinase phosphorylation using MIMP algorithm
