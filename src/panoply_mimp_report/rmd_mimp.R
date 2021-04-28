@@ -3,24 +3,21 @@
 # tar_file  - URL of tar file created by task panoply_mimp
 # output_prefix - prefix to be used for naming html file
 
-# args = commandArgs(TRUE)
-# 
-# tar_file = as.character(args[1])
-# output_prefix = as.character(args[2])
+args = commandArgs(TRUE)
 
-setwd("G:/Shared drives/Proteomics_LabMembers/LabMembers/Karen/MIMP_results/results_dir_brca/")
-output_prefix = "brca"
+tar_file = as.character(args[1])
+output_prefix = as.character(args[2])
 
 library(yaml)
 library(rmarkdown)
 library(stringr)
 library(dplyr)
 
-rmd_mimp = function(#tar_file, 
+rmd_mimp = function(tar_file, 
                     output_prefix){
   
-  # # extract files from tarball
-  # untar(tar_file)
+  # extract files from tarball
+  untar(tar_file)
   
   # begin writing rmd
   rmd = paste0('---
@@ -270,5 +267,5 @@ No amino acid mismatches between mutation reference and fasta sequence input.
   
 }
 
-rmd_mimp(#tar_file,
+rmd_mimp(tar_file,
   output_prefix)
