@@ -122,13 +122,10 @@ panoply_mimp:
   search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
   phosphosite_col: NULL                         # if search_engine = "other," provide name of column in phospho row metadata that indicates phosphosite position
   protein_id_col: NULL                          # if search_engine = "other," provide name of column in phospho row metadata that indicates protein identifier/accession number
-  # should these be required input or stay in the yaml with defaults?
   mutation_AA_change_colname: "Protein_Change"  # name of column in mutation MAF file that indicates amino acid change due to mutation
   mutation_type_col: "Variant_Classification"   # name of column in mutation MAF file that indicates type of mutation (aka missense)
   patient_id_col: "Tumor_Sample_Barcode"        # name of column in mutation MAF file that indicates patient/sample ID 
   transcript_id_col: "refseq_mrna_id"           # name of column in mutation MAF file that indicates transcript identifier
-
-
 
 panoply_ptm_normalization:
   accession_number_colname: 'accession_number'
