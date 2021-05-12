@@ -657,6 +657,7 @@ check_mimp_params <- function(opt, yaml){
   if (!is.null(opt$mimp_transcript_id_col)){
     yaml$panoply_mimp$transcript_id_col <- opt$mimp_transcript_id_col
   }
+  return(yaml)
 }
 
 # Checks all parameters (maybe use for final output yaml for whole pipeline?)
