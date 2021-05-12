@@ -130,7 +130,7 @@ option_list <- list(
   make_option(c("--mimp_protein_id_col"), dest = 'mimp_protein_id_col', help = "mimp_protein_id_col"),
   make_option(c("--mimp_mutation_AA_change_colname"), type = "character", dest = 'mimp_mutation_AA_change_colname', help = "mimp_mutation_AA_change_colname"),
   make_option(c("--mimp_mutation_type_col"), type = "character", dest = 'mimp_mutation_type_col', help = "mimp_mutation_type_col"),
-  make_option(c("--mimp_patient_id_col"), type = "character", dest = 'mimp_patient_id_col', help = "mimp_patient_id_col"),
+  make_option(c("--mimp_sample_id_col"), type = "character", dest = 'mimp_sample_id_col', help = "mimp_sample_id_col"),
   make_option(c("--mimp_transcript_id_col"), type = "character", dest = 'mimp_transcript_id_col', help = "mimp_transcript_id_col")
 
 )
@@ -651,8 +651,8 @@ check_mimp_params <- function(opt, yaml){
   if (!is.null(opt$mimp_mutation_type_col)){
     yaml$panoply_mimp$mutation_type_col <- opt$mimp_mutation_type_col
   }
-  if (!is.null(opt$mimp_patient_id_col)){
-    yaml$panoply_mimp$patient_id_col <- opt$mimp_patient_id_col
+  if (!is.null(opt$mimp_sample_id_col)){
+    yaml$panoply_mimp$sample_id_col <- opt$mimp_sample_id_col
   }
   if (!is.null(opt$mimp_transcript_id_col)){
     yaml$panoply_mimp$transcript_id_col <- opt$mimp_transcript_id_col
