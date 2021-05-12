@@ -285,10 +285,12 @@ generate_mimp_heatmap = function(full_results, groups_file_path, groups_file_Sam
     rename_(kinase = "kinase_pwm") %>%
     filter(!is.na(log_ratio)) %>%
     mutate(kinase_gene_mut = paste(kinase, protein_id, mutation, sep = "_"))
-  
-  #generate kinase-level heatmap
-  mimp_heatmap_function(full_results_edit, "kinase", groups_file_path, groups_file_SampleID_column)
-  
-  #generate kinase + mutation level heatmap
-  mimp_heatmap_function(full_results_edit, "kinase_gene_mut", groups_file_path, groups_file_SampleID_column)
+  if (nrow(full_results_edit)>0){
+    #generate kinase-level heatmap
+    mimp_heatmap_function(full_results_edit, "kinase", groups_file_path, groups_file_SampleID_column)
+    
+    #generate kinase + mutation level heatmap
+    mimp_heatmap_function(full_results_edit, "kinase_gene_mut", groups_file_path, groups_file_SampleID_column)
+  }
+
 }

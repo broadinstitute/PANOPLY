@@ -232,7 +232,9 @@ run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
                                    phosphosite_col, mutation_AA_change_colname)
 
   # create heatmap of predicted kinases results
-  generate_mimp_heatmap(heatmap_df, groups_file_path, groups_file_SampleID_column)
+  if(nrow(heatmap_df)>0){
+    generate_mimp_heatmap(heatmap_df, groups_file_path, groups_file_SampleID_column)
+  }
   
   return(heatmap_df)
 }
