@@ -11,7 +11,6 @@ task panoply_mimp {
     String output_prefix
 
     File? groups_file_path
-	String? groups_file_SampleID_column
 	String? search_engine
 	String? phosphosite_col
 	String? protein_id_col
@@ -23,22 +22,19 @@ task panoply_mimp {
     command {
         set -euo pipefail
 
-        ## this should be uncommented once the parameter manager is updated
-        # /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
-        # --module mimp \
-        # --master_yaml ${master_yaml} \
-        # ${"--mimp_groups_file_path " + groups_file_path} \
-        # ${"--mimp_groups_file_SampleID_column " + groups_file_SampleID_column} \
-        # ${"--mimp_search_engine " + search_engine} \
-        # ${"--mimp_phosphosite_col " + phosphosite_col} \
-        # ${"--mimp_protein_id_col " + protein_id_col} \
-        # ${"--mimp_mutation_AA_change_colname " + mutation_AA_change_colname} \
-        # ${"--mimp_mutation_type_col " + mutation_type_col} \
-        # ${"--mimp_sample_id_col " + sample_id_col} \
-        # ${"--mimp_transcript_id_col " + transcript_id_col}
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+        --module mimp \
+        --master_yaml ${master_yaml} \
+        ${"--mimp_groups_file_path " + groups_file_path} \
+        ${"--mimp_search_engine " + search_engine} \
+        ${"--mimp_phosphosite_col " + phosphosite_col} \
+        ${"--mimp_protein_id_col " + protein_id_col} \
+        ${"--mimp_mutation_AA_change_colname " + mutation_AA_change_colname} \
+        ${"--mimp_mutation_type_col " + mutation_type_col} \
+        ${"--mimp_sample_id_col " + sample_id_col} \
+        ${"--mimp_transcript_id_col " + transcript_id_col}
 
-		## when parameter manager is updated, change "${master_yaml}" to "final_output_params.yaml"
-		/usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "${master_yaml}"
+		/usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml"
 
 		tar -czvf "${output_prefix}_mimp_output.tar" mimp_results_dir
 
