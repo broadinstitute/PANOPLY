@@ -59,7 +59,7 @@ and detailed documentation of the panoply_mimp module can be found here (insert 
     rmd = paste0(rmd, '\n
 ### Full MIMP results
 
-**Table**: list of all mutations predicted by MIMP to cause kinase rewiring events in each patient. Note that some mutations may affect multiple kinases, and some kinase activity may be affected by multiple mutations.
+**Table**: list of all mutations predicted by MIMP to cause kinase rewiring events in each sample. Note that some mutations may affect multiple kinases, and some kinase activity may be affected by multiple mutations.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("kinase_list_edited.Rdata")
 library(DT)
@@ -119,24 +119,24 @@ A phosphorylation-related SNV (pSNV) is defined as an SNV that occurs within +/-
 
                ')
   
-  pSNV_tab = data.frame(patient_id = as.character(),
+  pSNV_tab = data.frame(sample_id = as.character(),
                         num_mut = as.numeric(),
                         num_pSNV = as.numeric(),
                         num_pSNV_remove_psite = as.numeric(),
                         num_pSNV_kinase_rewiring = as.numeric())
-  muts_df = data.frame(patient_id = as.character(),
+  muts_df = data.frame(sample_id = as.character(),
                       num_muts = as.numeric())
   for (sample in list.dirs("mimp_results_dir/results_by_sample/", recursive = FALSE, full.names = FALSE)){
     if (file.exists(file.path("mimp_results_dir", "results_by_sample", sample, "mimp_input", paste0(sample, "_mutation_mimp_input.csv")))){
       mut = read.csv(file.path("mimp_results_dir", "results_by_sample", sample, "mimp_input", paste0(sample, "_mutation_mimp_input.csv")))
-      mut_sample = data.frame(patient_id = sample,
+      mut_sample = data.frame(sample_id = sample,
                               num_muts = as.numeric(nrow(mut)))
       muts_df = rbind(muts_df, mut_sample)
     }
 
     if (length(which(grepl("kinase_rewiring", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"))))) == 1){
       pSNV = read.csv(grep("kinase_rewiring", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"), full.names = T), value = T)) 
-      pSNV_sample = data.frame(patient_id = sample,
+      pSNV_sample = data.frame(sample_id = sample,
                                num_mut = as.numeric(nrow(mut)),
                                num_pSNV = as.numeric(nrow(pSNV)),
                                num_pSNV_remove_psite = as.numeric(length(which(pSNV$mut_distance_from_phosphosite == 0))),
@@ -145,7 +145,7 @@ A phosphorylation-related SNV (pSNV) is defined as an SNV that occurs within +/-
       
     } else if (length(which(grepl("pSNV_mutations", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"))))) == 1) {
       pSNV = read.csv(grep("pSNV", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"), full.names = T), value = T))
-      pSNV_sample = data.frame(patient_id = sample,
+      pSNV_sample = data.frame(sample_id = sample,
                                num_mut = as.numeric(nrow(mut)),
                                num_pSNV = as.numeric(nrow(pSNV)),
                                num_pSNV_remove_psite = as.numeric(length(which(pSNV$mut_distance_from_phosphosite == 0))),
@@ -185,7 +185,7 @@ datatable(pSNV_tab, rownames = FALSE)
 
 *Column name key*:
 
-* patient_id = sample identifier 
+* sample_id = sample identifier 
 * num_mut = total number of mutations
 * num_pSNV = number of pSNVs
 * num_pSNV_remove_psite = number of pSNVs that remove a central phosphosite STY residue, causing loss of a phosphosite
@@ -204,7 +204,7 @@ No phosphorylation-related SNVs detected in any samples.
   if (file.exists("mimp_results_dir/all_mismatchedAA_mutation_vs_fasta.csv")){
     
     mismatches = read.csv("mimp_results_dir/all_mismatchedAA_mutation_vs_fasta.csv") %>%
-      group_by(patient_id) %>% 
+      group_by(sample_id) %>% 
       count(name = "num_mismatch") %>%
       mutate(num_mismatch = as.numeric(num_mismatch)) %>%
       left_join(muts_df) %>%
@@ -243,7 +243,7 @@ datatable(mismatches, rownames = FALSE)
 
 *Column name key*:
 
-* patient_id = sample identifier
+* sample_id = sample identifier
 * num_mismatch = number of mutations with mismatches between mutation reference and fasta sequence
 * num_muts = total number of mutations
 * percent_mismatch = percent of total mutations that are mismatched (unit = %)
