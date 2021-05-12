@@ -44,8 +44,8 @@ and detailed documentation of the panoply_mimp module can be found here (insert 
 ## MIMP results: predicted kinase rewiring
               ')
   
-  if (file.exists("results_dir/mimp_output_kinase_rewiring_events_all.csv")){
-    kinase_list = read.csv("results_dir/mimp_output_kinase_rewiring_events_all.csv") %>%
+  if (file.exists("mimp_results_dir/mimp_output_kinase_rewiring_events_all.csv")){
+    kinase_list = read.csv("mimp_results_dir/mimp_output_kinase_rewiring_events_all.csv") %>%
       mutate(score_wt = signif(as.numeric(score_wt), 3)) %>%
       mutate(score_mt = signif(as.numeric(score_mt), 3)) %>%
       mutate(log_ratio = signif(as.numeric(log_ratio), 3)) %>%
@@ -84,16 +84,16 @@ For more detailed description of the MIMP output values, please see the [MIMP he
 **Figure**: Heatmap depicting all predicted kinase rewiring events due to missense mutations. 
 Each row represents a specific point mutation in a given gene/protein id and the predicted kinase it affects.
 Heatmap values correspond to the log ratio of mutation/wild-type scores for a given kinase+gene+mutation combination.
-Note: row names may not be annotated if there are more than 100 altered kinases predicted. See complete values underlying this heatmap at results_dir/kinase_rewiring_events_matrix_kinase_gene_mut_level.csv.
+Note: row names may not be annotated if there are more than 100 altered kinases predicted. See complete values underlying this heatmap at mimp_results_dir/kinase_rewiring_events_matrix_kinase_gene_mut_level.csv.
                  
-![](results_dir/mimp_results_predicted_kinase_rewiring_kinase_gene_mut_level_heatmap.png)
+![](mimp_results_dir/mimp_results_predicted_kinase_rewiring_kinase_gene_mut_level_heatmap.png)
 
 
 \n
 ### Overall altered kinase activity due to missense mutations
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-kinases = read.csv("results_dir/kinase_rewiring_events_matrix_kinase_level.csv", row.names = 1)
+kinases = read.csv("mimp_results_dir/kinase_rewiring_events_matrix_kinase_level.csv", row.names = 1)
 ```
 **Summary**: `r dim(kinases)[1]` kinases with altered activity due to mutations across `r dim(kinases)[2]` samples.
 
@@ -101,9 +101,9 @@ kinases = read.csv("results_dir/kinase_rewiring_events_matrix_kinase_level.csv",
 **Figure**: Heatmap depicting overall altered kinase activity in samples with predicted kinase rewiring events due to missense mutations. 
 Heatmap values correspond to the log ratio of mutation/wild-type scores for a given kinase.
 If a given kinase\'s activity was predicted to be affected by several mutations, that kinase is represented by its maximum absolute value log ratio. 
-Note: row names may not be annotated if there are more than 100 altered kinases predicted. See complete values underlying this heatmap at results_dir/kinase_rewiring_events_matrix_kinase_level.csv.
+Note: row names may not be annotated if there are more than 100 altered kinases predicted. See complete values underlying this heatmap at mimp_results_dir/kinase_rewiring_events_matrix_kinase_level.csv.
                  
-![](results_dir/mimp_results_predicted_kinase_rewiring_kinase_level_heatmap.png)
+![](mimp_results_dir/mimp_results_predicted_kinase_rewiring_kinase_level_heatmap.png)
                 ')
 
 
@@ -126,16 +126,16 @@ A phosphorylation-related SNV (pSNV) is defined as an SNV that occurs within +/-
                         num_pSNV_kinase_rewiring = as.numeric())
   muts_df = data.frame(patient_id = as.character(),
                       num_muts = as.numeric())
-  for (sample in list.dirs("results_dir/results_by_sample/", recursive = FALSE, full.names = FALSE)){
-    if (file.exists(file.path("results_dir", "results_by_sample", sample, "mimp_input", paste0(sample, "_mutation_mimp_input.csv")))){
-      mut = read.csv(file.path("results_dir", "results_by_sample", sample, "mimp_input", paste0(sample, "_mutation_mimp_input.csv")))
+  for (sample in list.dirs("mimp_results_dir/results_by_sample/", recursive = FALSE, full.names = FALSE)){
+    if (file.exists(file.path("mimp_results_dir", "results_by_sample", sample, "mimp_input", paste0(sample, "_mutation_mimp_input.csv")))){
+      mut = read.csv(file.path("mimp_results_dir", "results_by_sample", sample, "mimp_input", paste0(sample, "_mutation_mimp_input.csv")))
       mut_sample = data.frame(patient_id = sample,
                               num_muts = as.numeric(nrow(mut)))
       muts_df = rbind(muts_df, mut_sample)
     }
 
-    if (length(which(grepl("kinase_rewiring", list.files(file.path("results_dir", "results_by_sample", sample, "mutation_info"))))) == 1){
-      pSNV = read.csv(grep("kinase_rewiring", list.files(file.path("results_dir", "results_by_sample", sample, "mutation_info"), full.names = T), value = T)) 
+    if (length(which(grepl("kinase_rewiring", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"))))) == 1){
+      pSNV = read.csv(grep("kinase_rewiring", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"), full.names = T), value = T)) 
       pSNV_sample = data.frame(patient_id = sample,
                                num_mut = as.numeric(nrow(mut)),
                                num_pSNV = as.numeric(nrow(pSNV)),
@@ -143,8 +143,8 @@ A phosphorylation-related SNV (pSNV) is defined as an SNV that occurs within +/-
                                num_pSNV_kinase_rewiring = as.numeric(length(which(!is.na(pSNV$kinase_rewiring_event)))))
       pSNV_tab = rbind(pSNV_tab, pSNV_sample)
       
-    } else if (length(which(grepl("pSNV_mutations", list.files(file.path("results_dir", "results_by_sample", sample, "mutation_info"))))) == 1) {
-      pSNV = read.csv(grep("pSNV", list.files(file.path("results_dir", "results_by_sample", sample, "mutation_info"), full.names = T), value = T))
+    } else if (length(which(grepl("pSNV_mutations", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"))))) == 1) {
+      pSNV = read.csv(grep("pSNV", list.files(file.path("mimp_results_dir", "results_by_sample", sample, "mutation_info"), full.names = T), value = T))
       pSNV_sample = data.frame(patient_id = sample,
                                num_mut = as.numeric(nrow(mut)),
                                num_pSNV = as.numeric(nrow(pSNV)),
@@ -193,7 +193,7 @@ datatable(pSNV_tab, rownames = FALSE)
 
 For a complete list of pSNVs within each sample, please see the
 pSNV_mutations_within_7AA_of_phosphosite.csv files located at 
-results_dir/results_by_sample/[*sample name*]/mutation_info in the MIMP output tarball.
+mimp_results_dir/results_by_sample/[*sample name*]/mutation_info in the MIMP output tarball.
                  ')
   } else {
     rmd = paste0(rmd, '\n
@@ -201,9 +201,9 @@ No phosphorylation-related SNVs detected in any samples.
                  ')
   }
   
-  if (file.exists("results_dir/all_mismatchedAA_mutation_vs_fasta.csv")){
+  if (file.exists("mimp_results_dir/all_mismatchedAA_mutation_vs_fasta.csv")){
     
-    mismatches = read.csv("results_dir/all_mismatchedAA_mutation_vs_fasta.csv") %>%
+    mismatches = read.csv("mimp_results_dir/all_mismatchedAA_mutation_vs_fasta.csv") %>%
       group_by(patient_id) %>% 
       count(name = "num_mismatch") %>%
       mutate(num_mismatch = as.numeric(num_mismatch)) %>%
@@ -218,7 +218,7 @@ No phosphorylation-related SNVs detected in any samples.
 
 *Please note that mutations mismatched with the input fasta sequence are removed from 
 MIMP analysis. For a full table showing mismatches in each sample, 
-please see results_dir/all_mismatchedAA_mutation_vs_fasta.csv.*
+please see mimp_results_dir/all_mismatchedAA_mutation_vs_fasta.csv.*
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("mismatches_table.Rdata")
