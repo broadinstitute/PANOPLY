@@ -47,7 +47,7 @@ if (search_engine == "SpectrumMill"){
 }
 
 # source helper functions
-source("C:/Users/karen/PhosphoDIA/Github/PANOPLY/src/panoply_mimp/mimp_helper_functions.R")
+source("/prot/proteomics/Projects/PGDAC/src/mimp_helper_functions.R")
 
 run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_mat, 
                                phosphosite_col, mutation_AA_change_colname){
