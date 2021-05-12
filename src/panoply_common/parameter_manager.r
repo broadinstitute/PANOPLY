@@ -122,7 +122,17 @@ option_list <- list(
   make_option(c("--accession_number_colname"), type = "character", dest = 'accession_number_colname', help = "column with accession number (for proteome or PTM data)"),
   make_option(c("--accession_numbers_colname"), type = "character", dest = 'accession_numbers_colname', help = "column with list of accession numbers (for subgroup)"),
   make_option(c("--accession_numbers_separator"), type = "character", dest = 'accession_numbers_separator', help = "separator used in accession numbers column"),
-  make_option(c("--score_colname"), type = "character", dest = 'score_colname', help = "column with protein score")
+  make_option(c("--score_colname"), type = "character", dest = 'score_colname', help = "column with protein score"),
+  # mimp_module:
+  make_option(c("--mimp_groups_file_path"), dest = 'mimp_groups_file_path', help = "mimp_groups_file_path"),
+  make_option(c("--mimp_search_engine"), type = "character", dest = 'mimp_search_engine', help = "mimp_search_engine"),
+  make_option(c("--mimp_phosphosite_col"), dest = 'mimp_phosphosite_col', help = "mimp_phosphosite_col"),
+  make_option(c("--mimp_protein_id_col"), dest = 'mimp_protein_id_col', help = "mimp_protein_id_col"),
+  make_option(c("--mimp_mutation_AA_change_colname"), type = "character", dest = 'mimp_mutation_AA_change_colname', help = "mimp_mutation_AA_change_colname"),
+  make_option(c("--mimp_mutation_type_col"), type = "character", dest = 'mimp_mutation_type_col', help = "mimp_mutation_type_col"),
+  make_option(c("--mimp_patient_id_col"), type = "character", dest = 'mimp_patient_id_col', help = "mimp_patient_id_col"),
+  make_option(c("--mimp_transcript_id_col"), type = "character", dest = 'mimp_transcript_id_col', help = "mimp_transcript_id_col")
+
 )
 
 
@@ -152,6 +162,7 @@ p_load('yaml')
 # mo_nmf
 # ssgsea_projection
 # ptm_normalization
+# mimp
 
 ### FUNCTIONS:
 
@@ -620,6 +631,34 @@ check_association_report_params <- function(opt, yaml){
   return(yaml)
 }
 
+#mimp:
+check_mimp_params <- function(opt, yaml){
+  if (!is.null(opt$mimp_groups_file_path)){
+    yaml$panoply_mimp$groups_file_path <- opt$mimp_groups_file_path
+  }
+  if (!is.null(opt$mimp_search_engine)){
+    yaml$panoply_mimp$search_engine <- opt$mimp_search_engine
+  }
+  if (!is.null(opt$mimp_phosphosite_col)){
+    yaml$panoply_mimp$phosphosite_col <- opt$mimp_phosphosite_col
+  }
+  if (!is.null(opt$mimp_protein_id_col)){
+    yaml$panoply_mimp$protein_id_col <- opt$mimp_protein_id_col
+  }
+  if (!is.null(opt$mimp_mutation_AA_change_colname)){
+    yaml$panoply_mimp$mutation_AA_change_colname <- opt$mimp_mutation_AA_change_colname
+  }
+  if (!is.null(opt$mimp_mutation_type_col)){
+    yaml$panoply_mimp$mutation_type_col <- opt$mimp_mutation_type_col
+  }
+  if (!is.null(opt$mimp_patient_id_col)){
+    yaml$panoply_mimp$patient_id_col <- opt$mimp_patient_id_col
+  }
+  if (!is.null(opt$mimp_transcript_id_col)){
+    yaml$panoply_mimp$transcript_id_col <- opt$mimp_transcript_id_col
+  }
+}
+
 # Checks all parameters (maybe use for final output yaml for whole pipeline?)
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
@@ -640,6 +679,7 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_ssgsea_projection_params(opt, yaml)
   yaml <- check_blacksheep_params(opt, yaml)
   yaml <- check_ptm_normalization_params(opt, yaml)
+  yaml <- check_mimp_params(opt, yaml)
   return(yaml)
 }
 
@@ -846,6 +886,10 @@ parse_command_line_parameters <- function(opt){
     
   }else if (opt$module == 'ptm_normalization' & check_if_any_command_line(opt)){
     yaml <- check_ptm_normalization_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+
+  }else if (opt$module == 'mimp' & check_if_any_command_line(opt)){
+    yaml <- check_mimp_params(opt,yaml)
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'pipeline'){
