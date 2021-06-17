@@ -19,6 +19,7 @@
     * [panoply_mo_nmf](./Data-Analysis-Modules%3A-panoply_mo_nmf)
     * [panoply_rna_protein_correlation](./Data-Analysis-Modules%3A-panoply_rna_protein_correlation)
     * [panoply_ssgsea](./Data-Analysis-Modules%3A-panoply_ssgsea)
+    * [panoply_quilts](./Data-Analysis-Modules%3A-panoply_quilts)
   * [Report Modules](./Report-Modules)
     * [panoply_association_report](./Report-Modules%3A-panoply_association_report)
     * [panoply_blacksheep_report](./Report-Modules%3A-panoply_blacksheep_report)

@@ -11,6 +11,7 @@ The following links provide documentation on each PANOPLY Data Analysis Module:
 * [panoply_mo_nmf](./Data-Analysis-Modules%3A-panoply_mo_nmf)
 * [panoply_rna_protein_correlation](./Data-Analysis-Modules%3A-panoply_rna_protein_correlation)
 * [panoply_ssgsea](./Data-Analysis-Modules%3A-panoply_ssgsea)
+* [panoply_quilts](./Data-Analysis-Modules%3A-panoply_quilts)
 
 Each data analysis module is run in its own (appropriately named) subdirectory that contains results and intermediate files generate during execution, along with code.
 
