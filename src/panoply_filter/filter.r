@@ -42,13 +42,22 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
       genesym.col <- genesym.col[1]
       warning ( paste ('Identified multiple gene symbol columns. Using', genesym.col) )
     }
-    ds@rdesc [,'GeneSymbol'] <- as.character (ds@rdesc [,genesym.col])
+    ds@rdesc [,gene.id.col] <- as.character (ds@rdesc [,genesym.col])
+  } else if (input.ver == 3 && any (grepl (gene.id.col, colnames (ds@rdesc), ignore.case=TRUE))) {
+    # gene symbol is already present as an annotation column with name given in yaml parameters file
+    genesym.col <- grep (gene.id.col, colnames (ds@rdesc), ignore.case=TRUE)
+    if (length (genesym.col) > 1) {
+      genesym.col <- genesym.col[1]
+      warning ( paste ('Identified multiple gene symbol columns. Using', genesym.col) )
+    }
+    ds@rdesc [,gene.id.col] <- as.character (ds@rdesc [,genesym.col])
+
   } else {
     # map protein id to gene symbols
     map <- read.delim ( file.path (data.dir, protein.gene.map) )
     id.table <- left_join ( cbind (ds@rdesc, refseq_protein=sub ("(.*?)\\..?", "\\1", ds@rdesc[,'id'])), map,
                             by='refseq_protein' )
-    ds@rdesc [,'GeneSymbol'] <- as.character (id.table [,'gene_name'])
+    ds@rdesc [,gene.id.col] <- as.character (id.table [,'gene_name'])
   }  
   
   

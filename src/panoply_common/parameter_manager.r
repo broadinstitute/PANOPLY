@@ -724,6 +724,7 @@ write_custom_cmap_config <- function(yaml){
                   paste('mean.rankpt.threshold', '<-', yaml$panoply_cmap_analysis$mean_rankpt_threshold),
                   paste('cmap.fdr', '<-', yaml$panoply_cmap_analysis$cmap_fdr),
                   paste('alpha', '<-', yaml$panoply_cmap_analysis$alpha),
+                  paste('gene.id.col', '<-', yaml$global_parameters$gene_mapping$gene_id_col),
                   sep = "\n")
   write(output, file.path(custom_config_path, "cmap-config-custom.r"))
   write(output, 'cmap-config-custom.r')

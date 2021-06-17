@@ -12,7 +12,7 @@ out.prefix <- rna.output.prefix
 
 
 d <- parse.gctx (rna.data.file)
-d@rdesc[,'GeneSymbol'] <- d@rdesc [,'Description'] <- d@rdesc [,'id']   # make id, Description and GeneSymbol identical
+d@rdesc[,gene.id.col] <- d@rdesc [,'Description'] <- d@rdesc [,'id']   # make id, Description and gene.id.col identical
 samples <- d@cid
 
 if (file.exists(expt.design.file)) {

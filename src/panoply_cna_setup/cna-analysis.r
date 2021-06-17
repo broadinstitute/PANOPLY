@@ -33,7 +33,7 @@ pome.file <- toString (args[6])
 
 read.matrix <- function (f) {
   d <- read.csv (f)
-  rownames (d) <- d[,'GeneSymbol']
+  rownames (d) <- d[,gene.id.col] #replaced 'GeneSymbol' with gene.id.col
   return (d)
 }
 

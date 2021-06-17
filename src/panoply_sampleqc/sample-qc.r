@@ -34,12 +34,12 @@ cna <- read ( sprintf ('%s/cna-matrix.csv', harmonize.dir), 'CNA')
 cis.cor.file <- sprintf ('%s/proteome-mrna-cor.tsv', rna.dir)
 if (file.exists(cis.cor.file)) {
   cis.cor <- read.delim (cis.cor.file)
-  rownames (cis.cor) <- cis.cor [,'geneSymbol']
+  rownames (cis.cor) <- cis.cor [,gene.id.col] #replaced 'geneSymbol' with gene.id.col
   genes <- intersect (intersect (rownames (cis.cor), rownames (pome)), intersect (rownames (cna), rownames(rna)))
   
   cis.cor <- cis.cor [ genes, ]
   keep <- cis.cor [,'correlation'] > cor.threshold & !is.na (cis.cor[,'correlation']) 
-  keep.genes <- cis.cor [keep ,'geneSymbol']
+  keep.genes <- cis.cor [keep ,gene.id.col] #replaced 'geneSymbol' with gene.id.col
   
   cna.cx <- cna [keep, ]
   rna.cx <- rna [keep, ]
