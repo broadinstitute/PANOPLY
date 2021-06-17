@@ -82,7 +82,7 @@ task quilts {
 	}
 
 	runtime {
-		docker : "broadcptacdev/quilts-test:latest"
+		docker : "broadcptacdev/panoply_quilts:latest"
 		memory : select_first ([memory, 12]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
 		cpu : select_first ([num_threads, 1]) + ""
