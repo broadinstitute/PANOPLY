@@ -72,7 +72,7 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
 
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
-normalize_global <- function (ptm, proteome, accession_number) {
+normalize_global <- function (ptm, proteome, accession_number, robust) {
   # warn if not all samples are matched
   matched.samples <- intersect (ptm@cid, proteome@cid)
   if (length(matched.samples) != length(ptm@cid)) {
@@ -83,7 +83,11 @@ normalize_global <- function (ptm, proteome, accession_number) {
   
   # fit global model
   print ("Fitting model...") 
-  model <- lm(value ~ value.prot, data = data)
+  if (robust) {
+    model <- rlm(value ~ value.prot, data = samples, na.action = na.exclude)
+  } else {
+    model <- lm(value ~ value.prot, data = samples, na.action = na.exclude)
+  }
   residuals <- residuals (model)
   results <- data.frame (data$id.x, data$id.y, residuals)
   colnames(results) <- c('id.x', 'id.y', 'residuals')
