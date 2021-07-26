@@ -35,22 +35,8 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
 {
   # import GCT files
   proteome <- parse_gctx(proteome.gct)
-  ptm <- parse_gctx(ptm.gct)
-
-  # Spectrum Mill specific (extensible to other search engines if function arguments are set appropriately):
-  # if PTM accession number does not have match in the proteome, will try to match all accession numbers
-  # for that site in the proteome. if there are multiple protein matches, it will pick
-  # the highest scoring one (if score column present) or the first one (if score column absent).
-  # if this does not result in a match, search is extended to include all proteome accession numbers.
-  # replaces value in the 'accession_number' column of the ptm GCT with the new
-  # match (duplicates original accession number column so those values are saved).
-  if (try.all.accession.numbers && !is.null (accession_numbers)) {
-    original_accession_number <- ptm@rdesc[,accession_number]
-    ptm@rdesc <- data.frame (ptm@rdesc, original_accession_number, stringsAsFactors = FALSE)
-    ptm@rdesc <- swap.accession.numbers (ptm@rdesc, proteome@rdesc, accession_number,
-                                         accession_numbers, accession_sep, score)
-  }
-  
+  temp_ptm <- parse_gctx(ptm.gct)
+  ptm <- match_ptm_to_proteome(temp_ptm, proteome, accession_number, accession_numbers, try.all.accession.numbers)
   
   # fits linear model and returns updated GCT
   if (method == "global") {
@@ -58,7 +44,6 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   } else if (method == "pairwise") {
     ptm.norm <- normalize_pairwise(ptm, proteome, accession_number, robust, use_all_samples, sample_groups, min_values_present)
   }
-  
   
   # writes and returns updated GCT
   file.prefix <- ifelse (!is.null (output.prefix), output.prefix,
@@ -159,7 +144,31 @@ normalize_pairwise <- function(ptm, proteome, accession_number, robust, use_all_
   return(ptm)
 }
 
-swap.accession.numbers <- function(ptm.rdesc, prot.rdesc, accession_number,
+### >>> HELPER FUNCTIONS BEGIN <<<
+
+match_ptm_to_proteome <- function(ptm,
+                                  proteome,
+                                  accession_number = "accession_number",
+                                  accession_numbers = "accession_numbers",
+                                  try.all.accession.numbers = FALSE) {
+  # Spectrum Mill specific (extensible to other search engines if function arguments are set appropriately):
+  # if PTM accession number does not have match in the proteome, will try to match all accession numbers
+  # for that site in the proteome. if there are multiple protein matches, it will pick
+  # the highest scoring one (if score column present) or the first one (if score column absent).
+  # if this does not result in a match, search is extended to include all proteome accession numbers.
+  # replaces value in the 'accession_number' column of the ptm GCT with the new
+  # match (duplicates original accession number column so those values are saved).
+  if (try.all.accession.numbers && !is.null(accession_numbers)) {
+    original_accession_number <- ptm@rdesc[,accession_number]
+    ptm@rdesc <- data.frame(ptm@rdesc, original_accession_number, stringsAsFactors = FALSE)
+    ptm@rdesc <- swap_accession_numbers(ptm@rdesc, proteome@rdesc, accession_number,
+                                        accession_numbers, accession_sep, score)
+  }
+  
+  return(ptm)
+}
+
+swap_accession_numbers <- function(ptm.rdesc, prot.rdesc, accession_number,
                                    accession_numbers, accession_sep, score)
 {
   # Matches ptm and proteome by accession number, and tries all possible ptm accession numbers if primary
@@ -189,7 +198,7 @@ swap.accession.numbers <- function(ptm.rdesc, prot.rdesc, accession_number,
   return(ptm.rdesc)
 }
 
-merge_ptm_prot_df <- function(ptm, proteome, accession_number) {
+merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_number") {
   ptm.melt <- melt_gct(ptm)
   prot.melt <- melt_gct(proteome)
   prot.melt.data.only <- data.frame(prot.melt$id.y, prot.melt[ , accession_number], prot.melt$value)
@@ -254,3 +263,103 @@ if (!interactive()) {
                  score=ifelse (score_col=="NULL", NULL, score_col),
                  ndigits=ndigits)
 }
+
+### >>> HELPER FUNCTIONS END <<<
+
+
+### >>> METRICS BEGIN <<<
+prot_ptm_corr_per_sample <- function(prot_gct_path, ptm_gct_path) {
+  prot <- parse_gctx(prot_gct_path)
+  temp_ptm <- parse_gctx(ptm_gct_path)
+  ptm <- match_ptm_to_proteome(temp_ptm, prot)
+  
+  combined_data <- merge_ptm_prot_df(ptm, prot)
+  corr_store <- list()
+  for (sample_name in unique(combined_data$id.y)) {
+    sample <- combined_data %>% filter(id.y == sample_name)
+    corr_store[sample_name] <- cor(sample$value.prot, sample$value, method = "pearson")
+  }
+  
+  return(corr_store)
+}
+
+ptm_corr_per_sample <- function(ptm_gct_path, ptm_normalized_gct_path) {
+  ptm <- parse_gctx(ptm_gct_path)
+  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
+  ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
+  ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value")]
+  
+  combined_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
+  colnames(combined_ptm) <- c("id.x", "id.y", "value", "value.norm")
+  
+  corr_store <- list()
+  for (sample_name in unique(combined_ptm$id.y)) {
+    sample <- combined_ptm %>% filter(id.y == sample_name)
+    corr_store[sample_name] <- cor(sample$value, sample$value.norm, method = "pearson")
+  }
+  
+  return(corr_store)
+}
+
+prot_ptm_corr_across_samples <- function(prot_gct_path, ptm_gct_path, use_all_samples = FALSE, sample_groups = c("06h", "24h", "96h"), min_values_present = 4) {
+  prot <- parse_gctx(prot_gct_path)
+  temp_ptm <- parse_gctx(ptm_gct_path)
+  ptm <- match_ptm_to_proteome(temp_ptm, prot)
+  
+  combined_data <- merge_ptm_prot_df(ptm, prot)
+  corr_store <- list()
+  
+  if (use_all_samples) {
+    sample_groups = c("")  # just so that it matches to everything
+  }
+  
+  for (ptm_id in unique(combined_data$id.x)) {
+    for (group in sample_groups) {
+      acr_samples <- combined_data %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
+      if (nrow(acr_samples) >=  min_values_present) {
+        corr <- cor(acr_samples$value.prot, acr_samples$value, method = "pearson")
+      } else {
+        corr <- NA
+      }
+      
+      store_id <- ifelse(group == "", ptm_id, paste0(ptm_id, " <", group, ">"))
+      corr_store[store_id] <- corr
+    }
+  }
+  
+  return(corr_store)
+}
+
+ptm_corr_per_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, use_all_samples = FALSE, sample_groups = c("06h", "24h", "96h"), min_values_present = 4) {
+  ptm <- parse_gctx(ptm_gct_path)
+  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
+  ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
+  ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value")]
+  
+  combined_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
+  colnames(combined_ptm) <- c("id.x", "id.y", "value", "value.norm")
+  corr_store <- list()
+  
+  if (use_all_samples) {
+    sample_groups = c("")  # just so that it matches to everything
+  }
+  
+  for (ptm_id in unique(combined_ptm$id.x)) {
+    for (group in sample_groups) {
+      acr_samples <- combined_ptm %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
+      if (nrow(acr_samples) >=  min_values_present) {
+        corr <- cor(acr_samples$value, acr_samples$value.norm, method = "pearson")
+      } else {
+        corr <- NA
+      }
+      
+      store_id <- ifelse(group == "", ptm_id, paste0(ptm_id, " <", group, ">"))
+      corr_store[store_id] <- corr
+    }
+  }
+  
+  return(corr_store)
+}
+
+### >>> METRICS END <<<
+
