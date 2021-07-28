@@ -18,6 +18,11 @@ p_load(cmapR)
 p_load(reshape)
 p_load(yaml)
 p_load(tidyr)
+p_load(MASS)  # rlm
+p_load(limma)
+
+source("panoply_ptm_normalization/helper.R")
+source("panoply_ptm_normalization/metrics.R")
 
 
 normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL, 
@@ -27,10 +32,12 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           accession_sep = "|",                     # separator for each accession number in accession_numbers
                           score = "scoreUnique",                   # column with protein scores
                           ndigits = 5,
-                          method = "global",                       # normalization method (options: global, pairwise)
-                          robust = FALSE,
+                          norm_method = "global",                       # normalization method (options: global, pairwise)
+                          lm_method = FALSE,
                           use_all_samples = TRUE,                  # pairwise: use all samples to build linear model for each PTM-protein pair
                           sample_groups = c("06h", "24h", "96h"),  # pairwise: if not use all samples, what subsamples to build lm for? 
+                          sample_groups_col = "pert_time",
+                          groups_as_covariate = TRUE,              # pairwise: use sample groups as a covariate and build one regression for samples across groups
                           min_values_present = 4)                  # pairwise: what least number of samples must contain both non-NA PTM and protein values
 {
   # import GCT files
@@ -39,10 +46,10 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   ptm <- match_ptm_to_proteome(temp_ptm, proteome, accession_number, accession_numbers, try.all.accession.numbers)
   
   # fits linear model and returns updated GCT
-  if (method == "global") {
-    ptm.norm <- normalize_global(ptm, proteome, accession_number, robust)
-  } else if (method == "pairwise") {
-    ptm.norm <- normalize_pairwise(ptm, proteome, accession_number, robust, use_all_samples, sample_groups, min_values_present)
+  if (norm_method == "global") {
+    ptm.norm <- normalize_global(ptm, proteome, accession_number, lm_method)
+  } else if (norm_method == "pairwise") {
+    ptm.norm <- normalize_pairwise(ptm, proteome, accession_number, lm_method, use_all_samples, sample_groups, sample_groups_col, groups_as_covariate, min_values_present)
   }
   
   # writes and returns updated GCT
@@ -57,7 +64,7 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
 
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
-normalize_global <- function (ptm, proteome, accession_number, robust) {
+normalize_global <- function (ptm, proteome, accession_number, lm_method) {
   # warn if not all samples are matched
   matched.samples <- intersect (ptm@cid, proteome@cid)
   if (length(matched.samples) != length(ptm@cid)) {
@@ -68,12 +75,12 @@ normalize_global <- function (ptm, proteome, accession_number, robust) {
   
   # fit global model
   print ("Fitting model...") 
-  if (robust) {
-    model <- rlm(value ~ value.prot, data = samples, na.action = na.exclude)
+  if (lm_method == "robust") {
+    model <- rlm(value ~ value.prot, data = data, na.action = na.exclude)
   } else {
-    model <- lm(value ~ value.prot, data = samples, na.action = na.exclude)
+    model <- lm(value ~ value.prot, data = data, na.action = na.exclude)
   }
-  residuals <- residuals (model)
+  residuals <- residuals(model)
   results <- data.frame (data$id.x, data$id.y, residuals)
   colnames(results) <- c('id.x', 'id.y', 'residuals')
   print ("Success.")
@@ -86,7 +93,7 @@ normalize_global <- function (ptm, proteome, accession_number, robust) {
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
 #' for each PTM-protein pair across selected or all samples
-normalize_pairwise <- function(ptm, proteome, accession_number, robust, use_all_samples, sample_groups, min_values_present) {
+normalize_pairwise <- function(ptm, proteome, accession_number, lm_method, use_all_samples, sample_groups, sample_groups_col, groups_as_covariate, min_values_present) {
   # warn if not all samples are matched
   matched.samples <- intersect (ptm@cid, proteome@cid)
   if (length(matched.samples) != length(ptm@cid)) {
@@ -94,11 +101,14 @@ normalize_pairwise <- function(ptm, proteome, accession_number, robust, use_all_
   }
   
   combined_data <- merge_ptm_prot_df(ptm, proteome, accession_number)
+  combined_data <- combined_data %>% filter(grepl(paste(sample_groups, collapse="|"), id.y))  # filter only groups of interest
   all_ptms <- unique(combined_data$id.x)
   sample_names <- combined_data$id.y
-  if (use_all_samples) {
+  if (use_all_samples | groups_as_covariate) {
     sample_groups = c("")  # just so that it matches to everything
   }
+  combined_data$treatment_group <- combined_data[[sample_groups_col]]  # create a variable indicating group
+  combined_data$treatment_group <- as.factor(combined_data$treatment_group)
   
   tot_num_regr <- length(all_ptms) * length(sample_groups)
   print(paste("Found", length(all_ptms), "PTM-protein pairs and", length(sample_groups),
@@ -121,14 +131,16 @@ normalize_pairwise <- function(ptm, proteome, accession_number, robust, use_all_
       samples <- group_data[group_data$id.x == ptm_site]
       
       if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_values_present) {
-        if (robust) {
-          model <- rlm(value ~ value.prot, data = samples, na.action = na.exclude)
+        if (groups_as_covariate) {
+          lm_design <- model.matrix(~ value.prot + treatment_group, data = samples)
         } else {
-          model <- lm(value ~ value.prot, data = samples, na.action = na.exclude)
+          lm_design <- model.matrix(~ value.prot, data = samples)
         }
+        model <- lmFit(samples$value, lm_design, method = lm_method)
         
         result <- samples[ , c("id.x", "id.y")]
-        result$residuals <- model$residuals
+        fitted_ptm_levels <- unlist(as.list(fitted(model)))
+        result$residuals <- samples$value - fitted_ptm_levels
         all_results <- rbind(all_results, result)
       } else {
         count_fail <- count_fail + 1
@@ -144,94 +156,6 @@ normalize_pairwise <- function(ptm, proteome, accession_number, robust, use_all_
   return(ptm)
 }
 
-### >>> HELPER FUNCTIONS BEGIN <<<
-
-match_ptm_to_proteome <- function(ptm,
-                                  proteome,
-                                  accession_number = "accession_number",
-                                  accession_numbers = "accession_numbers",
-                                  try.all.accession.numbers = FALSE) {
-  # Spectrum Mill specific (extensible to other search engines if function arguments are set appropriately):
-  # if PTM accession number does not have match in the proteome, will try to match all accession numbers
-  # for that site in the proteome. if there are multiple protein matches, it will pick
-  # the highest scoring one (if score column present) or the first one (if score column absent).
-  # if this does not result in a match, search is extended to include all proteome accession numbers.
-  # replaces value in the 'accession_number' column of the ptm GCT with the new
-  # match (duplicates original accession number column so those values are saved).
-  if (try.all.accession.numbers && !is.null(accession_numbers)) {
-    original_accession_number <- ptm@rdesc[,accession_number]
-    ptm@rdesc <- data.frame(ptm@rdesc, original_accession_number, stringsAsFactors = FALSE)
-    ptm@rdesc <- swap_accession_numbers(ptm@rdesc, proteome@rdesc, accession_number,
-                                        accession_numbers, accession_sep, score)
-  }
-  
-  return(ptm)
-}
-
-swap_accession_numbers <- function(ptm.rdesc, prot.rdesc, accession_number,
-                                   accession_numbers, accession_sep, score)
-{
-  # Matches ptm and proteome by accession number, and tries all possible ptm accession numbers if primary
-  # accession number doesn't have proteome match
-  prot.rdesc.expanded <- prot.rdesc %>% separate_rows(!!as.name (accession_numbers), sep=accession_sep)
-  
-  for (row in c(1:nrow(ptm.rdesc))) {
-    match <- which (prot.rdesc[,accession_number] == ptm.rdesc[row, accession_number])
-    if(length(match) == 0){
-      # first try to match ptm accession_numbers to protein primary ID
-      matches <- prot.rdesc[which(unlist (prot.rdesc[,accession_number]) %in% accession.numbers),]
-      
-      if (nrow(matches) >= 1) {
-        best_index <- ifelse (!is.null(score), which.max(matches[,score]), 1)
-        ptm.rdesc[row, accession_number] <- matches[best_index, accession_number]
-      } else {
-        # if the above fails, try to match ptm accession_numbers to all proteome accession_numbers
-        matches <- prot.rdesc.expanded[which(unlist(prot.rdesc.expanded[,accession_numbers]) %in% accession.numbers),]
-        if (nrow(matches) >= 1) {
-          best_index <- ifelse (!is.null(score), which.max(unlist (matches[,score])), 1)
-          ptm.rdesc[row, accession_number] <- matches[best_index,accession_number]
-        } 
-      }
-    }
-  }
-  
-  return(ptm.rdesc)
-}
-
-merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_number") {
-  ptm.melt <- melt_gct(ptm)
-  prot.melt <- melt_gct(proteome)
-  prot.melt.data.only <- data.frame(prot.melt$id.y, prot.melt[ , accession_number], prot.melt$value)
-  colnames(prot.melt.data.only) <- c("id.y", accession_number, "value.prot")
-  data <- merge (ptm.melt, prot.melt.data.only, by = c("id.y", accession_number))
-  
-  # print metrics
-  percent <- round(100 * nrow(data) / nrow(ptm.melt), digits = 1)
-  print(paste(nrow(data), " out of ", nrow(ptm.melt), " PTM peptides to be normalized", " (", percent, "%).", sep = ""))
-  
-  return(data)
-}
-
-update_gct <- function(ptm, results) {
-  results.mat <- result_unmelt(results)
-
-  ptm@rdesc <- ptm@rdesc[match(rownames(results.mat), ptm@rdesc$id), ]
-  ptm@cdesc <- ptm@cdesc[match(colnames(results.mat), ptm@cdesc$id), ]
-  ptm@rid <- rownames(results.mat)
-  ptm@cid <- colnames(results.mat)
-  ptm@mat <- results.mat
-
-  return(ptm)
-}
-
-result_unmelt <- function(res_df.melt) {
-  # compile results into matrix
-  results.df <- data.frame(reshape::cast(res_df.melt, id.x ~ id.y, value.var = residuals))
-  results.mat <- data.matrix(results.df[, c(2:ncol(results.df))])
-  rownames(results.mat) <- as.character (results.df$id.x)
-  
-  return(results.mat)
-}
 
 if (!interactive()) {
   ## call via command line
@@ -263,103 +187,4 @@ if (!interactive()) {
                  score=ifelse (score_col=="NULL", NULL, score_col),
                  ndigits=ndigits)
 }
-
-### >>> HELPER FUNCTIONS END <<<
-
-
-### >>> METRICS BEGIN <<<
-prot_ptm_corr_per_sample <- function(prot_gct_path, ptm_gct_path) {
-  prot <- parse_gctx(prot_gct_path)
-  temp_ptm <- parse_gctx(ptm_gct_path)
-  ptm <- match_ptm_to_proteome(temp_ptm, prot)
-  
-  combined_data <- merge_ptm_prot_df(ptm, prot)
-  corr_store <- list()
-  for (sample_name in unique(combined_data$id.y)) {
-    sample <- combined_data %>% filter(id.y == sample_name)
-    corr_store[sample_name] <- cor(sample$value.prot, sample$value, method = "pearson")
-  }
-  
-  return(corr_store)
-}
-
-ptm_corr_per_sample <- function(ptm_gct_path, ptm_normalized_gct_path) {
-  ptm <- parse_gctx(ptm_gct_path)
-  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
-  ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
-  ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value")]
-  
-  combined_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
-  colnames(combined_ptm) <- c("id.x", "id.y", "value", "value.norm")
-  
-  corr_store <- list()
-  for (sample_name in unique(combined_ptm$id.y)) {
-    sample <- combined_ptm %>% filter(id.y == sample_name)
-    corr_store[sample_name] <- cor(sample$value, sample$value.norm, method = "pearson")
-  }
-  
-  return(corr_store)
-}
-
-prot_ptm_corr_across_samples <- function(prot_gct_path, ptm_gct_path, use_all_samples = FALSE, sample_groups = c("06h", "24h", "96h"), min_values_present = 4) {
-  prot <- parse_gctx(prot_gct_path)
-  temp_ptm <- parse_gctx(ptm_gct_path)
-  ptm <- match_ptm_to_proteome(temp_ptm, prot)
-  
-  combined_data <- merge_ptm_prot_df(ptm, prot)
-  corr_store <- list()
-  
-  if (use_all_samples) {
-    sample_groups = c("")  # just so that it matches to everything
-  }
-  
-  for (ptm_id in unique(combined_data$id.x)) {
-    for (group in sample_groups) {
-      acr_samples <- combined_data %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
-      if (nrow(acr_samples) >=  min_values_present) {
-        corr <- cor(acr_samples$value.prot, acr_samples$value, method = "pearson")
-      } else {
-        corr <- NA
-      }
-      
-      store_id <- ifelse(group == "", ptm_id, paste0(ptm_id, " <", group, ">"))
-      corr_store[store_id] <- corr
-    }
-  }
-  
-  return(corr_store)
-}
-
-ptm_corr_per_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, use_all_samples = FALSE, sample_groups = c("06h", "24h", "96h"), min_values_present = 4) {
-  ptm <- parse_gctx(ptm_gct_path)
-  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
-  ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
-  ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value")]
-  
-  combined_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
-  colnames(combined_ptm) <- c("id.x", "id.y", "value", "value.norm")
-  corr_store <- list()
-  
-  if (use_all_samples) {
-    sample_groups = c("")  # just so that it matches to everything
-  }
-  
-  for (ptm_id in unique(combined_ptm$id.x)) {
-    for (group in sample_groups) {
-      acr_samples <- combined_ptm %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
-      if (nrow(acr_samples) >=  min_values_present) {
-        corr <- cor(acr_samples$value, acr_samples$value.norm, method = "pearson")
-      } else {
-        corr <- NA
-      }
-      
-      store_id <- ifelse(group == "", ptm_id, paste0(ptm_id, " <", group, ">"))
-      corr_store[store_id] <- corr
-    }
-  }
-  
-  return(corr_store)
-}
-
-### >>> METRICS END <<<
 
