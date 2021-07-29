@@ -19,6 +19,19 @@ p_load(yaml)
 p_load(tidyr)
 
 
+get_lm_design <- function(combined_data, groups_as_covariate = FALSE, interaction_term = FALSE) {
+  if (groups_as_covariate) {
+    if (interaction_term) {
+      lm_design <- model.matrix(~ value.prot + treatment_group + value.prot:treatment_group, combined_data)
+    } else {
+      lm_design <- model.matrix(~ value.prot + treatment_group, combined_data)
+    }
+  } else {
+    lm_design <- model.matrix(~ value.prot, combined_data)
+  }
+  return(lm_design)
+}
+
 match_ptm_to_proteome <- function(ptm,
                                   proteome,
                                   accession_number = "accession_number",
