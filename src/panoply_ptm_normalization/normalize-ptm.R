@@ -36,9 +36,9 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           ndigits = 5,
                           norm_method = "global",                  # normalization method (options: global, pairwise)
                           lm_method = "ls",                        # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
-                          lm_formula = value ~ value.prot,                       # NULL would default to value ~ value.prot (PTM as a dependent variable, protein level as explanatory)
+                          lm_formula = value ~ value.prot,         # formula for linear regression (can include interaction terms)
                           groups_colname = NULL,                   # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
-                          subset_groups = NULL,                    # if groups_colname is supplied and want to take only certain groups, specify a list of values (e.g., c("6", "24"))
+                          subset_cond = NULL,                      # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
                           min_n_values = 4)                        # pairwise: what least number of samples must contain both non-NA PTM and protein values
 {
   # import GCT files
@@ -54,10 +54,10 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   
   comb_ptm_prot <- merge_ptm_prot_df(ptm, proteome, accession_number)
   if (!is.null(groups_colname)) {
-    if (!is.null(subset_groups)) {
-      comb_ptm_prot <- comb_ptm_prot %>% filter(as.character(!!rlang::sym(groups_colname)) %in% as.character(subset_groups))  # TODO: what if groups_colname is not supplied but still want to slice?
-    }
     comb_ptm_prot[[groups_colname]] <- as.factor(comb_ptm_prot[[groups_colname]])
+  }
+  if (!is.null(subset_groups)) {
+    comb_ptm_prot <- comb_ptm_prot %>% filter(!!rlang::parse_expr(subset_cond))
   }
   
   # fits linear model and returns updated GCT
