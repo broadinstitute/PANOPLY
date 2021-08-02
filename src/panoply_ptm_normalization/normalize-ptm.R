@@ -18,28 +18,26 @@ p_load(cmapR)
 p_load(reshape)
 p_load(yaml)
 p_load(tidyr)
-p_load(MASS)  # rlm
 p_load(limma)
 
 source("panoply_ptm_normalization/helper.R")
 source("panoply_ptm_normalization/metrics.R")
 
-grep("b", x)
-
 
 normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL, 
-                          try.all.accession.numbers = TRUE,        # try hard to find a match (using accession_numbers)
-                          accession_number = "accession_number",   # column with protein/ptm accession number
-                          accession_numbers = "accession_numbers", # accession_numbers for protein/ptm group
-                          accession_sep = "|",                     # separator for each accession number in accession_numbers
-                          score = "scoreUnique",                   # column with protein scores
-                          ndigits = 5,
-                          norm_method = "global",                  # normalization method (options: global, pairwise)
-                          lm_method = "ls",                        # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
-                          lm_formula = value ~ value.prot,         # formula for linear regression (can include interaction terms)
-                          groups_colname = NULL,                   # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
-                          subset_cond = NULL,                      # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
-                          min_n_values = 4)                        # pairwise: what least number of samples must contain both non-NA PTM and protein values
+                          try.all.accession.numbers = TRUE,              # try hard to find a match (using accession_numbers)
+                          accession_number = "accession_number",         # column with protein/ptm accession number
+                          accession_numbers = "accession_numbers",       # accession_numbers for protein/ptm group
+                          accession_sep = "|",                           # separator for each accession number in accession_numbers
+                          score = "scoreUnique",                         # column with protein scores
+                          ndigits = 5,                                   # precision level
+                          norm_method = "global",                        # normalization method (options: global, pairwise)
+                          lm_method = "ls",                              # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
+                          lm_formula = value ~ value.prot,               # formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
+                          groups_colname = NULL,                         # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+                          subset_cond = NULL,                            # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
+                          min_n_values = 4,                              # pairwise: what least number of samples must contain both non-NA PTM and protein values
+                          filename_postfix = "proteome_relative_norm")   # postfix to append to the file name of the GCT to be normalized
 {
   # import GCT files
   proteome <- parse_gctx(proteome.gct)
@@ -69,10 +67,10 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   
   # writes and returns updated GCT
   file.prefix <- ifelse(!is.null (output.prefix), output.prefix,
-                        unlist(strsplit(ptm.gct, split = '.gct', fixed = TRUE))[1])
+                        unlist(strsplit(ptm.gct, split = ".gct", fixed = TRUE))[1])
   
-  write_gct(ptm.norm, paste(file.prefix, '-proteome-relative-norm.gct', sep = ''), 
-            appenddim = FALSE, precision=ndigits)
+  write_gct(ptm.norm, paste0(file.prefix, "-", filename_postfix, ".gct"), 
+            appenddim = FALSE, precision = ndigits)
   
   invisible (ptm.norm)
 }

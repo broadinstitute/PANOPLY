@@ -15,22 +15,8 @@
 library("pacman")
 p_load(cmapR)
 p_load(reshape)
-p_load(yaml)
 p_load(tidyr)
-
-
-get_lm_design <- function(combined_data, groups_as_covariate = FALSE, interaction_term = FALSE) {
-  if (groups_as_covariate) {
-    if (interaction_term) {
-      lm_design <- model.matrix(~ value.prot + treatment_group + value.prot:treatment_group, combined_data)
-    } else {
-      lm_design <- model.matrix(~ value.prot + treatment_group, combined_data)
-    }
-  } else {
-    lm_design <- model.matrix(~ value.prot, combined_data)
-  }
-  return(lm_design)
-}
+p_load(dplyr)
 
 match_ptm_to_proteome <- function(ptm,
                                   proteome,
@@ -93,7 +79,7 @@ merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_numbe
   
   # print metrics
   percent <- round(100 * nrow(data) / nrow(ptm.melt), digits = 1)
-  print(paste(nrow(data), " out of ", nrow(ptm.melt), " PTM peptides to be normalized", " (", percent, "%).", sep = ""))
+  print(paste0(nrow(data), " out of ", nrow(ptm.melt), " PTM peptides to be normalized", " (", percent, "%)."))
   
   return(data)
 }
@@ -119,12 +105,21 @@ result_unmelt <- function(res_df.melt) {
   return(results.mat)
 }
 
-assign_treatment_label <- function(sample_name, sample_groups = c("06h", "24h")) {
-  count <- 1
-  for (group in sample_groups) {
-    if (grepl(group, sample_name) == 1) {
-      return(as.factor(count))
-    }
-    count <- count + 1
+corr_df_from_list <- function(corr_store) {
+  # make a dataframe with cols = groups, rows = PTM site
+  temp <- lapply(corr_store, stack)
+  for (group in names(temp)) {
+    colnames(temp[[group]]) <- c(group, "id.x")
   }
+  
+  if (length(names(temp)) > 1) {
+    corr_df <- temp %>% reduce(left_join, by = "id.x")
+  } else {
+    corr_df <- temp[["all"]]
+  }
+  rownames(corr_df) <- corr_df$id.x  # make PTM site as index
+  corr_df <- corr_df[, -which(names(corr_df) == "id.x"), drop = FALSE]  # remove column
+  
+  return(corr_df)
 }
+

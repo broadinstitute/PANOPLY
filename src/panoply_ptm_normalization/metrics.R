@@ -7,7 +7,7 @@
 # Evaluates performance of PTM normalization methods with various parameter settings
 # Khoi Pham (Munchic)
 #
-# Various metrics to compare PTM/protein correlation in and across samples
+# In-sample and across sample metrics to compare PTM/protein correlation in and across samples
 #
 #########################################################################################################
 
@@ -18,15 +18,95 @@ p_load(tidyr)
 p_load(dplyr)
 p_load(purrr)
 
+source("panoply_ptm_normalization/helper.R")
+
+
+prot_ptm_corr_across_samples <- function(
+  prot_gct_path,
+  ptm_gct_path,
+  groups_colname = NULL,  # name of column indicating grouping (e.g., "pert_time")
+  min_n_values = 4,
+  method = "pearson")
+{
+  prot <- parse_gctx(prot_gct_path)
+  temp_ptm <- parse_gctx(ptm_gct_path)
+  ptm <- match_ptm_to_proteome(temp_ptm, prot)
+  
+  comb_ptm_prot <- merge_ptm_prot_df(ptm, prot)
+  corr_store <- list()
+  
+  # get correlations for all PTMs
+  corr_store[["all"]] = list()
+  for (ptm_id in unique(comb_ptm_prot$id.x)) {
+    acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id)
+    corr_store[["all"]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
+  }
+  
+  # get correlations for PTMs by grouping
+  if (!is.null(groups_colname)) {
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
+    
+    for (group in sample_groups) {
+      group_name <- paste0(groups_colname, ":", group)
+      corr_store[[group_name]] = list()
+      
+      for (ptm_id in unique(comb_ptm_prot$id.x)) {
+        acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
+        corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
+      }
+    }
+  }
+  
+  corr_df <- corr_df_from_list(corr_store)
+  return(corr_df)
+}
+
+ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, groups_colname = NULL, min_n_values = 4, method = "pearson") {
+  ptm <- parse_gctx(ptm_gct_path)
+  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
+  ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
+  ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value", ..groups_colname)]
+  
+  comb_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
+  colnames(comb_ptm) <- c("id.x", "id.y", "value", "value.norm", groups_colname)  # TODO: this hard-coded order is quite dangerous...
+  
+  corr_store <- list()
+  
+  # get correlations for all PTMs
+  corr_store[["all"]] = list()
+  for (ptm_id in unique(comb_ptm$id.x)) {
+    acr_samples <- comb_ptm %>% filter(id.x == ptm_id)
+    corr_store[["all"]][[ptm_id]] <- run_corr(acr_samples$value, acr_samples$value.norm, min_n_values, method = method)
+  }
+  
+  # get correlations for PTMs by grouping
+  if (!is.null(groups_colname)) {
+    sample_groups <- unique(comb_ptm[[groups_colname]])
+    
+    for (group in sample_groups) {
+      group_name <- paste0(groups_colname, ":", group)
+      corr_store[[group_name]] = list()
+      
+      for (ptm_id in unique(comb_ptm$id.x)) {
+        acr_samples <- comb_ptm %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
+        corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value, acr_samples$value.norm, min_n_values, method = method)
+      }
+    }
+  }
+  
+  corr_df <- corr_df_from_list(corr_store)
+  return(corr_df)
+}
+
 prot_ptm_corr_per_sample <- function(prot_gct_path, ptm_gct_path) {
   prot <- parse_gctx(prot_gct_path)
   temp_ptm <- parse_gctx(ptm_gct_path)
   ptm <- match_ptm_to_proteome(temp_ptm, prot)
   
-  combined_data <- merge_ptm_prot_df(ptm, prot)
+  comb_ptm_prot <- merge_ptm_prot_df(ptm, prot)
   corr_store <- list()
-  for (sample_name in unique(combined_data$id.y)) {
-    sample <- combined_data %>% filter(id.y == sample_name)
+  for (sample_name in unique(comb_ptm_prot$id.y)) {
+    sample <- comb_ptm_prot %>% filter(id.y == sample_name)
     corr_store[sample_name] <- cor(sample$value.prot, sample$value, method = "pearson")
   }
   
@@ -39,75 +119,24 @@ ptm_corr_per_sample <- function(ptm_gct_path, ptm_normalized_gct_path) {
   ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
   ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value")]
   
-  combined_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
-  colnames(combined_ptm) <- c("id.x", "id.y", "value", "value.norm")
+  comb_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
+  colnames(comb_ptm) <- c("id.x", "id.y", "value", "value.norm")
   
   corr_store <- list()
-  for (sample_name in unique(combined_ptm$id.y)) {
-    sample <- combined_ptm %>% filter(id.y == sample_name)
+  for (sample_name in unique(comb_ptm$id.y)) {
+    sample <- comb_ptm %>% filter(id.y == sample_name)
     corr_store[sample_name] <- cor(sample$value, sample$value.norm, method = "pearson")
   }
   
   return(corr_store)
 }
 
-prot_ptm_corr_across_samples <- function(prot_gct_path, ptm_gct_path, use_all_samples = FALSE, sample_groups = c("06h", "24h", "96h"), min_values_present = 4) {
-  prot <- parse_gctx(prot_gct_path)
-  temp_ptm <- parse_gctx(ptm_gct_path)
-  ptm <- match_ptm_to_proteome(temp_ptm, prot)
-  
-  combined_data <- merge_ptm_prot_df(ptm, prot)
-  corr_store <- list()
-  
-  if (use_all_samples) {
-    sample_groups = c("")  # just so that it matches to everything
+run_corr <- function(list_1, list_2, min_n_values = 4, method = "pearson") {
+  if (sum(!(is.na(list_1) | is.na(list_2))) >= min_n_values) {
+    corr <- cor(list_1, list_2, method = method)
+  } else {
+    corr <- NA
   }
   
-  for (ptm_id in unique(combined_data$id.x)) {
-    for (group in sample_groups) {
-      acr_samples <- combined_data %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
-      if (nrow(acr_samples) >=  min_values_present) {
-        corr <- cor(acr_samples$value.prot, acr_samples$value, method = "pearson")
-      } else {
-        corr <- NA
-      }
-      
-      store_id <- ifelse(group == "", ptm_id, paste0(ptm_id, " <", group, ">"))
-      corr_store[store_id] <- corr
-    }
-  }
-  
-  return(corr_store)
+  return(corr)
 }
-
-ptm_corr_per_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, use_all_samples = FALSE, sample_groups = c("06h", "24h", "96h"), min_values_present = 4) {
-  ptm <- parse_gctx(ptm_gct_path)
-  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
-  ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
-  ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value")]
-  
-  combined_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
-  colnames(combined_ptm) <- c("id.x", "id.y", "value", "value.norm")
-  corr_store <- list()
-  
-  if (use_all_samples) {
-    sample_groups = c("")  # just so that it matches to everything
-  }
-  
-  for (ptm_id in unique(combined_ptm$id.x)) {
-    for (group in sample_groups) {
-      acr_samples <- combined_ptm %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
-      if (nrow(acr_samples) >=  min_values_present) {
-        corr <- cor(acr_samples$value, acr_samples$value.norm, method = "pearson")
-      } else {
-        corr <- NA
-      }
-      
-      store_id <- ifelse(group == "", ptm_id, paste0(ptm_id, " <", group, ">"))
-      corr_store[store_id] <- corr
-    }
-  }
-  
-  return(corr_store)
-}
-
