@@ -60,7 +60,7 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
-    ptm.norm <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname)
+    ptm.norm <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
   } else if (norm_method == "pairwise") {
     ptm.norm <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
   }
@@ -77,7 +77,7 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
 
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
-normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colname) {
+normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- levels(comb_ptm_prot[[groups_colname]])
   } else {
@@ -95,13 +95,16 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
     } else {
       samples <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
     }
-    lm_design <- model.matrix(lm_formula, samples)
-    model <- lmFit(samples$value, lm_design, method = lm_method)
-      
-    result <- samples[ , c("id.x", "id.y")]
-    fitted_ptm_levels <- unlist(as.list(fitted(model)))
-    result$residuals <- samples$value - fitted_ptm_levels
-    all_results <- rbind(all_results, result)
+    
+    if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
+      lm_design <- model.matrix(lm_formula, samples)
+      model <- lmFit(samples$value, lm_design, method = lm_method)
+        
+      result <- samples[ , c("id.x", "id.y")]
+      fitted_ptm_levels <- unlist(as.list(fitted(model)))
+      result$residuals <- samples$value - fitted_ptm_levels
+      all_results <- rbind(all_results, result)
+    }
   }
   
   print ("Success.")
@@ -137,13 +140,13 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
         print(paste0("Building regressions... (", count, "/", tot_num_regr, ")"))
       }
       
-      if (!is.na(group)) {
-        samples <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
-      }
       samples <- comb_ptm_prot %>% filter(id.x == ptm_site)
-      lm_design <- model.matrix(lm_formula, samples)
+      if (!is.na(group)) {
+        samples <- samples %>% filter(!!rlang::sym(groups_colname) == group)
+      }
 
       if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
+        lm_design <- model.matrix(lm_formula, samples)
         model <- lmFit(samples$value, lm_design, method = lm_method)
         
         result <- samples[ , c("id.x", "id.y")]

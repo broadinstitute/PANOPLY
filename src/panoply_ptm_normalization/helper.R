@@ -85,6 +85,7 @@ merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_numbe
 }
 
 update_gct <- function(ptm, results) {
+  print(results)
   results.mat <- result_unmelt(results)
   
   ptm@rdesc <- ptm@rdesc[match(rownames(results.mat), ptm@rdesc$id), ]
@@ -117,9 +118,23 @@ corr_df_from_list <- function(corr_store) {
   } else {
     corr_df <- temp[["all"]]
   }
-  rownames(corr_df) <- corr_df$id.x  # make PTM site as index
-  corr_df <- corr_df[, -which(names(corr_df) == "id.x"), drop = FALSE]  # remove column
   
   return(corr_df)
+}
+
+
+add_prefix_to_colnames <- function(prefix, df, except = "") {
+  cols <- colnames(df)
+  new_cols <- c()
+  for (col in cols) {
+    if (col != except) {
+      new_col <- paste(prefix, col, sep = "_")
+    } else {
+      new_col <- col
+    }
+    new_cols <- c(new_cols, new_col)
+  }
+  
+  return(new_cols)
 }
 

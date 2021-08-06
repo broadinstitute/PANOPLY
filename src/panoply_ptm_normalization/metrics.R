@@ -21,10 +21,38 @@ p_load(purrr)
 source("panoply_ptm_normalization/helper.R")
 
 
+run_all_metrics <- function(
+  prot_gct_path,
+  ptm_gct_path,
+  ptm_norm_gct_path,
+  groups_colname = NULL,  # name of column indicating grouping (e.g., "pert_time")
+  subset_cond = NULL,
+  min_n_values = 4,
+  method = "pearson")
+{
+  # obtain across samples correlations for prot and PTM
+  prot_ptm_unnorm_corr <- prot_ptm_corr_across_samples(prot_gct_path, ptm_gct_path, groups_colname, subset_cond, min_n_values, method)
+  colnames(prot_ptm_unnorm_corr) <- add_prefix_to_colnames("prot_ptm_unnorm", prot_ptm_unnorm_corr, except = "id.x")
+  
+  # obtain across samples correlations for prot and normalized PTM
+  prot_ptm_norm_corr <- prot_ptm_corr_across_samples(prot_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
+  colnames(prot_ptm_norm_corr) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr, except = "id.x")
+  
+  # obtain across samples correlations for PTM and normalized PTM
+  ptm_unnorm_ptm_norm_corr <- ptm_corr_across_samples(ptm_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
+  colnames(ptm_unnorm_ptm_norm_corr) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr, except = "id.x")
+  
+  comb_df <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x")
+  comb_df <- merge(comb_df, ptm_unnorm_ptm_norm_corr, by = "id.x")
+  
+  return(comb_df)
+}
+
 prot_ptm_corr_across_samples <- function(
   prot_gct_path,
   ptm_gct_path,
   groups_colname = NULL,  # name of column indicating grouping (e.g., "pert_time")
+  subset_cond = NULL,
   min_n_values = 4,
   method = "pearson")
 {
@@ -33,6 +61,9 @@ prot_ptm_corr_across_samples <- function(
   ptm <- match_ptm_to_proteome(temp_ptm, prot)
   
   comb_ptm_prot <- merge_ptm_prot_df(ptm, prot)
+  if (!is.null(subset_groups)) {
+    comb_ptm_prot <- comb_ptm_prot %>% filter(!!rlang::parse_expr(subset_cond))
+  }
   corr_store <- list()
   
   # get correlations for all PTMs
@@ -51,7 +82,7 @@ prot_ptm_corr_across_samples <- function(
       corr_store[[group_name]] = list()
       
       for (ptm_id in unique(comb_ptm_prot$id.x)) {
-        acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
+        acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
         corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
       }
     }
@@ -61,7 +92,7 @@ prot_ptm_corr_across_samples <- function(
   return(corr_df)
 }
 
-ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, groups_colname = NULL, min_n_values = 4, method = "pearson") {
+ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, groups_colname = NULL, subset_cond = NULL, min_n_values = 4, method = "pearson") {
   ptm <- parse_gctx(ptm_gct_path)
   ptm_norm <- parse_gctx(ptm_normalized_gct_path)
   ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
@@ -70,6 +101,9 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
   comb_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
   colnames(comb_ptm) <- c("id.x", "id.y", "value", "value.norm", groups_colname)  # TODO: this hard-coded order is quite dangerous...
   
+  if (!is.null(comb_ptm)) {
+    comb_ptm <- comb_ptm %>% filter(!!rlang::parse_expr(subset_cond))
+  }
   corr_store <- list()
   
   # get correlations for all PTMs
@@ -88,7 +122,7 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
       corr_store[[group_name]] = list()
       
       for (ptm_id in unique(comb_ptm$id.x)) {
-        acr_samples <- comb_ptm %>% filter(id.x == ptm_id) %>% filter(grepl(group, id.y))
+        acr_samples <- comb_ptm %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
         corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value, acr_samples$value.norm, min_n_values, method = method)
       }
     }
