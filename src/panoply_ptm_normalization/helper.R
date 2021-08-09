@@ -85,7 +85,6 @@ merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_numbe
 }
 
 update_gct <- function(ptm, results) {
-  print(results)
   results.mat <- result_unmelt(results)
   
   ptm@rdesc <- ptm@rdesc[match(rownames(results.mat), ptm@rdesc$id), ]

@@ -54,16 +54,18 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   if (!is.null(groups_colname)) {
     comb_ptm_prot[[groups_colname]] <- as.factor(comb_ptm_prot[[groups_colname]])
   }
-  if (!is.null(subset_groups)) {
+  if (!is.null(subset_cond)) {
     comb_ptm_prot <- comb_ptm_prot %>% filter(!!rlang::parse_expr(subset_cond))
   }
   
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
-    ptm.norm <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
+    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
   } else if (norm_method == "pairwise") {
-    ptm.norm <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
+    norm_vals <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
   }
+  ptm.norm <- update_gct(ptm, norm_vals)
+  print ("Success.")
   
   # writes and returns updated GCT
   file.prefix <- ifelse(!is.null (output.prefix), output.prefix,
@@ -106,10 +108,8 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
       all_results <- rbind(all_results, result)
     }
   }
-  
-  print ("Success.")
-  ptm <- update_gct(ptm, all_results)
-  return(ptm)
+
+  return(all_results)
 }
 
 
@@ -132,7 +132,8 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
   colnames(all_results) <- c("id.x", "id.y", "residuals")
   
   count <- 1
-  count_fail <- 0
+  count_fail_ptm <- 0  # count PTM sites and samples that can't be normalized
+  count_fail_regr <- 0  # count number of regressions that can't be built
   # loop through all PTMs, build regression for each
   for (ptm_site in all_ptms) {
     for (group in sample_groups) {
@@ -152,19 +153,22 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
         result <- samples[ , c("id.x", "id.y")]
         fitted_ptm_levels <- unlist(as.list(fitted(model)))
         result$residuals <- samples$value - fitted_ptm_levels
-        all_results <- rbind(all_results, result)
+        
       } else {
-        count_fail <- count_fail + 1
+        result <- samples[ , c("id.x", "id.y")]
+        result$residuals <- NA
+        count_fail_ptm <- count_fail_ptm + nrow(result)
+        count_fail_regr <- count_fail_regr + 1
       }
+      
+      all_results <- rbind(all_results, result)
       count <- count + 1
     }
   }
   
-  print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail))
-  print("Done.")
-  
-  ptm <- update_gct(ptm, all_results)
-  return(ptm)
+  print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
+  print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
+  return(all_results)
 }
 
 
