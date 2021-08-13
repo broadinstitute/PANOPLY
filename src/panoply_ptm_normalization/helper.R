@@ -5,7 +5,7 @@
 #########################################################################################################
 #
 # Normalizes ptm to protein level by fitting a global linear model and returning residuals
-# Harry Kane, Pierre Beltran, D. R. Mani, Karsten Krug, Zachery Gillette and Surya Mani
+# Harry Kane, Pierre Beltran, D. R. Mani, Karsten Krug, Zachery Gillette, Surya Mani, Khoi Pham (Munchic)
 #
 # Helper functions for processing PTM and protein data for normalization
 #

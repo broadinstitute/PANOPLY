@@ -5,7 +5,7 @@
 #########################################################################################################
 #
 # Normalizes ptm to protein level by fitting a global linear model and returning residuals
-# Harry Kane, Pierre Beltran, D. R. Mani, Karsten Krug, Zachery Gillette and Surya Mani
+# Harry Kane, Pierre Beltran, D. R. Mani, Karsten Krug, Zachery Gillette, Surya Mani, Khoi Pham (Munchic)
 #
 # Fits ptm = beta_0 + beta_1*protein to all matched points in a dataset, and returns residuals as
 # protein-corrected ptm values.

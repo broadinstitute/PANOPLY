@@ -58,7 +58,7 @@ run_all_metrics <- function(
   prot_ptm_norm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct_path, ptm_norm_gct_path)
   colnames(prot_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr_in_sample, except = "id.y")
   
-  ptm_unnorm_ptm_norm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct_path, ptm_norm_gct_path)
+  ptm_unnorm_ptm_norm_corr_in_sample <- ptm_corr_per_sample(ptm_gct_path, ptm_norm_gct_path)
   colnames(ptm_unnorm_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr_in_sample, except = "id.y")
 
   comb_in_corr <- merge(prot_ptm_unnorm_corr_in_sample, prot_ptm_norm_corr_in_sample, by = "id.y")
