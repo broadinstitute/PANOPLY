@@ -12,6 +12,8 @@
 #########################################################################################################
 
 
+# TODO: how many sites at selected gene have |log| > 1 (all, for 6 and 24), average of each timepoint
+
 library("pacman")
 p_load(cmapR)
 p_load(tidyr)
@@ -33,19 +35,39 @@ run_all_metrics <- function(
   # obtain across samples correlations for prot and PTM
   prot_ptm_unnorm_corr <- prot_ptm_corr_across_samples(prot_gct_path, ptm_gct_path, groups_colname, subset_cond, min_n_values, method)
   colnames(prot_ptm_unnorm_corr) <- add_prefix_to_colnames("prot_ptm_unnorm", prot_ptm_unnorm_corr, except = "id.x")
-  
+
   # obtain across samples correlations for prot and normalized PTM
   prot_ptm_norm_corr <- prot_ptm_corr_across_samples(prot_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
   colnames(prot_ptm_norm_corr) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr, except = "id.x")
-  
+
   # obtain across samples correlations for PTM and normalized PTM
   ptm_unnorm_ptm_norm_corr <- ptm_corr_across_samples(ptm_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
   colnames(ptm_unnorm_ptm_norm_corr) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr, except = "id.x")
+
+  comb_acr_corr <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x")
+  comb_acr_corr <- merge(comb_acr_corr, ptm_unnorm_ptm_norm_corr, by = "id.x")
+
+  save_folder <- dirname(ptm_norm_gct_path)
+  acr_corr_path <- file.path(save_folder, "corr_across_samples.csv")
+  write.csv(comb_acr_corr, acr_corr_path, row.names = FALSE)
+  print(paste0("Per PTM site, across sample correlations saved at: ", acr_corr_path))
   
-  comb_df <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x")
-  comb_df <- merge(comb_df, ptm_unnorm_ptm_norm_corr, by = "id.x")
+  prot_ptm_unnorm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct_path, ptm_gct_path)
+  colnames(prot_ptm_unnorm_corr_in_sample) <- add_prefix_to_colnames("prot_ptm_unnorm", prot_ptm_unnorm_corr_in_sample, except = "id.y")
   
-  return(comb_df)
+  prot_ptm_norm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct_path, ptm_norm_gct_path)
+  colnames(prot_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr_in_sample, except = "id.y")
+  
+  ptm_unnorm_ptm_norm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct_path, ptm_norm_gct_path)
+  colnames(ptm_unnorm_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr_in_sample, except = "id.y")
+
+  comb_in_corr <- merge(prot_ptm_unnorm_corr_in_sample, prot_ptm_norm_corr_in_sample, by = "id.y")
+  comb_in_corr <- merge(comb_in_corr, ptm_unnorm_ptm_norm_corr_in_sample, by = "id.y")
+  
+  in_corr_path <- file.path(save_folder, "corr_in_samples.csv")
+  write.csv(comb_in_corr, in_corr_path, row.names = FALSE)
+  print(paste0("Per sample, across all PTM sites correlations saved at: ", in_corr_path))
+  
 }
 
 prot_ptm_corr_across_samples <- function(
@@ -61,7 +83,7 @@ prot_ptm_corr_across_samples <- function(
   ptm <- match_ptm_to_proteome(temp_ptm, prot)
   
   comb_ptm_prot <- merge_ptm_prot_df(ptm, prot)
-  if (!is.null(subset_groups)) {
+  if (!is.null(subset_cond)) {
     comb_ptm_prot <- comb_ptm_prot %>% filter(!!rlang::parse_expr(subset_cond))
   }
   corr_store <- list()
@@ -69,6 +91,7 @@ prot_ptm_corr_across_samples <- function(
   # get correlations for all PTMs
   corr_store[["all"]] = list()
   for (ptm_id in unique(comb_ptm_prot$id.x)) {
+    # print(ptm_id)
     acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id)
     corr_store[["all"]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
   }
@@ -82,7 +105,10 @@ prot_ptm_corr_across_samples <- function(
       corr_store[[group_name]] = list()
       
       for (ptm_id in unique(comb_ptm_prot$id.x)) {
+        # print(groups_colname)
+        # print(ptm_id)
         acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
+        # TODO: save()
         corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
       }
     }
@@ -98,7 +124,7 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
   ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
   ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value", ..groups_colname)]
   
-  comb_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))
+  comb_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))  # TOOD: tidy join fn
   colnames(comb_ptm) <- c("id.x", "id.y", "value", "value.norm", groups_colname)  # TODO: this hard-coded order is quite dangerous...
   
   if (!is.null(comb_ptm)) {
@@ -120,8 +146,10 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
     for (group in sample_groups) {
       group_name <- paste0(groups_colname, ":", group)
       corr_store[[group_name]] = list()
+      # print(paste0("group: ", group_name))
       
       for (ptm_id in unique(comb_ptm$id.x)) {
+        # print(paste0("ptm: ", ptm_id))
         acr_samples <- comb_ptm %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
         corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value, acr_samples$value.norm, min_n_values, method = method)
       }
@@ -144,6 +172,8 @@ prot_ptm_corr_per_sample <- function(prot_gct_path, ptm_gct_path) {
     corr_store[sample_name] <- cor(sample$value.prot, sample$value, method = "pearson")
   }
   
+  corr_store <- stack(corr_store)
+  colnames(corr_store) <- c("all", "id.y")
   return(corr_store)
 }
 
@@ -162,6 +192,8 @@ ptm_corr_per_sample <- function(ptm_gct_path, ptm_normalized_gct_path) {
     corr_store[sample_name] <- cor(sample$value, sample$value.norm, method = "pearson")
   }
   
+  corr_store <- stack(corr_store)
+  colnames(corr_store) <- c("all", "id.y")
   return(corr_store)
 }
 
