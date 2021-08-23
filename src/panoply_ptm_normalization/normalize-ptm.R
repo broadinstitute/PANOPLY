@@ -22,6 +22,7 @@ p_load(limma)
 
 source("panoply_ptm_normalization/helper.R")
 source("panoply_ptm_normalization/metrics.R")
+source("panoply_ptm_normalization/analyze.R")
 
 
 normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL, 

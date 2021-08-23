@@ -206,3 +206,63 @@ run_corr <- function(list_1, list_2, min_n_values = 4, method = "pearson") {
   
   return(corr)
 }
+
+ptm_log_fold_stats <- function(ptm_gct_path) {
+  ptm <- parse_gctx("data/out/global_6_24_cov/ccle_pY_merged_H747_Ls513_H3122_H2228_T47D_KPL1_RT112_AN3CA_n48x2769.gct")
+  ptm_df <- as.data.frame(ptm@mat)
+  
+  mean_log_fold <- colMeans(ptm_df, na.rm = TRUE)
+  log_fold_geq_1 <- colSums(ptm_df >= 1, na.rm = TRUE)
+  not_na <- colSums(!is.na(ptm_df), na.rm = TRUE)
+  
+  res <- as.data.frame(rbind(mean_log_fold, log_fold_geq_1, not_na))
+  res <- cbind(model_stat = c("mean_log_fold", "log_fold_geq_1", "not_na"), res)
+  rownames(res) <- NULL
+  out_path <- file.path(dirname(ptm_gct_path), "ptm_log_fold_stats.csv")
+  write.csv(res, out_path, row.names = FALSE)
+}
+
+ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
+  ptm <- parse_gctx(ptm_gct_path)
+  ptm_df <- as.data.frame(ptm@mat)
+  
+  # for each sample, store a list PTM sites for which absolute value log fold change is greater or equal (geq) to 1
+  log_fold_geq_1_store <- list()
+  for (col in colnames(ptm_df)) {
+    log_fold_geq_1_store[[col]] <- rownames(ptm_df)[which(abs(ptm_df[col]) >= 1)]
+  }
+  not_na_store <- list()
+  for (col in colnames(ptm_df)) {
+    not_na_store[[col]] <- rownames(ptm_df)[which(!is.na(ptm_df[col]))]
+  }
+  
+  mean_log_fold_store_per_group <- list()
+  log_fold_geq_1_count_per_group <- list()
+  not_na_count_per_group <- list()
+  
+  mean_log_fold_store_per_group[["all"]] <- mean(colMeans(ptm_df, na.rm = TRUE))
+  log_fold_geq_1_count_per_group[["all"]] <- length(unique(flatten_chr(log_fold_geq_1_store)))
+  not_na_count_per_group[["all"]] <- length(unique(flatten_chr(not_na_store)))
+  
+  if (!is.null(groups_colname)) {
+    for (group in unique(ptm@cdesc[[groups_colname]])) {
+      # which samples belong to the same group?
+      samples <- c(rownames(ptm@cdesc %>% filter(!!rlang::sym(groups_colname) == group)))
+      
+      # consecutive union of lists of PTM sites within samples of the group
+      group_name <- paste0(groups_colname, ":", group)
+      log_fold_geq_1_count_per_group[[group_name]] <- length(unique(flatten_chr(log_fold_geq_1_store[samples])))
+      not_na_count_per_group[[group_name]] <- length(unique(flatten_chr(not_na_store[samples])))
+      mean_log_fold_store_per_group[[group_name]] <- mean(colMeans(ptm_df[samples], na.rm = TRUE))
+    }
+  }
+  
+  comb_metrics <- rbind(
+    as.data.frame(mean_log_fold_store_per_group),
+    as.data.frame(log_fold_geq_1_count_per_group),
+    as.data.frame(not_na_count_per_group)
+  )
+  comb_metrics <- cbind("model_stat" = c("mean_log_fold", "log_fold_geq_1", "not_na"), comb_metrics)
+  out_path <- file.path(dirname(ptm_gct_path), "ptm_log_fold_stats_per_group.csv")
+  write.csv(comb_metrics, out_path, row.names = FALSE)
+}
