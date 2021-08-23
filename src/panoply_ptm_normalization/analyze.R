@@ -97,6 +97,5 @@ metric_distr_across_models <- function(data_dir, metric, models = NULL) {
     geom_vline(data = medians, aes(xintercept = median, color = model), size = 0.5, alpha = 0.8)
   dist_acr_log <- distr_acr + scale_y_continuous(trans = scales::pseudo_log_trans(base = 2))
   comb_fig <- ggarrange(distr_acr, dist_acr_log, nrow = 2, ncol = 1, common.legend = TRUE, legend = "right")
-  
-  return(comb_fig)
+  ggsave(file.path(out_dir, paste0("distr_across_models-", metric, ".png")), plot = comb_fig)
 }

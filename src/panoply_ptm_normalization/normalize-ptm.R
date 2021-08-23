@@ -32,7 +32,7 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           accession_sep = "|",                           # separator for each accession number in accession_numbers
                           score = "scoreUnique",                         # column with protein scores
                           ndigits = 5,                                   # precision level
-                          norm_method = "global",                        # normalization method (options: global, pairwise)
+                          norm_method = "global",                        # normalization method (options: global, pairwise, subtract)
                           lm_method = "ls",                              # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
                           lm_formula = value ~ value.prot,               # formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
                           groups_colname = NULL,                         # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
@@ -66,6 +66,8 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
     norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
   } else if (norm_method == "pairwise") {
     norm_vals <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
+  } else if (norm_method == "subtract") {
+    norm_vals <- normalize_subtract(comb_ptm_prot)
   }
   ptm.norm <- update_gct(ptm, norm_vals)
   print ("Success.")
@@ -176,6 +178,17 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
   
   print(paste0("Number of sites normalized: ", count_norm_ptm, "/", nrow(comb_ptm_prot)))
   print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
+  return(all_results)
+}
+
+normalize_subtract <- function(comb_ptm_prot) {
+  all_results <- comb_ptm_prot[ , c("id.x", "id.y")]
+  all_results$residuals <- comb_ptm_prot$value - comb_ptm_prot$value.prot
+  
+  all_not_na_count <- sum(!is.na(comb_ptm_prot$value) | !is.na(comb_ptm_prot$value.prot))
+  norm_not_na_count <- sum(!is.na(all_results$residuals))
+  print(paste0("Successfully normalized ", norm_not_na_count, "/", all_not_na_count, " sites."))
+  
   return(all_results)
 }
 
