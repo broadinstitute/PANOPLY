@@ -208,7 +208,7 @@ run_corr <- function(list_1, list_2, min_n_values = 4, method = "pearson") {
 }
 
 ptm_log_fold_stats <- function(ptm_gct_path) {
-  ptm <- parse_gctx("data/out/global_6_24_cov/ccle_pY_merged_H747_Ls513_H3122_H2228_T47D_KPL1_RT112_AN3CA_n48x2769.gct")
+  ptm <- parse_gctx(ptm_gct_path)
   ptm_df <- as.data.frame(ptm@mat)
   
   mean_log_fold <- colMeans(ptm_df, na.rm = TRUE)

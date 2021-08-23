@@ -18,7 +18,7 @@ p_load(ggplot2)
 library(ggpubr)
 
 
-summarize_models <- function(data_dir, models = NULL) {
+summarize_metrics <- function(data_dir, models = NULL) {
   out_dir <- file.path(data_dir, "out")
   if (is.null(models)) {
     models <- list.dirs(out_dir, full.names = FALSE, recursive = FALSE)
@@ -27,9 +27,12 @@ summarize_models <- function(data_dir, models = NULL) {
   # placeholder for summary dataframes
   corr_acr_samples_summary <- NULL
   corr_in_samples_summary <- NULL
+  ptm_stats_summary <- NULL
+  ptm_stats_per_group_summary <- NULL
   
   for (model in models) {
     model_path <- file.path(out_dir, model)
+    # correlation metrics
     corr_acr_samples <- read.csv(file.path(model_path, "corr_across_samples.csv"))
     corr_in_samples <- read.csv(file.path(model_path, "corr_in_samples.csv"))
     corr_acr_samples <- corr_acr_samples[, -which(names(corr_acr_samples) == "id.x")]
@@ -46,12 +49,26 @@ summarize_models <- function(data_dir, models = NULL) {
     corr_in_samples_std <- sapply(corr_in_samples, sd, na.rm = T)
     corr_in_samples_std <- c(model_stat = paste0(model, ".std"), corr_in_samples_std)
     corr_in_samples_summary <- rbind(corr_in_samples_summary, corr_in_samples_mean, corr_in_samples_std)
+    
+    # log fold change metrics
+    ptm_stats <- read.csv(file.path(model_path, "ptm_log_fold_stats.csv"))
+    ptm_stats[["model_stat"]] <- add_prefix_to_series(model, ptm_stats[["model_stat"]], sep = ".")
+    ptm_stats_summary <- rbind(ptm_stats_summary, ptm_stats)
+    
+    ptm_stats_per_group <- read.csv(file.path(model_path, "ptm_log_fold_stats_per_group.csv"))
+    ptm_stats_per_group[["model_stat"]] <- add_prefix_to_series(model, ptm_stats_per_group[["model_stat"]], sep = ".")
+    ptm_stats_per_group_summary <- rbind(ptm_stats_per_group_summary, ptm_stats_per_group)
   }
   
   rownames(corr_acr_samples_summary) <- NULL
   rownames(corr_in_samples_summary) <- NULL
+  rownames(ptm_stats_summary) <- NULL
+  rownames(ptm_stats_per_group_summary) <- NULL
+  
   write.csv(corr_acr_samples_summary, file.path(out_dir, "corr_acr_samples_summary.csv"))
   write.csv(corr_in_samples_summary, file.path(out_dir, "corr_in_samples_summary.csv"))
+  write.csv(ptm_stats_summary, file.path(out_dir, "ptm_stats_summary.csv"))
+  write.csv(ptm_stats_per_group_summary, file.path(out_dir, "ptm_stats_per_group_summary.csv"))
 }
 
 metric_distr_across_models <- function(data_dir, metric, models = NULL) {

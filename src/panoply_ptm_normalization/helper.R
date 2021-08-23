@@ -121,13 +121,13 @@ corr_df_from_list <- function(corr_store) {
   return(corr_df)
 }
 
-
+# TODO: replace with `add_prefix_to_series`
 add_prefix_to_colnames <- function(prefix, df, except = "") {
   cols <- colnames(df)
   new_cols <- c()
   for (col in cols) {
     if (col != except) {
-      new_col <- paste(prefix, col, sep = "_")
+      new_col <- paste(prefix, col, sep = "-")
     } else {
       new_col <- col
     }
@@ -135,5 +135,20 @@ add_prefix_to_colnames <- function(prefix, df, except = "") {
   }
   
   return(new_cols)
+}
+
+add_prefix_to_series <- function(prefix, series, except = "", sep = "-") {
+  rows <- series
+  new_rows <- c()
+  for (row in rows) {
+    if (row != except) {
+      new_row <- paste(prefix, row, sep = sep)
+    } else {
+      new_row <- row
+    }
+    new_rows <- c(new_rows, new_row)
+  }
+  
+  return(new_rows)
 }
 
