@@ -44,8 +44,8 @@ run_all_metrics <- function(
   ptm_unnorm_ptm_norm_corr <- ptm_corr_across_samples(ptm_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
   colnames(ptm_unnorm_ptm_norm_corr) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr, except = "id.x")
 
-  comb_acr_corr <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x")
-  comb_acr_corr <- merge(comb_acr_corr, ptm_unnorm_ptm_norm_corr, by = "id.x")
+  comb_acr_corr <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x", all = TRUE)
+  comb_acr_corr <- merge(comb_acr_corr, ptm_unnorm_ptm_norm_corr, by = "id.x", all = TRUE)
 
   save_folder <- dirname(ptm_norm_gct_path)
   acr_corr_path <- file.path(save_folder, "corr_across_samples.csv")
@@ -61,8 +61,8 @@ run_all_metrics <- function(
   ptm_unnorm_ptm_norm_corr_in_sample <- ptm_corr_per_sample(ptm_gct_path, ptm_norm_gct_path)
   colnames(ptm_unnorm_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr_in_sample, except = "id.y")
 
-  comb_in_corr <- merge(prot_ptm_unnorm_corr_in_sample, prot_ptm_norm_corr_in_sample, by = "id.y")
-  comb_in_corr <- merge(comb_in_corr, ptm_unnorm_ptm_norm_corr_in_sample, by = "id.y")
+  comb_in_corr <- merge(prot_ptm_unnorm_corr_in_sample, prot_ptm_norm_corr_in_sample, by = "id.y", all = TRUE)
+  comb_in_corr <- merge(comb_in_corr, ptm_unnorm_ptm_norm_corr_in_sample, by = "id.y", all = TRUE)
   
   in_corr_path <- file.path(save_folder, "corr_in_samples.csv")
   write.csv(comb_in_corr, in_corr_path, row.names = FALSE)
@@ -213,10 +213,13 @@ ptm_log_fold_stats <- function(ptm_gct_path) {
   
   mean_log_fold <- colMeans(ptm_df, na.rm = TRUE)
   log_fold_geq_1 <- colSums(ptm_df >= 1, na.rm = TRUE)
+  log_fold_leq_neg1 <- colSums(ptm_df <= -1, na.rm = TRUE)
   not_na <- colSums(!is.na(ptm_df), na.rm = TRUE)
+  log_fold_geq_1_frac <- log_fold_geq_1 / not_na
+  log_fold_leq_neg1_frac <- log_fold_leq_neg1 / not_na
   
-  res <- as.data.frame(rbind(mean_log_fold, log_fold_geq_1, not_na))
-  res <- cbind(model_stat = c("mean_log_fold", "log_fold_geq_1", "not_na"), res)
+  res <- as.data.frame(rbind(mean_log_fold, log_fold_geq_1, log_fold_leq_neg1, not_na, log_fold_geq_1_frac, log_fold_leq_neg1_frac))
+  res <- cbind(model_stat = c("mean_log_fold", "log_fold_geq_1", "log_fold_leq_neg1", "not_na", "log_fold_geq_1_frac", "log_fold_leq_neg1_frac"), res)
   rownames(res) <- NULL
   out_path <- file.path(dirname(ptm_gct_path), "ptm_log_fold_stats.csv")
   write.csv(res, out_path, row.names = FALSE)
@@ -226,23 +229,30 @@ ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
   ptm <- parse_gctx(ptm_gct_path)
   ptm_df <- as.data.frame(ptm@mat)
   
-  # for each sample, store a list PTM sites for which absolute value log fold change is greater or equal (geq) to 1
+  # for each sample, store a list PTM sites for which absolute value log fold change is greater or equal (geq) to 1 AND less or equal (leq) to -1
   log_fold_geq_1_store <- list()
-  for (col in colnames(ptm_df)) {
-    log_fold_geq_1_store[[col]] <- rownames(ptm_df)[which(abs(ptm_df[col]) >= 1)]
-  }
+  log_fold_leq_neg1_store <- list()
   not_na_store <- list()
   for (col in colnames(ptm_df)) {
+    log_fold_geq_1_store[[col]] <- rownames(ptm_df)[which(ptm_df[col] >= 1)]
+    log_fold_leq_neg1_store[[col]] <- rownames(ptm_df)[which(ptm_df[col] <= -1)]
     not_na_store[[col]] <- rownames(ptm_df)[which(!is.na(ptm_df[col]))]
   }
   
   mean_log_fold_store_per_group <- list()
   log_fold_geq_1_count_per_group <- list()
+  log_fold_leq_neg1_count_per_group <- list()
   not_na_count_per_group <- list()
+  # fractions of |log| >= 1
+  log_fold_geq_1_frac_per_group <- list()
+  log_fold_leq_neg1_frac_per_group <- list()
   
   mean_log_fold_store_per_group[["all"]] <- mean(colMeans(ptm_df, na.rm = TRUE))
-  log_fold_geq_1_count_per_group[["all"]] <- length(unique(flatten_chr(log_fold_geq_1_store)))
+  log_fold_geq_1_count_per_group[["all"]] <- mean(lengths(log_fold_geq_1_store))  # UNION: length(unique(flatten_chr(log_fold_geq_1_store)))
+  log_fold_leq_neg1_count_per_group[["all"]] <- mean(lengths(log_fold_geq_1_store))  # UNION: length(unique(flatten_chr(log_fold_leq_neg1_store)))
   not_na_count_per_group[["all"]] <- length(unique(flatten_chr(not_na_store)))
+  log_fold_geq_1_frac_per_group[["all"]] <- log_fold_geq_1_count_per_group[["all"]] / not_na_count_per_group[["all"]]
+  log_fold_leq_neg1_frac_per_group[["all"]] <- log_fold_leq_neg1_count_per_group[["all"]] / not_na_count_per_group[["all"]]
   
   if (!is.null(groups_colname)) {
     for (group in unique(ptm@cdesc[[groups_colname]])) {
@@ -251,18 +261,24 @@ ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
       
       # consecutive union of lists of PTM sites within samples of the group
       group_name <- paste0(groups_colname, ":", group)
-      log_fold_geq_1_count_per_group[[group_name]] <- length(unique(flatten_chr(log_fold_geq_1_store[samples])))
-      not_na_count_per_group[[group_name]] <- length(unique(flatten_chr(not_na_store[samples])))
       mean_log_fold_store_per_group[[group_name]] <- mean(colMeans(ptm_df[samples], na.rm = TRUE))
+      log_fold_geq_1_count_per_group[[group_name]] <- mean(lengths(log_fold_geq_1_store[samples]))  # UNION: length(unique(flatten_chr(log_fold_geq_1_store[samples])))
+      log_fold_leq_neg1_count_per_group[[group_name]] <- mean(lengths(log_fold_leq_neg1_store[samples]))  # UNION: length(unique(flatten_chr(log_fold_leq_neg1_store[samples])))
+      not_na_count_per_group[[group_name]] <- length(unique(flatten_chr(not_na_store[samples])))
+      log_fold_geq_1_frac_per_group[[group_name]] <- log_fold_geq_1_count_per_group[[group_name]] / not_na_count_per_group[[group_name]]
+      log_fold_leq_neg1_frac_per_group[[group_name]] <- log_fold_leq_neg1_count_per_group[[group_name]] / not_na_count_per_group[[group_name]]
     }
   }
   
   comb_metrics <- rbind(
     as.data.frame(mean_log_fold_store_per_group),
     as.data.frame(log_fold_geq_1_count_per_group),
-    as.data.frame(not_na_count_per_group)
+    as.data.frame(log_fold_leq_neg1_count_per_group),
+    as.data.frame(not_na_count_per_group),
+    as.data.frame(log_fold_geq_1_frac_per_group),
+    as.data.frame(log_fold_leq_neg1_frac_per_group)
   )
-  comb_metrics <- cbind("model_stat" = c("mean_log_fold", "log_fold_geq_1", "not_na"), comb_metrics)
+  comb_metrics <- cbind("model_stat" = c("mean_log_fold", "log_fold_geq_1", "log_fold_leq_neg1", "not_na", "log_fold_geq_1_frac", "log_fold_leq_neg1_frac"), comb_metrics)
   out_path <- file.path(dirname(ptm_gct_path), "ptm_log_fold_stats_per_group.csv")
   write.csv(comb_metrics, out_path, row.names = FALSE)
 }

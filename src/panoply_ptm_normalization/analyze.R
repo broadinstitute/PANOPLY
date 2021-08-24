@@ -91,11 +91,10 @@ metric_distr_across_models <- function(data_dir, metric, models = NULL) {
   medians <- metric_acr_samples %>%
     group_by(model) %>%
     summarize(median = median(pearson_r, na.rm=TRUE))
-  
-  distr_acr <- ggplot(metric_acr_samples, aes(x = pearson_r, color = model)) +
-    geom_histogram(fill = "white", alpha = 0, position = "identity", bins = 50) +
-    geom_vline(data = medians, aes(xintercept = median, color = model), size = 0.5, alpha = 0.8)
-  dist_acr_log <- distr_acr + scale_y_continuous(trans = scales::pseudo_log_trans(base = 2))
-  comb_fig <- ggarrange(distr_acr, dist_acr_log, nrow = 2, ncol = 1, common.legend = TRUE, legend = "right")
-  ggsave(file.path(out_dir, paste0("distr_across_models-", metric, ".png")), plot = comb_fig)
+
+  distr_acr <- ggplot(metric_acr_samples, aes(x = model, y = pearson_r)) +
+               geom_boxplot(outlier.shape = NA) + stat_boxplot(geom = "errorbar") +
+               geom_violin(aes(fill = model, color = model), alpha = 0.5) +
+               theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
+  ggsave(file.path(out_dir, paste0("distr_across_models-", metric, ".png")), plot = distr_acr)
 }
