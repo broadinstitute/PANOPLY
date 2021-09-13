@@ -32,16 +32,20 @@ run_all_metrics <- function(
   min_n_values = 4,
   method = "pearson")
 {
+  prot_gct <- parse_gctx(prot_gct_path)
+  ptm_gct <- parse_gctx(ptm_gct_path)
+  ptm_norm_gct <- parse_gctx(ptm_norm_gct_path)
+  
   # obtain across samples correlations for prot and PTM
-  prot_ptm_unnorm_corr <- prot_ptm_corr_across_samples(prot_gct_path, ptm_gct_path, groups_colname, subset_cond, min_n_values, method)
+  prot_ptm_unnorm_corr <- prot_ptm_corr_across_samples(prot_gct, ptm_gct, groups_colname, subset_cond, min_n_values, method)
   colnames(prot_ptm_unnorm_corr) <- add_prefix_to_colnames("prot_ptm_unnorm", prot_ptm_unnorm_corr, except = "id.x")
 
   # obtain across samples correlations for prot and normalized PTM
-  prot_ptm_norm_corr <- prot_ptm_corr_across_samples(prot_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
+  prot_ptm_norm_corr <- prot_ptm_corr_across_samples(prot_gct, ptm_norm_gct, groups_colname, subset_cond, min_n_values, method)
   colnames(prot_ptm_norm_corr) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr, except = "id.x")
 
   # obtain across samples correlations for PTM and normalized PTM
-  ptm_unnorm_ptm_norm_corr <- ptm_corr_across_samples(ptm_gct_path, ptm_norm_gct_path, groups_colname, subset_cond, min_n_values, method)
+  ptm_unnorm_ptm_norm_corr <- ptm_corr_across_samples(ptm_gct, ptm_norm_gct, groups_colname, subset_cond, min_n_values, method)
   colnames(ptm_unnorm_ptm_norm_corr) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr, except = "id.x")
 
   comb_acr_corr <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x", all = TRUE)
@@ -71,17 +75,15 @@ run_all_metrics <- function(
 }
 
 prot_ptm_corr_across_samples <- function(
-  prot_gct_path,
-  ptm_gct_path,
+  prot_gct,
+  ptm_gct,
   groups_colname = NULL,  # name of column indicating grouping (e.g., "pert_time")
   subset_cond = NULL,
   min_n_values = 4,
   method = "pearson")
 {
-  prot <- parse_gctx(prot_gct_path)
-  temp_ptm <- parse_gctx(ptm_gct_path)
-  ptm <- match_ptm_to_proteome(temp_ptm, prot)
-  
+  prot <- prot_gct
+  ptm <- match_ptm_to_proteome(ptm_gct, prot)
   comb_ptm_prot <- merge_ptm_prot_df(ptm, prot)
   if (!is.null(subset_cond)) {
     comb_ptm_prot <- comb_ptm_prot %>% filter(!!rlang::parse_expr(subset_cond))
@@ -92,7 +94,7 @@ prot_ptm_corr_across_samples <- function(
   corr_store[["all"]] = list()
   for (ptm_id in unique(comb_ptm_prot$id.x)) {
     # print(ptm_id)
-    acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id)
+    acr_samples <- comb_ptm_prot[comb_ptm_prot$id.x == ptm_id, ]  # %>% filter(id.x == ptm_id)
     corr_store[["all"]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
   }
   
@@ -107,7 +109,7 @@ prot_ptm_corr_across_samples <- function(
       for (ptm_id in unique(comb_ptm_prot$id.x)) {
         # print(groups_colname)
         # print(ptm_id)
-        acr_samples <- comb_ptm_prot %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
+        acr_samples <- comb_ptm_prot[(comb_ptm_prot$id.x == ptm_id & comb_ptm_prot[[groups_colname]] == group), ] # %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
         # TODO: save()
         corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value.prot, acr_samples$value, min_n_values, method = method)
       }
@@ -118,16 +120,16 @@ prot_ptm_corr_across_samples <- function(
   return(corr_df)
 }
 
-ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, groups_colname = NULL, subset_cond = NULL, min_n_values = 4, method = "pearson") {
-  ptm <- parse_gctx(ptm_gct_path)
-  ptm_norm <- parse_gctx(ptm_normalized_gct_path)
+ptm_corr_across_samples <- function(ptm_gct, ptm_normalized_gct, groups_colname = NULL, subset_cond = NULL, min_n_values = 4, method = "pearson") {
+  ptm <- ptm_gct
+  ptm_norm <- ptm_normalized_gct
   ptm_vals <- melt_gct(ptm)[, c("id.y", "id.x", "value")]
   ptm_norm_vals <- melt_gct(ptm_norm)[, c("id.y", "id.x", "value", ..groups_colname)]
   
   comb_ptm <- merge(ptm_vals, ptm_norm_vals, by = c("id.x", "id.y"))  # TOOD: tidy join fn
   colnames(comb_ptm) <- c("id.x", "id.y", "value", "value.norm", groups_colname)  # TODO: this hard-coded order is quite dangerous...
   
-  if (!is.null(comb_ptm)) {
+  if (!is.null(comb_ptm) & !is.null(subset_cond)) {
     comb_ptm <- comb_ptm %>% filter(!!rlang::parse_expr(subset_cond))
   }
   corr_store <- list()
@@ -135,7 +137,7 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
   # get correlations for all PTMs
   corr_store[["all"]] = list()
   for (ptm_id in unique(comb_ptm$id.x)) {
-    acr_samples <- comb_ptm %>% filter(id.x == ptm_id)
+    acr_samples <- comb_ptm[comb_ptm$id.x == ptm_id, ]  # %>% filter(id.x == ptm_id)
     corr_store[["all"]][[ptm_id]] <- run_corr(acr_samples$value, acr_samples$value.norm, min_n_values, method = method)
   }
   
@@ -150,7 +152,7 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
       
       for (ptm_id in unique(comb_ptm$id.x)) {
         # print(paste0("ptm: ", ptm_id))
-        acr_samples <- comb_ptm %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
+        acr_samples <- comb_ptm[(comb_ptm$id.x == ptm_id & comb_ptm[[groups_colname]] == group), ] # %>% filter(id.x == ptm_id) %>% filter(!!rlang::sym(groups_colname) == group)
         corr_store[[group_name]][[ptm_id]] <- run_corr(acr_samples$value, acr_samples$value.norm, min_n_values, method = method)
       }
     }
@@ -160,7 +162,7 @@ ptm_corr_across_samples <- function(ptm_gct_path, ptm_normalized_gct_path, group
   return(corr_df)
 }
 
-prot_ptm_corr_per_sample <- function(prot_gct_path, ptm_gct_path) {
+prot_ptm_corr_per_sample <- function(prot_gct, ptm_gct) {
   prot <- parse_gctx(prot_gct_path)
   temp_ptm <- parse_gctx(ptm_gct_path)
   ptm <- match_ptm_to_proteome(temp_ptm, prot)
@@ -225,7 +227,7 @@ ptm_log_fold_stats <- function(ptm_gct_path) {
   write.csv(res, out_path, row.names = FALSE)
 }
 
-ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
+ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL, groups_colname_2 = NULL) {
   ptm <- parse_gctx(ptm_gct_path)
   ptm_df <- as.data.frame(ptm@mat)
   
@@ -254,7 +256,7 @@ ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
   log_fold_geq_1_frac_per_group[["all"]] <- log_fold_geq_1_count_per_group[["all"]] / not_na_count_per_group[["all"]]
   log_fold_leq_neg1_frac_per_group[["all"]] <- log_fold_leq_neg1_count_per_group[["all"]] / not_na_count_per_group[["all"]]
   
-  if (!is.null(groups_colname)) {
+  if (!is.null(groups_colname) & is.null(groups_colname_2)) {
     for (group in unique(ptm@cdesc[[groups_colname]])) {
       # which samples belong to the same group?
       samples <- c(rownames(ptm@cdesc %>% filter(!!rlang::sym(groups_colname) == group)))
@@ -268,6 +270,20 @@ ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
       log_fold_geq_1_frac_per_group[[group_name]] <- log_fold_geq_1_count_per_group[[group_name]] / not_na_count_per_group[[group_name]]
       log_fold_leq_neg1_frac_per_group[[group_name]] <- log_fold_leq_neg1_count_per_group[[group_name]] / not_na_count_per_group[[group_name]]
     }
+  } else if (!is.null(groups_colname) & !is.null(groups_colname_2)) {
+    for (group in unique(ptm@cdesc[[groups_colname]])) {
+      for (group_2 in unique(ptm@cdesc[[groups_colname_2]])) {
+        samples <- c(rownames(ptm@cdesc %>% filter(!!rlang::sym(groups_colname) == group) %>% filter(!!rlang::sym(groups_colname_2) == group_2)))
+        
+        group_name <- paste0(group, ".", group_2)
+        mean_log_fold_store_per_group[[group_name]] <- mean(colMeans(ptm_df[samples], na.rm = TRUE))
+        log_fold_geq_1_count_per_group[[group_name]] <- mean(lengths(log_fold_geq_1_store[samples]))  # UNION: length(unique(flatten_chr(log_fold_geq_1_store[samples])))
+        log_fold_leq_neg1_count_per_group[[group_name]] <- mean(lengths(log_fold_leq_neg1_store[samples]))  # UNION: length(unique(flatten_chr(log_fold_leq_neg1_store[samples])))
+        not_na_count_per_group[[group_name]] <- length(unique(flatten_chr(not_na_store[samples])))
+        log_fold_geq_1_frac_per_group[[group_name]] <- log_fold_geq_1_count_per_group[[group_name]] / not_na_count_per_group[[group_name]]
+        log_fold_leq_neg1_frac_per_group[[group_name]] <- log_fold_leq_neg1_count_per_group[[group_name]] / not_na_count_per_group[[group_name]]
+      }
+    }
   }
   
   comb_metrics <- rbind(
@@ -279,6 +295,10 @@ ptm_log_fold_stats_per_group <- function(ptm_gct_path, groups_colname = NULL) {
     as.data.frame(log_fold_leq_neg1_frac_per_group)
   )
   comb_metrics <- cbind("model_stat" = c("mean_log_fold", "log_fold_geq_1", "log_fold_leq_neg1", "not_na", "log_fold_geq_1_frac", "log_fold_leq_neg1_frac"), comb_metrics)
-  out_path <- file.path(dirname(ptm_gct_path), "ptm_log_fold_stats_per_group.csv")
+  if (!is.null(groups_colname_2)) {
+    out_path <- file.path(dirname(ptm_gct_path), paste0("ptm_log_fold_stats", "_", groups_colname, "_", groups_colname_2, ".csv"))
+  } else {
+    out_path <- file.path(dirname(ptm_gct_path), "ptm_log_fold_stats_per_group.csv")
+  }
   write.csv(comb_metrics, out_path, row.names = FALSE)
 }
