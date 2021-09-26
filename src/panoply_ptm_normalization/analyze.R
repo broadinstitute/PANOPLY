@@ -71,9 +71,16 @@ summarize_metrics <- function(data_dir, models = NULL) {
   write.csv(ptm_stats_per_group_summary, file.path(out_dir, "ptm_stats_per_group_summary.csv"))
 }
 
-summarize_log_fold_metrics <- function(out_dir, models) {
+summarize_log_fold_metrics <- function(data_dir, models, groups_colname = NULL, groups_colname_2 = NULL) {
+  out_dir <- file.path(data_dir, "out")
+  if (is.null(models)) {
+    models <- list.dirs(out_dir, full.names = FALSE, recursive = FALSE)
+  }
+  
   ptm_stats_summary <- NULL
   ptm_stats_per_group_summary <- NULL
+  ptm_stats_per_group_2_summary <- NULL
+  ptm_stats_per_group_3_summary <- NULL
   
   for (model in models) {
     model_path <- file.path(out_dir, model)
@@ -82,13 +89,24 @@ summarize_log_fold_metrics <- function(out_dir, models) {
     ptm_stats[["model_stat"]] <- add_prefix_to_series(model, ptm_stats[["model_stat"]], sep = ".")
     ptm_stats_summary <- rbind(ptm_stats_summary, ptm_stats)
     
-    ptm_stats_per_group <- read.csv(file.path(model_path, "ptm_log_fold_stats_cell_id_pert_time.csv")) # read.csv(file.path(model_path, "ptm_log_fold_stats_per_group.csv"))
+    ptm_stats_per_group <- read.csv(file.path(model_path, "ptm_log_fold_stats_per_group.csv"))
     ptm_stats_per_group[["model_stat"]] <- add_prefix_to_series(model, ptm_stats_per_group[["model_stat"]], sep = ".")
     ptm_stats_per_group_summary <- rbind(ptm_stats_per_group_summary, ptm_stats_per_group)
+    
+    # TODO: inflexible naming system
+    ptm_stats_per_group_2 <- read.csv(file.path(model_path, "ptm_log_fold_stats-cell_id-pert_time.csv"))
+    ptm_stats_per_group_2[["model_stat"]] <- add_prefix_to_series(model, ptm_stats_per_group_2[["model_stat"]], sep = ".")
+    ptm_stats_per_group_2_summary <- rbind(ptm_stats_per_group_2_summary, ptm_stats_per_group_2)
+    
+    ptm_stats_per_group_3 <- read.csv(file.path(model_path, "ptm_log_fold_stats-cell_id-pert_time-targeted.csv"))
+    ptm_stats_per_group_3[["model_stat"]] <- add_prefix_to_series(model, ptm_stats_per_group_3[["model_stat"]], sep = ".")
+    ptm_stats_per_group_3_summary <- rbind(ptm_stats_per_group_3_summary, ptm_stats_per_group_3)
   }
   
-  write.csv(ptm_stats_summary, file.path(out_dir, "ptm_stats_summary.csv"))
-  write.csv(ptm_stats_per_group_summary, file.path(out_dir, "ptm_stats_per_group_summary.csv"))
+  write.csv(ptm_stats_summary, file.path(out_dir, "ptm_stats-summary.csv"))
+  write.csv(ptm_stats_per_group_summary, file.path(out_dir, "ptm_stats_per_group-summary.csv"))
+  write.csv(ptm_stats_per_group_2_summary, file.path(out_dir, "ptm_log_fold_stats_cell_id_pert_time-summary.csv"))
+  write.csv(ptm_stats_per_group_3_summary, file.path(out_dir, "ptm_log_fold_stats-cell_id-pert_time-targeted-summary.csv"))
 }
 
 metric_distr_across_models <- function(data_dir, metric, models = NULL) {
@@ -117,5 +135,5 @@ metric_distr_across_models <- function(data_dir, metric, models = NULL) {
                geom_violin(aes(fill = model, color = model), alpha = 0.5, scale = "width") +
                # geom_jitter(aes(color = model), position = position_jitter(0.2), alpha = 0.1) +
                theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
-  ggsave(file.path(out_dir, paste0("distr_across_models-", metric, ".png")), plot = distr_acr)
+  ggsave(file.path(out_dir, paste0("distr_across_models-", metric, ".pdf")), plot = distr_acr)
 }

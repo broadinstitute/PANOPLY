@@ -32,6 +32,7 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           accession_sep = "|",                           # separator for each accession number in accession_numbers
                           score = "scoreUnique",                         # column with protein scores
                           ndigits = 5,                                   # precision level
+                          center_data = TRUE,                                 # whether to center the data with median
                           norm_method = "global",                        # normalization method (options: global, pairwise, subtract)
                           lm_method = "ls",                              # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
                           lm_formula = value ~ value.prot,               # formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
@@ -39,15 +40,20 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           subset_cond = NULL,                            # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
                           min_n_values = 4,                              # pairwise: what least number of samples must contain both non-NA PTM and protein values
                           data_dir = "data",
-                          model_name = "proteome_relative_norm")   # postfix to append to the file name of the GCT to be normalized
+                          model_name = "proteome_relative_norm")         # subfolder name in which to store results)
 {
   # import GCT files
   proteome <- parse_gctx(file.path(data_dir, "input", proteome.gct))
   temp_ptm <- parse_gctx(file.path(data_dir, "input", ptm.gct))
+  
+  if (center_data) {
+    proteome@mat <- sweep(proteome@mat, 2, apply(proteome@mat, 2, function(col) { median(col, na.rm = TRUE) }), "-")
+    temp_ptm@mat <- sweep(temp_ptm@mat, 2, apply(temp_ptm@mat, 2, function(col) { median(col, na.rm = TRUE) }), "-")
+  }
   ptm <- match_ptm_to_proteome(temp_ptm, proteome, accession_number, accession_numbers, try.all.accession.numbers)
   
   # warn if not all samples are matched
-  matched.samples <- intersect (ptm@cid, proteome@cid)
+  matched.samples <- intersect(ptm@cid, proteome@cid)
   if (length(matched.samples) != length(ptm@cid)) {
     warning ('WARNING: not all samples in ptm file have matches in proteome ... unmatched samples removed.')
   }
@@ -61,11 +67,16 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
     print(paste0("Based on subset condition, ", nrow(comb_ptm_prot), " unique sites are included."))
   }
   
+  # create directories to store normalized data
+  dir.create(file.path(data_dir, "out"), showWarnings = FALSE)
+  model_out_dir <- file.path(data_dir, "out", model_name)
+  dir.create(model_out_dir, showWarnings = FALSE)
+  
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
-    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
+    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "pairwise") {
-    norm_vals <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values)
+    norm_vals <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "subtract") {
     norm_vals <- normalize_subtract(comb_ptm_prot)
   }
@@ -75,11 +86,8 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   # writes and returns updated GCT
   file_name <- ifelse(!is.null (output.prefix), output.prefix,
                         unlist(strsplit(basename(ptm.gct), split = ".gct", fixed = TRUE))[1])
-  # TODO: wow, such a hardcoding of directory :(
-  dir.create(file.path(data_dir, "out"), showWarnings = FALSE)
-  dir.create(file.path(data_dir, "out", model_name), showWarnings = FALSE)
-  out_path <- file.path(data_dir, "out", model_name, file_name)
-  
+
+  out_path <- file.path(model_out_dir, file_name)
   write_gct(ptm.norm, paste0(out_path, ".gct"), 
             appenddim = FALSE, precision = ndigits)
   invisible (ptm.norm)
@@ -87,9 +95,9 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
 
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
-normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values) {
+normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
   if (!is.null(groups_colname)) {  # if use all samples
-    sample_groups <- levels(comb_ptm_prot[[groups_colname]])
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
     sample_groups <- c(NA)  # to use all samples
   }
@@ -99,36 +107,43 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
   all_results <- data.frame(matrix(ncol = 3, nrow = 0))
   colnames(all_results) <- c("id.x", "id.y", "residuals")
   
+  regr_store <- list()
   count_fail_ptm <- 0  # count PTM sites and samples that can't be normalized
   for (group in sample_groups) {
     if (is.na(group)) {
       samples <- comb_ptm_prot
+      group <- "all"
     } else {
       samples <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
     }
     
     if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
       lm_design <- model.matrix(lm_formula, samples)
-      model <- lmFit(samples$value, lm_design, method = lm_method)
-        
+      model <- lmFit(samples$value, lm_design, method = lm_method)  # lm(samples$value ~ samples$value.prot, na.action = na.exclude)
       result <- samples[ , c("id.x", "id.y")]
       fitted_ptm_levels <- unlist(as.list(fitted(model)))
-      result$residuals <- samples$value - fitted_ptm_levels
+      result$residuals <- samples$value - fitted_ptm_levels  # result$residuals <- residuals(model)
+      
       all_results <- rbind(all_results, result)
       count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
+      regr_store[[group]] <- model
     }
   }
 
   print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
+  if (!is.null(save_dir)) {
+    regr_path <- file.path(save_dir, "regressions.RDS")
+    saveRDS(regr_store, regr_path)
+  }
   return(all_results)
 }
 
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
 #' for each PTM-protein pair across selected or all samples
-normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values) {
+normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
   if (!is.null(groups_colname)) {  # if use all samples
-    sample_groups <- levels(comb_ptm_prot[[groups_colname]])
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
     sample_groups <- c(NA)  # to use all samples
   }
@@ -146,18 +161,23 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
   count_norm_ptm <- 0  # count PTM sites and samples that are normalized
   count_fail_regr <- 0  # count number of regressions that can't be built
   # loop through all PTMs, build regression for each
-  for (ptm_site in all_ptms) {
-    for (group in sample_groups) {
+  regr_store <- list()
+  for (group in sample_groups) {
+    if (!is.na(group)) {
+      samples_grouped <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
+    } else {
+      group <- "all"
+      samples_grouped <- comb_ptm_prot
+    }
+    regr_store[[group]] = list()
+    
+    for (ptm_site in all_ptms) {
       if (count == 1 | count %% 500 == 0) {
         print(paste0("Building regressions... (", count, "/", tot_num_regr, ")"))
       }
-      
-      samples <- comb_ptm_prot %>% filter(id.x == ptm_site)
-      if (!is.na(group)) {
-        samples <- samples %>% filter(!!rlang::sym(groups_colname) == group)
-      }
-
+      samples <- samples_grouped %>% filter(id.x == ptm_site)
       result <- samples[ , c("id.x", "id.y")]
+      
       if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
         lm_design <- model.matrix(lm_formula, samples)
         model <- lmFit(samples$value, lm_design, method = lm_method)
@@ -165,6 +185,8 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
         fitted_ptm_levels <- unlist(as.list(fitted(model)))
         result$residuals <- samples$value - fitted_ptm_levels
         count_norm_ptm <- count_norm_ptm + sum(!is.na(result$residuals))
+        
+        regr_store[[group]][[ptm_site]] <- model
         
       } else {
         result$residuals <- NA
@@ -178,6 +200,10 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
   
   print(paste0("Number of sites normalized: ", count_norm_ptm, "/", nrow(comb_ptm_prot)))
   print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
+  if (!is.null(save_dir)) {
+    regr_path <- file.path(save_dir, "regressions.RDS")
+    saveRDS(regr_store, regr_path)
+  }
   return(all_results)
 }
 
