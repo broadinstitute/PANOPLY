@@ -117,11 +117,20 @@ panoply_blacksheep:
   fraction_samples_cutoff: 0.3
   fdr_value: 0.05
 
+panoply_mimp:
+  groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap
+  search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
+  phosphosite_col: NULL                         # if search_engine = "other," provide name of column in phospho row metadata that indicates phosphosite position
+  protein_id_col: NULL                          # if search_engine = "other," provide name of column in phospho row metadata that indicates protein identifier/accession number
+  mutation_AA_change_colname: "Protein_Change"  # name of column in mutation MAF file that indicates amino acid change due to mutation
+  mutation_type_col: "Variant_Classification"   # name of column in mutation MAF file that indicates type of mutation (aka missense)
+  sample_id_col: "Tumor_Sample_Barcode"        # name of column in mutation MAF file that indicates patient/sample ID 
+  transcript_id_col: "refseq_mrna_id"           # name of column in mutation MAF file that indicates transcript identifier
 
 panoply_ptm_normalization:
   accession_number_colname: 'accession_number'
   accession_numbers_colname: 'accession_numbers'    # set to NULL if not present
-  accession_numbers_separator: '|'                  # ignored if accession_numbers_colname is NULL
+  accession_numbers_separator: '\|'                # ignored if accession_numbers_colname is NULL
   score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
 
 

@@ -74,18 +74,18 @@ swap.accession.numbers <- function (PTM.rdesc, prot.rdesc, accession_number,
     match <- which (prot.rdesc[,accession_number] == PTM.rdesc[row, accession_number])
     if(length(match) == 0){
       # first try to match PTM accession_numbers to protein primary ID
-      accession.numbers <- unlist(strsplit(PTM.rdesc[row,accession_numbers], accession_sep, fixed = TRUE))
-      matches <- prot.rdesc[which(prot.rdesc[,accession_number] %in% accession.numbers),]
+      accession.numbers <- unlist(strsplit(PTM.rdesc[row,accession_numbers], accession_sep))
+      matches <- prot.rdesc[which(unlist (prot.rdesc[,accession_number]) %in% accession.numbers),]
       
       if (nrow(matches) >= 1) {
         best_index <- ifelse (!is.null(score), which.max(matches[,score]), 1)
         PTM.rdesc[row, accession_number] <- matches[best_index, accession_number]
       } else {
         # if the above fails, try to match PTM accession_numbers to all proteome accession_numbers
-        matches <- prot.rdesc.expanded[which(prot.rdesc.expanded[,accession_numbers] %in% accession.numbers),]
+        matches <- prot.rdesc.expanded[which(unlist(prot.rdesc.expanded[,accession_numbers]) %in% accession.numbers),]
         if (nrow(matches) >= 1) {
-          best_index <- ifelse (!is.null(score), which.max(matches[,score]), 1)
-          PTM.rdesc[row, accession_number] <- matches[,accession_number]
+          best_index <- ifelse (!is.null(score), which.max(unlist (matches[,score])), 1)
+          PTM.rdesc[row, accession_number] <- matches[best_index,accession_number]
         } 
       }
     }

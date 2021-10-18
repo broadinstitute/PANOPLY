@@ -1,0 +1,25 @@
+{
+  "menu": {
+    "item": "{{#levelRepeat}}  {{/levelRepeat}}* [{{{title}}}]({{{link}}})\n",
+    "category": "{{#levelRepeat}}  {{/levelRepeat}}* {{#link}}[{{{title}}}]({{{link}}}){{/link}}{{^link}}{{{title}}}{{/link}}\n{{{subitems}}}",
+    "category-1": "{{{subitems}}}\n"
+  },
+  "rules": {
+    "exclude": [],
+    "order": [
+      "Home.md",
+      "PANOPLY-Tutorial.md",
+      "Data-Preparation-Modules.md",
+      "Data-Analysis-Modules.md",
+      "Report-Modules.md",
+      "Support-Modules.md",
+      "Navigating-Results.md",
+      "PANOPLY-without-Terra.md"
+    ]
+  },
+  "separator": ":",
+  "linkTemplate": "./%s",
+  "menuFile": "_Sidebar.md",
+  "multilang": false,
+  "menuOnly": true
+}

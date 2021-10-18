@@ -22,6 +22,7 @@ workflow panoply_unified_workflow {
   String job_id
   String run_ptmsea
   String run_cmap
+  String run_nmf #'true' or 'false'
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
@@ -108,13 +109,15 @@ workflow panoply_unified_workflow {
   }
   
   ### NMF:
-  call mo_nmf_wdl.panoply_mo_nmf_gct_workflow as nmf {
-    input:
-      yaml_file = yaml,
-      label = job_id,
-      omes = norm.normalized_data_table,
-      rna_ome = rna_data,
-      cna_ome = cna_data
+  if ( run_nmf == "true" ){
+    call mo_nmf_wdl.panoply_mo_nmf_gct_workflow as nmf {
+      input:
+        yaml_file = yaml,
+        label = job_id,
+        omes = norm.normalized_data_table,
+        rna_ome = rna_data,
+        cna_ome = cna_data
+    }
   }
   
   ### IMMUNE:
