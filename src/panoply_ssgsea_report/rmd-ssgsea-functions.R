@@ -111,7 +111,7 @@ gg_volc <- function(output.prefix,
                           nudge_y=-5,
                           direction='y',
                           data=data.sig.dn,
-                          force=1, size=3) +
+                          force=1, size=2) +
         
         geom_label_repel( aes(label=Signature),
                           #nudge_x=data.sig.up$Enrichment.Score,
@@ -119,7 +119,7 @@ gg_volc <- function(output.prefix,
                           nudge_y=-5,
                           direction='y',
                           data=data.sig.up,
-                          force=1, size=3)
+                          force=1, size=2)
       
       p <- p + theme_bw() + theme(plot.title=element_text(hjust=0.5))
       
