@@ -154,8 +154,13 @@ panoply_mo_nmf:
   #########################
   ## filtering
   filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05       ## 
-  z_score: TRUE
+  sd_filt: 0.05       ## SD percentile to remove
+  
+  #########################
+  ## z-scoring
+  z_score: TRUE        ## should the data be z-scored?
+  z_score_mode: rowcol ## z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
+  
  
   #########################
   ## imputation
