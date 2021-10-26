@@ -24,7 +24,6 @@ p_load(tibble)
 rmd_mo_nmf <- function(tar.file, label='pipeline-test', fn.ws='workspace_after_NMF.RData', tmp.dir=tempdir()){    
 
     wd <- getwd()
-    #tmp.dir <- tempdir()
       
     ## prepare log file
     logfile=paste0('rmd-mo-nmf-', label, '.log')
@@ -59,7 +58,6 @@ rmd_mo_nmf <- function(tar.file, label='pipeline-test', fn.ws='workspace_after_N
         return(1)
       }
       dir_name <- dir_name[which(idx == 1)]
-      #dir_name <- file.path(tmp.dir, dir_name)
     }
     
     ## get subdirectory, e.g. 'K_4/'  
@@ -124,7 +122,7 @@ output:
 
 # Overview
 
-This document describes the results of the multi-omics non-negative factorization (NMF)-based clustering module. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_mo_nmf).
+This document describes the results of the non-negative matrix factorization (NMF)-based  multi-omics clustering module. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_mo_nmf).
 
 ```{r echo=F, warning=F, message=F}\n
 options(knitr.table.format = 'pipe', stringsAsFactors=F)
@@ -153,7 +151,7 @@ tab_count <- 1
     rmd <- paste0(rmd, "\n
 \n\n# Input data matrix\n
 
-The data matrix subjected to NMF analysis contained ```r nrow(expr)``` features measured across ```r ncol(expr)``` samples. **Table `r tab_count`** summarizes the number of features used in the clustering and their dataype(s).
+The data matrix subjected to NMF analysis contained ```r nrow(expr)``` features measured across ```r ncol(expr)``` samples. **Table `r tab_count`** summarizes the number of features used in the clustering and their data type(s).
 
 \n```{r tab_feat, echo=F, warning=F, message=F}
 tab_feat <- table( sub('^(.*?)-.*', '\\\\1' ,rownames(expr)))
@@ -163,8 +161,9 @@ tab_feat %>%
   kbl(caption=paste0('**Table ', tab_count, '**: Number of features used for clustering.')) %>%
   kable_paper('hover', full_width = F) %>%
   column_spec(2, width = '15em')
-  ## increment
-  tab_count <- tab_count + 1
+  
+## increment
+tab_count <- tab_count + 1
 \n```
 
 ***
@@ -180,10 +179,10 @@ tab_feat %>%
 To determine an optimal value **k** for the number of clusters, a range of **k** between ```r opt$kmin``` and ```r opt$kmax``` was evaluated using several metrics:
 
 * <u>Cophenetic correlation coefficient</u> (**coph**) measuring how well the intrinsic structure of the data is recapitulated after clustering.
-* <u>Dispersion coeffiecient</u> (**disp**) of the consensus matrix as defined in [Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/) measuring the reproducibility of the clustering across ```r opt$nrun``` random iterations.
-* <u>Silhouette score</u> (**sil**) measuring how similar a sample is to its own cluster (cohesion) compared to other clusters (separation) and thus is defined for each sample. The average silhoutte score across all samples serves is calcualted for each cluster number **k**.
+* <u>Dispersion coefficient</u> (**disp**) of the consensus matrix as defined in [Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/) measuring the reproducibility of the clustering across ```r opt$nrun``` random iterations.
+* <u>Silhouette score</u> (**sil**) measuring how similar a sample is to its own cluster (cohesion) compared to other clusters (separation) and thus is defined for each sample. The average silhouette score across all samples is calculated for each cluster number **k**.
 
-The metrics are summarized in **Figure `r fig_count`**. The optimal number of clusters is defined as the maximum of the product of **coph** and  **disp** between **k=`r ifelse(opt$exclude_2, max(c(opt$kmin, 3)), opt$kmin)`** and **k=`r opt$kmax`**.
+The metrics are summarized in **Figure `r fig_count`**. The optimal number of clusters is defined as the maximum of <code>disp^(1-coph)</code> between **k=`r ifelse(opt$exclude_2, max(c(opt$kmin, 3)), opt$kmin)`** and **k=`r opt$kmax`**.
 
 \n```{r cluster_metrics, echo=F, fig.cap=paste0('**Figure ', fig_count,'**: Cluster metrics as a function of cluster numbers.')}
 
@@ -192,7 +191,7 @@ rank.coph <- sapply(res.rank, cophcor)
 ## dispersion of consensus matrix
 rank.disp <- sapply(res.rank, dispersion)
 ## combine
-rank.coph.disp <- rank.coph * rank.disp
+rank.coph.disp <- rank.disp^(1-rank.coph)
 ## silhouette
 rank.sil <- lapply(res.rank, silhouette)
 rank.sil.avg <- lapply(rank.sil, function(x) tapply( x[,3], x[, 1], mean))
@@ -203,7 +202,7 @@ dat <- data.frame(coph=rank.coph, disp=rank.disp, coph.disp=rank.coph.disp, sil.
          k=opt$kmin:opt$kmax)
 plot_ly(x=dat$k, y=dat$coph, type='scatter', mode='markers+lines', name='coph') %>% 
     add_trace(x=dat$k, y=dat$disp, name='disp' ) %>%
-    add_trace(x=dat$k, y=dat$coph.disp, name='coph * disp' ) %>%
+    add_trace(x=dat$k, y=dat$coph.disp, name='disp^(1-coph)' ) %>%
     add_trace(x=dat$k, y=dat$sil.avg, name='sil' ) %>%
     add_segments(x=as.numeric(rank.top) , xend =as.numeric(rank.top) , y = 0, yend = 1, name='k_opt') %>%
     layout(xaxis=list(title='Number of clusters / factorization rank'), yaxis=list(title='Score'))
@@ -219,11 +218,41 @@ fig_count <- fig_count + 1
     }  
 
     ########################################
+    ## sample coefficient heatmap
+    rmd <- paste0(rmd, "\n
+\n# Sample coefficient matrix\n
+
+The heatmap shown in **Figure `r fig_count`** is a visualization of the meta-feature matrix derived from decomposing the input matrix, normalized per column by the maximum entry. The matrix presents one of the main results of NMF as it provides the basis of assigning samples to clusters.  
+
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting the relative contributions of each sample (x-axis) to each cluster (y-axis). Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
+knitr::include_graphics(fig.str[['coef_map']])
+```
+\n\n
+***
+\n")
+    
+    rmd <- paste0(rmd, "\n        
+```{r inc_fig_2, echo=F}
+## increment
+fig_count <- fig_count + 1
+```\n")
+    
+    
+    ########################################
     ## clustering results
     rmd <- paste0(rmd, "\n
-\n\n# Clustering results
+\n\n# Cluster composition
 
-\n The ```r ncol(expr)``` samples were separated into ```r rank.top``` clusters. **Table `r tab_count`** summarizes the number of samples in each cluster.
+\n The ```r ncol(expr)``` samples were separated into ```r rank.top``` clusters. For each sample a cluster membership score is calculated representing how well a sample fits into a cluster. Based on this score a set of core samples is defined that is most representative for a given cluster. 
+
+Two approaches to define the cluster core are currently implemented: 
+
+1) <code>legacy</code>-mode: membership score > ```r opt$core_membership```
+2) <code>mindiff</code>-mode: minimal membership score difference between all cluster pairs > 1/K, where _K_ is the total number of clusters
+
+In this analysis ```r opt$core_membership_mode```-mode was used to define the cluster cores.
+
+**Table `r tab_count`** summarizes the number of samples in each cluster.
 
 \n```{r tab_clust, echo=F, warning=F, message=F}
 clin_anno <- read_tsv(tab.str[['clin_anno']]) %>% select(one_of(c('Sample.ID', 'NMF.consensus', 'NMF.consensus.core')))
@@ -238,44 +267,26 @@ clust_tab <- full_join(clust_tab, clust_core_tab)
 colnames(clust_tab) <- c('Cluster', '# samples', '# core samples')
 
 clust_tab %>%
-  kbl(caption=paste0('**Table ', tab_count,'**: Cluster composition. The cluster core is defined as samples with a cluster membership score > ', opt$core_membership)) %>%
+  kbl(caption=paste0('**Table ', tab_count,'**: Cluster composition. The cluster core is defined by the <code>', opt$core_membership_mode, '</code> method.')) %>%
   kable_paper('hover', full_width = F) %>%
-   column_spec(2:ncol(clust_tab), width = '10em')
+  column_spec(2:ncol(clust_tab), width = '10em')
    
 ## increment
 tab_count <- tab_count + 1
+
 \n```
 
 \n\n
 ***
 \n")
     
-    ########################################
-    ## sample coefficient heatmap
-    rmd <- paste0(rmd, "\n
-\n## Sample coefficient matrix\n
-
-The heatmap shown in **Figure `r fig_count`** is a visualization of the meta-feature matrix derived from decomposing the input matrix, normalized per column by the maximum entry. The matrix presents one of the main results of NMF as it provides the basis of assigning samples to clusters.  
-
-```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting the relative contributions of each sample (x-axis) to each cluster (y-axis). Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
-knitr::include_graphics(fig.str[['coef_map']])
-```
-\n\n
-***
-\n")
-    
-    rmd <- paste0(rmd, "\n        
-```{r inc_fig_2, echo=F}
-## increment
-fig_count <- fig_count + 1
-```\n")
 
     ########################################
     ## enrichment results
     rmd <- paste0(rmd, "\n
 \n## Overrepresentation analysis\n
 
-**Table `r tab_count`** summarizes the results of an overrepresentation analysis of sample metadata terms (e.g. clinical annotation, inferred phenotypes, etc.) in each cluster. Shown are nominal p-values derived from a Fisher's exact test (<span style=\"background-color:#90ee90\">p<0.01</span>, <span style=\"background-color:#ffff00\">0.01<p<0.02</span>, <span style=\"background-color:#ffa500\">0.02<p<0.05</span>). All samples with cluster membership score > ```r opt$core_membership``` were used to characterize the clusters.
+**Table `r tab_count`** summarizes the results of an overrepresentation analysis of sample metadata terms (e.g. clinical annotation, inferred phenotypes, etc.) in each cluster. Shown are nominal p-values derived from Fisher's exact test (<span style=\"background-color:#90ee90\">p<0.01</span>, <span style=\"background-color:#ffff00\">0.01<p<0.02</span>, <span style=\"background-color:#ffa500\">0.02<p<0.05</span>). Only samples that were part of the cluster core were used in the analysis.
 
 ```{r, include=TRUE, echo=FALSE, warning=T, message=F}
 tab_enrich <- read_tsv(tab.str[['enrich_all']])
@@ -309,6 +320,7 @@ if(length(keep) > 0){
 } else {
 p <- 'Nothing to show.'
 }
+
 ## increment
 tab_count <- tab_count + 1
 p
@@ -321,15 +333,15 @@ p
     
     ########################################
     ## cluster-specific features
-    rmd <- paste0(rmd, "\n# Cluster-specifc features
+    rmd <- paste0(rmd, "\n# Cluster-specific features
     
-Matrix _W_ containing the weights of each feature in a certain cluster was used to derive a list of ```r ``` representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt$feat_fdr`are used in subsequent analyses.   
+Matrix _W_ containing the weights of each feature in a certain cluster was used to derive a list of representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt$feat_fdr` were used in subsequent analyses.   
 ")
     
     ## all features, concatenated and ordered by ccluster
     if('feat_hm_concat' %in% names(fig.str)){
       rmd <- paste0(rmd, "\n
-```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster-specific features defined as descibed above. Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
 knitr::include_graphics(fig.str[['feat_hm_concat']])
 ```
 ```{r inc_fig_3, echo=F}
@@ -341,7 +353,7 @@ fig_count <- fig_count + 1
 \n")} else if('feat_hm' %in% names(fig.str)){
   ## all features
   rmd <- paste0(rmd, "\n
-```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster specific features defined as descibed above. Samples are ordered by cluster and cluster membership score in decreasing order.'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster-specific features defined as descibed above. Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
 knitr::include_graphics(fig.str[['feat_hm']])
 ```
 ```{r inc_fig_3, echo=F}
@@ -395,9 +407,9 @@ write.table(nmf_xlsx_comb, sep='\t', file='debug.txt')
     ## barchart of NMF features
     rmd <- paste0(rmd, "
 
-In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the method descibed above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
+In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the method described above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
     
-```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Barpchart depicting the number of cluster specific features'), echo=FALSE, out.width='50%'}
+```{r feat_barplot, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Barchart depicting the number of cluster-specific features (y-axis) per cluster (x-axis)'), echo=FALSE, out.width='50%'}
 knitr::include_graphics(fig.str[['feat_barplot']])
 ```
 
@@ -418,7 +430,7 @@ fig_count <- fig_count + 1
     ## display xlsx    
     rmd <- paste0(rmd, "
     
-The data table below depicts all cluster specific features. The table is interactive and can be sorted and filtered. Please note that the table represents a condensed verison of the entire table which can be found the Excel sheet ```r sub('.*/', '',tab.str[['nmf_feat_xlsx']])```
+The data table below depicts all cluster specific features. The table can be sorted and filtered interactively. Please note that the table represents a condensed verison of the entire table which can be found in the Excel sheet ```r sub('.*/', '',tab.str[['nmf_feat_xlsx']])``` in the result tarball.
 
 ```{r display_feat_xlsx, echo=F}
 DT::datatable(nmf_xlsx_comb, width='800', escape=F, filter='top', rownames=FALSE,
@@ -443,7 +455,7 @@ DT::datatable(nmf_xlsx_comb, width='800', escape=F, filter='top', rownames=FALSE
     rmd <- paste0(rmd, "\n# Cluster stability
 \n\n## Consensus matrix\n
 
- The entries in the sample-by-samle matrix shown in **Figure `r fig_count`** depict the relative frequences with which two samples were assigned to the same cluster across ```r opt$nrun``` iterations.
+ The entries in the sample-by-sample matrix shown in **Figure `r fig_count`** depict relative frequencies with which two samples were assigned to the same cluster across ```r opt$nrun``` randomly initialized iterations of NMF.
 
 
 ```{r, include=TRUE, fig.align='center', fig.cap=paste0('**Figure ', fig_count, '**: Consensus matrix derived from ', opt$nrun,' randomly initialized iterations.'), echo=FALSE}
@@ -486,7 +498,7 @@ fig_count <- fig_count + 1
     ## parameters
     rmd <- paste0(rmd, "\n# Parameters
     
-Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_mo_nmf).    
+Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_mo_nmf).    
     
 ```{r params, include=TRUE, echo=FALSE, warning=T, message=F}
 tab_param <- data.frame(param=names(opt), value=unlist(opt))
