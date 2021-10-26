@@ -3,7 +3,7 @@ MAINTAINER proteogenomics@broadinstitute.org
 
 LABEL description="Docker to create tar ball as input for panoply_mo_nmf"
 
-RUN apt-get update && apt-get install -y dos2unix
+RUN apt-get update --allow-releaseinfo-change && apt-get install -y dos2unix
 
 ENV wd /home/pgdac/
 COPY . $wd

@@ -133,7 +133,6 @@ panoply_ptm_normalization:
   accession_numbers_separator: '\|'                # ignored if accession_numbers_colname is NULL
   score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
 
-
 ########################################
 ## multi-omics NMF clustering
 panoply_mo_nmf:
@@ -142,13 +141,18 @@ panoply_mo_nmf:
   kmin: 2              ## minimum number of clusters    
   kmax: 10             ## maximum number of clusters
   exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
-  core_membership: 0.5 ## minimal cluster membership
- 
+
+  ## core membership
+  core_membership_mode: mindiff ## 'legacy'  - membership score > 'core_membership'
+                                ## 'mindiff' - minimal difference between fractional scores of cluster pairs >1/K 
+  core_membership: 0.5          ## minimal cluster membership used in lagacy mode
+  sample_order: clust_then_core_then_score  ## determines how samples in the heatmaps are ordered 
+                                            ## "clust_then_score"" or "clust_then_core_then_score"
   #########################
   ## NMF parameters
   nrun: 50         ## number of iterations
   seed: random     ## initialization method for the itertions
-  method: brunet   ## NMF method  
+  method: lee   ## NMF method implemented in R-package 'NMF'   
   bnmf: FALSE      ## NOT SUPPORTED
   
   #########################
@@ -171,8 +175,13 @@ panoply_mo_nmf:
   #########################
   ## filtering
   filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05       ## 
-  z_score: TRUE
+  sd_filt: 0.05       ## SD percentile to remove
+  
+  #########################
+  ## z-scoring
+  z_score: TRUE        ## should the data be z-scored?
+  z_score_mode: rowcol ## z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
+  
  
   #########################
   ## imputation
