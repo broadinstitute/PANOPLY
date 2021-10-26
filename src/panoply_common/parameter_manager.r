@@ -118,8 +118,22 @@ option_list <- list(
   make_option(c("--blacksheep_identifiers_file"), dest = 'blacksheep_identifiers_file', help = "blacksheep_identifiers_file"),
   make_option(c("--blacksheep_groups_file"), dest = 'blacksheep_groups_file', help = "blacksheep_groups_file"),
   make_option(c("--blacksheep_fraction_samples_cutoff"), type = "double", dest = 'blacksheep_fraction_samples_cutoff', help = "blacksheep_fraction_samples_cutoff"),
-  make_option(c("--blacksheep_fdr_value"), type = "double", dest = 'blacksheep_fdr_value', help = "blacksheep_fdr_value")
-  )
+  make_option(c("--blacksheep_fdr_value"), type = "double", dest = 'blacksheep_fdr_value', help = "blacksheep_fdr_value"),
+  make_option(c("--accession_number_colname"), type = "character", dest = 'accession_number_colname', help = "column with accession number (for proteome or PTM data)"),
+  make_option(c("--accession_numbers_colname"), type = "character", dest = 'accession_numbers_colname', help = "column with list of accession numbers (for subgroup)"),
+  make_option(c("--accession_numbers_separator"), type = "character", dest = 'accession_numbers_separator', help = "separator used in accession numbers column"),
+  make_option(c("--score_colname"), type = "character", dest = 'score_colname', help = "column with protein score"),
+  # mimp_module:
+  make_option(c("--mimp_groups_file_path"), dest = 'mimp_groups_file_path', help = "mimp_groups_file_path"),
+  make_option(c("--mimp_search_engine"), type = "character", dest = 'mimp_search_engine', help = "mimp_search_engine"),
+  make_option(c("--mimp_phosphosite_col"), dest = 'mimp_phosphosite_col', help = "mimp_phosphosite_col"),
+  make_option(c("--mimp_protein_id_col"), dest = 'mimp_protein_id_col', help = "mimp_protein_id_col"),
+  make_option(c("--mimp_mutation_AA_change_colname"), type = "character", dest = 'mimp_mutation_AA_change_colname', help = "mimp_mutation_AA_change_colname"),
+  make_option(c("--mimp_mutation_type_col"), type = "character", dest = 'mimp_mutation_type_col', help = "mimp_mutation_type_col"),
+  make_option(c("--mimp_sample_id_col"), type = "character", dest = 'mimp_sample_id_col', help = "mimp_sample_id_col"),
+  make_option(c("--mimp_transcript_id_col"), type = "character", dest = 'mimp_transcript_id_col', help = "mimp_transcript_id_col")
+
+)
 
 
 opt_parser <- OptionParser(option_list=option_list)
@@ -147,6 +161,8 @@ p_load('yaml')
 # blacksheep
 # mo_nmf
 # ssgsea_projection
+# ptm_normalization
+# mimp
 
 ### FUNCTIONS:
 
@@ -582,6 +598,23 @@ check_blacksheep_params <- function(opt, yaml){
   return(yaml)
 }
 
+# ptm_normalization:
+check_ptm_normalization_params <- function(opt, yaml){
+  if (!is.null(opt$accession_number_colname)){
+    yaml$panoply_ptm_normalization$accession_number_colname <- opt$accession_number_colname
+  }
+  if (!is.null(opt$accession_numbers_colname)){
+    yaml$panoply_ptm_normalization$accession_numbers_colname <- opt$accession_numbers_colname
+  }
+  if (!is.null(opt$accession_numbers_separator)){
+    yaml$panoply_ptm_normalization$accession_numbers_separator <- opt$accession_numbers_separator
+  }
+  if (!is.null(opt$score_colname)){
+    yaml$panoply_ptm_normalization$score_colname <- opt$score_colname
+  }
+  return(yaml)
+}
+
 # association:
 check_association_params <- function(opt, yaml){
   if (!is.null(opt$fdr_assoc)){
@@ -594,6 +627,35 @@ check_association_params <- function(opt, yaml){
 check_association_report_params <- function(opt, yaml){
   if (!is.null(opt$fdr_value)){
     yaml$panoply_association_report$fdr_value <- opt$fdr_value
+  }
+  return(yaml)
+}
+
+#mimp:
+check_mimp_params <- function(opt, yaml){
+  if (!is.null(opt$mimp_groups_file_path)){
+    yaml$panoply_mimp$groups_file_path <- opt$mimp_groups_file_path
+  }
+  if (!is.null(opt$mimp_search_engine)){
+    yaml$panoply_mimp$search_engine <- opt$mimp_search_engine
+  }
+  if (!is.null(opt$mimp_phosphosite_col)){
+    yaml$panoply_mimp$phosphosite_col <- opt$mimp_phosphosite_col
+  }
+  if (!is.null(opt$mimp_protein_id_col)){
+    yaml$panoply_mimp$protein_id_col <- opt$mimp_protein_id_col
+  }
+  if (!is.null(opt$mimp_mutation_AA_change_colname)){
+    yaml$panoply_mimp$mutation_AA_change_colname <- opt$mimp_mutation_AA_change_colname
+  }
+  if (!is.null(opt$mimp_mutation_type_col)){
+    yaml$panoply_mimp$mutation_type_col <- opt$mimp_mutation_type_col
+  }
+  if (!is.null(opt$mimp_sample_id_col)){
+    yaml$panoply_mimp$sample_id_col <- opt$mimp_sample_id_col
+  }
+  if (!is.null(opt$mimp_transcript_id_col)){
+    yaml$panoply_mimp$transcript_id_col <- opt$mimp_transcript_id_col
   }
   return(yaml)
 }
@@ -617,6 +679,8 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_mo_nmf_params(opt, yaml)
   yaml <- check_ssgsea_projection_params(opt, yaml)
   yaml <- check_blacksheep_params(opt, yaml)
+  yaml <- check_ptm_normalization_params(opt, yaml)
+  yaml <- check_mimp_params(opt, yaml)
   return(yaml)
 }
 
@@ -819,6 +883,14 @@ parse_command_line_parameters <- function(opt){
     
   }else if (opt$module == 'ssgsea_projection' & check_if_any_command_line(opt)){
     yaml <- check_ssgsea_projection_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+    
+  }else if (opt$module == 'ptm_normalization' & check_if_any_command_line(opt)){
+    yaml <- check_ptm_normalization_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+
+  }else if (opt$module == 'mimp' & check_if_any_command_line(opt)){
+    yaml <- check_mimp_params(opt,yaml)
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'pipeline'){
