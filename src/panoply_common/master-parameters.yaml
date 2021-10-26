@@ -125,13 +125,18 @@ panoply_mo_nmf:
   kmin: 2              ## minimum number of clusters    
   kmax: 10             ## maximum number of clusters
   exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
-  core_membership: 0.5 ## minimal cluster membership
- 
+
+  ## core membership
+  core_membership_mode: mindiff ## 'legacy'  - membership score > 'core_membership'
+                                ## 'mindiff' - minimal difference between fractional scores of cluster pairs >1/K 
+  core_membership: 0.5          ## minimal cluster membership used in lagacy mode
+  sample_order: clust_then_core_then_score  ## determines how samples in the heatmaps are ordered 
+                                            ## "clust_then_score"" or "clust_then_core_then_score"
   #########################
   ## NMF parameters
   nrun: 50         ## number of iterations
   seed: random     ## initialization method for the itertions
-  method: brunet   ## NMF method  
+  method: lee   ## NMF method implemented in R-package 'NMF'   
   bnmf: FALSE      ## NOT SUPPORTED
   
   #########################

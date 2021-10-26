@@ -1,0 +1,15 @@
+.DS_Store
+*~
+*.Rproj
+.Rproj.user
+.Rhistory
+cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx
+cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_n473647x12328.gctx
+cmap-data/cmap-data-subsets/
+cmap-data/GSE92742_Broad_LINCS_pert_info.txt
+gdac-firecloud/
+test/input/
+misc/
+analysis
+hydrant/drmani-github-access-token
+Thumbs.db

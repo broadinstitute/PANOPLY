@@ -257,8 +257,6 @@ main <- function(opt){
     ranks <- sort(opt$kmin:opt$kmax)
     seed <- opt$seed
     nrun <- opt$nrun
-    #nrun.bs <- opt$nrun.bs ## bootstrap iterations
-    #nmf_method <- ifelse(opt$bnmf, 'bnmf', 'nmf')
     nmf_method <- opt$method 
       
     cores <- detectCores()
@@ -270,9 +268,6 @@ main <- function(opt){
     ## ###################################################
     tmp.dir <- tempdir()
     
-    ## data filtering / normalization
-    #zscore.cnv <-  F     ## should CNVs be z-scored?
- 
     ## #########################################################################################
     ##
     ##                               START
