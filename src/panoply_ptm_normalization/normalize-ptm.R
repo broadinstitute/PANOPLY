@@ -75,8 +75,10 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
     norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
-  } else if (norm_method == "pairwise") {
+  } else if (norm_method == "pairwise" | norm_method == "per_ptm_site") {
     norm_vals <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
+  } else if (norm_method == "per_protein") {
+    norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "subtract") {
     norm_vals <- normalize_subtract(comb_ptm_prot)
   }
@@ -199,6 +201,72 @@ normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_coln
   }
   
   print(paste0("Number of sites normalized: ", count_norm_ptm, "/", nrow(comb_ptm_prot)))
+  print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
+  if (!is.null(save_dir)) {
+    regr_path <- file.path(save_dir, "regressions.RDS")
+    saveRDS(regr_store, regr_path)
+  }
+  return(all_results)
+}
+
+normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
+  if (!is.null(groups_colname)) {  # if use all samples
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
+  } else {
+    sample_groups <- c(NA)  # to use all samples
+  }
+  
+  all_prot <- unique(comb_ptm_prot$accession_number)  # avoid hard-coding "accession_number" column
+  tot_num_regr <- length(all_prot) * length(sample_groups)
+  print(paste("Found", length(all_prot), "unique proteins and", length(sample_groups),
+              "sample group(s);", tot_num_regr, "regressions to be built", sep = " "))
+  
+  # create a dataframe placeholder to store results in
+  all_results <- data.frame(matrix(ncol = 3, nrow = 0))
+  colnames(all_results) <- c("id.x", "id.y", "residuals")
+  
+  count <- 1
+  count_norm_ptm <- 0  # count proteins and samples that are normalized
+  count_fail_regr <- 0  # count number of regressions that can't be built
+  # loop through all proteins, build regression for each
+  regr_store <- list()
+  for (group in sample_groups) {
+    if (!is.na(group)) {
+      samples_grouped <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
+    } else {
+      group <- "all"
+      samples_grouped <- comb_ptm_prot
+    }
+    regr_store[[group]] <- list()
+    
+    for (prot in all_prot) {
+      if (count == 1 | count %% 500 == 0) {
+        print(paste0("Building regressions... (", count, "/", tot_num_regr, ")"))
+      }
+      samples <- samples_grouped %>% filter(accession_number == prot)
+      result <- samples[ , c("id.x", "id.y")]
+      
+      if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
+        lm_design <- model.matrix(lm_formula, samples)
+        model <- lmFit(samples$value, lm_design, method = lm_method)
+        
+        fitted_ptm_levels <- unlist(as.list(fitted(model)))
+        result$residuals <- samples$value - fitted_ptm_levels
+        count_norm_ptm <- count_norm_ptm + sum(!is.na(result$residuals))
+        
+        regr_store[[group]][[prot]] <- model
+        
+      } else {
+        result$residuals <- NA
+        count_fail_regr <- count_fail_regr + 1
+      }
+      
+      all_results <- rbind(all_results, result)
+      count <- count + 1
+    }
+  }
+  
+  print(paste0("Number of PTMs normalized: ", count_norm_ptm, "/", nrow(comb_ptm_prot)))
   print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
   if (!is.null(save_dir)) {
     regr_path <- file.path(save_dir, "regressions.RDS")
