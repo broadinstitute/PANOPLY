@@ -42,6 +42,7 @@ panoply_rna_protein_correlation:
   rna:
     rna_sd_threshold: 1            # for variation filter (set to NA to disable)
     profile_plot_top_n: 25
+    rna_row_norm_method: 'median'
 
 
 panoply_harmonize:
