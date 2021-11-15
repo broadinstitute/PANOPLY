@@ -19,6 +19,7 @@ p_load(reshape)
 p_load(yaml)
 p_load(tidyr)
 p_load(limma)
+p_load(lme4)
 
 source("panoply_ptm_normalization/helper.R")
 source("panoply_ptm_normalization/metrics.R")
@@ -33,12 +34,12 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           score = "scoreUnique",                         # column with protein scores
                           ndigits = 5,                                   # precision level
                           center_data = TRUE,                                 # whether to center the data with median
-                          norm_method = "global",                        # normalization method (options: global, pairwise, subtract)
+                          norm_method = "global",                        # normalization method (options: global, per_ptm_site, subtract)
                           lm_method = "ls",                              # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
                           lm_formula = value ~ value.prot,               # formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
                           groups_colname = NULL,                         # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
                           subset_cond = NULL,                            # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
-                          min_n_values = 4,                              # pairwise: what least number of samples must contain both non-NA PTM and protein values
+                          min_n_values = 4,                              # per_ptm_site: what least number of samples must contain both non-NA PTM and protein values
                           data_dir = "data",
                           model_name = "proteome_relative_norm")         # subfolder name in which to store results)
 {
@@ -72,13 +73,19 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   model_out_dir <- file.path(data_dir, "out", model_name)
   dir.create(model_out_dir, showWarnings = FALSE)
   
+  return(comb_ptm_prot)
+  
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
     norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
-  } else if (norm_method == "pairwise" | norm_method == "per_ptm_site") {
-    norm_vals <- normalize_pairwise(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
+  } else if (norm_method == "per_ptm_site" | norm_method == "per_ptm_site") {
+    norm_vals <- normalize_per_ptm_site(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "per_protein") {
     norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
+  } else if (norm_method == "mixed_eff_protein") {
+    norm_vals <- normalize_mixed_eff_prot(comb_ptm_prot)
+  } else if (norm_method == "mixed_eff_ptm_site") {
+    norm_vals <- normalize_mixed_eff_ptm(comb_ptm_prot)
   } else if (norm_method == "subtract") {
     norm_vals <- normalize_subtract(comb_ptm_prot)
   }
@@ -143,7 +150,7 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
 #' for each PTM-protein pair across selected or all samples
-normalize_pairwise <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
+normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -286,6 +293,27 @@ normalize_subtract <- function(comb_ptm_prot) {
   return(all_results)
 }
 
+normalize_mixed_eff_prot <- function(comb_ptm_prot) {
+  model <- lmer(formula = value ~ 1 + value.prot + (1 + value.prot | id.x),
+             data = comb_ptm_prot,
+             control = lmerControl(optimizer = 'Nelder_Mead'),
+             REML= T)
+  coef.M1 <- coef(M1)$id.x.ub
+  
+  ub.norm.multi <- ub.overlap
+  intercepts <- coef.M1[ub.norm.multi@rid,1]
+  normalization.matrix <- prot@mat[ub.norm.multi@rdesc$accession_number,]*coef.M1[ub.norm.multi@rid,2]
+  ub.norm.multi@mat <- 
+    ub.norm.multi@mat - 
+    intercepts - 
+    normalization.matrix
+  ub.norm.multi.melt <- melt_gct(ub.norm.multi)
+  
+}
+
+normalize_mixed_eff_ptm <- function(comb_ptm_prot) {
+
+}
 
 if (!interactive()) {
   ## call via command line
