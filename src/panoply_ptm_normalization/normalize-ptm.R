@@ -73,8 +73,6 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   model_out_dir <- file.path(data_dir, "out", model_name)
   dir.create(model_out_dir, showWarnings = FALSE)
   
-  return(comb_ptm_prot)
-  
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
     norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
@@ -83,9 +81,9 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   } else if (norm_method == "per_protein") {
     norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "mixed_eff_protein") {
-    norm_vals <- normalize_mixed_eff_prot(comb_ptm_prot)
+    norm_vals <- normalize_mixed_eff_prot(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "mixed_eff_ptm_site") {
-    norm_vals <- normalize_mixed_eff_ptm(comb_ptm_prot)
+    norm_vals <- normalize_mixed_eff_ptm(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "subtract") {
     norm_vals <- normalize_subtract(comb_ptm_prot)
   }
@@ -293,26 +291,95 @@ normalize_subtract <- function(comb_ptm_prot) {
   return(all_results)
 }
 
-normalize_mixed_eff_prot <- function(comb_ptm_prot) {
-  model <- lmer(formula = value ~ 1 + value.prot + (1 + value.prot | id.x),
-             data = comb_ptm_prot,
-             control = lmerControl(optimizer = 'Nelder_Mead'),
-             REML= T)
-  coef.M1 <- coef(M1)$id.x.ub
+normalize_mixed_eff_prot <- function(comb_ptm_prot, groups_colname, min_n_values, save_dir = NULL) {
+  if (!is.null(groups_colname)) {  # if use all samples
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
+  } else {
+    sample_groups <- c(NA)  # to use all samples
+  }
   
-  ub.norm.multi <- ub.overlap
-  intercepts <- coef.M1[ub.norm.multi@rid,1]
-  normalization.matrix <- prot@mat[ub.norm.multi@rdesc$accession_number,]*coef.M1[ub.norm.multi@rid,2]
-  ub.norm.multi@mat <- 
-    ub.norm.multi@mat - 
-    intercepts - 
-    normalization.matrix
-  ub.norm.multi.melt <- melt_gct(ub.norm.multi)
+  print ("Fitting model...") 
+  all_results <- data.frame(matrix(ncol = 3, nrow = 0))
+  colnames(all_results) <- c("id.x", "id.y", "residuals")
   
+  regr_store <- list()
+  count_fail_ptm <- 0  # count PTM sites and samples that can't be normalized
+  for (group in sample_groups) {
+    if (is.na(group)) {
+      samples <- comb_ptm_prot
+      group <- "all"
+    } else {
+      samples <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
+    }
+    
+    if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
+      model <- lmer(formula = value ~ value.prot + (value.prot | accession_number),
+                    data = samples,
+                    control = lmerControl(optimizer = 'Nelder_Mead'),
+                    REML = T)
+      prot_slope <- coef(model)$accession_number[samples$accession_number, "value.prot"]
+      prot_intcp <- coef(model)$accession_number[samples$accession_number, 1]
+      result <- samples[ , c("id.x", "id.y")]
+      result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
+      
+      all_results <- rbind(all_results, result)
+      count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
+      regr_store[[group]] <- model
+    }
+  }
+  
+  print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
+  if (!is.null(save_dir)) {
+    regr_path <- file.path(save_dir, "regressions.RDS")
+    saveRDS(regr_store, regr_path)
+  }
+  return(all_results)
 }
 
-normalize_mixed_eff_ptm <- function(comb_ptm_prot) {
-
+normalize_mixed_eff_ptm <- function(comb_ptm_prot, groups_colname, min_n_values, save_dir = NULL) {
+  if (!is.null(groups_colname)) {  # if use all samples
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
+  } else {
+    sample_groups <- c(NA)  # to use all samples
+  }
+  
+  print ("Fitting model...") 
+  all_results <- data.frame(matrix(ncol = 3, nrow = 0))
+  colnames(all_results) <- c("id.x", "id.y", "residuals")
+  
+  regr_store <- list()
+  count_fail_ptm <- 0  # count PTM sites and samples that can't be normalized
+  for (group in sample_groups) {
+    if (is.na(group)) {
+      samples <- comb_ptm_prot
+      group <- "all"
+    } else {
+      samples <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
+    }
+    
+    if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
+      model <- lmer(formula = value ~ value.prot + (value.prot | id.x),
+                    data = samples,
+                    control = lmerControl(optimizer = 'Nelder_Mead'),
+                    REML = T)
+      
+      prot_slope <- coef(model)$id.x[samples$id.x, "value.prot"]
+      prot_intcp <- coef(model)$id.x[samples$id.x, 1]
+      result <- samples[ , c("id.x", "id.y")]
+      result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
+      
+      all_results <- rbind(all_results, result)
+      count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
+      regr_store[[group]] <- model
+    }
+  }
+  
+  print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
+  if (!is.null(save_dir)) {
+    regr_path <- file.path(save_dir, "regressions.RDS")
+    saveRDS(regr_store, regr_path)
+  }
+  return(all_results)
 }
 
 if (!interactive()) {
