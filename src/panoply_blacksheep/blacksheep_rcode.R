@@ -63,6 +63,7 @@ create_groupsfile_annotations = function(gct, groups_file, SampleID_column, data
   
   annotations = read.csv(groups_file, stringsAsFactors = F, na.strings=c("", "NA")) %>%
     column_to_rownames(SampleID_column)
+  annotations <- apply(annotations, 2, function(x) gsub("_","-", x)) # replace _ with -, in order to avoid a conflict with the RegEx ~line 242
   annotations[is.na(annotations)] = "NA"
   
   annotations = annotations[names(data_values),]
