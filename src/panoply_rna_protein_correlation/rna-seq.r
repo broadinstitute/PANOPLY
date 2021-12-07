@@ -33,8 +33,18 @@ run.order <- sapply (samples.order,
                      })
 d <- add.cols.gct (d, data.frame (na.col=rep(NA, nrow(d@mat))))   # add NA column at the end -- use for missing samples
 d <- rearrange.gct (d, run.order, new.cid=samples.order)
-write.gct (d, paste (out.prefix, '.gct', sep=''), ver=3, appenddim=FALSE)  # write out GCT v1.3
 
+if (rna.row.norm.method == "mean") { # normalize sample mrna to a 'common reference' expression level for each gene
+  center <- apply (d@mat, 1, mean, na.rm=TRUE) # compute mean for each row (i.e. gene), excluding NA values
+} else if (rna.row.norm.method == "median") {
+  center <- apply (d@mat, 1, median, na.rm=TRUE) # compute median for each row (i.e. gene), excluding NA values
+} else {
+  warning("The method specified with 'rna.row.norm.method' is not a valid option. Defaulting to median.")
+  center <- apply (d@mat, 1, median, na.rm=TRUE) #or else write NA
+}
+d@mat <- sweep(d@mat, 1, center) #normalize data according to chosen center (subtracted out)
+
+write.gct (d, paste (out.prefix, '.gct', sep=''), ver=3, appenddim=FALSE)  # write out GCT v1.3
 
 ## filters
 # exclude rows with SD less than sd.threshold
