@@ -11,7 +11,7 @@ FROM broadcptacdev/panoply_rmd_report:latest
 #         Cairo \
 #         data.table \
 #     && rm -rf /tmp/*
-RUN apt-get update && apt-get install -y dos2unix
+RUN apt-get update --allow-releaseinfo-change && apt-get install -y dos2unix
 
 ENV wd /home/pgdac/
 COPY . $wd

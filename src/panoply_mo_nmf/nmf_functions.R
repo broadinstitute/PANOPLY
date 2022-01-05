@@ -5,10 +5,11 @@
 ###########################################
 ## returns 'topn.rank' no. of clusters
 ## with max. 'metric'-scores
-GetBestRank <- function(metric,      ## vector of a metric to assess clustering
-                        topn.rank=1, ## No. of topN ranks
+GetBestRank <- function(metric,       ## vector of a metric to assess clustering
+                        topn.rank=1,  ## Number of of top N ranks to return
                         exclude_2=F,  ## should rank=2 be excluded?
-                        rel.inc=1e-3
+                        rel.inc=1e-6  ## stop criteria for relative increase from K to K+1
+                                      ## update to 1e-6 when applied to: rank.disp^(1-rank.coph)
                         ){
 
   ## https://stackoverflow.com/questions/6836409/finding-local-maxima-and-minima
@@ -37,23 +38,21 @@ GetBestRank <- function(metric,      ## vector of a metric to assess clustering
   i <- 1
   while(!success){
 
-    #cat(i,' - rank top:', rank.top,'\n')
-
     top_k <- metric[rank.top]
     this_k <- metric[i]
 
+    ## last entry
     if(i == length(metric)){
       if(this_k > top_k){
-        inc_perc <-(this_k - top_k)/abs(top_k)
+        
+        inc_perc <- (this_k - top_k)/abs(top_k)
         if(inc_perc > rel.inc)
           rank.top <- names(metric)[i]
-      }
-      #rank.top <- names(metric)[i]
+        }
       success <- T
-
     } else {
 
-       next_k <- metric[i+1]
+      next_k <- metric[i+1]
 
       if(next_k < this_k){
           i <- i+1
@@ -61,11 +60,11 @@ GetBestRank <- function(metric,      ## vector of a metric to assess clustering
       if(next_k >= this_k){
 
         if(next_k > top_k){
+          
+          ## percent increase 
+          inc_perc <- (next_k - top_k)/abs(top_k)
 
-          inc_perc <-(next_k - top_k)/abs(top_k)
-          #cat('diff:', inc_perc, '\n')
           if(inc_perc < rel.inc){
-            #rank.top <- names(metric)[i]
             success <- T
           } else {
             rank.top <- names(metric)[i + 1]
@@ -113,10 +112,6 @@ CalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
       x21 <- sum( class.vec.not.clust %in%  class.level )
       x22 <- sum(!(class.vec.not.clust %in% class.level ))
         
-      #n <- length(class.vec.clust)
-      #p <- sum( (class.vec %in% class.level)/length(class.vec) )
-    
-      
       # Fisher's p
       res.per.clust[clust, class.level] <- fisher.test( rbind(c(x11, x12), c(x21, x22)), alternative = 'greater')$p.value
       
@@ -457,7 +452,6 @@ import.data.sets <- function(tar.file, tmp.dir, zscore.cnv=F){
 
 }
 
-
 ## ##############################################
 ## filter datasets
 filter.datasets <- function(gct.comb,
@@ -740,11 +734,12 @@ MyPheatMap <- function(m, cdesc, cdesc.color, rdesc=NULL, class.variable, variab
 ################################################
 ## boxplots comapring continous variables
 ##
-boxplotPerCluster <- function(cdesc,   ## clin.anno
-                              nmf2col,     ## vector af length k mapping colors to clusters
-                              cont_anno,     ## continous variables to include
-                              core_membership=0.5,
-                              blank.anno = 'N/A'
+boxplotPerCluster <- function(cdesc,              ## cdesc object
+                              nmf2col,            ## vector af length k mapping colors to clusters
+                              cont_anno,          ## continuous variables to include
+                              show_all=FALSE,     ## if TRUE. all samples will used; only core cluster members otherwise
+                              blank.anno = 'N/A',
+                              fn=NULL
                               ){
   
   ######################
@@ -772,15 +767,18 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
   
   ###############################
   ## loop over variables
-  pdf(paste0('7.0_boxplots-min-membership-',core_membership,'.pdf'), 5, 5)
+  if(is.null(fn))
+    fn <- paste0('7.0_boxplots-', ifelse(show_all, 'all', 'core'), '-samples.pdf')
+  pdf(paste0(fn), 5, 5)
   for(var in cont_anno){
-    
     
     cdesc.filt <- cdesc[!grepl(blank.anno, cdesc[, var]), ]
     cdesc.filt[, var] <- as.numeric(cdesc.filt[, var])
     
-    cdesc.filt <- cdesc.filt %>% filter(NMF.cluster.membership > core_membership) 
-      
+    if(!show_all)
+      cdesc.filt <- cdesc.filt %>% filter(!is.na(NMF.consensus.core) )
+    
+    
     p <-  ggboxplot(cdesc.filt, x="NMF.consensus", y=var, add='jitter', palette=nmf2col, color = "NMF.consensus", size=1.5) + 
         ggtitle(var) +
         stat_compare_means(comparisons=comps)
@@ -795,17 +793,16 @@ boxplotPerCluster <- function(cdesc,   ## clin.anno
 ## #############################################
 ## main function ...
 ##
-nmf.post.processing <- function(ws,                       ## filename of R-workspace
-                                blank.anno = 'N/A',       ## used to replace blanks/NAs in meta data
-                                blank.anno.col = 'white', ## color for blanks/NAs usind in heatmap annotation tracks
-                                #blank.anno.col = 'grey90', ## color for blanks/NAs usind in heatmap annotation tracks
-                                
-                                core_membership=0.5,      ## NMF.cluster.membership score to define core memebrship
-                                                          ## cluster enrichment of clinical variables will be done on the core set 
-                                feature.fdr=0.01,         ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
-                                ora.pval= 0.01,           ## p-value for overrepresenation analysis of core cluster with categorial metadata 
-                                ora.max.categories=10,    ## max. number of levels in categorial metadata to be included on the 
-                                                          ## overrepresentation analysis
+nmf.post.processing <- function(ws,                           ## filename of R-workspace
+                                blank.anno = 'N/A',           ## used to replace blanks/NAs in meta data
+                                blank.anno.col = 'white',     ## color for blanks/NAs used in heatmap annotation tracks
+                                core_membership=0.5,          ## NMF.cluster.membership score to define core membership
+                                                              ## cluster enrichment of clinical variables will be done on the core set 
+                                feature.fdr=0.01,             ## FDR for NMF features after 2-sample mod T (cluster vs. rest)
+                                ora.pval= 0.01,               ## p-value for overrepresenation analysis of core cluster with categorical metadata 
+                                ora.max.categories=10,        ## max. number of levels in categorical metadata to be included on the 
+                                                              ## overrepresentation analysis
+                                test.all.markers=F,           ## dev option, not working yet
                                 organism=c('human', 'mouse', 'rat') ## required to annotate features
                       ){
 
@@ -888,7 +885,6 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
   ## ############################################
   ## save a copy
-  #expr.full.org <- expr.full
   expr.org <- expr
   cdesc.org <- cdesc
   rdesc.org <- rdesc
@@ -962,20 +958,43 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
 
     #########################################
     ## cluster membership score:
-    ## - fractional
-    NMF.cluster.membership.alldigits <- apply(H, 2, function(x) max(x/sum(x)))
+    ## - fractional scores
+    H_frac  <- apply(H, 2, function(x) x/sum(x))
+    NMF.cluster.membership.alldigits <- apply(H_frac, 2, max)
     NMF.cluster.membership <- round( NMF.cluster.membership.alldigits, 3)
-    
     
     ## map consensus to basis
     NMF.consensus.map <- NMF.consensus
     for(ii in 1:as.numeric(rank))
       NMF.consensus[ NMF.consensus == ii ] <-  NMF.basis[NMF.consensus == ii]
     
-    ##########################################
-    ## define core membership
+    ###########################################################
+    ## 
+    ##         define core cluster membership
+    ##
+    ###########################################################
     NMF.consensus.core <- NMF.consensus
-    NMF.consensus.core[ which(NMF.cluster.membership.alldigits < core_membership) ] <- NA
+    
+    ## legacy: fractional membership score > 0.5
+    if(opt$core_membership_mode == 'legacy'){
+      NMF.consensus.core[ which(NMF.cluster.membership.alldigits < core_membership) ] <- NA
+    }
+    
+    ## minimal difference between fractional cluster scores
+    if(opt$core_membership_mode == 'mindiff'){
+     
+      core_idx <- apply(H_frac, 2, function(x){
+        s_frac <- x/sum(x)
+        ## difference between max score and all other cluster scores
+        s_max_diff <- max(s_frac) - s_frac
+        s_max <- which.max(x)
+        # difference has to be greater than 1/rank (number of clusters)
+        keep <- sum( s_max_diff[-c(s_max)] > 1/length(x) ) == length(x)-1
+        keep
+      })
+      
+      NMF.consensus.core[ which( !core_idx ) ] <- NA
+    }
     
     ## add to cdesc
     cdesc <- data.frame(cdesc, 
@@ -1014,9 +1033,24 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     cons.map.mat.signif <- apply(cons.map.mat, 1, function(x) paste( names(x)[x < ora.pval], collapse='|') )
     cons.map.mat.signif <- data.frame(cluster=names(cons.map.mat.signif), enriched=cons.map.mat.signif)
 
+    #############################
+    ## export
+    ## nominal p-values
     write.table(t(cons.map.mat), sep='\t', file=paste('cluster-enrichment.txt', sep=''), quote=F, row.names=T, col.names = NA)
     write.table(cons.map.mat.signif, sep='\t', file=paste('cluster-enrichment-signif-nom-p-', ora.pval, '.txt', sep=''), quote=F, row.names=F)
-
+    
+    ## ###########################
+    ## FWER correction (Bonferroni)
+    n_tests <- length(unlist(cons.map.mat))
+    cons.map.mat.fwer <- cons.map.mat*n_tests
+    cons.map.mat.fwer[ cons.map.mat.fwer > 1] <- 1
+    cons.map.mat.fwer.signif <- apply(cons.map.mat.fwer, 1, function(x) paste( names(x)[x < ora.pval], collapse='|') )
+    cons.map.mat.fwer.signif <- data.frame(cluster=names(cons.map.mat.fwer.signif), enriched=cons.map.mat.fwer.signif)
+    
+    write.table(t(cons.map.mat.fwer), sep='\t', file=paste('cluster-enrichment-bonferroni.txt', sep=''), quote=F, row.names=T, col.names = NA)
+    write.table(cons.map.mat.fwer.signif, sep='\t', file=paste('cluster-enrichment-signif-bonferroni-p-', ora.pval, '.txt', sep=''), quote=F, row.names=F)
+    
+    
     ###########################################################
     ## significantly enriched in 'class variable'
     cons.map.max <- clust.class.enrichment[[class.variable]]
@@ -1086,19 +1120,26 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     if(!is.na(cont_anno)){
          try( boxplotPerCluster(cdesc=cdesc,   ## clin.anno
                             nmf2col=cdesc.color$NMF.consensus.mapped,     ## vector af length k mapping colors to clusters
-                            cont_anno=cont_anno,     ## continuous variables to include
-                            core_membership=core_membership)
+                            cont_anno=cont_anno#,     ## continuous variables to include
+                            #core_membership=core_membership
+                            )
               )
     }
     
-
-    ## ########################################
-    ## heatmap coefficients
-
+    #######################################################
+    ##
+    ##             column order
+    ##
+    
     ## order according to nmf clustering and
     ## cluster membership
-    nmf.ord <-  rownames(cdesc)[order( -1*as.numeric(cdesc$NMF.consensus), cdesc$NMF.cluster.membership, decreasing = T)]
-
+    if(opt$sample_order == 'clust_then_score'){
+      nmf.ord <-  rownames(cdesc)[order( -1*as.numeric(cdesc$NMF.consensus), cdesc$NMF.cluster.membership, decreasing = T)]
+    } 
+    if(opt$sample_order == 'clust_then_core_then_score'){
+      nmf.ord <-  rownames(cdesc)[order( -1*as.numeric(cdesc$NMF.consensus), -1*as.numeric(cdesc$NMF.consensus.core), cdesc$NMF.cluster.membership, decreasing = T)]
+    }
+    
     expr <- expr[, nmf.ord]
     cdesc <- cdesc[nmf.ord, ]
     H <- H[, nmf.ord]
@@ -1276,7 +1317,15 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
     }
     dev.off()
     names(s) <- paste(1:length(s))
-
+    
+    ###########################################
+    ## approach to use all features in the one-vs-other cluster  
+    ## 2-sample moderated t-test:
+    ##s_org <- s
+    ##s <- lapply(1:ncol(W), function(x) 1:nrow(W))
+    ##names(s) <- paste(1:length(s))
+    ##save(s_org, s, file="debug.RData")
+    
     #################################
     ## cluster with no features
     rm.idx <- which( sapply(s, function(x) sum(is.na(x))) > 0)
@@ -1329,8 +1378,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       na.idx <- which(is.na(tmp$SYMBOL))
       if(length(na.idx) >0 )
         tmp$SYMBOL[na.idx] <- tmp$Accession[na.idx] 
-      
-      
+
       s.acc.gn[[i]] <- tmp[order(tmp$SYMBOL),]
       
     }
@@ -1376,9 +1424,7 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
       
       ## join in a single data frame
       for(i in 1:length(s.acc)){
-        #tmp <- merge(s.acc.gn[[i]], s.acc.gn.anno.cyto[[i]], 'SYMBOL' )
         tmp <- left_join(s.acc.gn[[i]], s.acc.gn.anno.cyto[[i]], 'SYMBOL' )
-        #tmp <- merge(tmp,  s.acc.gn.anno[[i]], 'SYMBOL')
         tmp <- left_join(tmp,  s.acc.gn.anno[[i]], 'SYMBOL')
         
         #############################
@@ -1736,13 +1782,6 @@ nmf.post.processing <- function(ws,                       ## filename of R-works
           }
 
           feat.n <- unlist(lapply(feat, length))
-
-          ##########################
-          ## barplot
-          #pdf(paste('8_barplot_',sub('\\[.*|\\$','',i),'_features.pdf', sep=''), 3, 3)
-          #pdf( paste(sub('\\[.*|\\$','',i), '_barplot_K', rank,'.pdf', sep=''), 3, 3)
-          #fancyBarplot(feat.n, srt=45, xlab='NMF basis', names=1:length(s.acc), main=paste(i), ylab='No. features')
-          #dev.off()
         }
 
 

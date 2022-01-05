@@ -33,6 +33,7 @@ option_list <- list(
     #rna_protein_correlation:
   make_option(c("--rna_sd_threshold"), type = "integer", dest = 'rna_sd_threshold', help = "for variation filter (set to NA to disable)"),
   make_option(c("--profile_plot_top_n"), type = "integer", dest = 'profile_plot_top_n', help = "defined in rna-seq-correlation.r"),
+  make_option(c("--rna_row_norm_method"), type = "character", dest = 'rna_row_norm_method', help = "method for row normalization of mrna (median by default)"),
     #harmonize:
   make_option(c("--pome_gene_id_col"), type = "character", dest = 'pome_gene_id_col', help = "gene id column for harmonize pome data"),
   make_option(c("--cna_gene_id_col"), type = "character", dest = 'cna_gene_id_col', help = "gene id column for harmonize cna data"),
@@ -290,12 +291,15 @@ check_normalize_sm_params <- function(opt, yaml){
 
 # rna_protein_correlation:
 check_rna_protein_correlation_params <- function(opt, yaml){
-  if (!is.null(opt$rna_sd_threshold) | !is.null(opt$profile_plot_top_n)){
+  if (!is.null(opt$rna_sd_threshold) | !is.null(opt$profile_plot_top_n | !is.null(opt$rna_row_norm_method))){
     if (!is.null(opt$rna_sd_threshold)){
       yaml$panoply_rna_protein_correlation$rna$rna_sd_threshold <- opt$rna_sd_threshold
     }
     if (!is.null(opt$profile_plot_top_n)) {
       yaml$panoply_rna_protein_correlation$rna$profile_plot_top_n <- opt$profile_plot_top_n
+    }
+    if (!is.null(opt$rna_row_norm_method)) {
+      yaml$panoply_rna_protein_correlation$rna$rna_row_norm_method <- opt$rna_row_norm_method
     }
     return(yaml)
   }else{
@@ -711,6 +715,7 @@ write_custom_config <- function(yaml){
                 #rna_protein_correlation:
                 paste('rna.sd.threshold', '<-', yaml$panoply_rna_protein_correlation$rna$rna_sd_threshold),
                 paste('profile.plot.top.n', '<-', yaml$panoply_rna_protein_correlation$rna$profile_plot_top_n),
+                paste('rna.row.norm.method', '<-', yaml$panoply_rna_protein_correlation$rna$rna_row_norm_method),
                 #harmonize:
                 paste('pome.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$pome_gene_id_col, '"', sep = '')),
                 paste('cna.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$cna_gene_id_col, '"', sep = '')),

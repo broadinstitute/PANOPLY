@@ -265,6 +265,7 @@ duplicate.gene.policy <- 'maxvar'
 ## RNA related
 rna.output.prefix <- 'rna-seq'  # output prefix for tables creates during RNA analysis
 rna.sd.threshold <- 1           # for variation filter (set to NA to disable)
+rna.row.norm.method <- 'median'        # options are mean and median
 
 ## CNA/parallelism related
 pe.max.default <- 250           # default maximum processors/jobs
