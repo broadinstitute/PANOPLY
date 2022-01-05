@@ -98,6 +98,12 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
       dup.table <- ds@cdesc %>% mutate (sample.num=row_number()) %>% 
         mutate (group.num=group_indices (., !!!rlang::syms (avail.cols))) %>%
         group_by (group.num) %>% filter (n() > 1)
+      # alternative for above suggested by Karl to avoid deprecated warning
+      # dup.table <- ds@cdesc %>% mutate (sample.num=row_number()) %>%
+      #   group_by (!!!rlang::syms (avail.cols)) %>%  #!!!rlang to get actual content of vector: Participant, Type (if present)
+      #   mutate(group.num = cur_group_id()) %>%      #dplyr 1.0 (R4.1.0) cur_group_id() replaces group_indices()
+      #   filter (QC.status == "QC.pass") %>%         #if needed 
+      #   filter (n() > 1)
       for (g in unlist (unique (dup.table [,'group.num']))) {
         rows <- unlist (dup.table [ dup.table[,'group.num']==g, 'sample.num'])
         # replace first occurance of replicate with combined value
