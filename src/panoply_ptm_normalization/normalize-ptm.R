@@ -106,8 +106,10 @@ normalize <- function (PTM, proteome, accession_number) {
   }
   
   # create merged data table
-  PTM.melt <- melt.gct (PTM)
-  prot.melt <- melt.gct (proteome)
+  # nb: melt.gct returns a data.table which behaves differently for constructs like
+  #     prot.melt[,accession_number]; convert all data.tables to data.frames
+  PTM.melt <- data.frame ( melt.gct (PTM) )
+  prot.melt <- data.frame ( melt.gct (proteome) )
   prot.melt.data.only <- data.frame (prot.melt$id.y, prot.melt[,accession_number], prot.melt$value)
   colnames (prot.melt.data.only) <- c ('id.y', accession_number, 'value.prot')
   data <- merge (PTM.melt, prot.melt.data.only, by = c('id.y', accession_number))
