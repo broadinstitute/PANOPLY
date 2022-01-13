@@ -12,13 +12,17 @@ gct.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
 
 run.marker.selection <- function (input.gct.file, input.cls.file, prefix, run.1vAll=FALSE) {
   # runs marker selection on input data for given class vector in input.cls
-  marker.selection.and.classification (input.gct.file, input.cls.file, paste (prefix, '-analysis', sep=''), 
-                                       id.col=id.col, desc.col=desc.col, gsea=TRUE,
-                                       id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
-                                       duplicate.gene.policy=duplicate.gene.policy,
-                                       impute.colmax=sample.na.max,
-                                       official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
-                                       fdr=assoc.fdr)
+  tryCatch (marker.selection.and.classification (input.gct.file, input.cls.file, paste (prefix, '-analysis', sep=''), 
+                                                 id.col=id.col, desc.col=desc.col, gsea=TRUE,
+                                                 id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
+                                                 duplicate.gene.policy=duplicate.gene.policy,
+                                                 impute.colmax=sample.na.max,
+                                                 official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
+                                                 fdr=assoc.fdr),
+            error = function(cond) {
+              message(paste("Failed to complete marker selection for ", prefix))
+              message(cond)
+            })
  
   if (run.1vAll) {
     # if class vector has > 2 classes, and sufficient numbers per class,
