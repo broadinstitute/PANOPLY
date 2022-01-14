@@ -343,9 +343,17 @@ pw_hm <- function(output.prefix,
     }
   } else {
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-    plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch)
+    tryCatch(plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch),
+             error = function(cond) {
+               message("Unable to plot heatmaps, with the following Error:")
+               message(paste(cond, "\n"))
+             })
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.png")  
-    plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch)
+    tryCatch(plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch),
+             error = function(cond) {
+               message("Unable to plot heatmaps, with the following Error:")
+               message(paste(cond, "\n"))
+             })
   }
   
 }
