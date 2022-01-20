@@ -56,11 +56,13 @@ ignore.cols <- c(
   "QC.status" )
 
 
+
 ### "global" variable
 globals <- list()
-globals$project <- "broad-firecloud-cptac"
-globals$group <- "GROUP_Broad_CPTAC@firecloud.org"
 globals$meth_space <- "broadcptac"
+# globals$project defined in panda_initialize
+# globals$group unnecessary, excluded (workspace already exists)
+
 
 ### defaults (files to be located in docker image)
 defaults <- list()
@@ -128,7 +130,8 @@ panda_initialize <- function (workspace.type) {
   # initialize system variables
   terra.wkspace <<- Sys.getenv( 'WORKSPACE_NAME' )
   google.bucket <<- Sys.getenv( 'WORKSPACE_BUCKET' )
-  
+  globals$project <<- Sys.getenv( 'WORKSPACE_NAMESPACE' )
+
   # check to make sure workspace does not have spaces or other special characters
   if (grepl ( '[^[:alnum:]|_|-]', terra.wkspace )) {
     error <- printX ("ERROR", "Invalid Workspace name", 
