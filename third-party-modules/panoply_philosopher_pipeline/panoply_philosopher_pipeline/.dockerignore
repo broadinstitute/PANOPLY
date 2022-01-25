@@ -1,3 +1,4 @@
-*
+!data
+!packages
+!R-utilities
 !src
-!Dockerfile
