@@ -14,9 +14,9 @@
 # philosopher pipeline --config <this_configuration_file> [list_of_data_set_folders]
 
 analytics: true                                  # reports when a workspace is created for usage statistics
-slackToken:                                      # specify the Slack API token (how to generate a token: https://api.slack.com/legacy/custom-integrations/legacy-tokens)
-slackChannel:                                    # specify the channel name, or
-slackUserID:                                     # specify a user ID for a direct message
+slackToken:                                   # specify the Slack API token (how to generate a token: https://api.slack.com/legacy/custom-integrations/legacy-tokens)
+slackChannel:                                     # specify the channel name, or
+slackUserID:                                  # specify a user ID for a direct message
 
 Steps:
   Database Search: yes                           # peptide to spectrum matching with Comet or MSFragger
@@ -38,14 +38,14 @@ Database Search:                                 # MSFragger-3.4 & Comet v201901
   search_engine: msfragger                       # search engine options include "comet" and "msfragger"
   comet:                                         # Comet v2019011
     noindex: true                                # skip mzML file indexing
-    param:                                       # comet parameter file (default "comet.params.txt")
+    param:                                        # comet parameter file (default "comet.params.txt")
     extension: mzML                              # format of the spectra file
   msfragger:                                     # MSFragger v3.3
     path: "/MSFragger-3.4/MSFragger-3.4.jar"                   # path to MSFragger jar
     memory: 64                                   # how much memory in GB to use
-    param:                                       # MSFragger parameter file
+    param:                                        # MSFragger parameter file
     extension: d                                 # spectra format
-    num_threads: 0                               # number of CPU threads to use. 0=poll CPU to set num threads
+    num_threads: 16                               # number of CPU threads to use. 0=poll CPU to set num threads
     precursor_mass_lower: -25                    # lower bound of the precursor mass window
     precursor_mass_upper: 25                     # upper bound of the precursor mass window
     precursor_mass_units: 1                      # 0=Daltons, 1=ppm
@@ -64,15 +64,15 @@ Database Search:                                 # MSFragger-3.4 & Comet v201901
     localize_delta_mass: 0                       # this allows shifted fragment ions - fragment ions with mass increased by the calculated mass difference, to be included in scoring
     delta_mass_exclude_ranges: (-1.5,3.5)        # exclude mass range for shifted ions searching
     fragment_ion_series: b,y                     # ion series used in search
-    ion_series_definitions:                      # user defined ion series. (Example: b* N -17.026548;b0 N -18.010565)
+    ion_series_definitions:                       # user defined ion series. (Example: b* N -17.026548;b0 N -18.010565)
     search_enzyme_name_1: Trypsin                # Name of the first enzyme.
     search_enzyme_cut_1: KR                      # First enzyme's cutting amino acid.
     search_enzyme_nocut_1: P                     # First enzyme's protecting amino acid.
     allowed_missed_cleavage_1: 1                 # First enzyme's allowed number of missed cleavages per peptide. Maximum value is 5.
     search_enzyme_sense_1: C                     # First enzyme's cutting terminal.
-    search_enzyme_name_2:                        # Name of the second enzyme.
-    search_enzyme_cut_2:                         # Second enzyme's cutting amino acid.
-    search_enzyme_nocut_2:                       # Second enzyme's protecting amino acid.
+    search_enzyme_name_2:                         # Name of the second enzyme.
+    search_enzyme_cut_2:                          # Second enzyme's cutting amino acid.
+    search_enzyme_nocut_2:                        # Second enzyme's protecting amino acid.
     allowed_missed_cleavage_2: 2                 # Second enzyme's allowed number of missed cleavages per peptide. Maximum value is 5.
     search_enzyme_sense_2: C                     # Second enzyme's cutting terminal.
     num_enzyme_termini: 2                        # 2 for enzymatic, 1 for semi-enzymatic, 0 for nonspecific digestion
@@ -117,8 +117,8 @@ Database Search:                                 # MSFragger-3.4 & Comet v201901
     intensity_transform: 0                       # transform peaks intensities with sqrt root. 0=not transform; 1=transform using sqrt root.
     labile_search_mode: off                      # type of search (nglycan, labile, or off). Off means non-labile/typical search.
     diagnostic_intensity_filter: 0			         # [nglycan/labile search_mode only]. Minimum relative intensity for SUM of all detected oxonium ions to achieve for spectrum to contain diagnostic fragment evidence. Calculated relative to spectrum base peak. 0 <= value.
-    Y_type_masses: # [0, 203.07937, 406.15874, 568.21156, 730.26438, 892.3172, 349.137279]                               # [nglycan/labile search_mode only]. Specify fragments of labile mods that are commonly retained on intact peptides (e.g. Y ions for glycans). Only used if 'Y' is included in fragment_ion_series.
-    diagnostic_fragments: # [204.086646, 186.076086, 168.065526, 366.139466, 144.0656, 138.055, 126.055, 163.060096, 512.197375, 292.1026925, 274.0921325, 657.2349, 243.026426, 405.079246, 485.045576, 308.09761]                       # [nglycan/labile search_mode only]. Specify diagnostic fragments of labile mods that appear in the low m/z region. Only used if diagnostic_intensity_filter > 0.
+    Y_type_masses:   # [0, 203.07937, 406.15874, 568.21156, 730.26438, 892.3172, 349.137279]                               # [nglycan/labile search_mode only]. Specify fragments of labile mods that are commonly retained on intact peptides (e.g. Y ions for glycans). Only used if 'Y' is included in fragment_ion_series.
+    diagnostic_fragments:   # [204.086646, 186.076086, 168.065526, 366.139466, 144.0656, 138.055, 126.055, 163.060096, 512.197375, 292.1026925, 274.0921325, 657.2349, 243.026426, 405.079246, 485.045576, 308.09761]                       # [nglycan/labile search_mode only]. Specify diagnostic fragments of labile mods that appear in the low m/z region. Only used if diagnostic_intensity_filter > 0.
     add_Cterm_peptide: 0.000000                  # c-term peptide fixed modifications
     add_Cterm_protein: 0.000000                  # c-term protein fixed modifications
     add_Nterm_peptide: 0.000000                  # n-term peptide fixed modifications
@@ -180,7 +180,7 @@ Peptide Validation:                              # PeptideProphet v5.2
 
 PTM Localization:                                # PTMProphet v6.0
   autodirect: false                              # use direct evidence when the lability is high, use in combination with LABILITY
-  cions:                                         # use specified C-term ions, separate multiple ions by commas (default: y for CID, z for ETD)
+  cions:                                          # use specified C-term ions, separate multiple ions by commas (default: y for CID, z for ETD)
   direct: false                                  # use only direct evidence for evaluating PTM site probabilities
   em: 2                                          # set EM models to 0 (no EM), 1 (Intensity EM Model Applied) or 2 (Intensity and Matched Peaks EM Models Applied)
   static: false                                  # use static fragppmtol for all PSMs instead of dynamically estimates offsets and tolerances
@@ -196,8 +196,8 @@ PTM Localization:                                # PTMProphet v6.0
   maxthreads: 4                                  # use specified number of threads for processing
   mino: 0                                        # use specified number of pseudo-counts when computing Oscore (0 = use default)
   minprob: 0                                     # use specified minimum probability to evaluate peptides
-  mods:                                          # specify modifications
-  nions:                                         # use specified N-term ions, separate multiple ions by commas (default: a,b for CID, c for ETD)
+  mods:                                           # specify modifications
+  nions:                                          # use specified N-term ions, separate multiple ions by commas (default: a,b for CID, c for ETD)
   nominofactor: false                            # disable MINO factor correction when MINO= is set greater than 0 (default: apply MINO factor correction)
   ppmtol: 1                                      # use specified +/- MS1 ppm tolerance on peptides which may have a slight offset depending on search parameters
   verbose: false                                 # produce Warnings to help troubleshoot potential PTM shuffling or mass difference issues

@@ -2,13 +2,14 @@ FROM broadgdac/firecloud-ubuntu:16.04
 
 RUN set -ex \
     && cd /usr/local/bin \
-    && apt-get update && apt-get install -y --no-install-recommends zip && apt-get install -y default-jre && apt install -y mono-devel \
+    && apt-get update && apt-get install -y --no-install-recommends zip && apt-get install -y default-jre && apt install -y mono-devel && apt-get install -y r-base r-base-dev \
     && rm -rf /var/lib/apt/lists/* \
     && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v4.1.1/philosopher_v4.1.1_linux_amd64.zip \
-    && unzip philosopher_v4.1.1_linux_amd64.zip \
+    && unzip philosopher_v4.1.1_linux_amd64.zip && rm philosopher_v4.1.1_linux_amd64.zip \
     && chmod 755 philosopher \
     && cd - \
-    && cd /bin && ln -sf bash sh && cd -
+    && cd /bin && ln -sf bash sh && cd - \
+    && R -e "install.packages(c('optparse', 'pacman', 'yaml'), dependencies = TRUE, repos = 'http://cran.rstudio.com/')"
 
 ADD src/MSFragger-3.4.zip /
 RUN unzip MSFragger-3.4.zip
@@ -21,8 +22,12 @@ RUN curl -LOk https://github.com/Nesvilab/IonQuant/releases/download/1.7.17/IonQ
 RUN mkdir /IonQuant-1.7.17 && mv IonQuant-1.7.17.jar /IonQuant-1.7.17/
 RUN cp -r /MSFragger-3.4/ext /IonQuant-1.7.17/
 
+RUN wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+RUN chmod a+x /usr/local/bin/yq
+
 COPY src/collect_psm.sh /usr/local/bin/
 COPY src/package.sh /usr/local/bin/
 COPY src/mv.sh /etc/profile.d/
+COPY src/philosopher_params.r /usr/local/bin/
 
 CMD ["philosopher"]
