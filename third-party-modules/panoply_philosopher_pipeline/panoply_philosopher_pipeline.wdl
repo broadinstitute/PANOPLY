@@ -2,7 +2,7 @@ task panoply_philosopher_pipeline
 {
   File philosopher_params
   File database
-  Array[File] array_of_files
+  File ms_data_zip
   
   String? output_prefix
   Boolean? package
@@ -41,6 +41,11 @@ task panoply_philosopher_pipeline
     . /etc/profile
     set -euo pipefail
 
+    # Symlink project directory
+    projdir=${output_prefix}_philosopher
+    mkdir $projdir
+    cp -s ${ms_data_zip} $projdir/
+
     # # Create updated philosopher parameters YAML
     # Checks if a variable is set then uses yq to edit the respective parameter in the yaml file
     # String and numeric are unwrapped differently: ex. "decoy_tag" as String and "ram_gb" as Int
@@ -68,11 +73,6 @@ task panoply_philosopher_pipeline
     if [ -n "${Filter__peptideFDR}" ]; then peptideFDR=${Filter__peptideFDR} yq e '.["FDR Filtering"].peptideFDR = env(peptideFDR)' -i philosopher.yml; fi
     if [ -n "${Filter__ionFDR}" ]; then ionFDR=${Filter__ionFDR} yq e '.["FDR Filtering"].ionFDR = env(ionFDR)' -i philosopher.yml; fi
     if [ -n "${Filter__proteinFDR}" ]; then proteinFDR=${Filter__proteinFDR} yq e '.["FDR Filtering"].proteinFDR = env(proteinFDR)' -i philosopher.yml; fi
-      
-    # Symlink project directory
-    rootdir=$(dirname "${select_first( array_of_files )}")
-    projdir=${output_prefix}_philosopher
-    cp -Rs $rootdir $projdir
 
     # Go to project directory for generating annotation files and running Philosopher
     mv philosopher.yml $projdir/philosopher.yml
@@ -120,8 +120,9 @@ workflow panoply_philosopher_pipeline_workflow
 { 
   File philosopher_params
   File database
-  File file_of_files
-  Array[File] array_of_files=read_lines(file_of_files)
+  # File file_of_files
+  # Array[File] array_of_files=read_lines(file_of_files)
+  File ms_data_zip
   
   Boolean? package=true
   String? output_prefix="philosopher"
@@ -134,9 +135,9 @@ workflow panoply_philosopher_pipeline_workflow
   call panoply_philosopher_pipeline 
   {
     input: 
-      array_of_files=array_of_files,
-      database=database,
       philosopher_params=philosopher_params,
+      database=database,
+      ms_data_zip=ms_data_zip,
 
       package=package,
       output_prefix=output_prefix,
