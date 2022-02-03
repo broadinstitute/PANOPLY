@@ -1,8 +1,9 @@
-FROM broadgdac/firecloud-ubuntu:16.04
+FROM ubuntu:22.04
 
+ENV DEBIAN_FRONTEND=noninteractive
 RUN set -ex \
     && cd /usr/local/bin \
-    && apt-get update && apt-get install -y --no-install-recommends zip && apt-get install -y default-jre && apt install -y mono-devel && apt-get install -y r-base r-base-dev \
+    && apt-get update && apt-get install -y --no-install-recommends zip && apt-get install -y default-jre && apt install -y mono-devel && apt-get install -y r-base r-base-dev && apt install -y curl wget \
     && rm -rf /var/lib/apt/lists/* \
     && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v4.1.1/philosopher_v4.1.1_linux_amd64.zip \
     && unzip philosopher_v4.1.1_linux_amd64.zip && rm philosopher_v4.1.1_linux_amd64.zip \

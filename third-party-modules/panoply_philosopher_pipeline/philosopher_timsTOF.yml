@@ -63,6 +63,7 @@ Database Search: # MSFragger-3.4 & Comet v2019011
     precursor_mass_mode: selected # one of isolated/selected/corrected.
     localize_delta_mass: 0 # this allows shifted fragment ions - fragment ions with mass increased by the calculated mass difference, to be included in scoring
     delta_mass_exclude_ranges: (-1.5,3.5) # exclude mass range for shifted ions searching
+    deltamass_allowed_residues: ST
     fragment_ion_series: b,y # ion series used in search
     ion_series_definitions: # user defined ion series. (Example: b* N -17.026548;b0 N -18.010565)
     search_enzyme_name_1: Trypsin # Name of the first enzyme.
@@ -114,6 +115,7 @@ Database Search: # MSFragger-3.4 & Comet v2019011
     clear_mz_range: 0.0 0.0 # for iTRAQ/TMT type data; will clear out all peaks in the specified m/z range
     remove_precursor_peak: 0 # remove precursor peaks from tandem mass spectra. 0=not remove; 1=remove the peak with precursor charge; 2=remove the peaks with all charge states.
     remove_precursor_range: -1.5,1.5 # m/z range in removing precursor peaks. Unit: Da.
+    slice_db: 1
     intensity_transform: 0 # transform peaks intensities with sqrt root. 0=not transform; 1=transform using sqrt root.
     labile_search_mode: off # type of search (nglycan, labile, or off). Off means non-labile/typical search.
     diagnostic_intensity_filter: 0 # [nglycan/labile search_mode only]. Minimum relative intensity for SUM of all detected oxonium ions to achieve for spectrum to contain diagnostic fragment evidence. Calculated relative to spectrum base peak. 0 <= value.
