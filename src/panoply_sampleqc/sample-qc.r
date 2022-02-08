@@ -75,7 +75,7 @@ draw.heatmap (rVc, "RNA vs CNA Correlation")
 ## fan plot
 #  (for protein and RNA only -- CNA data is too different)
 draw.fanplot <- function (d, title, n.types=2) {
-  dist.spearman <- 1 - cor (d, method="spearman", use="complete")
+  dist.spearman <- 1 - cor (d, method="spearman", use="pairwise.complete")
   joint.cluster <- agnes (dist.spearman, diss=TRUE, method='complete')
   joint.phy <- as.phylo (as.hclust (joint.cluster))
   # graphics parameters

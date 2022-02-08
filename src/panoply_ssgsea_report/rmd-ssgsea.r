@@ -181,7 +181,7 @@ output:
 
 ## Overview
 
-This document provides a high-level summary of the ```panoply_ssgsea``` module which performs single sample Gene Set Enrichment analysis (ssGSEA) on each column of the input data matrix. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_ssgsea). 
+This document provides a high-level summary of the ```panoply_ssgsea``` module which performs single sample Gene Set Enrichment analysis (ssGSEA) on each column of the input data matrix. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_ssgsea). 
 
 ```{r echo=F, warning=F, message=F}\n
 options(knitr.table.format = 'pipe', stringsAsFactors=F)
@@ -215,7 +215,7 @@ The heatmap in **Figure `r fig_count`** depicts normalized enrichment scores (NE
 
 * <u>NMF-clustering:</u> Columns represent NMF cluster. NES were derived from ssGSEA applied to feature weights determined by NMF. 
 
-* <u>Consenus clustering:</u> Columns represent consensus cluster. NES were derived from ssGSEA applied to signed -log transformed p-values of a two sample comparison  (one vs. other).
+* <u>Consenus clustering:</u> Columns represent consensus cluster. NES were derived from ssGSEA applied to signed, -log transformed p-values of a two sample comparison  (one vs. other).
 
 * <u>ssGSEA projection:</u> Columns represent individual samples. NES were derived from ssGSEA applied the expression data.
 

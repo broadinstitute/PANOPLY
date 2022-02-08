@@ -96,6 +96,7 @@ volcano_plot = function(mat, rdesc, rid, split_word, fdr_value, category, catego
   rdesc2 = rdesc %>%
     rownames_to_column("pathway") %>%
     rename(fdr = all_of(contains("fdr"))) %>%
+    mutate(fdr = as.numeric(fdr)) %>%
     select(pathway, fdr) %>%
     left_join(mat2) %>%
     arrange(fdr)
@@ -218,7 +219,7 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
             select(all_of(name))
           
           rdesc_1 = rdesc %>%
-            select(contains(name))
+            select(all_of(paste0("fdr.pvalue.", name)))
           
           rmd = volcano_plot(mat = mat_1, rdesc = rdesc_1, rid = file@rid, split_word = "vs", fdr_value = fdr_value, category = category, category_filename = category_filename, rmd = rmd)
         }
@@ -226,10 +227,13 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
         pw_hm(output.prefix = file, fdr.max = fdr_value, ptmsigdb=F)
         file.rename(paste0("heatmap_max.fdr_", fdr_value, "_n.max_all.png"), paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_all.png"))
         
-        rmd = paste0(rmd, '\n#### Overview of all contrasts
+        if (file.exists(paste0(category_filename, "_heatmap_max.fdr_", fdr_value, "_n.max_all.png"))) { #check if file exists before adding to RMD
+          rmd = paste0(rmd, '\n#### Overview of all contrasts
 ![**Figure**: Heatmap summarizing significant ssGSEA pathway results for ', category, ', all contrasts, clustered by Hallmark process category. Asterisk denotes a significant result at FDR cutoff = ', fdr_value, '.](', category_filename, '_heatmap_max.fdr_', fdr_value, '_n.max_all.png)
-\n                       
-                     ')
+\n')} 
+        else { #if file doesn't exist
+          rmd = paste0(rmd, 'Heatmaps could not be produced for these data.\n') #add an appropriate message to RMD
+          }
       }
     }
   } else {

@@ -42,6 +42,7 @@ panoply_rna_protein_correlation:
   rna:
     rna_sd_threshold: 1            # for variation filter (set to NA to disable)
     profile_plot_top_n: 25
+    rna_row_norm_method: 'median'
 
 
 panoply_harmonize:
@@ -87,7 +88,7 @@ panoply_cmap_analysis:
   cna_threshold: 0.3               # copy number up/down if abs (log2(copy number) - 1) is > cna.threshold (default: 0.3)
   cna_effects_threshold: 15        # min number of samples with up/down copy number to include gene for CMAP analysis (default: 15)
   min_sigevents: 20                # gene must have at least this many significant trans events to be considered (default: 20)  
-  max_sigevents: 1800              # if a gene has more then max.sigevents, the top max.sigevents will be chosen
+  max_sigevents: 1500              # if a gene has more then max.sigevents, the top max.sigevents will be chosen
   top_N: 500                       # maximum number of genes to run CMAP enrichment on (default: 500)
   fdr_pvalue: 0.05                 # FDR for CNA correlations (default: 0.05)
   log_transform: FALSE      # if TRUE, log transform input data
@@ -117,6 +118,22 @@ panoply_blacksheep:
   fraction_samples_cutoff: 0.3
   fdr_value: 0.05
 
+panoply_mimp:
+  groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap
+  search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
+  phosphosite_col: NULL                         # if search_engine = "other," provide name of column in phospho row metadata that indicates phosphosite position
+  protein_id_col: NULL                          # if search_engine = "other," provide name of column in phospho row metadata that indicates protein identifier/accession number
+  mutation_AA_change_colname: "Protein_Change"  # name of column in mutation MAF file that indicates amino acid change due to mutation
+  mutation_type_col: "Variant_Classification"   # name of column in mutation MAF file that indicates type of mutation (aka missense)
+  sample_id_col: "Tumor_Sample_Barcode"        # name of column in mutation MAF file that indicates patient/sample ID 
+  transcript_id_col: "refseq_mrna_id"           # name of column in mutation MAF file that indicates transcript identifier
+
+panoply_ptm_normalization:
+  accession_number_colname: 'accession_number'
+  accession_numbers_colname: 'accession_numbers'    # set to NULL if not present
+  accession_numbers_separator: '\|'                # ignored if accession_numbers_colname is NULL
+  score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
+
 ########################################
 ## multi-omics NMF clustering
 panoply_mo_nmf:
@@ -125,13 +142,18 @@ panoply_mo_nmf:
   kmin: 2              ## minimum number of clusters    
   kmax: 10             ## maximum number of clusters
   exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
-  core_membership: 0.5 ## minimal cluster membership
- 
+
+  ## core membership
+  core_membership_mode: mindiff ## 'legacy'  - membership score > 'core_membership'
+                                ## 'mindiff' - minimal difference between fractional scores of cluster pairs >1/K 
+  core_membership: 0.5          ## minimal cluster membership used in lagacy mode
+  sample_order: clust_then_core_then_score  ## determines how samples in the heatmaps are ordered 
+                                            ## "clust_then_score"" or "clust_then_core_then_score"
   #########################
   ## NMF parameters
   nrun: 50         ## number of iterations
   seed: random     ## initialization method for the itertions
-  method: brunet   ## NMF method  
+  method: lee   ## NMF method implemented in R-package 'NMF'   
   bnmf: FALSE      ## NOT SUPPORTED
   
   #########################
@@ -154,8 +176,13 @@ panoply_mo_nmf:
   #########################
   ## filtering
   filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05       ## 
-  z_score: TRUE
+  sd_filt: 0.05       ## SD percentile to remove
+  
+  #########################
+  ## z-scoring
+  z_score: TRUE        ## should the data be z-scored?
+  z_score_mode: rowcol ## z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
+  
  
   #########################
   ## imputation

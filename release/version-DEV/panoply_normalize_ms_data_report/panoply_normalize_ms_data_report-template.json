@@ -1,0 +1,29 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.disk_space": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.label": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.memory": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.num_preemptions": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.num_threads": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.tarball": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.tmpDir": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.type": "",
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_normalize_ms_data_report",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_normalize_ms_data_report/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_normalize_ms_data_report",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_normalize_ms_data_report_workflow.panoply_normalize_ms_data_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,0 +1,1 @@
+FROM broadcptacdev/panoply_parse_sm_table:latest

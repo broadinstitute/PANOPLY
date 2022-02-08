@@ -1,0 +1,38 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_harmonize_workflow.analysisDir": "",
+    "panoply_harmonize_workflow.cnaExpr": "",
+    "panoply_harmonize_workflow.dataType": "",
+    "panoply_harmonize_workflow.duplicate_gene_policy": "",
+    "panoply_harmonize_workflow.gene_id_col": "",
+    "panoply_harmonize_workflow.inputData": "",
+    "panoply_harmonize_workflow.na_max": "",
+    "panoply_harmonize_workflow.panoply_harmonize.cnaGeneIdCol": "",
+    "panoply_harmonize_workflow.panoply_harmonize.disk_space": "",
+    "panoply_harmonize_workflow.panoply_harmonize.memory": "",
+    "panoply_harmonize_workflow.panoply_harmonize.num_preemptions": "",
+    "panoply_harmonize_workflow.panoply_harmonize.num_threads": "",
+    "panoply_harmonize_workflow.panoply_harmonize.outFile": "",
+    "panoply_harmonize_workflow.panoply_harmonize.pomeGeneIdCol": "",
+    "panoply_harmonize_workflow.panoply_harmonize.rnaGeneIdCol": "",
+    "panoply_harmonize_workflow.rnaExpr": "",
+    "panoply_harmonize_workflow.standalone": "",
+    "panoply_harmonize_workflow.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_harmonize",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_harmonize/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_harmonize",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_harmonize_workflow.panoply_harmonize.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

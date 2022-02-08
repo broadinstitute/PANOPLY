@@ -1,0 +1,31 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_cna_setup_workflow.panoply_cna_setup.disk_space": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.groupsFile": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.memory": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.minCnaN": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.num_preemptions": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.num_threads": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.outFile": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.peMaxDefault": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.tarball": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.type": "",
+    "panoply_cna_setup_workflow.panoply_cna_setup.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_cna_setup",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_cna_setup/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_cna_setup",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_cna_setup_workflow.panoply_cna_setup.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

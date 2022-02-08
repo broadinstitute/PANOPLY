@@ -111,7 +111,7 @@ gg_volc <- function(output.prefix,
                           nudge_y=-5,
                           direction='y',
                           data=data.sig.dn,
-                          force=1, size=3) +
+                          force=1, size=2) +
         
         geom_label_repel( aes(label=Signature),
                           #nudge_x=data.sig.up$Enrichment.Score,
@@ -119,7 +119,7 @@ gg_volc <- function(output.prefix,
                           nudge_y=-5,
                           direction='y',
                           data=data.sig.up,
-                          force=1, size=3)
+                          force=1, size=2)
       
       p <- p + theme_bw() + theme(plot.title=element_text(hjust=0.5))
       
@@ -343,9 +343,17 @@ pw_hm <- function(output.prefix,
     }
   } else {
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-    plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch)
+    tryCatch(plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch),
+             error = function(cond) {
+               message("Unable to plot heatmaps, with the following Error:")
+               message(paste(cond, "\n"))
+             })
     fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.png")  
-    plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch)
+    tryCatch(plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch),
+             error = function(cond) {
+               message("Unable to plot heatmaps, with the following Error:")
+               message(paste(cond, "\n"))
+             })
   }
   
 }
