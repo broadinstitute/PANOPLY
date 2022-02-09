@@ -100,7 +100,7 @@ generate.cmap.input <- function (target.cna.dir,
     siggenes <- rownames (pvals) [g.pvals < min (fdr.pvalue, max.sigevent.pval, na.rm=TRUE)]
     
     # get expression data for trans genes
-    g.alldata <- data [ data[,'GeneSymbol'] %in% siggenes,]
+    g.alldata <- data [ data[,gene.id.col] %in% siggenes,] #replaced 'GeneSymbol' with gene.id.col
     g.data <- g.alldata [,-1]
     g.genes <- g.alldata [,1]
     
@@ -154,9 +154,9 @@ generate.cmap.input <- function (target.cna.dir,
 calc.cis.correlation <- function (data1, data2) {
   ## support function to calculate cis-correlation
   # data prep
-  rownames (data1) <- data1 [,'GeneSymbol']
-  rownames (data2) <- data2 [,'GeneSymbol']
-  common.genes <- intersect (data1[,'GeneSymbol'], data2[,'GeneSymbol'])
+  rownames (data1) <- data1 [,gene.id.col] #replaced 'GeneSymbol' with gene.id.col
+  rownames (data2) <- data2 [,gene.id.col] #replaced 'GeneSymbol' with gene.id.col
+  common.genes <- intersect (data1[,gene.id.col], data2[,gene.id.col]) #replaced 'GeneSymbol' with gene.id.col
   data1 <- t (data1 [common.genes,-1])
   data2 <- t (data2 [common.genes,-1])
   

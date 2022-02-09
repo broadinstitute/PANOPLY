@@ -16,7 +16,7 @@ Source ('process_duplicate_genes.r')
 ## RNA and CNA should have gene symbols as id's (Name column in gct v1.2/3)
 ## Parsed PTM/proteome (see filter.r) will have gene symbols in Description column (gct v1.2/3)
 ##
-## output tables are txt format and will have only a GeneSymbol column in addition to the data
+## output tables are txt format and will have only a GeneSymbol (gene.id.col) column in addition to the data
 ## these tables can be used as input to NetGestalt of other gene-centric analysis tool
 ##
 
@@ -34,9 +34,11 @@ data.matrix.harmonize <- function( gct.file, gene.id.col, policy ){
     m <- data.frame( GeneSymbol=d@rdesc[, gene.id.col],
                      subgroupNum=d@rdesc[, "subgroupNum"],
                      d@mat )
+    names(m)[names(m) == "GeneSymbol"] <- gene.id.col #added this code to rename "GeneSymbol" to gene.id.col value
     data.cols.start <- 3 }
   else{
     m <- data.frame( GeneSymbol = d@rdesc[, gene.id.col], d@mat )
+    names(m)[names(m) == "GeneSymbol"] <- gene.id.col #added this code to rename "GeneSymbol" to gene.id.col value
     data.cols.start <- 2 }
   d.matrix <- process.duplicate.genes.2(
     m,
@@ -45,13 +47,13 @@ data.matrix.harmonize <- function( gct.file, gene.id.col, policy ){
     official.symbols.file = file.path( data.dir, official.genesyms ),
     map.genes = TRUE,
     policy = policy )
-  rownames( d.matrix ) <- d.matrix [,'GeneSymbol']
+  rownames( d.matrix ) <- d.matrix [,gene.id.col]
   return( list( matrix = d.matrix, samples = s, col.descr = d@cdesc ) )
 }
 
 
 ## read in data tables
-pome.gene.id.col <- 'GeneSymbol'
+pome.gene.id.col <- gene.id.col #changed from 'GeneSymbol' to gene.id.col
 rna.gene.id.col <- cna.gene.id.col <- 'id'
 # RNA-seq Data
 rna <- data.matrix.harmonize( rna.data.file, rna.gene.id.col,
@@ -75,7 +77,7 @@ common.genes <- intersect (rownames (pome$matrix), intersect (rownames (rna$matr
 if (length (common.samples) > 0 && length (common.genes) > 0) {
 
   write.subset <- function (d, f) {
-    d.matrix <- d[common.genes, c ('GeneSymbol', common.samples)]
+    d.matrix <- d[common.genes, c (gene.id.col, common.samples)] #changed 'GeneSymbol' to gene.id.col
     write.csv (d.matrix, f, row.names=FALSE, quote=FALSE)
   }
 

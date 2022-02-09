@@ -16,7 +16,7 @@ global_parameters:
   gene_mapping:
     # Policy for combining/collapsing duplicate gene names:
     duplicate_gene_policy: maxvar
-    gene_id_col: geneSymbol
+    gene_id_col: geneSymbol           #now used by cmap to determine genesymbol column name
 
   organism: human
 

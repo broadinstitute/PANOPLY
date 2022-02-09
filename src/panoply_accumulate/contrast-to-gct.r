@@ -54,6 +54,7 @@ main <- function()
     
     ## Format rdesc columns into proper GCT format
     rdesc <- cbind( csv[, keep_cols], geneSymbol = gene_ids )
+    names(rdesc)[names(rdesc) == "geneSymbol"] <- gene.id.col #Changed colname to what gene.id.col sets
     rdesc[] <- lapply( rdesc, as.character )
     rownames( mat ) <- csv[, 'Gene.ID']
     colnames( mat ) <- col
