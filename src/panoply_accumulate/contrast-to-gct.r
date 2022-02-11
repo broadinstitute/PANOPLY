@@ -8,6 +8,7 @@ if ( !requireNamespace("BiocManager", quietly = TRUE ) )
   install.packages( "BiocManager" )
 BiocManager::install( "org.Hs.eg.db" )
 library( org.Hs.eg.db )
+source ('config.r')
 
 main <- function()
 {
