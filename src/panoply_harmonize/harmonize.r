@@ -16,11 +16,11 @@ Source ('process_duplicate_genes.r')
 ## RNA and CNA should have gene symbols as id's (Name column in gct v1.2/3)
 ## Parsed PTM/proteome (see filter.r) will have gene symbols in Description column (gct v1.2/3)
 ##
-## output tables are txt format and will have only a GeneSymbol (gene.id.col) column in addition to the data
+## output tables are txt format and will have only a geneSymbol (gene.id.col) column in addition to the data
 ## these tables can be used as input to NetGestalt of other gene-centric analysis tool
 ##
 
-data.matrix.harmonize <- function( gct.file, gene.id.col, policy ){
+data.matrix.harmonize <- function( gct.file, policy ){
   # read in data and eliminate rows ("genes") with too many missing or 0 values
   d <- parse.gctx( gct.file )
   remove <- apply( d@mat, 1, function( x ){
@@ -31,14 +31,14 @@ data.matrix.harmonize <- function( gct.file, gene.id.col, policy ){
   d <- row.subset.gct( d, !remove )
   s <- d@cid
   if( policy == "SGT" ){
-    m <- data.frame( GeneSymbol=d@rdesc[, gene.id.col],
+    m <- data.frame( geneSymbol=d@rdesc[, gene.id.col], #geneSymbol is a placeholder name
                      subgroupNum=d@rdesc[, "subgroupNum"],
                      d@mat )
-    names(m)[names(m) == "GeneSymbol"] <- gene.id.col #added this code to rename "GeneSymbol" to gene.id.col value
+    names(m)[names(m) == "geneSymbol"] <- gene.id.col #change placeholder "geneSymbol" to gene.id.col value
     data.cols.start <- 3 }
   else{
-    m <- data.frame( GeneSymbol = d@rdesc[, gene.id.col], d@mat )
-    names(m)[names(m) == "GeneSymbol"] <- gene.id.col #added this code to rename "GeneSymbol" to gene.id.col value
+    m <- data.frame( geneSymbol = d@rdesc[, gene.id.col], d@mat ) #geneSymbol is a placeholder name
+    names(m)[names(m) == "geneSymbol"] <- gene.id.col #change placeholder "geneSymbol" to gene.id.col value
     data.cols.start <- 2 }
   d.matrix <- process.duplicate.genes.2(
     m,
@@ -52,20 +52,17 @@ data.matrix.harmonize <- function( gct.file, gene.id.col, policy ){
 }
 
 
-## read in data tables
-pome.gene.id.col <- gene.id.col #changed from 'GeneSymbol' to gene.id.col
-rna.gene.id.col <- cna.gene.id.col <- 'id'
+
 # RNA-seq Data
-rna <- data.matrix.harmonize( rna.data.file, rna.gene.id.col,
+rna <- data.matrix.harmonize( rna.data.file,
                               duplicate.gene.policy )
 # PTM/Proteome Data
 if( !( exists( "pome.duplicate.gene.policy" ) ) )
   pome.duplicate.gene.policy <- duplicate.gene.policy
 pome <- data.matrix.harmonize( file.path( norm.dir, master.file ),
-                               pome.gene.id.col,
                                pome.duplicate.gene.policy )
 # CNA Data
-cna <- data.matrix.harmonize( cna.data.file, cna.gene.id.col,
+cna <- data.matrix.harmonize( cna.data.file, 
                               duplicate.gene.policy )
 
 
@@ -77,7 +74,7 @@ common.genes <- intersect (rownames (pome$matrix), intersect (rownames (rna$matr
 if (length (common.samples) > 0 && length (common.genes) > 0) {
 
   write.subset <- function (d, f) {
-    d.matrix <- d[common.genes, c (gene.id.col, common.samples)] #changed 'GeneSymbol' to gene.id.col
+    d.matrix <- d[common.genes, c (gene.id.col, common.samples)]
     write.csv (d.matrix, f, row.names=FALSE, quote=FALSE)
   }
 
