@@ -1232,17 +1232,24 @@ nmf.post.processing <- function(ws,                           ## filename of R-w
     registerDoParallel(cl)
     W.tmp2 <- foreach(i = 1:length(feat.comb)) %dopar% {
         library(glue)
+        library(stringr)
         ii=feat.comb[i]
         idx.tmp <- grep(glue("^{ii}_(up|down)$"), rownames(W.norm))
         W.tmp <- W.norm.dir[ idx.tmp, ]
-        if(length(idx.tmp) > 1){
-          W.tmp <- apply(W.tmp, 2, function(x) x[ which.max(abs(x)) ])
-        }
         ## if grep didn't find the current id
         ## try to remove special characters etc.
         if(length(idx.tmp) == 0){
-          idx.tmp <- grep(glue("^{ii}_(up|down)$"), rownames(W.norm))
-          W.tmp <- W.norm.dir[ idx.tmp, ]
+          iii <- str_replace_all(ii, "[[[:punct:]]|+]", ".") #swap punct and + for wildcard
+          ## if punctuation-swap didn't create an ambiguity, pull data as normal
+          ## note: if punctuation-swap creates ambiguity, no data will be pulled
+          if (length(grep(iii,feat.comb))==1) {
+            idx.tmp <- grep(glue("^{iii}_(up|down)$"), rownames(W.norm))
+            W.tmp <- W.norm.dir[ idx.tmp, ]
+          }
+        }
+        ## if multiple rows were found, choose max of abs-val
+        if(length(idx.tmp) > 1){
+          W.tmp <- apply(W.tmp, 2, function(x) x[ which.max(abs(x)) ])
         }
         W.tmp
     }
@@ -1250,7 +1257,13 @@ nmf.post.processing <- function(ws,                           ## filename of R-w
 
     ## matrix
     W.norm.comb <- Reduce(rbind, W.tmp2)
-    dimnames(W.norm.comb) <- list(feat.comb, colnames(W))
+    tryCatch(dimnames(W.norm.comb) <- list(feat.comb, colnames(W)),
+             error = function(cond) {
+               message(cond)
+               message("Feature list does not match dimensions of W matrix.
+                       This is likely a special characters issue.")
+               })
+             
 
     ## create GCT file
     if(opt$gene_col %in% colnames(rdesc)){
