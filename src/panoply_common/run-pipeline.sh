@@ -79,8 +79,8 @@ function usage {
   echo "   Input Requirements:"
   echo "     ALL OPERATIONS require -t, optional (-p), in addition to the following options"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
-  echo "     OPERATION inputNorm requires (-n, -r, -c)"
   echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from inputSM "
+  echo "     OPERATION inputNorm requires (-n, -r, -c) or (-i, -c); -i output from normalize"
   echo "     OPERATION RNAcorr requires (-i, -c, -rna) OR (-f, -r, -c, -rna)"
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
@@ -199,6 +199,21 @@ function analysisInit {
     fi
     return
   fi
+  
+  # for OPERATION = inputNorm (ie filter)
+  if [ "$analysis" = "inputNorm" ]; then
+    createSubdirs $norm_dir
+    if [ ! -f "$norm_dir/$normalized_output" ]; then
+      if [ "$norm_data" = "" ]; then 
+        echo "Normalized data not found ... abort"
+        exit 1
+      else
+        cp $norm_data $norm_dir/$normalized_output
+      fi
+    fi
+    return
+  fi
+  
   
   # all other OPERATIONs
   if [ ! -d $norm_dir ]; then
@@ -402,7 +417,7 @@ case $op in
                 usage
                 exit 1
               fi ;;
-  inputNorm ) if [[ "$norm_data" = "" || "$analysis_dir" = "" || "$code_dir" = "" ]]
+  inputNorm ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
                 usage
                 exit 1
@@ -500,9 +515,9 @@ cna_data_file="cna-data.gct"
 
 ## INITIALIZATION 
 ## Directory setup and/or extract tarball
-if [ $op = "inputSM" -o $op = "inputNorm" -o "$input_tar" = "" ]
+if [ $op = "inputSM" -o "$input_tar" = "" ]
 then
-  ### input tar file not specified, or ignored (when $op=inputSM or inputNorm)
+  ### input tar file not specified, or ignored (when $op=inputSM)
   ## create directory where all files are put
   createAnalysisDir $analysis_dir
   cd $analysis_dir
@@ -545,8 +560,8 @@ case $op in
                  R CMD BATCH --vanilla "--args $prefix $data" parseMSinput.r)
              ;;
   
-#   inputNorm: input is a normalized gct (2 or 3) file that should just be filtered
-    inputNorm ) cp $norm_data $norm_dir/$normalized_output
+#   inputNorm: input is a normalized gct (v2/v3) file (or tar with normalized data) that should just be filtered
+    inputNorm ) analysisInit "inputNorm"
                 for f in create-cls.r filter.r; do cp $code_dir/$f $norm_dir/$f; done
                 
                 ## filtering and cls file generation
@@ -562,10 +577,11 @@ case $op in
                 (cd $norm_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" normalize.r)
                  
-                ## filtering and cls file generation
-                (cd $norm_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" filter.r;
-                 R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
+                # filtering is now an independent operation invoked via inputNorm 
+                # ## filtering and cls file generation
+                # (cd $norm_dir;
+                #  R CMD BATCH --vanilla "--args $prefix $data" filter.r;
+                #  R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
             ;;
 #   RNAcorr: RNA-seq (or microarray) expression correlation with proteome
     RNAcorr )   analysisInit "RNAcorr"
