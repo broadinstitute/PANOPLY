@@ -388,7 +388,7 @@ main <- function(opt){
      
       
       if(opt$z_score_mode == 'rowcol')
-        expr <- scale(expr_z_rowcol)
+        expr <- expr_z_rowcol
       if(opt$z_score_mode == 'row')
         expr <- expr_z_row
       if(opt$z_score_mode == 'col')
