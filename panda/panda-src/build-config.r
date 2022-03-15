@@ -1,6 +1,19 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+
+
+## NOTE: To run this script manually (outside of the Terra Jupyter notebook)
+##       set the following env variables (in bash)
+##       % export PANDA=<$PANOPLY/panda/panda-src>
+##       % export WORKSPACE_NAME=<Terra workspace>
+##       % export WORKSPACE_BUCKET=<Bucket id for Terra workspace>
+##       % export WORKSPACE_NAMESPACE=<Billing project for Terra workspace>
+##       Souce this script from R, and then run R functions to replicate notebook
+##       (ie. R code in notebook code blocks, in sequence)
+##       Working directory will be ./$WORKSPACE_NAME
+
+
 ## Loading libraries needed to run this notebook
 library( cmapR );
 library( pacman );
@@ -63,12 +76,18 @@ globals$meth_space <- "broadcptac"
 # globals$project defined in panda_initialize
 # globals$group unnecessary, excluded (workspace already exists)
 
+### Home dir on Terra
+terra_notebook_home <- "/home/jupyter"
 
-### defaults (files to be located in docker image)
+### defaults (files to be located in docker image, or locally)
+# for local use outside of a notebook in Terra, set PANDA to point to $PANOPLY/panda/panda-src
+# if $PANDA is not found, default to /panda as the code base
+if ( (panda <- Sys.getenv("PANDA")) == "" ) panda <- "/panda"
+Sys.setenv (PANDA=panda)   # set in env so that other scripts can find the code base
 defaults <- list()
-defaults$parameters <- "/panda/defaults/master-parameters.yaml"
-defaults$ptmsea_db <- "/panda/defaults/ptm.sig.db.all.uniprot.human.v1.9.0.gmt"
-defaults$gsea_db <- "/panda/defaults/h.all.v6.2.symbols.gmt"
+defaults$parameters <- glue ("{panda}/defaults/master-parameters.yaml")
+defaults$ptmsea_db <- glue ("{panda}/defaults/ptm.sig.db.all.uniprot.human.v1.9.0.gmt")
+defaults$gsea_db <- glue ("{panda}/defaults/h.all.v6.2.symbols.gmt")
 defaults$all_parameters_file_name <- "panoply-parameters.yaml"
 defaults$panda_parameters_file_name <- "config.yaml"
 
@@ -139,7 +158,15 @@ panda_initialize <- function (workspace.type) {
     stop (error)
   }
   
-  home <<- glue( "/home/jupyter-user/notebooks/{terra.wkspace}/edit/" )
+  sys_home <- Sys.getenv( 'HOME' )
+  if (sys_home == terra_notebook_home) {
+    # this is running in Terra
+    home <<- glue( "{sys_home}/{terra.wkspace}/edit/" )
+  } else {
+    # running (manually) elsewhere
+    home <<- glue( "{Sys.getenv('PWD')}/{terra.wkspace}" )
+    if (! dir.exists (home)) dir.create (home)   # in case doesn't exist
+  }
   setwd (home)
   
   new.config <<- TRUE
@@ -289,7 +316,7 @@ validate_input <- function () {
   flush.console ()  # without this, the display shows up later
   sapply (names (typemap.gct),   # gct files
           function (n) {
-            d <- suppressMessages (parse_gctx (typemap.gct[[n]]))
+            d <- suppressMessages (parse.gctx (typemap.gct[[n]]))
             validate_data_table (n, d@cid, samples)
           })
   sapply (setdiff (names (typemap.csv), c('annotation', 'groups')),   # csv files
@@ -670,7 +697,7 @@ panda_finalize <- function (internal=FALSE) {
   # also creates a combined parameter file for use in the PANOPLY pipeline
   # created yaml files are transferred to the workspace google bucket
   lines <- list()
-  lines$TEDMINT <- "/panda/bin"
+  lines$TEDMINT <- glue ("{panda}/bin")
   lines$freeze.path <-
     glue( "{home}/input/" )
   lines$wkspace <- terra.wkspace
@@ -730,7 +757,7 @@ run_panda <- function(){
   if ( dir.exists( runspace ) )
     unlink( runspace, recursive = T )
   dir.create( runspace )
-  invisible( file.copy( "/panda/bin/Makefile", glue( "{runspace}/Makefile" ) ) )
+  invisible( file.copy( glue ("{panda}/bin/Makefile"), glue( "{runspace}/Makefile" ) ) )
   config.addr <- glue( "{google.bucket}/config.yaml" )
   system( glue( "gsutil cp {config.addr} {runspace}/." ) )
   setwd( "runspace" )

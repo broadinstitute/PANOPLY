@@ -1,7 +1,7 @@
 #!/bin/bash
 
 SHELL=bash
-TEDMINT=/panda/bin
+TEDMINT=$(PANDA)/bin
 LOGm=logfile_mn.txt
 LOGb=logfile_bg.txt
 LOGm_EXE=>> $(LOGm) 2>&1
