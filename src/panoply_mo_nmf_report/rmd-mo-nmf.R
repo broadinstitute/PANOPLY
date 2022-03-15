@@ -304,13 +304,16 @@ if(length(keep) > 0){
     }
     ## colors for table cells
     ## p<0.01: green, 0.01<p<0.02: yellow, 0.02<p<0.05: orange
-    tab_enrich_cols <- apply(tab_enrich[, 2:ncol(tab_enrich)], 2, function(x){
+    tab_enrich_cols <- apply(data.frame(tab_enrich[, 2:ncol(tab_enrich)]), 2, function(x){
       res=rep('white', length(x))
       res[x < 0.01]='lightgreen'
       res[x >= 0.01 & x < 0.02]='yellow'
       res[x >= 0.02 & x < 0.05]='orange'
       res
     })
+    if(is.vector(tab_enrich_cols)) { #if tab_enrich_col is vector
+      tab_enrich_cols<-t(data.frame(tab_enrich_cols)) #convert to data.frame
+    }
     ## insert table
     p <- tab_enrich %>%
       kbl(caption=paste0('**Table ', tab_count,'**: Overrepresentation analysis of sample metadata terms in each cluster.')) %>%
@@ -506,7 +509,7 @@ tab_param <- data.frame(param=names(opt), value=unlist(opt))
 tab_param %>%
       kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,'**: List of parameters used in ```panoply_mo_nmf```.')) %>%
       kable_paper('hover', full_width = F) 
-````
+```
 
 ```{r inc_tab_5, echo=F}
 ## increment
