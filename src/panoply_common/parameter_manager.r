@@ -715,7 +715,7 @@ write_custom_config <- function(yaml){
                 #rna_protein_correlation:
                 paste('rna.sd.threshold', '<-', yaml$panoply_rna_protein_correlation$rna$rna_sd_threshold),
                 paste('profile.plot.top.n', '<-', yaml$panoply_rna_protein_correlation$rna$profile_plot_top_n),
-                paste('rna.row.norm.method', '<-', yaml$panoply_rna_protein_correlation$rna$rna_row_norm_method),
+                paste('rna.row.norm.method', '<-',  paste('"', yaml$panoply_rna_protein_correlation$rna$rna_row_norm_method, '"', sep = '')),
                 #harmonize:
                 paste('pome.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$pome_gene_id_col, '"', sep = '')),
                 paste('cna.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$cna_gene_id_col, '"', sep = '')),
