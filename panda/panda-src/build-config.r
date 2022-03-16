@@ -3,6 +3,7 @@
 #
 
 
+##
 ## NOTE: To run this script manually (outside of the Terra Jupyter notebook)
 ##       set the following env variables (in bash)
 ##       % export PANDA=<$PANOPLY/panda/panda-src>
@@ -12,6 +13,8 @@
 ##       Souce this script from R, and then run R functions to replicate notebook
 ##       (ie. R code in notebook code blocks, in sequence)
 ##       Working directory will be ./$WORKSPACE_NAME
+## Additional NOTE: Google-Cloud-SDK, R-3.5, Perl-5.8 and Python-2.7 need to be loaded
+##
 
 
 ## Loading libraries needed to run this notebook
