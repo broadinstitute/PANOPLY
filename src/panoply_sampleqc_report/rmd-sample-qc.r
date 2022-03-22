@@ -63,35 +63,44 @@ rmd_sample_qc <- function(tar.file, label='pipeline-test', type, tmp.dir, harmon
     ## ####################################
     ## import data
     cat('## Importing estimate scores...', file=logfile, append=T)
-    est.cna.gct <- parse.gctx( est.cna.gct.str )
-    est.rna.gct <- parse.gctx( est.rna.gct.str )
-    est.pome.gct <- parse.gctx( est.pome.gct.str )
+    estimateExists <- tryCatch(
+      {
+        est.cna.gct <- parse.gctx( est.cna.gct.str )
+        est.rna.gct <- parse.gctx( est.rna.gct.str )
+        est.pome.gct <- parse.gctx( est.pome.gct.str )
+      },
+      error = function(cond) {
+        message("Estimate scores are missing. These will be excluded from the report.")
+        return(cond) #return an error object if this failed
+      }
+    )
     cat(' DONE\n', file=logfile, append=T)
     
-    
-    ## signatures
-    signatures <- est.cna.gct@rid
-    
-    ## merge
-    est.cna=t(est.cna.gct@mat)
-    colnames(est.cna) <- paste( sub('.*\\.','',rownames(est.cna)[1]),  colnames(est.cna), sep='.')
-    rownames(est.cna) <- sub('^(.*)\\..*', '\\1', rownames(est.cna))
-    est.cna=data.frame(id=rownames(est.cna), est.cna, stringsAsFactors=F)       ## cna
-    
-    est.rna=t(est.rna.gct@mat)
-    colnames(est.rna) <- paste( sub('.*\\.','',rownames(est.rna)[1]),  colnames(est.rna), sep='.')
-    rownames(est.rna) <- sub('^(.*)\\..*', '\\1', rownames(est.rna))
-    est.rna=data.frame(id=rownames(est.rna), est.rna, stringsAsFactors=F)       ## rna
-    
-    est.pome=t(est.pome.gct@mat)
-    colnames(est.pome) <- paste( sub('.*\\.','',rownames(est.pome)[1]),  colnames(est.pome), sep='.')
-    rownames(est.pome) <- sub('^(.*)\\..*', '\\1', rownames(est.pome))
-    est.pome=data.frame(id=rownames(est.pome), est.pome, stringsAsFactors=F)       ## pome
-
-    ## combine
-    est <- full_join(est.pome, est.rna, 'id')
-    est <- full_join(est, est.cna, 'id')
-    est <- est[, -which(colnames(est) == 'id')]
+    if(!inherits(estimateExists, "error")){ #if estimate tryCatch did NOT error
+      ## signatures
+      signatures <- est.cna.gct@rid
+      
+      ## merge
+      est.cna=t(est.cna.gct@mat)
+      colnames(est.cna) <- paste( sub('.*\\.','',rownames(est.cna)[1]),  colnames(est.cna), sep='.')
+      rownames(est.cna) <- sub('^(.*)\\..*', '\\1', rownames(est.cna))
+      est.cna=data.frame(id=rownames(est.cna), est.cna, stringsAsFactors=F)       ## cna
+      
+      est.rna=t(est.rna.gct@mat)
+      colnames(est.rna) <- paste( sub('.*\\.','',rownames(est.rna)[1]),  colnames(est.rna), sep='.')
+      rownames(est.rna) <- sub('^(.*)\\..*', '\\1', rownames(est.rna))
+      est.rna=data.frame(id=rownames(est.rna), est.rna, stringsAsFactors=F)       ## rna
+      
+      est.pome=t(est.pome.gct@mat)
+      colnames(est.pome) <- paste( sub('.*\\.','',rownames(est.pome)[1]),  colnames(est.pome), sep='.')
+      rownames(est.pome) <- sub('^(.*)\\..*', '\\1', rownames(est.pome))
+      est.pome=data.frame(id=rownames(est.pome), est.pome, stringsAsFactors=F)       ## pome
+      
+      ## combine
+      est <- full_join(est.pome, est.rna, 'id')
+      est <- full_join(est, est.cna, 'id')
+      est <- est[, -which(colnames(est) == 'id')]
+    }
     
     ## import data files
     cat('## Importing data files...', file=logfile, append=T)
@@ -108,10 +117,17 @@ rmd_sample_qc <- function(tar.file, label='pipeline-test', type, tmp.dir, harmon
     cm.pome.cna <- cor(data.pome, data.cna, use='pairwise.complete')
     cm.pome.rna <- cor(data.pome, data.rna, use='pairwise.complete')
     
-    save(label, est.cna.gct, est.rna.gct, est.pome.gct, est, signatures, 
-         data.rna, data.pome, data.cna, 
-         cm.rna.cna, cm.pome.cna, cm.pome.rna, 
-         file=paste(tmp.dir, 'estimate.RData', sep='/'))                                  
+    if(!inherits(estimateExists, "error")){ #if estimate tryCatch did NOT error
+      save(label, est.cna.gct, est.rna.gct, est.pome.gct, est, signatures, 
+           data.rna, data.pome, data.cna, 
+           cm.rna.cna, cm.pome.cna, cm.pome.rna, 
+           file=paste(tmp.dir, 'estimate.RData', sep='/'))
+    } else {
+      save(label, 
+           data.rna, data.pome, data.cna, 
+           cm.rna.cna, cm.pome.cna, cm.pome.rna, 
+           file=paste(tmp.dir, 'estimate.RData', sep='/'))
+    }
     
     ## ####################################################
     ## Rmarkdown
@@ -128,9 +144,10 @@ p_load(dplyr)
 load(paste('estimate.RData', sep='/')) ## import data 
 
 ```
-\n\n
+\n\n"))
 
-***
+if(!inherits(estimateExists, "error")){ #if estimate tryCatch did NOT error
+  rmd <- paste( rmd, "***
 
 \n\n### Tumor purity\n
 
@@ -139,10 +156,10 @@ load(paste('estimate.RData', sep='/')) ## import data
 The box-whisker plots depict distributions of *ESTIMATE* scores in the different *omic* expression data.
 
 
-"))
+", sep="")
   
-    ## boxplots for each signature
-    for(i in 1:length(signatures)){
+  ## boxplots for each signature
+  for(i in 1:length(signatures)){
     ## ###########################################
     ## ESTIMATE
     rmd <- paste( rmd, "
@@ -161,9 +178,21 @@ p.est
 ***
 \n\n
 ", sep='')
-
     
-    }
+    
+  }
+} else {
+  rmd <- paste( rmd, "***
+
+\n\n### Tumor purity\n
+
+*E*stimation of *ST*romal amd *I*mmune cells in *MA*lignant *T*umor tissues ussing *E*xpression data (*ESTIMATE*) is a computational tool to predict presence of infiltrating stromal/immune cells in tumor tissues using expression data. The tool is based on single sample Gene Set Enrichment Analysis (ssGSEA) and scores gene set signatures of stroma, immune cells and tumor purity. More information about the tool can be found [here](https://bioinformatics.mdanderson.org/main/ESTIMATE:Overview).
+
+Estimates could not be calculated for this dataset, and are excluded.
+
+
+", sep="")
+}
     
     ## #############################################################
     ##  correlations
