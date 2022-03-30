@@ -1239,12 +1239,16 @@ nmf.post.processing <- function(ws,                           ## filename of R-w
         ## if grep didn't find the current id
         ## try to remove special characters etc.
         if(length(idx.tmp) == 0){
-          iii <- str_replace_all(ii, "[[[:punct:]]|+]", ".") #swap punct and + for wildcard
-          ## if punctuation-swap didn't create an ambiguity, pull data as normal
-          ## note: if punctuation-swap creates ambiguity, no data will be pulled
+          iii <- str_replace_all(ii, "[\\^|\\$|\\*|\\+|\\-|\\?|\\(|\\)|\\[|\\]|\\{|\\}|\\||\\—|\\/]", ".") #swap regex special chars for wildcards
+          ## if special-char swap didn't create ambiguity, pull data as normal
           if (length(grep(iii,feat.comb))==1) {
             idx.tmp <- grep(glue("^{iii}_(up|down)$"), rownames(W.norm))
             W.tmp <- W.norm.dir[ idx.tmp, ]
+          } else { # if special-char swap DID create ambiguity, print the offending features
+            message(paste("Special-character-replacement for feature \'",ii,"\' caused its name to become ambiguous.\n",
+                          "Please change the following feature names to allow unambiguous matching:\n",
+                          paste(feat.comb[grep(iii,feat.comb)], collapse="\n"),
+                          sep=""))
           }
         }
         ## if multiple rows were found, choose max of abs-val
