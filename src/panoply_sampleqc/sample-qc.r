@@ -108,15 +108,23 @@ runEstimate <- function (ds, out.file, type) {
   return (result)
 }
 
-rna.ES <- runEstimate (rna.cx, 'rna-estimate-scores.gct', '.RNA')
-cna.ES <- runEstimate (cna.cx, 'cna-estimate-scores.gct', '.CNA')
-pome.ES <- runEstimate (pome.cx, 'pome-estimate-scores.gct', '.PROT')
+tryCatch(
+  {
+    rna.ES <- runEstimate (rna.cx, 'rna-estimate-scores.gct', '.RNA')
+    cna.ES <- runEstimate (cna.cx, 'cna-estimate-scores.gct', '.CNA')
+    pome.ES <- runEstimate (pome.cx, 'pome-estimate-scores.gct', '.PROT')
+    
+    results.ES <- rbind (rna.ES,cna.ES,pome.ES)
+    plot.data <- melt (results.ES, id.vars=c('sample','type'))
+    ggplot (aes (x=type, y=value, group=type, color=type), data=plot.data) +
+      geom_boxplot() + facet_wrap (~ variable, scales='free') +
+      ggtitle ('ESTIMATE scores for RNA, CNA and Protein')},
+  error = function(cond) {
+    message("Failed to produce ESTIMATE scores. Original error:")
+    message(cond)
+  }
+)
 
-results.ES <- rbind (rna.ES,cna.ES,pome.ES)
-plot.data <- melt (results.ES, id.vars=c('sample','type'))
-ggplot (aes (x=type, y=value, group=type, color=type), data=plot.data) +
-  geom_boxplot() + facet_wrap (~ variable, scales='free') +
-  ggtitle ('ESTIMATE scores for RNA, CNA and Protein')
 
 
 dev.off()
