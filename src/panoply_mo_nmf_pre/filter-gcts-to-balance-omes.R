@@ -328,16 +328,19 @@ for(ome in names(gct_mat_fullquant)){
 ## - z-score by row
 ## - followed by z-score columns
 if(z_score_mode == 'rowcol'){
-  mat_z <- apply(mat, 1, function(x) (x-mean(x))/sd(x)) %>% t
+  mat_z <- apply(mat, 1, function(x) (x-mean(x))/sd(x))
   mat_z <- apply(mat_z, 2, function(x) (x-mean(x))/sd(x))
+  mat_z <- t(mat_z)
 }
 ## - z-score by row
 if(z_score_mode == 'row'){
-  mat_z <- apply(mat, 1, function(x) (x-mean(x))/sd(x)) %>% t
+  mat_z <- apply(mat, 1, function(x) (x-mean(x))/sd(x))
+  mat_z <- t(mat_z)
 }
 ## - z-score by column
 if(z_score_mode == 'col'){
   mat_z <- apply(mat, 2, function(x) (x-mean(x))/sd(x))
+  mat_z <- t(mat_z)
 }
 
 
