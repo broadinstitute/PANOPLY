@@ -11,7 +11,7 @@ err="${red}Error:${reg}"
 not="${grn}====>>${reg}" ## notification
 
 ## users (for method permissions)
-proteomics_comp=(karsten@broadinstitute.org mmaynard@broadinstitute.org karen@broadinstitute.org)
+proteomics_comp=(kpham@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org)
 
 ## documentation location (assumes wiki repo is available in path)
 doc_dir="$panoply/../PANOPLY.wiki"
