@@ -80,5 +80,6 @@ if [[ $u_flag == "true" ]]; then
   docker push $docker_ns/panda:latest
   
   # also push to gcr.io
+  docker tag $docker_ns/panda:$docker_tag gcr.io/$docker_ns/panda:$docker_tag
   docker push gcr.io/$docker_ns/panda:$docker_tag
 fi
