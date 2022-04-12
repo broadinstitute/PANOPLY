@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_workflow/versions//plain-WDL/descriptor" as normalize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_workflow/versions/1/plain-WDL/descriptor" as normalize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/8/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/7/plain-WDL/descriptor" as blacksheep_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/23/plain-WDL/descriptor" as mo_nmf_wdl
