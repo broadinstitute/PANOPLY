@@ -309,7 +309,7 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
   outlier_analysis_log_full  <- full_join(outlier_analysis_log,
                                           binary_annotations_key,
                                           by="binary_annotation")
-  write.csv(outlier_analysis_log_full, file.path("outliers_analysis_log.csv"))
+  write.csv(outlier_analysis_log_full, file.path("outlier_analysis_log.csv"))
 }
 
 run_deva_all = function(binary_annotations, data_values, fraction_samples_cutoff, fdrcutoffvalue, annotations){
