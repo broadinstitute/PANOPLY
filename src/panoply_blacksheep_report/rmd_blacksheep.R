@@ -121,15 +121,17 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
       }
     }
     
-    ### Print annotations for which there were no significant hits
-    rmd = paste0(rmd, '\n## No Outliers',
-                 '\nThe following annotations, for the listed in-groups, had no genes significantly enriched with outliers:')
     no_enrichment <- outlier_analysis_log[which(is.na(outlier_analysis_log$pos_neg)),]
     no_enrichment_annotations <- unique(no_enrichment$annotation)
-    for (annotation in no_enrichment_annotations) {
-      tmp <- no_enrichment[which(no_enrichment$annotation==annotation),]
-      rmd = paste0(rmd, '\n\n#### ', annotation, '\n',
-                   paste('*',tmp$ingroup,collapse = "\n\n"))
+    if (length(no_enrichment_annotations) > 0) {
+      ### Print annotations for which there were no significant hits
+      rmd = paste0(rmd, '\n## No Outliers',
+                   '\nThe following annotations, for the listed in-groups, had no genes significantly enriched with outliers:')
+      for (annotation in no_enrichment_annotations) {
+        tmp <- no_enrichment[which(no_enrichment$annotation==annotation),]
+        rmd = paste0(rmd, '\n\n#### ', annotation, '\n',
+                     paste('*',tmp$ingroup,collapse = "\n\n"))
+    }
       
     }
     
