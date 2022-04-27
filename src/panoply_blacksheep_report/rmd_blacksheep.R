@@ -126,7 +126,7 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
     if (length(no_enrichment_annotations) > 0) {
       ### Print annotations for which there were no significant hits
       rmd = paste0(rmd, '\n## No Outliers',
-                   '\nThe following annotations, for the listed in-groups, had no genes significantly enriched with outliers:')
+                   '\nThe following annotations, for the listed in-groups, had no genes which were significantly enriched with sample outliers:')
       for (annotation in no_enrichment_annotations) {
         tmp <- no_enrichment[which(no_enrichment$annotation==annotation),]
         rmd = paste0(rmd, '\n\n#### ', annotation, '\n',
