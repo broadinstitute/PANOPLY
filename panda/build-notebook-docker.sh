@@ -22,7 +22,7 @@ displayUsage() {
   echo "| -g | string | Overrides docker tag (defaults to github commit hash)"
   echo "|    |        | :latest tag always included"
   echo "| -a | flag   | Build both panda_config_libs and panda (default: only panda)"
-  echo "| -u | flag   | Push docker to dockerhub with the specified docker namespace"
+  echo "| -u | flag   | Push docker to dockerhub/gcr.io with the specified namespace"
   echo "| -h | flag   | Print Usage"
   echo "==============================================="
   exit
@@ -78,4 +78,8 @@ if [[ $u_flag == "true" ]]; then
   fi
   docker push $docker_ns/panda:$docker_tag
   docker push $docker_ns/panda:latest
+  
+  # also push to gcr.io
+  docker tag $docker_ns/panda:$docker_tag gcr.io/$docker_ns/panda:$docker_tag
+  docker push gcr.io/$docker_ns/panda:$docker_tag
 fi

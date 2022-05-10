@@ -1,0 +1,27 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.cfg_yaml": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.disk_space": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.label": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.memory": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.num_preemptions": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.num_threads": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.tarball": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_ssgsea_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_ssgsea_report/11",
+    "methodVersion": 11,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_ssgsea_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

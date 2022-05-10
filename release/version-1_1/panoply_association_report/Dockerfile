@@ -1,0 +1,1 @@
+FROM broadcptacdev/panoply_association_report:latest
