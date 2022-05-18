@@ -121,7 +121,7 @@ task panoply_mo_nmf_pre {
 
     runtime {
         docker : "broadcptacdev/panoply_mo_nmf_pre:latest"
-        memory: select_first ([memory, 2]) + "GB"
+        memory: select_first ([memory, 16]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""
         preemptible : select_first ([num_preemptions, 0])

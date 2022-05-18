@@ -34,7 +34,7 @@ task panoply_normalize_ms_data_report {
 
   runtime {
     docker : "broadcptacdev/panoply_normalize_ms_data_report:latest"
-    memory : select_first ([memory, 8]) + "GB"
+    memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
