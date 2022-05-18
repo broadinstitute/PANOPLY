@@ -201,7 +201,7 @@ panda_initialize <- function (workspace.type) {
       typemap.gmt <<- p$typemap.gmt
       typemap.yml <<- p$typemap.yml
       groups.cols <<- p$groups.cols
-      groups.continous <<- p$groups.continuous
+      groups.continuous <<- p$groups.continuous
       groups.colors <<- list()
       for ( group in names( p$groups.colors ) ) {
         groups.colors[[group]] <<- list()
@@ -710,7 +710,7 @@ panda_finalize <- function (internal=FALSE) {
   lines$typemap.gmt <- typemap.gmt
   lines$typemap.yml <- typemap.yml
   lines$groups.cols <- groups.cols
-  lines$groups.continuous <- groups.continuous
+  lines$groups.cols.continuous <- groups.continuous
   lines$groups.colors <- list()
   for ( group in names( groups.colors ) ) {
     lines$groups.colors[[group]] <- list()
