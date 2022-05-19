@@ -1,0 +1,37 @@
+{
+  "deleted": false,
+  "inputs": {
+    "quilts_workflow.quilts.disk_space": "",
+    "quilts_workflow.quilts.input_gene_fusions_files": "",
+    "quilts_workflow.quilts.input_germline_vcfs": "",
+    "quilts_workflow.quilts.input_somatic_vcfs": "",
+    "quilts_workflow.quilts.input_splice_junctions_files": "",
+    "quilts_workflow.quilts.junction_file_type": "",
+    "quilts_workflow.quilts.memory": "",
+    "quilts_workflow.quilts.num_preemptions": "",
+    "quilts_workflow.quilts.num_threads": "",
+    "quilts_workflow.quilts.out_file": "",
+    "quilts_workflow.quilts.output_dir": "",
+    "quilts_workflow.quilts.reference_genome": "",
+    "quilts_workflow.quilts.reference_proteome": "",
+    "quilts_workflow.quilts.threshB": "",
+    "quilts_workflow.quilts.threshD": "",
+    "quilts_workflow.quilts.threshN": "",
+    "quilts_workflow.quilts.variant_quality_threshold": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_quilts",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_quilts/3",
+    "methodVersion": 3,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_quilts",
+  "namespace": "broadcptac",
+  "outputs": {
+    "quilts_workflow.quilts.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

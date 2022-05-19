@@ -1,0 +1,45 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.assoc_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.blacksheep_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.blacksheep_tar": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.cmap_output": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.cmap_ssgsea_output": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.cna_corr_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.cons_clust_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.disk_space": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.immune_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.immune_tar": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.main_full": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.main_summary": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.memory": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.mo_nmf_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.mo_nmf_ssgsea_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.mo_nmf_ssgsea_tar": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.mo_nmf_tar": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.norm_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.num_preemptions": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.num_threads": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.output_reports_zip": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.output_results_zip": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.rna_corr_report": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.sampleqc_report": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_unified_assemble_results",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_unified_assemble_results/7",
+    "methodVersion": 7,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_unified_assemble_results",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.all_reports": "",
+    "panoply_unified_assemble_results_workflow.panoply_unified_assemble_results.all_results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
