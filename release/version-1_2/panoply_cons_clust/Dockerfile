@@ -1,0 +1,1 @@
+FROM broadcptacdev/panoply_cons_clust:latest
