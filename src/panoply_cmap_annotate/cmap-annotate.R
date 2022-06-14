@@ -159,10 +159,31 @@ cmap.annot.enrich <- function (analysis.dir,
   # assemble CNA up/dn sample list
   samples <- colnames (cna.data)
   up <- apply (cna.data [sig.genes [sig.gene.table[,'direction']=='AMP'],], 1, function (x) x==1)
-  colnames (up) <- paste (colnames (up), '.AMP', sep='')
+  tryCatch(colnames (up) <- paste (colnames (up), '.AMP', sep=''),
+           error = function(cond) {
+             # fail silently
+             # message("No amplified genes: ", cond)
+           })
   dn <- apply (cna.data[sig.genes [sig.gene.table[,'direction']=='DEL'],], 1, function (x) x==-1)
-  colnames (dn) <- paste (colnames (dn), '.DEL', sep='')
-  updn <- data.frame (Sample.ID=samples, up, dn)
+  tryCatch(colnames (dn) <- paste (colnames (dn), '.DEL', sep=''),
+           error = function(cond) {
+             # fail silently
+             # message("No deleted genes: ", cond)
+           })
+  updn <- tryCatch(data.frame (Sample.ID=samples, up, dn),
+                   error = function(cond) {
+                     if (is.null(dim(up)) & is.null(dim(dn))) {
+                       message("There are no amplified or deleted genes, updn is empty.")
+                       updn <- data.frame (Sample.ID=samples)
+                     } else if (is.null(dim(up))) {
+                       message("There are no amplified genes, updn contains only downregulated genes.")
+                       updn <- data.frame (Sample.ID=samples, dn)
+                     } else if (is.null(dim(dn))) {
+                       message("There are no deleted genes, updn contains only amplified genes.")
+                       updn <- data.frame (Sample.ID=samples, up)
+                     } else {message(cond)}
+                     return(updn)
+                   })
   write.csv (updn, sprintf ('%s/%s-cmap-%s-sig-genes-extreme-samples.csv', 
                             cmap.dir, group, dtype), row.names=FALSE)
   
@@ -183,7 +204,7 @@ cmap.annot.enrich <- function (analysis.dir,
   subgroup.table <- subgroup.table [samples,]  # reorder samples (if needed)
   cls.list <- setdiff (colnames (subgroup.table), 'Sample.ID')
   
-  if (length (cls.list) > 0) {
+  if (length (cls.list) > 0 & dim(updn)[2]>1) {
     # perform enrichment on sample annotation groups
     enrich <- NULL
     for (cmap.g in colnames (updn)[-1]) {
@@ -199,7 +220,11 @@ cmap.annot.enrich <- function (analysis.dir,
         }
       }
     }
-    colnames (enrich) <- c ('cna.gene', 'group', 'subgroup', 'fisher.test.pvalue')
+    tryCatch(colnames (enrich) <- c ('cna.gene', 'group', 'subgroup', 'fisher.test.pvalue'),
+             error = function(cond) {
+               message(cond)
+             }
+    )
     enrich <- transform (enrich, fisher.test.pvalue=as.numeric (as.character (fisher.test.pvalue)))
     enrich <- cbind (enrich, adj.pvalue=p.adjust (enrich[,'fisher.test.pvalue'], method='BH'))
   }

@@ -11,6 +11,63 @@ format_fasta_file = function(fasta_path){
   return(seqdata)
 }
 
+convert_id = function(id_col, keytype_from, keytype_to="refseq_peptide", remove_duplicate_keys = TRUE) {
+  if (keytype_from==keytype_to){
+    print("No ID conversion necessary.")
+    return(id_col) 
+  } else {
+    # load in biomaRt and relevant packages
+    library(biomaRt)
+    # tryCatch(library(biomaRt),
+    #          error=function(cond){
+    #            message(cond)
+    #            BiocManager::install("biomaRt", update=FALSE)
+    #            unloadNamespace("tidyr")
+    #            unloadNamespace("dplyr")
+    #            unloadNamespace("readr")
+    #            remove.packages("Rcpp")
+    #            install.packages('Rcpp', version=1.08)
+    #            library(Rcpp)
+    #            library(biomaRt)
+    #            library(tidyr, dplyr, readr)
+    #          })
+    ensembl<-  useMart("ensembl", dataset="hsapiens_gene_ensembl")
+    
+    # Check if keytypes are valid ID options
+    keytype_options <- listAttributes(ensembl)$name
+    if (!(keytype_from %in% keytype_options)) {
+      print(paste0("The specified input keytype, ", keytype_from, ", is not a valid keytype. Run listAttributes(ensembl)$name to get a list of valid keytypes."))
+    } else if (!(keytype_to %in% keytype_options)) {
+      print(paste0("The specified output keytype, ", keytype_to, ", is not a valid keytype. Run listAttributes(ensembl)$name to get a list of valid keytypes."))
+    }
+    
+    # create key matchup
+    unique_ids = unique(id_col)
+    key = getBM(attributes=c(keytype_to, keytype_from), filters = keytype_from, values = unique_ids, mart= ensembl)
+    
+    # remove duplicate matches (i.e. if key matched against multiple 
+    if (remove_duplicate_keys){
+      key_unique <- key %>%
+        .[order(.[,keytype_to]),] %>% #choose key that is alphabetically first
+        .[!duplicated(.[,keytype_from]),] #remove 'later' duplicates
+    } else {
+      print("Someone sure should code up what happens if remove_duplicates is set to false, huh?")
+    }
+    
+    # print how many IDs were converted successfully
+    percent_converted = sum(nchar(key_unique[, keytype_to])>0, na.rm=TRUE) / sum(nchar(key_unique[, keytype_from])>0, na.rm=TRUE)
+    print(paste0(round(percent_converted*100,1),"% of IDs were successfully converted from ", keytype_from, " to ", keytype_to, "."))
+    
+    # use key_unique to convert id_col to id_col_convert
+    tmp = data.frame(id_col = id_col) # tmp dataframe
+    names(tmp) = keytype_from #rename colname so left_join knows which col to match by
+    id_col_converted <- left_join(tmp, key_unique, by=eval(keytype_from)) %>%
+      .[,keytype_to]
+    
+    return(id_col_converted)
+  }
+}
+
 # this function formats the phospho GCT row metadata
 format_phospho_rdesc = function(gct, search_engine, protein_id_col){
   phos_rdesc = gct@rdesc
@@ -22,7 +79,7 @@ format_phospho_rdesc = function(gct, search_engine, protein_id_col){
     rownames(phos_rdesc) = phos_rdesc$id
   }
   
-  phos_rdesc$protein_id = sub('\\..*','',phos_rdesc[, protein_id_col])
+  phos_rdesc$protein_id = convert_id(sub('\\..*','',phos_rdesc[, protein_id_col]), keytype_from = "ensembl_peptide_id")
   
   return(phos_rdesc)
 }
