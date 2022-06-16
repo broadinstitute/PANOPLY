@@ -28,7 +28,7 @@ get_run_name <- function(name = NULL) {
 }
 
 list_files_in_bucket <- function(only_gct = FALSE) {
-    file_paths <- system(paste0("gsutil ls ", bucket), intern=TRUE)
+    file_paths <- system(paste0("gsutil ls -r ", bucket), intern=TRUE)
     files <- gsub(paste0(bucket, "/"), "", file_paths)
     if (only_gct) {
         files <- files[grepl(".gct", files)]
@@ -52,14 +52,14 @@ get_ptm_sig_db <- function(id_type_out, organism) {
         print("unsupported `id_type_out` was selected")
     }
 
-    ptm_sig_db <- file.path("~/db/ptmsigdb", paste0("ptm.sig.db.all.", id_opt, ".human.v1.9.0.gmt"))
+    ptm_sig_db <- file.path("/ptm-sea/db/ptmsigdb", paste0("ptm.sig.db.all.", id_opt, ".", organism, ".v1.9.0.gmt"))
     return(ptm_sig_db)
 }
 
 preprocess_gct <- function() {
     setwd(project_output)  # change to folder to write
 
-    sys_out <- system(paste("~/src/preprocessGCT.R",
+    sys_out <- system(paste("/ptm-sea/src/preprocessGCT.R",
         "-i", input_ds,
         "-l", "ssc",  # single-site centric
         "-t", id_type,
@@ -71,7 +71,7 @@ preprocess_gct <- function() {
         "-r", residue,
         "-p", ptm,
         "-u", TRUE,
-        "-z", "~/src/"
+        "-z", "/ptm-sea/src/"
     ), intern = TRUE)
 
     print(sys_out)
@@ -83,7 +83,7 @@ preprocess_gct <- function() {
 run_ptm_sea <- function(save_to_bucket = TRUE, name = NULL) {
     setwd(project_output)  # change to folder to write
 
-    sys_out <- system(paste("~/ssgsea-cli.R",
+    sys_out <- system(paste("/ptm-sea/ssgsea-cli.R",
         "-i", input_ds_proc,
         "-d", ptm_sig_db,
         "-o", output_prefix,
