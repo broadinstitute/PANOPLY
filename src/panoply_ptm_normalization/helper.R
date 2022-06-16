@@ -75,7 +75,8 @@ merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_numbe
   prot.melt <- melt_gct(proteome)
   prot.melt.data.only <- data.frame(prot.melt$id.y, prot.melt[ , accession_number], prot.melt$value)
   colnames(prot.melt.data.only) <- c("id.y", accession_number, "value.prot")
-  data <- merge (ptm.melt, prot.melt.data.only, by = c("id.y", accession_number))
+  
+  data <- merge(ptm.melt, prot.melt.data.only, by = c("id.y", accession_number))
   
   # print metrics
   percent <- round(100 * nrow(data) / nrow(ptm.melt), digits = 1)
@@ -87,8 +88,8 @@ merge_ptm_prot_df <- function(ptm, proteome, accession_number = "accession_numbe
 update_gct <- function(ptm, results) {
   results.mat <- result_unmelt(results)
   
-  ptm@rdesc <- ptm@rdesc[match(rownames(results.mat), ptm@rdesc$id), ]
-  ptm@cdesc <- ptm@cdesc[match(colnames(results.mat), ptm@cdesc$id), ]
+  ptm@rdesc <- ptm@rdesc %>% slice(match(rownames(results.mat), ptm@rdesc$id))
+  ptm@cdesc <- ptm@cdesc %>% slice(match(colnames(results.mat), ptm@cdesc$id))
   ptm@rid <- rownames(results.mat)
   ptm@cid <- colnames(results.mat)
   ptm@mat <- results.mat

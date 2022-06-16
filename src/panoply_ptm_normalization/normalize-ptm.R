@@ -20,10 +20,11 @@ p_load(yaml)
 p_load(tidyr)
 p_load(limma)
 p_load(lme4)
+p_load(stats)
 
-source("panoply_ptm_normalization/helper.R")
-source("panoply_ptm_normalization/metrics.R")
-source("panoply_ptm_normalization/analyze.R")
+# source("panoply_ptm_normalization/helper.R")
+# source("panoply_ptm_normalization/metrics.R")
+# source("panoply_ptm_normalization/analyze.R")
 
 
 normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL, 
@@ -33,10 +34,11 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
                           accession_sep = "|",                           # separator for each accession number in accession_numbers
                           score = "scoreUnique",                         # column with protein scores
                           ndigits = 5,                                   # precision level
-                          center_data = TRUE,                                 # whether to center the data with median
+                          center_data = TRUE,                            # whether to center the data with median
                           norm_method = "global",                        # normalization method (options: global, per_ptm_site, subtract)
                           lm_method = "ls",                              # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
                           lm_formula = value ~ value.prot,               # formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
+                          loess = FALSE,                                 # whether to use loess regression
                           groups_colname = NULL,                         # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
                           subset_cond = NULL,                            # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
                           min_n_values = 4,                              # per_ptm_site: what least number of samples must contain both non-NA PTM and protein values
@@ -75,15 +77,17 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
-    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "per_ptm_site" | norm_method == "per_ptm_site") {
-    norm_vals <- normalize_per_ptm_site(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_per_ptm_site(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "per_protein") {
-    norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "mixed_eff_protein") {
     norm_vals <- normalize_mixed_eff_prot(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "mixed_eff_ptm_site") {
     norm_vals <- normalize_mixed_eff_ptm(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
+  } else if (norm_method == "mixed_eff_nested") {
+    norm_vals <- normalize_mixed_eff_nested(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
   } else if (norm_method == "subtract") {
     norm_vals <- normalize_subtract(comb_ptm_prot)
   }
@@ -92,17 +96,19 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   
   # writes and returns updated GCT
   file_name <- ifelse(!is.null (output.prefix), output.prefix,
-                        unlist(strsplit(basename(ptm.gct), split = ".gct", fixed = TRUE))[1])
-
+                      unlist(strsplit(basename(ptm.gct), split = ".gct", fixed = TRUE))[1])
+  
   out_path <- file.path(model_out_dir, file_name)
   write_gct(ptm.norm, paste0(out_path, ".gct"), 
             appenddim = FALSE, precision = ndigits)
   invisible (ptm.norm)
+  
+  return(comb_ptm_prot)
 }
 
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
-normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
+normalize_global <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, save_dir = NULL) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -125,10 +131,15 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
     }
     
     if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
-      lm_design <- model.matrix(lm_formula, samples)
-      model <- lmFit(samples$value, lm_design, method = lm_method)  # lm(samples$value ~ samples$value.prot, na.action = na.exclude)
       result <- samples[ , c("id.x", "id.y")]
-      fitted_ptm_levels <- unlist(as.list(fitted(model)))
+      if (!loess) {
+        lm_design <- model.matrix(lm_formula, samples)
+        model <- lmFit(samples$value, lm_design, method = lm_method)  # lm(samples$value ~ samples$value.prot, na.action = na.exclude)
+        fitted_ptm_levels <- unlist(as.list(fitted(model)))
+      } else {
+        model <- lowess(samples$value.prot, samples$value)
+        fitted_ptm_levels <- model$y
+      }
       result$residuals <- samples$value - fitted_ptm_levels  # result$residuals <- residuals(model)
       
       all_results <- rbind(all_results, result)
@@ -136,7 +147,7 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
       regr_store[[group]] <- model
     }
   }
-
+  
   print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
   if (!is.null(save_dir)) {
     regr_path <- file.path(save_dir, "regressions.RDS")
@@ -148,7 +159,7 @@ normalize_global <- function (comb_ptm_prot, lm_method, lm_formula, groups_colna
 
 #' Applies linear regression to correct PTM levels for underlying protein levels
 #' for each PTM-protein pair across selected or all samples
-normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
+normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, save_dir = NULL) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -186,14 +197,18 @@ normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, groups_
       result <- samples[ , c("id.x", "id.y")]
       
       if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
-        lm_design <- model.matrix(lm_formula, samples)
-        model <- lmFit(samples$value, lm_design, method = lm_method)
         
-        fitted_ptm_levels <- unlist(as.list(fitted(model)))
-        result$residuals <- samples$value - fitted_ptm_levels
-        count_norm_ptm <- count_norm_ptm + sum(!is.na(result$residuals))
-        
+        if (!loess) {
+          lm_design <- model.matrix(lm_formula, samples)
+          model <- lmFit(samples$value, lm_design, method = lm_method)  # lm(samples$value ~ samples$value.prot, na.action = na.exclude)
+          fitted_ptm_levels <- unlist(as.list(fitted(model)))
+          result$residuals <- samples$value - fitted_ptm_levels  # result$residuals <- residuals(model)
+        } else {
+          model <- loess(lm_formula, data = samples)
+          result$residuals <- residuals(model)
+        }
         regr_store[[group]][[ptm_site]] <- model
+        count_norm_ptm <- count_norm_ptm + sum(!is.na(result$residuals))
         
       } else {
         result$residuals <- NA
@@ -214,14 +229,14 @@ normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, groups_
   return(all_results)
 }
 
-normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, groups_colname, min_n_values, save_dir = NULL) {
+normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, save_dir = NULL) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
     sample_groups <- c(NA)  # to use all samples
   }
   
-  all_prot <- unique(comb_ptm_prot$accession_number)  # avoid hard-coding "accession_number" column
+  all_prot <- unique(comb_ptm_prot[, accession_number])  # avoid hard-coding "accession_number" column
   tot_num_regr <- length(all_prot) * length(sample_groups)
   print(paste("Found", length(all_prot), "unique proteins and", length(sample_groups),
               "sample group(s);", tot_num_regr, "regressions to be built", sep = " "))
@@ -252,14 +267,18 @@ normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, groups_c
       result <- samples[ , c("id.x", "id.y")]
       
       if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
-        lm_design <- model.matrix(lm_formula, samples)
-        model <- lmFit(samples$value, lm_design, method = lm_method)
         
-        fitted_ptm_levels <- unlist(as.list(fitted(model)))
-        result$residuals <- samples$value - fitted_ptm_levels
-        count_norm_ptm <- count_norm_ptm + sum(!is.na(result$residuals))
-        
+        if (!loess) {
+          lm_design <- model.matrix(lm_formula, samples)
+          model <- lmFit(samples$value, lm_design, method = lm_method)  # lm(samples$value ~ samples$value.prot, na.action = na.exclude)
+          fitted_ptm_levels <- unlist(as.list(fitted(model)))
+          result$residuals <- samples$value - fitted_ptm_levels  # result$residuals <- residuals(model)
+        } else {
+          model <- loess(lm_formula, data = samples)
+          result$residuals <- residuals(model)
+        }
         regr_store[[group]][[prot]] <- model
+        count_norm_ptm <- count_norm_ptm + sum(!is.na(result$residuals))
         
       } else {
         result$residuals <- NA
@@ -358,13 +377,60 @@ normalize_mixed_eff_ptm <- function(comb_ptm_prot, groups_colname, min_n_values,
     }
     
     if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
-      model <- lmer(formula = value ~ value.prot + (value.prot | id.x),
+      model <- lmer(formula = value ~ value.prot + (value.prot | id.x),  # check if it was per ptm level
                     data = samples,
-                    control = lmerControl(optimizer = 'Nelder_Mead'),
+                    control = lmerControl(optimizer = 'bobyqa'),  # try different optimizer 
                     REML = T)
       
       prot_slope <- coef(model)$id.x[samples$id.x, "value.prot"]
       prot_intcp <- coef(model)$id.x[samples$id.x, 1]
+      result <- samples[ , c("id.x", "id.y")]
+      result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
+      
+      all_results <- rbind(all_results, result)
+      count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
+      regr_store[[group]] <- model
+    }
+  }
+  
+  print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
+  if (!is.null(save_dir)) {
+    regr_path <- file.path(save_dir, "regressions.RDS")
+    saveRDS(regr_store, regr_path)
+  }
+  return(all_results)
+}
+
+normalize_mixed_eff_nested <- function(comb_ptm_prot, groups_colname, min_n_values, save_dir = NULL) {
+  if (!is.null(groups_colname)) {  # if use all samples
+    sample_groups <- unique(comb_ptm_prot[[groups_colname]])
+  } else {
+    sample_groups <- c(NA)  # to use all samples
+  }
+  
+  print ("Fitting model...") 
+  all_results <- data.frame(matrix(ncol = 3, nrow = 0))
+  colnames(all_results) <- c("id.x", "id.y", "residuals")
+  
+  regr_store <- list()
+  count_fail_ptm <- 0  # count PTM sites and samples that can't be normalized
+  for (group in sample_groups) {
+    if (is.na(group)) {
+      samples <- comb_ptm_prot
+      group <- "all"
+    } else {
+      samples <- comb_ptm_prot %>% filter(!!rlang::sym(groups_colname) == group)
+    }
+    
+    if (sum(!(is.na(samples$value) | is.na(samples$value.prot))) >= min_n_values) {
+      # id.x is unique to each accession_number so there is already implicit nesting
+      model <- lmer(formula = value ~ value.prot + (value.prot | accession_number) + (value.prot | id.x),
+                    data = samples,
+                    control = lmerControl(optimizer = 'Nelder_Mead'),
+                    REML = T)
+      prot_slope <- coef(model)$accession_number[samples$accession_number, "value.prot"] + coef(model)$id.x[samples$id.x, "value.prot"]
+      prot_intcp <- coef(model)$accession_number[samples$accession_number, 1] + coef(model)$id.x[samples$id.x, 1]
+      
       result <- samples[ , c("id.x", "id.y")]
       result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
       
@@ -412,4 +478,3 @@ if (!interactive()) {
                  score=ifelse (score_col=="NULL", NULL, score_col),
                  ndigits=ndigits)
 }
-
