@@ -221,7 +221,7 @@ run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
   # read phospho gct file, format rdesc and mat
   phospho_gct = parse.gctx(phospho_path)
   phos_cid = phospho_gct@cid %>% sub('^X', '', .)
-  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, protein_id_col)
+  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, protein_id_col, protein_id_type)
   phos_mat = format_phospho_mat(phospho_gct, phos_rdesc)
   
   # prepare mutation maf file before for loop sample-wise processing

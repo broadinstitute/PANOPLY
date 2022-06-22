@@ -11,65 +11,59 @@ format_fasta_file = function(fasta_path){
   return(seqdata)
 }
 
-convert_id = function(id_col, keytype_from, keytype_to="refseq_peptide", remove_duplicate_keys = TRUE) {
+convert_id = function(id_col, keytype_from, keytype_to="REFSEQ", remove_duplicate_keys = TRUE, ome_lookup_key="") {
   if (keytype_from==keytype_to){
     print("No ID conversion necessary.")
     return(id_col) 
   } else {
-    # load in biomaRt and relevant packages
-    library(biomaRt)
-    # tryCatch(library(biomaRt),
-    #          error=function(cond){
-    #            message(cond)
-    #            BiocManager::install("biomaRt", update=FALSE)
-    #            unloadNamespace("tidyr")
-    #            unloadNamespace("dplyr")
-    #            unloadNamespace("readr")
-    #            remove.packages("Rcpp")
-    #            install.packages('Rcpp', version=1.08)
-    #            library(Rcpp)
-    #            library(biomaRt)
-    #            library(tidyr, dplyr, readr)
-    #          })
-    ensembl<-  useMart("ensembl", dataset="hsapiens_gene_ensembl")
+    # load in main AnnotationDbi Database
+    require(org.Hs.eg.db, include.only = 'org.Hs.eg.db')
     
     # Check if keytypes are valid ID options
-    keytype_options <- listAttributes(ensembl)$name
+    keytype_options <- AnnotationDbi::keytypes(org.Hs.eg.db) #show key options
     if (!(keytype_from %in% keytype_options)) {
-      print(paste0("The specified input keytype, ", keytype_from, ", is not a valid keytype. Run listAttributes(ensembl)$name to get a list of valid keytypes."))
+      stop(paste0("The specified input keytype, ", keytype_from, ", is not a valid keytype. Run AnnotationDbi::keytypes(org.Hs.eg.db) to get a list of valid keytypes."))
     } else if (!(keytype_to %in% keytype_options)) {
-      print(paste0("The specified output keytype, ", keytype_to, ", is not a valid keytype. Run listAttributes(ensembl)$name to get a list of valid keytypes."))
+      stop(paste0("The specified output keytype, ", keytype_to, ", is not a valid keytype. Run AnnotationDbi::keytypes(org.Hs.eg.db) to get a list of valid keytypes."))
     }
     
-    # create key matchup
+    # Get list of unique IDs
     unique_ids = unique(id_col)
-    key = getBM(attributes=c(keytype_to, keytype_from), filters = keytype_from, values = unique_ids, mart= ensembl)
     
-    # remove duplicate matches (i.e. if key matched against multiple 
-    if (remove_duplicate_keys){
-      key_unique <- key %>%
-        .[order(.[,keytype_to]),] %>% #choose key that is alphabetically first
-        .[!duplicated(.[,keytype_from]),] #remove 'later' duplicates
-    } else {
-      print("Someone sure should code up what happens if remove_duplicates is set to false, huh?")
+    # if its ENSEMBL, use the EnsDb.Hsapiens.v79 to convert from ENSEMBLPROT to ENTREZID first
+    if (keytype_from=="ENSEMBLPROT") {
+      require(EnsDb.Hsapiens.v79, include.only = 'EnsDb.Hsapiens.v79')
+      unique_ids = AnnotationDbi::mapIds(EnsDb.Hsapiens.v79, keys=unique_ids, column=c("ENTREZID"), keytype="PROTEINID")
+      keytype_from="ENTREZID" #set ID type to ENTREZID
+      # sanity check to ensure that IDs still match up
+      if (sum(names(unique_ids)!=unique(id_col))>0) {
+        stop("Something went wrong with the ID conversion-- IDs no longer match up!")
+      }
     }
+    
+    # Create key to match keytype_old->keytype_new, pulling the FIRST ID that contains ome_lookup_key
+    key_vec=AnnotationDbi::mapIds(org.Hs.eg.db, keys=as.character(unique_ids), column=keytype_to, keytype=keytype_from, multiVals = 'list') %>%
+      lapply(., function(e) {grep(ome_lookup_key, e, value=TRUE) %>% .[1]}) # grab FIRST ID that contains ome_lookup_key
+    # put data into dataframe format for easy conversion
+    key = data.frame(old_id = unique(id_col), #use original ID as old_id
+                            new_id = unlist(key_vec)) #use final ID as new_id
+    
     
     # print how many IDs were converted successfully
-    percent_converted = sum(nchar(key_unique[, keytype_to])>0, na.rm=TRUE) / sum(nchar(key_unique[, keytype_from])>0, na.rm=TRUE)
+    percent_converted = sum(!is.na(key$new_id), na.rm=TRUE) / sum(!is.na(key$old_id), na.rm=TRUE)
     print(paste0(round(percent_converted*100,1),"% of IDs were successfully converted from ", keytype_from, " to ", keytype_to, "."))
     
-    # use key_unique to convert id_col to id_col_convert
-    tmp = data.frame(id_col = id_col) # tmp dataframe
-    names(tmp) = keytype_from #rename colname so left_join knows which col to match by
-    id_col_converted <- left_join(tmp, key_unique, by=eval(keytype_from)) %>%
-      .[,keytype_to]
+    # Use key to create new id_col (id_col_converted)
+    tmp = data.frame(old_id = id_col) # tmp dataframe
+    id_col_converted <- left_join(tmp, key, by='old_id') %>% #match old IDs to new IDs
+      .[,'new_id'] #pull column with new IDs
     
-    return(id_col_converted)
+    return(as.character(id_col_converted)) #return as characters so OTHER functions don't decide this is FACTORS for some reason
   }
 }
 
 # this function formats the phospho GCT row metadata
-format_phospho_rdesc = function(gct, search_engine, protein_id_col){
+format_phospho_rdesc = function(gct, search_engine, protein_id_col, protein_id_type){
   phos_rdesc = gct@rdesc
   
   # filter for fully localized sites if SpectrumMill (# localized = # actual sites)
@@ -79,7 +73,8 @@ format_phospho_rdesc = function(gct, search_engine, protein_id_col){
     rownames(phos_rdesc) = phos_rdesc$id
   }
   
-  phos_rdesc$protein_id = convert_id(sub('\\..*','',phos_rdesc[, protein_id_col]), keytype_from = "ensembl_peptide_id")
+  phos_rdesc$protein_id = convert_id(sub('\\..*','', phos_rdesc[, protein_id_col]),
+                                     keytype_from = protein_id_type, ome_lookup_key="P")
   
   return(phos_rdesc)
 }
