@@ -22,7 +22,7 @@ rmd_blacksheep = function(tar_file, output_prefix, type){
   
   # extract files from tarball
   untar(tar_file)
-
+  
   # extract values from final yaml file
   yaml_params = read_yaml("final_output_params.yaml")
   fdr_value = yaml_params$panoply_blacksheep$fdr_value
@@ -30,11 +30,11 @@ rmd_blacksheep = function(tar_file, output_prefix, type){
   # groups_file_path = yaml_params$panoply_blacksheep$groups_file
   apply_filtering = yaml_params$panoply_blacksheep$apply_filtering
   identifiers_file = yaml_params$panoply_blacksheep$identifiers_file
-
+  
   # if (!is.null(groups_file_path)){
   #   groups_file = list.files("blacksheep", pattern = "\\.csv", full.names = TRUE)
   # }
-
+  
   # begin writing rmd
   rmd = paste0('---
 title: "BlackSheep outlier analysis results for ', type, '"
@@ -61,7 +61,7 @@ This report summarizes the significant results for ', type, ' (FDR < ', fdr_valu
 
                 ')
   }
-
+  
   # if outlier analysis was performed (i.e. groups file provided), create outlier analysis rmd report
   if (length(grep("outlieranalysis", list.files("blacksheep", recursive = TRUE)))>0){
     outlier_analysis_log <- read.csv(list.files(pattern="outlier_analysis_log",
@@ -77,7 +77,7 @@ This report summarizes the significant results for ', type, ' (FDR < ', fdr_valu
         for (j in dim(tmp_log_annot)[1]) { #for each row (i.e. each binary_annotation)
           binary_annotation = tmp_log_annot$binary_annotation[j]
           ingroup = tmp_log_annot$ingroup[j]
-          outlier_filename=grep(paste0("outlieranalysis_for_",binary_annotation),
+          outlier_filename=grep(paste0("outlieranalysis_for_",binary_annotation,"__"),
                                 list.files(file.path("blacksheep",i)), value=TRUE)
           outlier_analysis = read.csv(file.path("blacksheep", i, outlier_filename))
           
@@ -131,7 +131,7 @@ datatable(outlier_analysis, rownames = FALSE, width = "500px")
         tmp <- no_enrichment[which(no_enrichment$annotation==annotation),]
         rmd = paste0(rmd, '\n\n#### ', annotation, '\n',
                      paste('*',tmp$ingroup,collapse = "\n\n"))
-    }
+      }
       
     }
     
