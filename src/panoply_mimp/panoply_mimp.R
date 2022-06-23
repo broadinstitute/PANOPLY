@@ -26,6 +26,7 @@ groups_file_SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_na
 search_engine = yaml_params$panoply_mimp$search_engine
 phosphosite_col = yaml_params$panoply_mimp$phosphosite_col
 protein_id_col = yaml_params$panoply_mimp$protein_id_col
+protein_id_type = yaml_params$panoply_mimp$protein_id_type
 mutation_AA_change_colname = yaml_params$panoply_mimp$mutation_AA_change_colname
 mutation_type_col = yaml_params$panoply_mimp$mutation_type_col
 sample_id_col = yaml_params$panoply_mimp$sample_id_col 
@@ -35,12 +36,17 @@ transcript_id_col = yaml_params$panoply_mimp$transcript_id_col
 if (search_engine == "SpectrumMill"){
   phosphosite_col = "variableSites"
   protein_id_col = "accession_number"
+  protein_id_type = "ENSEMBLPROT"
 } else if (search_engine == "other"){
   if (is.null(phosphosite_col)){
     stop("Please update the 'phosphosite_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates phosphosite information e.g. S18s.")
   }
   if (is.null(protein_id_col)){
     stop("Please update the 'protein_id_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates protein accession number e.g. NP_001611.1.")
+  }
+  if (is.null(protein_id_type)){
+    warning("The 'protein_id_type' field has been left blank, and will be assumed 'REFSEQ' by default. If the 'protein_id_col' column uses a different protein ID type, please update the 'protein_id_type' field in the yaml file.")
+    protein_id_type="REFSEQ"
   }
 } else {
   stop("Please enter a valid option for 'search_engine' parameter. Options are 'SpectrumMill' or 'other.'")
