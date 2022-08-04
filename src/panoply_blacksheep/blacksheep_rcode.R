@@ -223,22 +223,27 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
     else { # else, produce heatmaps for the hits
       for (i in 1:length(outlier_analysis_out)){
         
-        for (name in category_names){
-          if(grepl(paste0("_", name, "_"), names(outlier_analysis_out[i]))){
-            heatmap_name = name
+        for (name in category_names){ ### not sure why this isn't just: heatmap_name=category_name[i]. They should be in the same order.
+          if(grepl(paste0("_", name, "_"), names(outlier_analysis_out[i]))){ #locate the correct category name
+            heatmap_name = name # save correct category_name
           }
         }
         
-        intable = data.frame(outlier_analysis_out[[i]])
-        intable[intable == ""] = NA
+        if ( dim(outlier_analysis_out[[i]])[1]>0 ) { #if we have gene-hits
+          intable = data.frame(outlier_analysis_out[[i]])
+          intable[intable == ""] = NA
+          
+          # select column that contains fdr values for the "in" group, get rownames (genes) that meet fdr cutoff
+          fdrcols = grep("fdr_more_", colnames(intable), value = TRUE)
+          fdrcols = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
+          intable[,fdrcols] = as.numeric(intable[,fdrcols])
+          
+          # genes of interest for heatmap
+          GOI = as.character(intable[which(intable[,fdrcols]<fdrcutoffvalue),1]) 
+        } else {
+          GOI = character(0) #initialize empty GOI
+        }
         
-        # select column that contains fdr values for the "in" group, get rownames (genes) that meet fdr cutoff
-        fdrcols = grep("fdr_more_", colnames(intable), value = TRUE)
-        fdrcols = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
-        intable[,fdrcols] = as.numeric(intable[,fdrcols])
-        
-        # genes of interest for heatmap
-        GOI = as.character(intable[which(intable[,fdrcols]<fdrcutoffvalue),1])
         title = paste0("Significant genes in ", csv_name[pos_neg], " outlier analysis for ", heatmap_name, ", FDR cutoff value = ", fdrcutoffvalue)
         GOI_list = append(title, GOI)
         
@@ -292,9 +297,9 @@ generate_outliers_heatmaps = function(binary_annotations, outliers_results_pos_n
           
           print(paste0(csv_name[pos_neg], " outlier analysis heatmap for ", heatmap_name, " complete"))
           
-        }
-        # append entry to outlier_analysis_log
-        outlier_analysis_log[nrow(outlier_analysis_log)+1,] <- c(csv_name[pos_neg],heatmap_name,has_heatmap)
+        } 
+        
+        outlier_analysis_log[nrow(outlier_analysis_log)+1,] <- c(csv_name[pos_neg],heatmap_name,has_heatmap)# append entry to outlier_analysis_log
       }
     }
   }
