@@ -47,11 +47,14 @@ task OmicsEV_preprocessing {
 	${data_file} \
 	${sample_anno_file} \
 	${rna_file}
+
+	cp /prot/proteomics/Projects/PGDAC/src/panoply_run_OmicsEV.R .
+
     }
 
     runtime {
-	docker: "broadcptacdev/panoply_omicsev:latest"
-	memory: "32GB"
+	docker: "broadcptac/panoply_omicsev:latest"
+	memory: "16GB"
 	disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
     }
@@ -60,7 +63,7 @@ task OmicsEV_preprocessing {
 	File data_zip = "dataset.zip"
 	File sample_list = "sample_list.tsv"
 	File x2 = "x2.tsv"
-	File code_file = "/prot/proteomics/Projects/PGDAC/src/panoply_run_OmicsEV.R"
+	File code_file = "panoply_run_OmicsEV.R"
     }
 }
 
@@ -83,9 +86,9 @@ task OmicsEV_task {
         Rscript ${code_file} \
         ${data_zip} \
         ${sample_list} \
-        ${x2} \
         ${default=6 cpu} \
-        ${default="protein" data_type}
+        ${default="protein" data_type} \
+	${x2}
     }
 
     runtime {

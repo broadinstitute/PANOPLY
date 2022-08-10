@@ -37,20 +37,10 @@ print(paste("rna_file:", rna_file, sep=' '))
 library(cmapR)
 library(dplyr)
 
-# other important file paths
-data_dir <- 'dataset/'
-sample_anno_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(sample_anno_file))
-sample_anno_path <- paste(sample_anno_basename, ".tsv", sep='')
-
 ## read proteome data
 data_gct <- parse_gctx(data_file)
 data_ids <- data.frame(ID = meta(data_gct, dimension='row')$geneSymbol)
 data_out <- cbind(data_ids, data.frame(2^mat(data_gct))) # undo log2-transform
-
-## GET RID OF ARTIFACT IN PROTEOME FILE
-warning("getting rid of weird artifact in proteome_aggregate.gct file!")
-weird.gene.ids <- sort(unique(data_out$ID))[1:17]
-data_out <- data_out[!(data_out$ID %in% weird.gene.ids), ]
 
 ## collapse to the gene level
 if (!is.null(rna_file)) {
@@ -60,12 +50,17 @@ if (!is.null(rna_file)) {
 }
 
 
-# write proteome data to 'dataset' directory
+# write proteome data
+data_dir <- "dataset/"
 dir.create(data_dir)
 file_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(data_file))
+file_path <- paste(data_dir, file_basename, ".tsv", sep='')
 write.table(data_out,
-            file = paste(data_dir, file_basename, ".tsv", sep=''),
+            file = file_path,
             row.names=FALSE, sep="\t")
+
+# zip the proteome data into dataset directory
+zip("dataset.zip", files = file_path)
 
 ## read and process sample annotations
 sample_anno <- read.csv(sample_anno_file)
@@ -75,15 +70,11 @@ names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
 
 # write sample annotations to tsv
 write.table(sample_anno_out,
-            file = sample_anno_path,
+            file = "sample_list.tsv",
             row.names=FALSE, sep="\t")
 
 ## read and process rna file (x2)
 if (!is.null(rna_file)) {
-  # make path for RNA data
-  rna_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(rna_file))
-  rna_path <- paste(rna_basename, ".tsv", sep='')
-  
   rna_gct <- parse_gctx(rna_file)
   rna_ids <- data.frame(ID = meta(rna_gct, dimension='row')$geneSymbol)
   if (any(mat(rna_gct) < 0)) { #log2-transform was performed
@@ -92,11 +83,9 @@ if (!is.null(rna_file)) {
   
   # write rna to tsv
   write.table(rna_out,
-              file = rna_path,
+              file = "x2.tsv",
               row.names=FALSE, sep="\t")
 }
-
-
 
 
 
