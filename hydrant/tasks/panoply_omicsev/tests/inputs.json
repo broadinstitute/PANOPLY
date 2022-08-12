@@ -1,0 +1,8 @@
+{
+  "myWorkflow.cpu": "2",
+  "myWorkflow.data_file": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/original_panoply_download/proteome-aggregate.gct",
+  "myWorkflow.data_type": "protein",
+  "myWorkflow.memory": "24",
+  "myWorkflow.rna_file": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/original_panoply_download/rna-aggregate.gct",
+  "myWorkflow.sample_anno_file": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/original_panoply_download/annotation-aggregate.csv"
+}

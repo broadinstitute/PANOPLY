@@ -59,8 +59,8 @@ write.table(data_out,
             file = file_path,
             row.names=FALSE, sep="\t")
 
-# zip the proteome data into dataset directory
-zip("dataset.zip", files = file_path)
+# # zip the proteome data into dataset directory
+# zip("dataset.zip", files = file_path)
 
 ## read and process sample annotations
 sample_anno <- read.csv(sample_anno_file)
