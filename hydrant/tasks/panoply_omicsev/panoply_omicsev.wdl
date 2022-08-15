@@ -1,5 +1,5 @@
 workflow panoply_omicsev_workflow {
-    File data_file
+    Array[File] data_files
     File sample_anno_file
     File? rna_file
     Int? cpu
@@ -10,7 +10,7 @@ workflow panoply_omicsev_workflow {
 
     call OmicsEV_task {
 	input:
-	    data_file=data_file, 
+	    data_files=data_files, 
 	    sample_anno_file=sample_anno_file, 
 	    rna_file=rna_file,
 	    data_type=data_type,
@@ -19,34 +19,33 @@ workflow panoply_omicsev_workflow {
 	    memory=memory,
 	    cpu=cpu
     }
-
 }
 
 task OmicsEV_task {
-    data_file=data_file, 
-    sample_anno_file=sample_anno_file, 
-    rna_file=rna_file,
-    data_type=data_type,
-    local_disk_gb=local_disk_gb,
-    num_preemptions= num_preemptions,
-    memory=memory,
-    cpu=cpu
+    Array[File] data_files
+    File sample_anno_file
+    File? rna_file
+    Int? cpu
+    Int? memory
+    String? data_type
+    Int? local_disk_gb
+    Int? num_preemptions
 
     command {
 	set -euo pipefail
     
-    	Rscript \
-        /src/panoply_omicsev_preprocessing.R \
-	${data_file} \
+    Rscript \
+    /src/panoply_omicsev_preprocessing.R \
+	${sep=',' data_files} \
 	${sample_anno_file} \
-	${rna_file}
+	${default = 'no_rna' rna_file}
     
-        Rscript \
+    Rscript \
 	/src/panoply_run_OmicsEV.R \
-        dataset \
-        sample_list.tsv \
-        ${default=6 cpu} \
-        ${default="protein" data_type} \
+    dataset \
+    sample_list.tsv \
+    ${default=6 cpu} \
+    ${default="protein" data_type} \
 	x2.tsv
     }
 

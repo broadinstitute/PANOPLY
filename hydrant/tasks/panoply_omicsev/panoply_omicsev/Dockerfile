@@ -1,8 +1,6 @@
-FROM proteomics/omicsev:latest
+FROM broadcptacdev/panoply_omicsev:latest
 MAINTAINER svartany@broadinstitute.org
 
-RUN mkdir /src
+RUN rm -r /src
 
 COPY src /src
-
-RUN R -e "BiocManager::install('cmapR')"
