@@ -1,6 +1,7 @@
 workflow panoply_omicsev_workflow {
     Array[File] data_files
     File sample_anno_file
+	String class_column_name
     File? rna_file
     Int? cpu
     Int? memory
@@ -11,7 +12,8 @@ workflow panoply_omicsev_workflow {
     call OmicsEV_task {
 	input:
 	    data_files=data_files, 
-	    sample_anno_file=sample_anno_file, 
+	    sample_anno_file=sample_anno_file,
+		class_column_name=class_column_name, 
 	    rna_file=rna_file,
 	    data_type=data_type,
 	    local_disk_gb=local_disk_gb,
@@ -24,6 +26,7 @@ workflow panoply_omicsev_workflow {
 task OmicsEV_task {
     Array[File] data_files
     File sample_anno_file
+	String class_column_name
     File? rna_file
     Int? cpu
     Int? memory
@@ -39,6 +42,7 @@ task OmicsEV_task {
 	${sep=',' data_files} \
 	${sample_anno_file} \
 	${default = 'no_rna' rna_file}
+	${class_column_name}
     
     Rscript \
 	/src/panoply_run_OmicsEV.R \

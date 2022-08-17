@@ -11,7 +11,7 @@ print("extracting command line arguments")
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 3) {
+if (length(args) == 4) {
   
   # all inputs provided
   data_files <- args[1]
@@ -22,6 +22,8 @@ if (length(args) == 3) {
   } else {
     rna_file <- args[3]
   }
+  
+  class_colname <- args[4]
   
 } else {
   stop("Incorrect number of inputs")
@@ -48,7 +50,7 @@ for (file in data_files) {
   data_gct <- parse_gctx(file)
   data_ids <- data.frame(ID = meta(data_gct, dimension='row')$geneSymbol)
   
-  if (any(mat(data_gct) < 0)) { #log2-transform was performed
+  if (any(mat(data_gct) < 0, na.rm=T)) { #log2-transform was performed
     data_out <- cbind(data_ids, data.frame(2^mat(data_gct))) # undo log2-transform
   } else {
     data_out <- cbind(data_ids, data.frame(mat(data_gct)))
@@ -73,8 +75,13 @@ for (file in data_files) {
 
 ## read and process sample annotations
 sample_anno <- read.csv(sample_anno_file)
-sample_anno$order <- order(sample_anno$Experiment, sample_anno$Channel)
-sample_anno_out <- sample_anno[, c('Sample.ID', 'PAM50', 'Experiment', 'order')]
+if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
+  sample_anno$order <- order(sample_anno$Experiment, sample_anno$Channel)
+} else {
+  warning("Not reordering data based on experiment/channel. This should only matter for how the data is displayed")
+  sample_anno$order <- 1:nrow(sample_anno)
+}
+sample_anno_out <- sample_anno[, c('Sample.ID', class_colname, 'Experiment', 'order')]
 names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
 
 # write sample annotations to tsv
@@ -86,8 +93,10 @@ write.table(sample_anno_out,
 if (!is.null(rna_file)) {
   rna_gct <- parse_gctx(rna_file)
   rna_ids <- data.frame(ID = meta(rna_gct, dimension='row')$geneSymbol)
-  if (any(mat(rna_gct) < 0)) { #log2-transform was performed
+  if (any(mat(rna_gct) < 0, na.rm=T)) { #log2-transform was performed
     rna_out <- cbind(rna_ids, data.frame(2^mat(rna_gct))) # undo log2-transform
+  } else {
+    rna_out <- cbind(rna_ids, data.frame(mat(rna_gct)))
   }
   
   # write rna to tsv
