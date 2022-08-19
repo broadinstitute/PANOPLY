@@ -13,14 +13,16 @@ library(glue)
 ## function to create tar ball as input 
 ## for panoply_mo_nmf
 create_tar <- function( 
-  label='test',
+  label='test',               ## character, used in filename of tar file
   str_list=list(
-    prot='prote_ome.txt',     ## text file containing the absolute file path to proteome GCT file
-    pSTY='phospho_ome.txt',   ## 
-    acK='acetyl_ome.txt',
-    ubK='ubiquityl_ome.txt',
-    RNA='rna_ome.txt',
-    CNV='cna_ome.txt')
+    prot='prote_ome.txt',     ## text file containing the absolute file path to PROTEOME GCT file
+    pSTY='phospho_ome.txt',   ## text file containing the absolute file path to PHOSPHO GCT file
+    acK='acetyl_ome.txt',     ## text file containing the absolute file path to ACETYL GCT file
+    ubK='ubiquityl_ome.txt',  ## text file containing the absolute file path to UBIQUITYL GCT file
+    glyco="glyco_ome.txt",    ## text file containing the absolute file path to GLYCO GCT file
+    RNA='rna_ome.txt',        ## text file containing the absolute file path to RNA GCT file
+    CNV='cna_ome.txt'         ## text file containing the absolute file path to CNV GCT file
+    )
 ){
   
   ## non-empty files

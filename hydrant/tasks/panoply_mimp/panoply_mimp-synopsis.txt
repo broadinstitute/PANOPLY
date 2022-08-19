@@ -1,0 +1,1 @@
+Predicts impact of mutations on kinase phosphorylation using MIMP algorithm

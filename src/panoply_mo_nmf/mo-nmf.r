@@ -6,8 +6,6 @@ rm(list=ls())
 options( warn = -1, stringsAsFactors = F )
 suppressPackageStartupMessages(library("optparse"))
 
-#Rscript c:\Users\karsten\Dropbox\Devel\PANOPLY\src\pgdac_mo_nmf\mo-nmf.r -y lscc-v3.0-param.yaml -n 3 -z c:\Users\karsten\Dropbox\Devel\PANOPLY\src\pgdac_mo_nmf\ -t data\lscc-v3.0-prot-psty-ack-rna-cnv.tar
-
 # specify command line arguments
 option_list <- list(
   make_option( c("-t", "--tar"), action='store', type='character',  dest='tar_file', help='tar file containing data tables in GCT v1.3 format.'),
@@ -21,8 +19,9 @@ option_list <- list(
   make_option( c("-d", "--define_colors"), action='store', type='character', dest='cat_colors', help='Specifiy colors for each level in "categorial_annotation". Example: "MedResponder:darkred;NonResponder:darkgreen;Responder:orange"'), # default = NA),
   make_option( c("-r", "--runonly"), action='store', type='logical', dest='nmf_only', help='If TRUE no plots will be generated and the R-object after NMF clustering will be returned.'), # default=FALSE),
   make_option( c("-f", "--sdfilter"), action='store', type='numeric', dest='sd_filt', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed. Will be applied before z-scoring (optional)') , ## default=0),
-  make_option( c("-g", "--filt_mode"), action='store', type='character', dest='filt_mode', help='Determines how the low variable features (paramater "sd_filt") will be removed from the dataset. "global": the filter will be applied to the entrire datasets. "separate": the will be applied separately to each data type (e.g. proteome, RNA, etc.). "equal": all data tables of different data types (e.g. proteome, RNA) will be filtered down to have the same number of features and ths is limited by the data type with the smallest number of features "N_feat". The data tables of other data types are filtered to retain the "N_feat" highest variable features.  Only relevant for multi-omics data.'), # default='global'),
-  make_option( c("-u", "--z_score"), action='store', type='logical', dest='z_score', help='If TRUE, rows in th matrix will be z-scored.'), # default=TRUE),
+  make_option( c("-g", "--filt_mode"), action='store', type='character', dest='filt_mode', help='Determines how the low variable features (paramater "sd_filt") will be removed from the dataset. "global": the filter will be applied to the entrire datasets. "separate": the will be applied separately to each data type (e.g. proteome, RNA, etc.). "equal": all data tables of different data types (e.g. proteome, RNA) will be filtered down to have the same number of features and ths is limited by the data type with the smallest number of features "N_feat". The data tables of other data types are filtered to retain the "N_feat" highest variable features.  Only relevant for multi-omics data.'), 
+  make_option( c("-u", "--z_score"), action='store', type='logical', dest='z_score', help='If TRUE, the data matrix will be z-scored (see --z_score_mode).'), # default=TRUE),
+  make_option( c("-v", "--z_score_mode"), action='store', type='character', dest='z_score_mode', help='z-scoring mode: row, col, rowcol'), # default=TRUE),
   make_option( c("-i", "--impute"), action='store', type='logical', dest='impute', help='If TRUE, the matrix will be first filtered for features present in >70% of samples. The remaining missing values will be imputed via KNN (R packe impute).'), # default=TRUE),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
   make_option( c("-e", "--exclude_2"), action="store", dest='exclude_2', type="logical", help="If TRUE, a '2' will be excluded from calculation of the optimal rank."), #default=TRUE),
@@ -59,7 +58,8 @@ parse_yaml_mo_nmf <- function(cmd_option_list,
   ## #########################################################
   # parse command line parameters
   opt_cmd <- parse_args( OptionParser(option_list=cmd_option_list) )
-  # opt_cmd$yaml_file <- "c:/Users/karsten/Dropbox/Devel/PANOPLY/hydrant/tasks/configs/panoply-parameters-MASTER.yaml"
+  #opt_cmd$yaml_file <- "master-parameters.yaml"
+  
   ############################################################
   ## parse yaml file
   if(!is.na(opt_cmd$yaml_file) & file.exists(opt_cmd$yaml_file)){
@@ -72,7 +72,7 @@ parse_yaml_mo_nmf <- function(cmd_option_list,
     opt_yaml_groups <- opt_yaml_all[[yaml_groups_cat]] %>% unlist %>% paste(., collapse=';')
     names(opt_yaml_groups)[length(opt_yaml_groups)] <- 'cat_anno'
     
-    ## optional continious variables
+    ## optional continuous variables
     if(yaml_groups_cont %in% names(opt_yaml_all)){
       opt_yaml_groups[['cont_anno']] <- opt_yaml_all[[yaml_groups_cont]] %>% unlist %>% paste(., collapse=';')
     } else {
@@ -130,13 +130,15 @@ parse_yaml_mo_nmf <- function(cmd_option_list,
   ## force correct mode
   opt$sd_filt <- as.numeric(opt$sd_filt)
   opt$core_membership <- as.numeric(opt$core_membership)
-  
+  opt$core_membership_mode <- as.character(opt$core_membership_mode)
+    
   opt$z_score <- as.logical(opt$z_score)
   opt$impute <- as.logical(opt$impute)
   opt$exclude_2 <- as.logical(opt$exclude_2)
   opt$bnmf  <- as.logical(opt$bnmf)
   opt$nmf_only  <- as.logical(opt$nmf_only)
-  
+  opt$method <- as.character(opt$method)
+    
   opt$max_na_row <- as.numeric(opt$max_na_row)
   opt$max_na_col  <- as.numeric(opt$max_na_col)
   opt$hm_cw <- as.numeric(opt$hm_cw)
@@ -152,11 +154,11 @@ parse_yaml_mo_nmf <- function(cmd_option_list,
   opt$filt_mode <- as.character(opt$filt_mode)
   opt$gene_col <- as.character(opt$gene_col)
   opt$organism <- as.character(opt$organism)
+  opt$z_score_mode <- as.character(opt$z_score_mode)
   
   opt$feature_fdr <- as.numeric(opt$feature_fdr)
   opt$ora_pval <- as.numeric(opt$ora_pval)
   opt$ora_max_categories <- as.integer(opt$ora_max_categories)
-  
   
   return(opt)
 } 
@@ -190,7 +192,6 @@ p_load(UpSetR)
 p_load(ComplexHeatmap)
 p_load(circlize)
 
-
 p_load(glue)
 
 p_load(impute)
@@ -206,11 +207,6 @@ p_load(limma)
 
 ## parse parameters
 opt <- parse_yaml_mo_nmf(option_list) 
-#opt$lib_dir <- 'c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/'
-#opt$organism <- 'human'
-#opt$blank_anno <- 'N/A'
-#opt$blank_anno_col <- '#BFBEBE'
-#opt$core_membership <- 0
 
 ################################################
 ## source required files
@@ -225,14 +221,15 @@ cat('done!\n')
 ## main function
 main <- function(opt){
 
-    ## for backwards compatibility
+    ## set defaults for backwards compatibility
     if(is.null(opt$organism)) opt$organism <- 'human'
     if(is.null(opt$blank_anno)) opt$blank_anno='N/A'
     if(is.null(opt$blank_anno_col)) opt$blank_anno_col='white'
     if(is.null(opt$feature_fdr)) opt$feature_fdr <- 0.01
     if(is.null(opt$ora_pval)) opt$ora_pval <- 0.01
     if(is.null(opt$ora_max_categories)) opt$ora_max_categories <- 10
-    
+    if(is.null(opt$core_membership_mode)) opt$core_membership_mode <- 'legacy'
+    if(is.null(opt$sample_order)) opt$sample_order <- ifelse(opt$core_membership_mode == 'mindiff', 'clust_then_core_then_score', 'clust_then_score')
     
     ## ##################################################
     ##           parse parameters
@@ -260,8 +257,7 @@ main <- function(opt){
     ranks <- sort(opt$kmin:opt$kmax)
     seed <- opt$seed
     nrun <- opt$nrun
-    #nrun.bs <- opt$nrun.bs ## bootstrap iterations
-    nmf_method <- ifelse(opt$bnmf, 'bnmf', 'nmf')
+    nmf_method <- opt$method 
       
     cores <- detectCores()
     opts <- paste('vp', cores,'t', sep='')
@@ -272,10 +268,6 @@ main <- function(opt){
     ## ###################################################
     tmp.dir <- tempdir()
     
-    ## data filtering / normalization
-    zscore.cnv <-  F     ## should CNVs be z-scored?
- 
-
     ## #########################################################################################
     ##
     ##                               START
@@ -284,7 +276,7 @@ main <- function(opt){
    
     ## ##################################################
     ## import data files
-    data.imported <- import.data.sets(tar_file, tmp.dir, zscore.cnv)
+    data.imported <- import.data.sets(tar_file, tmp.dir)
     
     expr <- data.imported$expr
     cdesc <- data.imported$cdesc
@@ -298,7 +290,8 @@ main <- function(opt){
     ##     prepare output folder
     label <- paste(names(data.str), collapse='_')
     
-    date.str <- glue("{sub(' .*', '', Sys.time())}_{label}_{nrun}_{nmf_method}{ifelse(impute,'_knn_','_')}sd_{sd_filt}{ifelse(z_score,'_zcore','')}")
+    date.str <- glue("{sub(' .*', '', Sys.time())}_{label}_{nrun}_{make.names(nmf_method)}{ifelse(impute,'_knn_','_')}sd_{sd_filt}{ifelse(z_score,paste0('_zcore_', opt$z_score_mode),'')}")
+    
     dir.create(date.str)
     setwd(date.str)
     
@@ -312,11 +305,17 @@ main <- function(opt){
               
                paste('opts:', opts),
                '',
+               paste('core membership method:', opt$core_membership_mode),
+               '',
                '## data filter / normalization / imputation', 
                paste('filter mode:', filt_mode),
                paste('remove lowest StdDev perc.:', sd_filt),
-               
-               paste('z-score rows:', z_score), 
+               '',
+               '## normalization',
+               paste('z-score:', z_score), 
+               paste('z-score mode:', opt$z_score_mode),
+               '',
+               '## imputation', 
                paste('imputation (KNN):', impute),
                paste('imputation: no. neighbors (K)', impute.k),
                paste('imputation: max.missing row', na.max.row),
@@ -357,12 +356,8 @@ main <- function(opt){
     write.gct(gct.comb, ofile = 'mo-data-matrix')
     
     ## ###################################################
-    ##       calculate SD accross samples
-    ## ###################################################
-    ## sd.expr <- apply(gct.comb@mat, 1, sd, na.rm=T)
-    
-    ## ####################################################
     ##    sd filter
+    ######################################################
     gct.filt <- filter.datasets(gct.comb, sd_filt, mode=filt_mode )
     write.gct(gct.filt, ofile = 'mo-data-matrix-sd-filt')
     
@@ -372,61 +367,43 @@ main <- function(opt){
     ## ###################################################
     ## Z-score
     ## ###################################################
-    if(z_score)
-      expr <- scale(expr)
-   
-    # ## #########################
-    # ## density kernel
-    # sd.d <- density( sd.expr )
-    # sd.d.list <- list()
-    # ymax <- 0
-    # for(i in 1:length(data.str)){
-    #     sd.d.list[[i]] <- density( sd.expr[ grep(names(data.str)[i], names(sd.expr)) ] )
-    #     if(max(sd.d.list[[i]]$y) > ymax)
-    #         ymax <- max(sd.d.list[[i]]$y)
-    # }
-    # ymax <- (ymax+(0.1*ymax))
-    # 
-    # ## #####################
-    # ## plot
-    # fn <- '0_density_StdDev.pdf'
-    # pdf(fn)
-    # plot(sd.d, ylim=c(0, ymax), main='StdDev accross samples', lwd=2)
-    # for(i in 1:length(data.str))
-    #     lines(sd.d.list[[i]], col=i+1, lwd=2)
-    # legend('topright', legend=c('Aggregated', names(data.str)), lty='solid', lwd=3, col=1:(length(data.str)+1))
-    # 
-    # 
-    # ####################################################
-    # ## filter dataset
-    # 
-    # if(sd_filt > 0){
-    #   
-    #     cat("\napplying SD-filter: ")
-    #     sd.perc <- quantile(sd.expr, c(sd_filt))
-    #     sd.keep <- which( sd.expr > sd.perc)
-    #     cat("removed", nrow(expr)-length(sd.keep), "features with SD<=", round(sd.perc, 2), "(", names(sd.perc),"-tile)\n\n")
-    #     expr <- expr[sd.keep,]
-    #     
-    #     ## add line to plot
-    #     abline(v=sd.perc, lty='dashed', lwd=2, col='grey')
-    #     text(sd.perc, ymax, paste(100*sd_filt, 'th percentile', sep=''), pos=4, col='grey')
-    #     
-    #     ## export filtered GCT
-    #     gct.filt <- gct.comb
-    #     gct.filt@mat <- data.matrix(expr)
-    #     gct.filt@rdesc <- rdesc[sd.keep, ]
-    #     gct.filt@rid <- rownames(gct.filt@mat)
-    #     write.gct(gct.filt, ofile = 'mo-data-matrix-sd-filt')
-    #     
-    # }
-    # dev.off()
-    # #im.convert(fn, output = sub('\\.pdf','.png', fn), extra.opts="-density 150")
     
+    pdf('0_boxplot-data-distribution.pdf')
+    expr_org <- expr
+    boxplot(expr_org, cex=0.5, main='before z-scoring')
     
+    if(z_score){
+      
+      ## row
+      expr_z_row <- t(scale(t(expr_org))) ## row
+      boxplot(expr_z_row, cex=0.5, main='after z-scoring (row)', outline=F)
+      
+      ## column
+      expr_z_col <- scale(expr_org)
+      boxplot(expr_z_col, cex=0.5, main='after z-scoring (column)', outline=F)
+
+      ## row + column
+      expr_z_rowcol <- scale(expr_z_row) ## row + column
+      boxplot(expr_z_rowcol, cex=0.5, main='after z-scoring (row + column)', outline=F)
+     
+      
+      if(opt$z_score_mode == 'rowcol')
+        expr <- expr_z_rowcol
+      if(opt$z_score_mode == 'row')
+        expr <- expr_z_row
+      if(opt$z_score_mode == 'col')
+        expr <- expr_z_col
+      
+      ###############################
+      ## export
+      gct.filt.zscore <- gct.filt
+      gct.filt@mat <- expr
+      write.gct(gct.filt.zscore, ofile = paste('mo-data-matrix-sd-filt-zscore', opt$z_score_mode, sep='-'))
+    }
+    dev.off()
     
     ## ##############################################
-    ##           make matrix non-negativ
+    ##           make matrix non-negative
     ## - separate up/down
     ## ##############################################
     expr.comb <- make.non.negative(expr)
@@ -444,6 +421,8 @@ main <- function(opt){
     
     ##########################################
     ##               bayesian NMF
+    ## - only applicable to countr data
+    ## - deactivated in PANOPLY/TERRA
     if(opt$bnmf){
       
       #cl <- makeCluster(cores)
@@ -465,10 +444,9 @@ main <- function(opt){
       if('evidence' %in% names(res.rank[[1]]@measure))  
         rank.mev <- sapply(res.rank, function(x) x@measure$evidence)
       else
-        rank.mev <- sapply(res.rank, function(x) x@measure$lml) ## names changed in newer verion of the package...
-      
+        rank.mev <- sapply(res.rank, function(x) x@measure$lml) ## names changed in newer version of the package...
         names(rank.mev) <- as.character(ranks)
-        #save(rank.mev, res.rank, file='debug.RData')
+    
         ## ####################################################
         ##      Estimate factorization rank
         ## ####################################################
@@ -495,12 +473,13 @@ main <- function(opt){
       dev.off()
         
       ##################################################
-      ##              non-bayesian NMF
+      ##              non-Bayesian NMF
+      ##################################################
     } else {
         
       ## loop over ranks
       for(i in 1:length(ranks))
-          res.rank[[i]] <-  nmf(expr.comb, rank=ranks[i], method='brunet', seed=seed, nrun=nrun, .options = opts)
+          res.rank[[i]] <-  nmf(expr.comb, rank=ranks[i], method=nmf_method, seed=seed, nrun=nrun, .options = opts)
       
       ## ####################################################
       ##             calculate cluster metrics
@@ -513,23 +492,24 @@ main <- function(opt){
       rank.sil <- lapply(res.rank, silhouette)
       rank.sil.avg <- lapply(rank.sil, function(x) tapply( x[,3], x[, 1], mean))
       
-      ## cophenic
+      ## cophenetic
       rank.coph <- sapply(res.rank, cophcor)
       
       ## dispersion of consensus matrix
       rank.disp <- sapply(res.rank, dispersion)
       
       ## combine
-      rank.coph.disp <- rank.coph * rank.disp
+      #rank.coph.disp <- rank.coph * rank.disp
+      #rank.coph.disp <- rank.coph^(1-rank.disp)
+      rank.coph.disp <- rank.disp^(1-rank.coph)
       
       ## ####################################################
       ##      Estimate factorization rank
       ## ####################################################
       
-      ## extract top N ranks based on cophentic correlation
+      ## extract top N ranks based on cophenetic correlation
       topn.rank <- 1
       
-      #rank.top <- GetBestRank(rank.coph, topn.rank=topn.rank, exclude_2=opt$exclude_2)
       rank.top <- GetBestRank(rank.coph.disp, topn.rank=topn.rank, exclude_2=opt$exclude_2)
       rank.mev  <- NULL
       
@@ -540,7 +520,6 @@ main <- function(opt){
         col.tmp <- rep('darkblue', length(rank.coph))
         names(col.tmp) <- names(rank.coph)
         col.tmp[rank.top] <- 'red'
-        
         
         ## plot
         pdf('1_cluster_metrics.pdf', 5, 5)
@@ -575,8 +554,7 @@ main <- function(opt){
         
         rt <- as.numeric(rank.top)
         rect( xleft = rt-0.2, xright = rt+0.2, ybottom = ylim[1]-.01, ytop = ylim[2]+0.01, border = 'red', lwd=1.6 )
-        
-        
+
         
         ## silhouette
         # par(mfrow=c(2,1))
@@ -594,7 +572,7 @@ main <- function(opt){
     ## save results needed to 
     fn.ws <- 'workspace_after_NMF.RData'
     save(opt, res.rank, rank.top, expr.comb, expr, rdesc, cdesc, rank.sil, rank.sil.avg, 
-         rank.coph, rank.mev, fn.ws, gct.comb, z_score, file=fn.ws)
+         rank.coph, rank.disp, rank.coph.disp, rank.mev, fn.ws, gct.comb, z_score, file=fn.ws)
     
     
     ## #######################################################

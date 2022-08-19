@@ -1,0 +1,25 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_mimp_report_workflow.panoply_mimp_report.local_disk_gb": "",
+    "panoply_mimp_report_workflow.panoply_mimp_report.num_preemptions": "",
+    "panoply_mimp_report_workflow.panoply_mimp_report.output_prefix": "",
+    "panoply_mimp_report_workflow.panoply_mimp_report.ram_gb": "",
+    "panoply_mimp_report_workflow.panoply_mimp_report.tar_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_mimp_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_mimp_report/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_mimp_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_mimp_report_workflow.panoply_mimp_report.report_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

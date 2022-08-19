@@ -1,0 +1,33 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.balance_omes": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.cna_ome": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.disk_space": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.label": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.memory": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.num_preemptions": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.num_threads": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.omes": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.rna_ome": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.tol": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.var": "",
+    "panoply_mo_nmf_pre_wf.panoply_mo_nmf_pre.zscore_mode": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_mo_nmf_pre",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_mo_nmf_pre/12",
+    "methodVersion": 12,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_mo_nmf_pre",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_mo_nmf_pre_wf.balance_omes_pdf": "",
+    "panoply_mo_nmf_pre_wf.nmf_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

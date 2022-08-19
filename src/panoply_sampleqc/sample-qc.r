@@ -34,12 +34,12 @@ cna <- read ( sprintf ('%s/cna-matrix.csv', harmonize.dir), 'CNA')
 cis.cor.file <- sprintf ('%s/proteome-mrna-cor.tsv', rna.dir)
 if (file.exists(cis.cor.file)) {
   cis.cor <- read.delim (cis.cor.file)
-  rownames (cis.cor) <- cis.cor [,'geneSymbol']
+  rownames (cis.cor) <- cis.cor [,gene.id.col] #replaced 'geneSymbol' with gene.id.col
   genes <- intersect (intersect (rownames (cis.cor), rownames (pome)), intersect (rownames (cna), rownames(rna)))
   
   cis.cor <- cis.cor [ genes, ]
   keep <- cis.cor [,'correlation'] > cor.threshold & !is.na (cis.cor[,'correlation']) 
-  keep.genes <- cis.cor [keep ,'geneSymbol']
+  keep.genes <- cis.cor [keep ,gene.id.col] #replaced 'geneSymbol' with gene.id.col
   
   cna.cx <- cna [keep, ]
   rna.cx <- rna [keep, ]
@@ -75,7 +75,7 @@ draw.heatmap (rVc, "RNA vs CNA Correlation")
 ## fan plot
 #  (for protein and RNA only -- CNA data is too different)
 draw.fanplot <- function (d, title, n.types=2) {
-  dist.spearman <- 1 - cor (d, method="spearman", use="complete")
+  dist.spearman <- 1 - cor (d, method="spearman", use="pairwise.complete")
   joint.cluster <- agnes (dist.spearman, diss=TRUE, method='complete')
   joint.phy <- as.phylo (as.hclust (joint.cluster))
   # graphics parameters
@@ -108,15 +108,23 @@ runEstimate <- function (ds, out.file, type) {
   return (result)
 }
 
-rna.ES <- runEstimate (rna.cx, 'rna-estimate-scores.gct', '.RNA')
-cna.ES <- runEstimate (cna.cx, 'cna-estimate-scores.gct', '.CNA')
-pome.ES <- runEstimate (pome.cx, 'pome-estimate-scores.gct', '.PROT')
+tryCatch(
+  {
+    rna.ES <- runEstimate (rna.cx, 'rna-estimate-scores.gct', '.RNA')
+    cna.ES <- runEstimate (cna.cx, 'cna-estimate-scores.gct', '.CNA')
+    pome.ES <- runEstimate (pome.cx, 'pome-estimate-scores.gct', '.PROT')
+    
+    results.ES <- rbind (rna.ES,cna.ES,pome.ES)
+    plot.data <- melt (results.ES, id.vars=c('sample','type'))
+    ggplot (aes (x=type, y=value, group=type, color=type), data=plot.data) +
+      geom_boxplot() + facet_wrap (~ variable, scales='free') +
+      ggtitle ('ESTIMATE scores for RNA, CNA and Protein')},
+  error = function(cond) {
+    message("Failed to produce ESTIMATE scores. Original error:")
+    message(cond)
+  }
+)
 
-results.ES <- rbind (rna.ES,cna.ES,pome.ES)
-plot.data <- melt (results.ES, id.vars=c('sample','type'))
-ggplot (aes (x=type, y=value, group=type, color=type), data=plot.data) +
-  geom_boxplot() + facet_wrap (~ variable, scales='free') +
-  ggtitle ('ESTIMATE scores for RNA, CNA and Protein')
 
 
 dev.off()

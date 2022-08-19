@@ -42,13 +42,22 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
       genesym.col <- genesym.col[1]
       warning ( paste ('Identified multiple gene symbol columns. Using', genesym.col) )
     }
-    ds@rdesc [,'GeneSymbol'] <- as.character (ds@rdesc [,genesym.col])
+    ds@rdesc [,gene.id.col] <- as.character (ds@rdesc [,genesym.col])
+  } else if (input.ver == 3 && any (grepl (gene.id.col, colnames (ds@rdesc), ignore.case=TRUE))) {
+    # gene symbol is already present as an annotation column with name given in yaml parameters file
+    genesym.col <- grep (gene.id.col, colnames (ds@rdesc), ignore.case=TRUE)
+    if (length (genesym.col) > 1) {
+      genesym.col <- genesym.col[1]
+      warning ( paste ('Identified multiple gene symbol columns. Using', genesym.col) )
+    }
+    ds@rdesc [,gene.id.col] <- as.character (ds@rdesc [,genesym.col])
+
   } else {
     # map protein id to gene symbols
     map <- read.delim ( file.path (data.dir, protein.gene.map) )
     id.table <- left_join ( cbind (ds@rdesc, refseq_protein=sub ("(.*?)\\..?", "\\1", ds@rdesc[,'id'])), map,
                             by='refseq_protein' )
-    ds@rdesc [,'GeneSymbol'] <- as.character (id.table [,'gene_name'])
+    ds@rdesc [,gene.id.col] <- as.character (id.table [,'gene_name'])
   }  
   
   
@@ -98,6 +107,12 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
       dup.table <- ds@cdesc %>% mutate (sample.num=row_number()) %>% 
         mutate (group.num=group_indices (., !!!rlang::syms (avail.cols))) %>%
         group_by (group.num) %>% filter (n() > 1)
+      # alternative for above suggested by Karl to avoid deprecated warning
+      # dup.table <- ds@cdesc %>% mutate (sample.num=row_number()) %>%
+      #   group_by (!!!rlang::syms (avail.cols)) %>%  #!!!rlang to get actual content of vector: Participant, Type (if present)
+      #   mutate(group.num = cur_group_id()) %>%      #dplyr 1.0 (R4.1.0) cur_group_id() replaces group_indices()
+      #   filter (QC.status == "QC.pass") %>%         #if needed 
+      #   filter (n() > 1)
       for (g in unlist (unique (dup.table [,'group.num']))) {
         rows <- unlist (dup.table [ dup.table[,'group.num']==g, 'sample.num'])
         # replace first occurance of replicate with combined value

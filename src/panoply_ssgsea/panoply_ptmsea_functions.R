@@ -32,6 +32,7 @@ preprocessGCT <- function(
   fix.gene.names.column='id.description', ## alternative column in rdesc containing gene names that
                                           ## can be used to fix gene names, e.g. description: 'septin-10 isoform 4 GN=SEPT10'
   fix.gene.names.regexpr='.* GN\\=(.*)$', ## regular expression to extract gene names from 'fix.gene.names.column'
+  humanize.gene.names=FALSE,         ## if TRUE, gene symbols will be capitalized (for e.g. mouse or rat)
   loc=T,                              ## if TRUE only fully localized sites will be considered
   mode=c('mean', 'median', 'sd', 'SGT', 'abs.max'),     ## how should multiple sites per gene be combine; 
                                       ## sd - most variable (standard deviation) across sample columns
@@ -72,13 +73,9 @@ preprocessGCT <- function(
   if(file.exists(gct.str)){
       cat('importing gct file: ', gct.str, ' ...\n')
       gct <- try(parse.gctx(gct.str))
-      #cat(class(gct), '\n')
-      #g <- readLines(gct.str)
-      #cat(g[1:3],'\n')
   } else {
     stop(glue("File '{gct.str}' not found!\n"))
   }
-  #cat('\ntest1\n')
   if(class(gct) == 'try-error'){
     
     ## - cmapR functions stop if ids are not unique
@@ -108,12 +105,11 @@ preprocessGCT <- function(
       }
     } #end if 'rid not unique'
   }
-  #cat('done\n')
+
   
   ##############################################
   #parse GCT object
   mat <- gct@mat
-  #cat('\ntest2\n')
   n <- ncol(mat) ## number of data colums
   
   ## row ids
@@ -179,7 +175,6 @@ preprocessGCT <- function(
     gct@cid <- cid
     gct@cdesc <- cdesc
     gct@rdesc <- rdesc
-    
   }
   
   ## #######################################################
@@ -193,6 +188,11 @@ preprocessGCT <- function(
       stop(glue("Column {gene.col} not found!"))
     
     genes <- rdesc[, gene.col]
+    
+    ## capitalize
+    if(humanize.gene.names)
+      genes <- toupper(genes)
+    
     ## remove empty cells
     rm.idx <- which(is.na(genes) | nchar(genes) == 0)
     if(length(rm.idx) > 0){
@@ -219,11 +219,10 @@ preprocessGCT <- function(
       
       # 1. extract top subgroup
       # 2. collapse to genes by taking median expression
-  
       if(!SGT.col %in% colnames(rdesc)) stop(glue("Column {SGT.col} not found!"))
       
       ## genes
-      genes <- rdesc[, gene.col]
+      #genes <- rdesc[, gene.col]
       ## subgroup number
       sgt <- rdesc[, SGT.col] #%>% sub('\\..*', '', .)
       
@@ -240,17 +239,6 @@ preprocessGCT <- function(
       
       mat.gc <- data.frame(id=genes, mat[keep.idx, ])
       rdesc <- rdesc[keep.idx, ]
-      #mat.sgt <- aggregate(mat, FUN=function(x) x[1], by=list(sgt))
-      #mat.sgt <- mat.sgt[, -c(1)]
-      
-      ## aggregate rdesc to SGT
-      #rdesc.sgt <- aggregate(rdesc, FUN=function(x) x[1], by=list(sgt))
-      #rdesc.sgt <- rdesc.sgt[, -c(1)]
-      
-      ## make gen-centric using median expression
-      #genes <- rdesc.sgt[, gene.col]
-      #mat.gc <- aggregate(mat.sgt, FUN=function(x) median(x, na.rm=T), by=list(genes))
-      #rdesc <- rdesc.sgt
     }
     if(mode == 'abs.max'){
       mat.gc <- aggregate(mat, FUN=function(x)x[ which.max(abs(x)) ], by=list(genes))     
@@ -600,7 +588,7 @@ preprocessGCT <- function(
         mat.ss[s, ] <- unlist(mat.tmp2)
       }
       
-      
+      #save(mat.ss, map.idx, sites.nondup, mat, file='debug.RData')
       mat.ss[names(map.idx[sites.nondup]), ] <- data.matrix( mat[ unlist(map.idx[sites.nondup]), ] )
       
       #update GCT----

@@ -292,42 +292,63 @@ datatable(best_k_data, rownames = FALSE, width = "500px")
   
   for (dir_name in gsea_dirs){
     cluster_num = str_extract(dir_name,"[:digit:]") %>% as.numeric()
-    hallmark_neg = read.delim(file.path(label, clust_dir, dir_name, gsea_neg))
-    hallmark = read.delim(file.path(label, clust_dir, dir_name, gsea_pos)) %>%
-      rbind(hallmark_neg) %>%
-      select(GS, NES, FDR.q.val) %>%
-      rename(pathway = GS, fdr = FDR.q.val) %>%
-      mutate(pathway = as.character(pathway)) %>%
-      left_join(hallmark_category) 
-    
-    hallmark_volc = hallmark %>%
-      mutate(group = ifelse(fdr<assoc.fdr, "Significant", "Not significant")) %>%
-      mutate(pathway = gsub("^HALLMARK_", "", pathway)) %>%
-      mutate(fdr = ifelse(fdr == 0, 1/nperm, fdr))
-    
-    hallmark_table = hallmark %>%
-      mutate(fdr = signif(fdr, 3),
-             NES = signif(NES, 3)) %>%
-      filter(fdr < assoc.fdr) %>%
-      arrange(fdr)
-    
-    save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".RData"))
-    
-    rmd = paste0(rmd, '\n#### **GSEA results for Cluster ', cluster_num, '**
+    if (file.exists(file.path(label, clust_dir, dir_name, gsea_neg))) { #if negative file exists
+      hallmark_neg = read.delim(file.path(label, clust_dir, dir_name, gsea_neg)) #read it in
+      
+      if (file.exists(file.path(label, clust_dir, dir_name, gsea_pos))) { #if positive file exists
+        hallmark = read.delim(file.path(label, clust_dir, dir_name, gsea_pos)) %>% #read it in and add negative
+          rbind(hallmark_neg) %>%
+          select(GS, NES, FDR.q.val) %>%
+          rename(pathway = GS, fdr = FDR.q.val) %>%
+          mutate(pathway = as.character(pathway)) %>%
+          left_join(hallmark_category) 
+      } else {
+        hallmark = hallmark_neg %>%
+          select(GS, NES, FDR.q.val) %>%
+          rename(pathway = GS, fdr = FDR.q.val) %>%
+          mutate(pathway = as.character(pathway)) %>%
+          left_join(hallmark_category) 
+      }
+      
+    } else if (file.exists(file.path(label, clust_dir, dir_name, gsea_pos))) { #if neg doesn't exist but pos does
+        hallmark = read.delim(file.path(label, clust_dir, dir_name, gsea_pos)) %>% #read pos in but don't add neg
+          select(GS, NES, FDR.q.val) %>%
+          rename(pathway = GS, fdr = FDR.q.val) %>%
+          mutate(pathway = as.character(pathway)) %>%
+          left_join(hallmark_category) 
+    }
+    # if at least one gsea NES file exists
+    if (file.exists(file.path(label, clust_dir, dir_name, gsea_neg)) || file.exists(file.path(label, clust_dir, dir_name, gsea_pos))) {
+      # write RMD as normal
+      hallmark_volc = hallmark %>%
+        mutate(group = ifelse(fdr<assoc.fdr, "Significant", "Not significant")) %>%
+        mutate(pathway = gsub("^HALLMARK_", "", pathway)) %>%
+        mutate(fdr = ifelse(fdr == 0, 1/nperm, fdr))
+      
+      hallmark_table = hallmark %>%
+        mutate(fdr = signif(fdr, 3),
+               NES = signif(NES, 3)) %>%
+        filter(fdr < assoc.fdr) %>%
+        arrange(fdr)
+      
+      save(hallmark_volc, hallmark_table, file = paste0("hallmark", cluster_num, ".RData"))
+      
+      rmd = paste0(rmd, '\n#### **GSEA results for Cluster ', cluster_num, '**
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("hallmark', cluster_num, '.RData")
 p = ggplot(hallmark_volc, aes(x = NES, y = -log10(fdr), colour = group, text = pathway, group = category)) +
   geom_point() +
   geom_hline(yintercept = -log10(', assoc.fdr, '), linetype = "dashed") +
   scale_color_manual(values=c("black", "red")) +
-  labs(x = "NES.Rest.over.Cluster', cluster_num, '")
+  labs(x = "NES.Rest.over.Cluster', cluster_num, '") +
+  xlim(-max(max(hallmark$NES), abs(min(hallmark$NES))), max(max(hallmark$NES), abs(min(hallmark$NES))))
 ggplotly(p, tooltip = c("text", "category"))
 ```
 **Figure**: Interactive volcano plot summarizing GSEA pathway results for cluster ', cluster_num, '. X axis represents the Normalized Enrichment Score (NES); negative NES values indicate enrichment in cluster ', cluster_num, ', and positive NES values indicate enrichment in the rest of the clusters. Y axis represents the -log10 of the FDR value. Results above the dashed line are significant at FDR cutoff = ', assoc.fdr , '. Hover over each point to see which pathway and category it corresponds to.
                  ')
-    
-    if (dim(hallmark_table)[1]>= 1){
-      rmd = paste0(rmd, '\n
+      
+      if (dim(hallmark_table)[1]>= 1){
+        rmd = paste0(rmd, '\n
 **Table**: ', dim(hallmark_table)[1], ' significantly enriched pathways in cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 load("hallmark', cluster_num, '.RData")
@@ -336,13 +357,20 @@ datatable(hallmark_table, rownames = FALSE, width = "500px")
 ```
 \n
                  ')
-    } else {
-      rmd = paste0(rmd, '\n
+      } else {
+        rmd = paste0(rmd, '\n
 No significantly enriched pathways in cluster ', cluster_num, ' with FDR < ', assoc.fdr, '.  
 \n
                  ')
-    }
+      }
       
+    } else { #if no gsea NES files exist
+      #write this into the RMD
+      rmd = paste0(rmd, '\n#### **GSEA results for Cluster ', cluster_num, '**
+
+      No GSEA pathways were found.
+                 ')
+    } 
   }
   
   rmd_name = paste(label, data_type, "cons_clust_rmd.rmd", sep = "_")

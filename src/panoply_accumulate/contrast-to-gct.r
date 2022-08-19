@@ -8,6 +8,7 @@ if ( !requireNamespace("BiocManager", quietly = TRUE ) )
   install.packages( "BiocManager" )
 BiocManager::install( "org.Hs.eg.db" )
 library( org.Hs.eg.db )
+source ('config.r')
 
 main <- function()
 {
@@ -30,24 +31,31 @@ main <- function()
     ## Keep remainder columns as rdesc
     keep_cols <- setdiff( colnames( csv ), col )
     
-    ## Map Protein IDs to gene names
-    prot_ids <- csv$Gene.ID
-    prot_ids_base <- unlist( lapply( prot_ids, function( x ) 
-      unlist( strsplit( x, split = '\\.' ) )[1] ) )
-    map.ids <- select( org.Hs.eg.db, keys = prot_ids_base, 
-                       columns = c( 'SYMBOL' ), keytype = 'REFSEQ' )
-    gene_ids <- unlist( 
-      lapply( 1:length( prot_ids ),
-              function( x )
-              { 
-                prot <- prot_ids[x]
-                gene <- map.ids$SYMBOL[which( unlist( 
-                  strsplit( prot, split = '\\.' ) )[1] == map.ids$REFSEQ )[1]]
-                return( gene ) 
-              } ) )
+    # This is no longer required since association output now correctly lists Gene.Names
+    # (this code was a fix for Gene.Names being integers in previous versions). 
+    # The code creates dependence on protein IDs being RefSeq IDs (and fails for ex.
+    # with gene-centric data).
+    #
+    # ## Map Protein IDs to gene names
+    # prot_ids <- csv$Gene.ID
+    # prot_ids_base <- unlist( lapply( prot_ids, function( x ) 
+    #   unlist( strsplit( x, split = '\\.' ) )[1] ) )
+    # map.ids <- select( org.Hs.eg.db, keys = prot_ids_base, 
+    #                    columns = c( 'SYMBOL' ), keytype = 'REFSEQ' )
+    # gene_ids <- unlist( 
+    #   lapply( 1:length( prot_ids ),
+    #           function( x )
+    #           { 
+    #             prot <- prot_ids[x]
+    #             gene <- map.ids$SYMBOL[which( unlist( 
+    #               strsplit( prot, split = '\\.' ) )[1] == map.ids$REFSEQ )[1]]
+    #             return( gene ) 
+    #           } ) )
+    gene_ids <- csv$Gene.Name
     
     ## Format rdesc columns into proper GCT format
     rdesc <- cbind( csv[, keep_cols], geneSymbol = gene_ids )
+    names(rdesc)[names(rdesc) == "geneSymbol"] <- gene.id.col #Changed colname to what gene.id.col sets
     rdesc[] <- lapply( rdesc, as.character )
     rownames( mat ) <- csv[, 'Gene.ID']
     colnames( mat ) <- col

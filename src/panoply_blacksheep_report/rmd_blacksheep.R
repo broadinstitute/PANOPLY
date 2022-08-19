@@ -22,19 +22,19 @@ rmd_blacksheep = function(tar_file, output_prefix, type){
   
   # extract files from tarball
   untar(tar_file)
-
+  
   # extract values from final yaml file
   yaml_params = read_yaml("final_output_params.yaml")
   fdr_value = yaml_params$panoply_blacksheep$fdr_value
   SampleID_column = yaml_params$DEV_sample_annotation$sample_id_col_name
-  groups_file_path = yaml_params$panoply_blacksheep$groups_file
+  # groups_file_path = yaml_params$panoply_blacksheep$groups_file
   apply_filtering = yaml_params$panoply_blacksheep$apply_filtering
   identifiers_file = yaml_params$panoply_blacksheep$identifiers_file
-
-  if (!is.null(groups_file_path)){
-    groups_file = list.files("blacksheep", pattern = "\\.csv", full.names = TRUE)
-  }
-
+  
+  # if (!is.null(groups_file_path)){
+  #   groups_file = list.files("blacksheep", pattern = "\\.csv", full.names = TRUE)
+  # }
+  
   # begin writing rmd
   rmd = paste0('---
 title: "BlackSheep outlier analysis results for ', type, '"
@@ -61,62 +61,81 @@ This report summarizes the significant results for ', type, ' (FDR < ', fdr_valu
 
                 ')
   }
-
+  
   # if outlier analysis was performed (i.e. groups file provided), create outlier analysis rmd report
   if (length(grep("outlieranalysis", list.files("blacksheep", recursive = TRUE)))>0){
+    outlier_analysis_log <- read.csv(list.files(pattern="outlier_analysis_log",
+                                                recursive = TRUE, full.names = TRUE))
     for (i in c("positive", "negative")){
       rmd = paste0(rmd, '\n## ', str_to_title(i), ' outliers (FDR < ', fdr_value, ')')
-      group_names = read.csv(groups_file) %>%
-        colnames(.)
-      group_names = group_names[!(group_names %in% SampleID_column)]
-      for (group_name in group_names){
-        outlier_filenames = grep(paste0("outlieranalysis_for_", group_name), list.files(file.path("blacksheep",i)), value=TRUE)
-        if (length(outlier_filenames) > 1){
-          rmd = paste(rmd, '\n###', group_name)
-          for (file in outlier_filenames){
-            outlier_analysis = read.csv(file.path("blacksheep", i, file))
-            category = gsub(paste0(".*", group_name, "_(.+?)_.*"), "\\1", file)
-            
-            fdrcols = grep("fdr", colnames(outlier_analysis), value = TRUE)
-            fdr_col = fdrcols[which(str_detect(fdrcols, "not", negate = TRUE))]
-            
-            outlier_analysis = outlier_analysis %>%
-              select(gene, all_of(fdr_col)) %>%
-              arrange_at(fdr_col) %>%
-              rename(fdr = all_of(fdr_col)) %>%
-              mutate(fdr = signif(fdr, 3))
-            
-            outlier_analysis = outlier_analysis[which(outlier_analysis[,"fdr"]< fdr_value),]
-            
-            save(outlier_analysis, file = paste(i, group_name, category, "outlier.RData", sep = "_"))
-    
-            rmd = paste0(rmd, '\n#### **', group_name, ': ', category, '**
+      tmp_log <- outlier_analysis_log[which(outlier_analysis_log$pos_neg==i),]
+      
+      for (annotation in unique(tmp_log$annotation)){ #for each relevant annotation
+        rmd = paste(rmd, '\n###', annotation)
+        
+        tmp_log_annot <- tmp_log[which(tmp_log$annotation==annotation),]
+        for (j in dim(tmp_log_annot)[1]) { #for each row (i.e. each binary_annotation)
+          binary_annotation = tmp_log_annot$binary_annotation[j]
+          ingroup = tmp_log_annot$ingroup[j]
+          outlier_filename=grep(paste0("outlieranalysis_for_",binary_annotation,"__"),
+                                list.files(file.path("blacksheep",i)), value=TRUE)
+          outlier_analysis = read.csv(file.path("blacksheep", i, outlier_filename))
+          
+          fdrcols = grep("fdr_more_", colnames(outlier_analysis), value = TRUE)
+          fdr_col = fdrcols[which(str_detect(fdrcols, "__not_", negate = TRUE))]
+          
+          outlier_analysis = outlier_analysis %>%
+            select(gene, all_of(fdr_col)) %>%
+            arrange_at(fdr_col) %>%
+            rename(fdr = all_of(fdr_col)) %>%
+            mutate(fdr = signif(fdr, 3))
+          
+          outlier_analysis = outlier_analysis[which(outlier_analysis[,"fdr"]< fdr_value),]
+          
+          save(outlier_analysis, file = paste(i, annotation, ingroup, "outlier.RData", sep = "_"))
+          
+          rmd = paste0(rmd, '\n#### **', annotation, ': ', ingroup, '**
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
-load("', paste(i, group_name, category, "outlier.RData", sep = "_"), '")
+load("', paste(i, annotation, ingroup, "outlier.RData", sep = "_"), '")
 ```
 Number of significant genes: `r dim(outlier_analysis)[1]`
 \n
                         ')
-            
-            # if any significant genes were identified, show table + heatmap
-            if (dim(outlier_analysis)[1] > 0){
-              rmd = paste0(rmd, '\n
+          
+          # if a heatmap was generated, show table + heatmap
+          if (tmp_log_annot$has_heatmap[j]){
+            rmd = paste0(rmd, '\n
 \n**Table**: Significant genes ranked by FDR value.
 ```{r echo=FALSE, warning=FALSE, message=FALSE}
 library(DT)
 datatable(outlier_analysis, rownames = FALSE, width = "500px")
 ```
 
-**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ', group_name, '. Note: row names may not be annotated if there are more than 100 significant genes.
-![](', file.path("blacksheep", i, grep(paste0(group_name, "_", category, ".png"), list.files(file.path("blacksheep", i)), value = TRUE)), ')
+**Figure**: Heatmap depicting the fraction of outliers within each significant gene for each sample. Sample annotations are ordered by ', annotation, '. Note: row names may not be annotated if there are more than 100 significant genes.
+![](', file.path("blacksheep", i, paste0(i, "_outlier_analysis_", binary_annotation, ".png")), ')
   
   
                        ')
-            }
           }
         }
       }
     }
+    
+    no_enrichment <- outlier_analysis_log[which(is.na(outlier_analysis_log$pos_neg)),]
+    no_enrichment_annotations <- unique(no_enrichment$annotation)
+    if (length(no_enrichment_annotations) > 0) {
+      ### Print annotations for which there were no significant hits
+      rmd = paste0(rmd, '\n## No Outliers',
+                   '\nThe following annotations, for the listed in-groups, had no genes which were significantly enriched with sample outliers:')
+      for (annotation in no_enrichment_annotations) {
+        tmp <- no_enrichment[which(no_enrichment$annotation==annotation),]
+        rmd = paste0(rmd, '\n\n#### ', annotation, '\n',
+                     paste('*',tmp$ingroup,collapse = "\n\n"))
+      }
+      
+    }
+    
+    
   } else {
     rmd = paste0(rmd, '\n## No outlier analysis was performed\n
 No groups file was provided so enrichment analysis of outliers was not performed, only outlier count tables were calculated. See output tar file: ', basename(tar_file), '.')

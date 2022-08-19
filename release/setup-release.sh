@@ -11,7 +11,7 @@ err="${red}Error:${reg}"
 not="${grn}====>>${reg}" ## notification
 
 ## users (for method permissions)
-proteomics_comp=(karsten@broadinstitute.org mmaynard@broadinstitute.org karen@broadinstitute.org)
+proteomics_comp=(manidr@broadinstitute.org kpham@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org)
 
 ## documentation location (assumes wiki repo is available in path)
 doc_dir="$panoply/../PANOPLY.wiki"
@@ -120,6 +120,7 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_v3_ss" |  \
       jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
+      jq '.inputs."panoply_unified_workflow.run_nmf" = $val' --arg val "\"true\"" |  \
       jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.nmf.gene_set_database" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.geneset_db" = $val' --arg val "this.gseaDB" |  \

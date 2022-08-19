@@ -1,0 +1,28 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.disk_space": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.label": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.memory": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.num_preemptions": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.num_threads": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.tar_file": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.type": "",
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_cons_clust_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_cons_clust_report/11",
+    "methodVersion": 11,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_cons_clust_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_cons_clust_report_workflow.panoply_cons_clust_report.report_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
