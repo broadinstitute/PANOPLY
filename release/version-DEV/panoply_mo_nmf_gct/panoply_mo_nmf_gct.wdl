@@ -1,31 +1,42 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_pre/versions/1/plain-WDL/descriptor" as panoply_mo_nmf_pre_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf/versions/1/plain-WDL/descriptor" as panoply_mo_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/1/plain-WDL/descriptor" as panoply_ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_report/versions/1/plain-WDL/descriptor" as panoply_mo_nmf_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/1/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_pre/versions/4/plain-WDL/descriptor" as panoply_mo_nmf_pre_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf/versions/4/plain-WDL/descriptor" as panoply_mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_report/versions/4/plain-WDL/descriptor" as panoply_mo_nmf_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as panoply_ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/4/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
 ################################################
 ##  workflow: mo_nmf_pre + mo_nmf + mo_nmf_report + ssgsea + ssgsea_report
 workflow panoply_mo_nmf_gct_workflow {
 
 	File gene_set_database
-    File yaml_file
+  File yaml_file
 	String label
     
-    Array[File?] omes
+  Array[File?] omes
 
-    File? rna_ome
-    File? cna_ome
+  File? rna_ome
+  File? cna_ome
+
+  # balance filter
+  Boolean? balance_omes
+  Float? tol
+  Float? var
+  String? zscore_mode
 
 	call panoply_mo_nmf_pre_wdl.panoply_mo_nmf_pre {
 		input:
 			label=label,
-            omes=omes,
-            rna_ome=rna_ome,
-            cna_ome=cna_ome
+      omes=omes,
+      rna_ome=rna_ome,
+      cna_ome=cna_ome,
+      
+      balance_omes=balance_omes,
+      tol=tol,
+      var=var,
+      zscore_mode=zscore_mode
 	}
 
 	call panoply_mo_nmf_wdl.panoply_mo_nmf {
@@ -64,5 +75,6 @@ workflow panoply_mo_nmf_gct_workflow {
 		File nmf_clust_report=panoply_mo_nmf_report.report
 		File nmf_ssgsea=panoply_ssgsea.results
 		File nmf_ssgsea_report=panoply_ssgsea_report.report
+		File nmf_balance_filter=panoply_mo_nmf_pre.pdf
 	}
 }

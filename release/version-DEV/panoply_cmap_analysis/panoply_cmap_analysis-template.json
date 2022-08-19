@@ -92,8 +92,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_cmap_analysis",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_cmap_analysis/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptacdev/panoply_cmap_analysis/3",
+    "methodVersion": 3,
     "sourceRepo": "agora"
   },
   "name": "panoply_cmap_analysis",

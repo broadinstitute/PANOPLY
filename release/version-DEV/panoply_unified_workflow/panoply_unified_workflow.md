@@ -21,6 +21,7 @@ Required inputs:
 * ```job_id```: (String) An identifier name given to the job
 * ```run_ptmsea```: please see `run_ptmsea` input parameter in [panoply_main](./Pipelines%3A-panoply_main)
 * ```run_cmap```: please see `run_cmap` input parameter in [panoply_main](./Pipelines%3A-panoply_main)
+* ```run_nmf```: (String) ```true``` to run the [panoply_mo_nmf](./Data-Analysis-Modules%3A-panoply_mo_nmf) worklfow or ```false``` to skip
 * ```rna_data```: (`.gct` file, default = this.rna_v3_ss) Input rna data matrix
 * ```cna_data```: (`.gct` file, default = this.cna_ss) Input cna data matrix
 

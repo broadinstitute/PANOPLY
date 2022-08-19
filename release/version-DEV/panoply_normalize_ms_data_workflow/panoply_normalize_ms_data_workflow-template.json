@@ -1,0 +1,47 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_normalize_ms_data_workflow.gene_id_col": "",
+    "panoply_normalize_ms_data_workflow.input_pome": "",
+    "panoply_normalize_ms_data_workflow.job_identifier": "",
+    "panoply_normalize_ms_data_workflow.min_numratio_fraction": "",
+    "panoply_normalize_ms_data_workflow.na_max": "",
+    "panoply_normalize_ms_data_workflow.ndigits": "",
+    "panoply_normalize_ms_data_workflow.normalizeProteomics": "",
+    "panoply_normalize_ms_data_workflow.ome_type": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.altMethod": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.applySMfilter": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.disk_space": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.memory": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.minNumratioPTMs": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.minNumratioProteome": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.normMethod": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.num_preemptions": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.num_threads": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.outTable": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data.outTar": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data_report.disk_space": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data_report.memory": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data_report.num_preemptions": "",
+    "panoply_normalize_ms_data_workflow.panoply_normalize_ms_data_report.num_threads": "",
+    "panoply_normalize_ms_data_workflow.sd_filter_threshold": "",
+    "panoply_normalize_ms_data_workflow.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_normalize_ms_data_workflow",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_normalize_ms_data_workflow/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_normalize_ms_data_workflow",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_normalize_ms_data_workflow.normalize_report": "",
+    "panoply_normalize_ms_data_workflow.normalized_data_table": "",
+    "panoply_normalize_ms_data_workflow.normalized_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

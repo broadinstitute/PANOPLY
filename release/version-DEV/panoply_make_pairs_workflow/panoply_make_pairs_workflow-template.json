@@ -8,8 +8,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_make_pairs_workflow",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_make_pairs_workflow/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptacdev/panoply_make_pairs_workflow/3",
+    "methodVersion": 3,
     "sourceRepo": "agora"
   },
   "name": "panoply_make_pairs_workflow",

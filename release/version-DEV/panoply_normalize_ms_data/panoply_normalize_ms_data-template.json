@@ -28,8 +28,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_normalize_ms_data",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_normalize_ms_data/3",
-    "methodVersion": 3,
+    "methodUri": "agora://broadcptacdev/panoply_normalize_ms_data/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_normalize_ms_data",
