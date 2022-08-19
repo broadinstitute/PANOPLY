@@ -31,7 +31,7 @@ task panoply_cna_correlation {
 
   runtime {
     docker : "broadcptacdev/panoply_cna_setup:DEV"
-    memory : select_first ([memory, 12]) + "GB"
+    memory : select_first ([memory, 32]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])

@@ -24,8 +24,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_mo_nmf/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptacdev/panoply_mo_nmf/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf",

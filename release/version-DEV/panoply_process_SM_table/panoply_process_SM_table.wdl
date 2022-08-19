@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_parse_sm_table/versions/2/plain-WDL/descriptor" as parse_sm_table
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data/versions/3/plain-WDL/descriptor" as normalize
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_report/versions/1/plain-WDL/descriptor" as normalize_report
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_parse_sm_table/versions/4/plain-WDL/descriptor" as parse_sm_table
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data/versions/5/plain-WDL/descriptor" as normalize
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_report/versions/3/plain-WDL/descriptor" as normalize_report
 
 workflow panoply_process_SM_table {
 

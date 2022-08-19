@@ -22,8 +22,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_download",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_download/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptacdev/panoply_download/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_download",

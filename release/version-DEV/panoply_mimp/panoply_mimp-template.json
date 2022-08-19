@@ -1,0 +1,37 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_mimp_workflow.panoply_mimp.fasta_file": "",
+    "panoply_mimp_workflow.panoply_mimp.groups_file_path": "",
+    "panoply_mimp_workflow.panoply_mimp.ids_file": "",
+    "panoply_mimp_workflow.panoply_mimp.local_disk_gb": "",
+    "panoply_mimp_workflow.panoply_mimp.master_yaml": "",
+    "panoply_mimp_workflow.panoply_mimp.mutation_AA_change_colname": "",
+    "panoply_mimp_workflow.panoply_mimp.mutation_file": "",
+    "panoply_mimp_workflow.panoply_mimp.mutation_type_col": "",
+    "panoply_mimp_workflow.panoply_mimp.num_preemptions": "",
+    "panoply_mimp_workflow.panoply_mimp.output_prefix": "",
+    "panoply_mimp_workflow.panoply_mimp.phospho_file": "",
+    "panoply_mimp_workflow.panoply_mimp.phosphosite_col": "",
+    "panoply_mimp_workflow.panoply_mimp.protein_id_col": "",
+    "panoply_mimp_workflow.panoply_mimp.ram_gb": "",
+    "panoply_mimp_workflow.panoply_mimp.sample_id_col": "",
+    "panoply_mimp_workflow.panoply_mimp.search_engine": "",
+    "panoply_mimp_workflow.panoply_mimp.transcript_id_col": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_mimp",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_mimp/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_mimp",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_mimp_workflow.panoply_mimp.tar_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

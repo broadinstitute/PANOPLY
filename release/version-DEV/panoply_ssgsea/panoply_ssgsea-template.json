@@ -34,8 +34,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_ssgsea",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_ssgsea/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptacdev/panoply_ssgsea/3",
+    "methodVersion": 3,
     "sourceRepo": "agora"
   },
   "name": "panoply_ssgsea",
