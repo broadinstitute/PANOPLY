@@ -20,6 +20,7 @@ print(paste("sample_label:", sample_label))
 
 ###############################################################################
 library(cmapR)
+library(dplyr)
 
 data_dir <- "cosmo_preprocessed_data/"
 dir.create(data_dir)
@@ -55,6 +56,17 @@ sample_anno <- read.csv(sample_csv_path)
 sample_label_list <- unlist(strsplit(x=sample_label, split=','))
 if (length(setdiff(sample_label_list, names(sample_anno))) > 0) {
   stop("At least one sample label is not a column in sample annotation file")
+}
+# check if any columns have only one observation in a level
+for (label in sample_label_list) {
+  if (any(base::table(sample_anno[, label]) == 1)) {
+    stop(paste("Sample label '", label, "' has level(s) '",
+                  names(which(base::table(sample_anno[,label]) == 1)),
+                  "' with only one sample observation. ",
+                  "This is not allowed in the cosmo function. ",
+                  "Remove this label from the list or edit the data.",
+                  sep=''))
+  }
 }
 sample_anno_out <- sample_anno[, c('Sample.ID', sample_label_list)]
 names(sample_anno_out)[1] <- 'sample'

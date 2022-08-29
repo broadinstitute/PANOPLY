@@ -1,0 +1,30 @@
+---
+title: "PANOPLY COSMO Report"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  final_result_path: cosmo_final_result.tsv
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+```
+
+## COSMO Results
+
+Below is a table of corrected labels. The table is generated using methods described in the COSMO [paper](https://doi.org/10.1016/j.patter.2021.100245) and [github](https://github.com/bzhanglab/COSMO). A row with the consistent id across all the columns indicates all the data belongs to the same patient and there is no mislabeling. A row with different id's indicates mislabeling error. Mislabeled rows are highlighted in red.
+
+```{r cosmo_table}
+final_result_table <- read.csv(params$final_result_path, sep='\t')
+
+# add coloring
+all_same_row <- apply(final_result_table[, -1], 1, function(r) all(r == r[1]))
+final_result_table[!all_same_row, -1] <- 
+  sapply(final_result_table[!all_same_row, -1], function (x) cell_spec(x, color = 'red'))
+
+final_result_table %>%
+  kable(escape = FALSE) %>%
+  kable_styling("striped", full_width = F) %>% 
+  scroll_box(height = "300px")
+```
