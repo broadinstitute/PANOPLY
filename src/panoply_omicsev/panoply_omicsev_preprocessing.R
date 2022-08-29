@@ -32,6 +32,7 @@ if (length(args) == 4) {
 print(paste("data_files:", data_files, sep=' '))
 print(paste("sample_anno_file:", sample_anno_file, sep=' '))
 print(paste("rna_file:", rna_file, sep=' '))
+print(paste("class_colname:", class_colname))
 
 ################################################################################
 
@@ -44,11 +45,17 @@ dir.create(data_dir)
 
 data_files <- strsplit(data_files, ',')[[1]]
 
+sample_names <- list()
+column_descriptions <- list()
+
 for (file in data_files) {
 
   ## read data
   data_gct <- parse_gctx(file)
   data_ids <- data.frame(ID = meta(data_gct, dimension='row')$geneSymbol)
+  
+  sample_names[[file]] <- colnames(mat(data_gct))
+  column_descriptions[[file]] <- meta(data_gct, dimension='column')
   
   if (any(mat(data_gct) < 0, na.rm=T)) { #log2-transform was performed
     data_out <- cbind(data_ids, data.frame(2^mat(data_gct))) # undo log2-transform
@@ -75,6 +82,64 @@ for (file in data_files) {
 
 ## read and process sample annotations
 sample_anno <- read.csv(sample_anno_file)
+
+## subset to only samples that are in the datasets files
+all_samples <- unique(unlist(sample_names))
+sample_anno <- filter(sample_anno, Sample.ID %in% all_samples)
+
+# find the experiment column, make sure it is valid
+if ('Experiment' %in% names(sample_anno)) {
+  experiment <- sample_anno$Experiment
+  names(experiment) <- sample_anno$Sample.ID
+} else if (any(sapply(column_descriptions, function(x) 'Experiment' %in% names(x)))) {
+  # see which omes have experiment cdesc
+  ome_idx_with_experiment <- 
+    which(sapply(column_descriptions, function(x) 'Experiment' %in% names(x)))
+  
+  # get all the samples with experiment info available
+  all_samples_with_experiment <- unique(unlist(sample_names[ome_idx_with_experiment]))
+  
+  # find which -ome has the full experiment info
+  ome_with_all_samples <- which(sapply(column_descriptions,
+                                       function(x) setequal(x$Sample.ID, all_samples_with_experiment)))
+  
+  stopifnot("There is no data file with experiment info for all samples" = 
+              length(ome_with_all_samples) > 0)
+  
+  # extract experiment
+  experiment <- column_descriptions[[ome_with_all_samples[1]]]$Experiment
+  names(experiment) <- column_descriptions[[ome_with_all_samples[1]]]$Sample.ID
+  
+  # make sure the experiment for all input data files are the same
+  for (i in 1:length(column_descriptions)) {
+    df1 <- column_descriptions[[1]]
+    df2 <- column_descriptions[[i]]
+    
+    # subset to samples that overlap
+    samples_intersect <- intersect(df1$Sample.ID, df2$Sample.ID)
+    df1 <- filter(df1, Sample.ID %in% samples_intersect)
+    df2 <- filter(df2, Sample.ID %in% samples_intersect)
+    
+    stopifnot('Experiment numbers do not correspond across different omes. Try runing each ome independently' = 
+                setequal(df1$Experiment, df2$Experiment))
+    
+    # check that experiment names align with sample_anno file
+    stopifnot(setequal(names(experiment), sample_anno$Sample.ID))
+    
+    # add to sample_anno
+    sample_anno <- sample_anno[order(sample_anno$Sample.ID), ]
+    experiment <- experiment[order(names(experiment))]
+    sample_anno$Experiment <- experiment
+  }
+} else {
+  stop("Cannot find experiment in sample annotation file or any of the dataset files")
+}
+
+# check that experiment is all integers
+if (!all(is.integer(sample_anno$Experiment))) {
+  stop("Something is wrong with the 'Experiment' column. Make sure all  values are integers.")
+}
+
 if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
   sample_anno$order <- order(sample_anno$Experiment, sample_anno$Channel)
 } else {
