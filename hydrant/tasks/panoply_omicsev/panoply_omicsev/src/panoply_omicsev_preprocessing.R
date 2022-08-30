@@ -11,7 +11,7 @@ print("extracting command line arguments")
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 4) {
+if (length(args) == 5) {
   
   # all inputs provided
   data_files <- args[1]
@@ -24,6 +24,7 @@ if (length(args) == 4) {
   }
   
   class_colname <- args[4]
+  yaml_file <- args[5]
   
 } else {
   stop("Incorrect number of inputs")
@@ -38,10 +39,16 @@ print(paste("class_colname:", class_colname))
 
 library(cmapR)
 library(dplyr)
+library(yaml)
+
 
 # define directory for datasets
 data_dir <- "datasets/"
 dir.create(data_dir)
+
+## extract from yaml file
+yaml_out <- read_yaml(yaml_file)
+gene.id.col <- yaml_out$global_parameters$gene_mapping$gene_id_col
 
 data_files <- strsplit(data_files, ',')[[1]]
 
@@ -52,7 +59,7 @@ for (file in data_files) {
 
   ## read data
   data_gct <- parse_gctx(file)
-  data_ids <- data.frame(ID = meta(data_gct, dimension='row')$geneSymbol)
+  data_ids <- data.frame(ID = meta(data_gct, dimension='row')[,gene.id.col])
   
   sample_names[[file]] <- colnames(mat(data_gct))
   column_descriptions[[file]] <- meta(data_gct, dimension='column')
@@ -137,7 +144,7 @@ if ('Experiment' %in% names(sample_anno)) {
 
 # check that experiment is all integers
 if (!all(is.integer(sample_anno$Experiment))) {
-  stop("Something is wrong with the 'Experiment' column. Make sure they are all integers.")
+  stop("Something is wrong with the 'Experiment' column. Make sure all values are integers.")
 }
 
 if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
@@ -157,7 +164,7 @@ write.table(sample_anno_out,
 ## read and process rna file (x2)
 if (!is.null(rna_file)) {
   rna_gct <- parse_gctx(rna_file)
-  rna_ids <- data.frame(ID = meta(rna_gct, dimension='row')$geneSymbol)
+  rna_ids <- data.frame(ID = meta(rna_gct, dimension='row')[,gene.id.col])
   if (any(mat(rna_gct) < 0, na.rm=T)) { #log2-transform was performed
     rna_out <- cbind(rna_ids, data.frame(2^mat(rna_gct))) # undo log2-transform
   } else {
