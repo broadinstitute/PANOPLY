@@ -1,22 +1,26 @@
 task panoply_cosmo_report {
+	File cosmo_output
+
     Float? ram_gb
     Int? local_disk_gb
     Int? num_preemptions
 
-    #**Define additional inputs here**
-
     command {
         set -euo pipefail
 
-        #**Command goes here**
+        unzip ${cosmo_output}
+
+		R -e "rmarkdown::render('/prot/proteomics/Projects/PGDAC/src/panoply_cosmo_report.Rmd', 
+		params = list(final_table_path = paste(getwd(), '/output/final_res_folder/cosmo_final_result.tsv', sep='')),
+		output_dir = getwd())"
     }
 
     output {
-        #** Define outputs here**
+        File cosmo_report_html = "panoply_cosmo_report.html"
     }
 
     runtime {
-        docker : "<namespace>/panoply_cosmo_report:1"
+        docker : "broadcptacdev/panoply_cosmo_report:latest"
         memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
@@ -24,18 +28,10 @@ task panoply_cosmo_report {
 
     meta {
         author : "Stephanie Vartany"
-        email : "svartany@broadinstitute.org"
+        email : "proteogenomics@broadinstitute.org"
     }
 }
 
-workflow panoply_cosmo_report {
-
-    call panoply_cosmo_report {
-        input: #**Define call inputs for panoply_cosmo_report here**
-    }
-
-    output {
-        #**Define workflow outputs here. If defined, these will be the only
-        #  outputs available in the Method Configuration**
-    }
+workflow panoply_cosmo_report_workflow {
+    call panoply_cosmo_report
 }
