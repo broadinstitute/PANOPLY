@@ -81,12 +81,20 @@ for (label in sample_label_list) {
                "This is not allowed in the cosmo function. ",
                "It is currently being removed as an input.",
                sep=''))
+  } else if (any(is.na(sample_anno[, label]))) {
+    warning(paste("Sample label", label, "has NAs. It is being excluded."))
+  } else if (length(unique(sample_anno[, label])) < 2) {
+    warning("Sample label", label, "only has one level. It is being excluded.")
+  } else if (length(unique(sample_anno[, label] > 2))) {
+    warning(paste("Sample label", label, "being excluded because COSMO does not handle classes with more than 2 levels."))
   } else {
     good_sample_labels <- c(good_sample_labels, label)
   }
 }
 if (length(good_sample_labels) == 0) {
   stop("No valid sample annotation columns were found")
+} else {
+  cat("Sample labels used:", good_sample_labels)
 }
 
 sample_anno_out <- sample_anno[, c('Sample.ID', good_sample_labels)]
