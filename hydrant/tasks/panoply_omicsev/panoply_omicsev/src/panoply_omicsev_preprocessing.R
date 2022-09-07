@@ -7,139 +7,112 @@
 
 ################################################################################
 ## handle command line arguments
-print("extracting command line arguments")
+cat("Extracting command line arguments....\n")
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 5) {
+if (length(args) == 3) {
   
   # all inputs provided
-  data_files <- args[1]
-  sample_anno_file <- args[2]
-  
-  if (args[3] == 'no_rna') {
-    rna_file <- NULL
-  } else {
-    rna_file <- args[3]
-  }
-  
-  class_colname <- args[4]
-  yaml_file <- args[5]
+  harmonize_tar_file <- args[1]
+  yaml_file <- args[2]
+  class_colname <- args[3]
   
 } else {
   stop("Incorrect number of inputs")
 }
 
-print(paste("data_files:", data_files, sep=' '))
-print(paste("sample_anno_file:", sample_anno_file, sep=' '))
-print(paste("rna_file:", rna_file, sep=' '))
-print(paste("class_colname:", class_colname))
+cat('harmonize_tar_file:', harmonize_tar_file, '\n')
+cat('yaml_file:', yaml_file, '\n')
+cat('class_colname:', class_colname, '\n')
 
 ################################################################################
 
 library(cmapR)
 library(dplyr)
 library(yaml)
+library(utils)
+
+################################################################################
+## untar harmonize inputs and extract files
+
+ex_dir <- 'panoply_harmonize_output'
+untar(harmonize_tar_file, exdir = ex_dir)
+
+# get name of base directory that all files from tar are located in
+base_dir <- list.files(ex_dir)
+if (length(base_dir) != 1) {
+  stop("Cannot find base directory in tar. Please provide tar file input from panoply_harmonize.")
+}
+
+# check that harmonize subdirectory is present
+harmonize_dir <- 'harmonized-data'
+if (!(harmonize_dir %in% list.files(file.path(ex_dir, base_dir)))) {
+  stop("Cannot find harmonize directory in tar file. Please provide tar file input from panoply_harmonize.")
+}
+
+# check that correct matrix files exist from harmonize output
+rna_file <- file.path(ex_dir, base_dir, harmonize_dir, 'rna-matrix.csv')
+if (!file.exists(rna_file)) {
+  stop("RNA file cannot be found. Please provide tar file input from panoply_harmonize.")
+}
+sample_anno_file <- file.path(ex_dir, base_dir, harmonize_dir, 'sample-info.csv')
+if (!file.exists(sample_anno_file)) {
+  stop("Sample annotation file cannot be found. Please provide tar file input from panoply_harmonize.")
+}
+
+# find protein file
+data_file <- setdiff(list.files(file.path(ex_dir, base_dir, harmonize_dir), 
+                                pattern = '*-matrix.csv'),
+                     c('cna-matrix.csv', 'rna-matrix.csv'))
+if (length(data_file) != 1) {
+  stop("Protein data file cannot be found. Please provide tar file input from panoply_harmonize.")
+}
+data_file <- file.path(ex_dir, base_dir, harmonize_dir, data_file)
 
 
-# define directory for datasets
-data_dir <- "datasets/"
+
+
+################################################################################
+
+
+## define directory for dataset
+data_dir <- "dataset/"
 dir.create(data_dir)
+
 
 ## extract from yaml file
 yaml_out <- read_yaml(yaml_file)
 gene.id.col <- yaml_out$global_parameters$gene_mapping$gene_id_col
 
-data_files <- strsplit(data_files, ',')[[1]]
 
-sample_names <- list()
-column_descriptions <- list()
+## load protein data file
+data_table <- read.csv(data_file)
 
-for (file in data_files) {
+# change geneSymbol column name to ID
+stopifnot("First column of protein data not geneSymbol" = 
+            names(data_table)[1] %in% c('geneSymbol', gene.id.col))
+names(data_table)[1] <- 'ID'
 
-  ## read data
-  data_gct <- parse_gctx(file)
-  data_ids <- data.frame(ID = meta(data_gct, dimension='row')[,gene.id.col])
-  
-  sample_names[[file]] <- colnames(mat(data_gct))
-  column_descriptions[[file]] <- meta(data_gct, dimension='column')
-  
-  if (any(mat(data_gct) < 0, na.rm=T)) { #log2-transform was performed
-    data_out <- cbind(data_ids, data.frame(2^mat(data_gct))) # undo log2-transform
-  } else {
-    data_out <- cbind(data_ids, data.frame(mat(data_gct)))
-  }
-  
-  ## collapse to the gene level
-  warning("collapsing protein data by geneSymbol")
-  data_out <- aggregate(data_out[,-(1)], list(data_out$ID),
-                                  function(x) mean(x, na.rm=T))
-  names(data_out)[1] <- 'ID'
-  
-  # write data
-  file_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file))
-  file_path <- paste(data_dir, file_basename, ".tsv", sep='')
-  write.table(data_out,
-              file = file_path,
-              row.names=FALSE, sep="\t")
+# check that data is collapsed to gene level
+geneSymbols <- data_table$ID
+if (length(geneSymbols) != length(unique(geneSymbols))) {
+  stop("There are gene symbol duplicates. PANOPLY harmonize not run correctly")
 }
 
-# # zip the proteome data into dataset directory
-# zip("dataset.zip", files = file_path)
+# undo log transformation 
+if (any(data_table < 0, na.rm=T)) { #log2-transform was performed
+  data_table[,-1] <- 2^data_table[,-1] # undo log2-transform
+}
+
 
 ## read and process sample annotations
 sample_anno <- read.csv(sample_anno_file)
 
-## subset to only samples that are in the datasets files
-all_samples <- unique(unlist(sample_names))
-sample_anno <- filter(sample_anno, Sample.ID %in% all_samples)
-
-# find the experiment column, make sure it is valid
-if ('Experiment' %in% names(sample_anno)) {
-  experiment <- sample_anno$Experiment
-  names(experiment) <- sample_anno$Sample.ID
-} else if (any(sapply(column_descriptions, function(x) 'Experiment' %in% names(x)))) {
-  # see which omes have experiment cdesc
-  ome_idx_with_experiment <- 
-    which(sapply(column_descriptions, function(x) 'Experiment' %in% names(x)))
-  
-  # get all the samples with experiment info available
-  all_samples_with_experiment <- unique(unlist(sample_names[ome_idx_with_experiment]))
-  
-  # find which -ome has the full experiment info
-  ome_with_all_samples <- which(sapply(column_descriptions,
-                                       function(x) setequal(x$Sample.ID, all_samples_with_experiment)))
-  
-  stopifnot("There is no data file with experiment info for all samples" = 
-              length(ome_with_all_samples) > 0)
-  
-  # extract experiment
-  experiment <- column_descriptions[[ome_with_all_samples[1]]]$Experiment
-  names(experiment) <- column_descriptions[[ome_with_all_samples[1]]]$Sample.ID
-  
-  # make sure the experiment for all input data files are the same
-  for (i in 1:length(column_descriptions)) {
-    df1 <- column_descriptions[[1]]
-    df2 <- column_descriptions[[i]]
-    
-    # subset to samples that overlap
-    samples_intersect <- intersect(df1$Sample.ID, df2$Sample.ID)
-    df1 <- filter(df1, Sample.ID %in% samples_intersect)
-    df2 <- filter(df2, Sample.ID %in% samples_intersect)
-    
-    stopifnot('Experiment numbers do not correspond across different omes. Try runing each ome independently' = 
-                setequal(df1$Experiment, df2$Experiment))
-    
-    # check that experiment names align with sample_anno file
-    stopifnot(setequal(names(experiment), sample_anno$Sample.ID))
-    
-    # add to sample_anno
-    sample_anno <- sample_anno[order(sample_anno$Sample.ID), ]
-    experiment <- experiment[order(names(experiment))]
-    sample_anno$Experiment <- experiment
-  }
-} else {
-  stop("Cannot find experiment in sample annotation file or any of the dataset files")
+# find the experiment column
+if (!('Experiment' %in% names(sample_anno))) {
+  warning("Cannot find experiment column in sample annotation file. Defaulting to all same experiment")
+  sample_anno$Experiment <- rep(1, dim(sample_anno)[1])
 }
 
 # check that experiment is all integers
@@ -153,26 +126,66 @@ if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
   warning("Not reordering data based on experiment/channel. This should only matter for how the data is displayed")
   sample_anno$order <- 1:nrow(sample_anno)
 }
+
+if (!(class_colname %in% names(sample_anno))) {
+  stop("Class column name is not in the sample info csv")
+}
 sample_anno_out <- sample_anno[, c('Sample.ID', class_colname, 'Experiment', 'order')]
 names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
+
+
+## read and process rna file (x2)
+rna_table <- read.csv(rna_file)
+
+# change geneSymbol column name to ID
+stopifnot("First column of rna data not geneSymbol" = 
+            names(rna_table)[1] %in% c('geneSymbol', gene.id.col))
+names(rna_table)[1] <- 'ID'
+
+# check that rna is collapsed to gene level
+geneSymbols <- rna_table$ID
+if (length(geneSymbols) != length(unique(geneSymbols))) {
+  stop("There are gene symbol duplicates in RNA. PANOPLY harmonize not run correctly")
+}
+
+# undo log transformation 
+if (any(rna_table < 0, na.rm=T)) { #log2-transform was performed
+  rna_table[,-1] <- 2^rna_table[,-1] # undo log2-transform
+}
+
+
+## use only samples present in all files
+data_samples <- setdiff(names(data_table), 'ID')
+rna_samples <- setdiff(names(rna_table), 'ID')
+anno_samples <- sample_anno_out$sample
+intersect_samples <- intersect(intersect(data_samples, rna_samples), anno_samples)
+
+if (length(intersect_samples) == 0) {
+  stop("No samples present in all three inputs (data, rna, sample annotation")
+} else if (length(intersect_samples) < max(sapply(list(data_samples, rna_samples, anno_samples), length))) {
+  warning('not all samples present in data, rna, and sample annotation file)')
+}
+
+data_table <- data_table[, names(data_table) %in% c('ID', intersect_samples)]
+rna_table <- rna_table[, names(rna_table) %in% c('ID', intersect_samples)]
+sample_anno_out <- sample_anno_out[sample_anno_out$sample %in% intersect_samples, ]
+
+
+## write output files
+
+# write data
+file_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(data_file))
+file_path <- paste(data_dir, file_basename, ".tsv", sep='')
+write.table(data_table,
+            file = file_path,
+            row.names=FALSE, sep="\t")
 
 # write sample annotations to tsv
 write.table(sample_anno_out,
             file = "sample_list.tsv",
             row.names=FALSE, sep="\t")
 
-## read and process rna file (x2)
-if (!is.null(rna_file)) {
-  rna_gct <- parse_gctx(rna_file)
-  rna_ids <- data.frame(ID = meta(rna_gct, dimension='row')[,gene.id.col])
-  if (any(mat(rna_gct) < 0, na.rm=T)) { #log2-transform was performed
-    rna_out <- cbind(rna_ids, data.frame(2^mat(rna_gct))) # undo log2-transform
-  } else {
-    rna_out <- cbind(rna_ids, data.frame(mat(rna_gct)))
-  }
-  
-  # write rna to tsv
-  write.table(rna_out,
-              file = "x2.tsv",
-              row.names=FALSE, sep="\t")
-}
+# write rna
+write.table(rna_table,
+            file = 'x2.tsv',
+            row.names=FALSE, sep="\t")

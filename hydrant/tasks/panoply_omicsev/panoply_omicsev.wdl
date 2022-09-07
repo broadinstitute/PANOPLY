@@ -3,11 +3,9 @@ workflow panoply_omicsev_workflow {
 }
 
 task OmicsEV_task {
-    Array[File] data_files
-    File sample_anno_file
+    File panoply_harmonize_tar_file
+    File yaml_file
 	String? class_column_name
-    File? rna_file
-	File yaml_file
 
     Int? cpu
     Int? memory
@@ -20,11 +18,9 @@ task OmicsEV_task {
     
     Rscript \
     /src/panoply_omicsev_preprocessing.R \
-	${sep=',' data_files} \
-	${sample_anno_file} \
-	${default = 'no_rna' rna_file}
-	${default = 'Type' class_column_name} \
-	${yaml_file}
+	${panoply_harmonize_tar_file} \
+	${yaml_file} \
+	${default="Type" class_column_name}
     
     Rscript \
 	/src/panoply_run_OmicsEV.R \
