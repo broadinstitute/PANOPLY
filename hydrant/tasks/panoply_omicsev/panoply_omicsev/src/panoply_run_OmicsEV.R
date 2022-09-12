@@ -2,7 +2,7 @@ library(OmicsEV)
 
 ################################################################################
 # handle command line arguments
-print("extracting command line arguments")
+cat("extracting command line arguments")
 
 args = commandArgs(trailingOnly = T)
 
@@ -25,11 +25,11 @@ if (!file.exists(x2)) {
 
 ################################################################################
 
-print(paste("data_dir:", data_dir, sep=' '))
-print(paste("sample_list:", sample_list, sep=' '))
-print(paste("x2:", x2, sep=' '))
-print(paste("cpu:", cpu, sep=' '))
-print(paste("data_type:", data_type, sep=' '))
+cat(paste("data_dir:", data_dir, sep=' '))
+cat(paste("sample_list:", sample_list, sep=' '))
+cat(paste("x2:", x2, sep=' '))
+cat(paste("cpu:", cpu, sep=' '))
+cat(paste("data_type:", data_type, sep=' '))
 
 ################################################################################
 
