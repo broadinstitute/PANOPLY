@@ -7,16 +7,22 @@
 
 ################################################################################
 ## handle command line arguments
-cat("Extracting command line arguments....\n")
+cat("\n\nExtracting command line arguments....\n")
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 3) {
+if (length(args) == 6) {
   
   # all inputs provided
   harmonize_tar_file <- args[1]
   yaml_file <- args[2]
   class_colname <- args[3]
+  batch_colname <- args[4]
+  data_log_transformed <- as.logical(args[5])
+  rna_log_transformed <- as.logical(args[6])
+  
+  stopifnot(!is.na(data_log_transformed))
+  stopifnot(!is.na(rna_log_transformed))
   
 } else {
   stop("Incorrect number of inputs")
@@ -25,6 +31,9 @@ if (length(args) == 3) {
 cat('harmonize_tar_file:', harmonize_tar_file, '\n')
 cat('yaml_file:', yaml_file, '\n')
 cat('class_colname:', class_colname, '\n')
+cat('batch_colname:', batch_colname, '\n')
+cat('data_log_transformed:', data_log_transformed, '\n')
+cat('rna_log_transformed:', rna_log_transformed, '\n')
 
 ################################################################################
 
@@ -101,7 +110,7 @@ if (length(geneSymbols) != length(unique(geneSymbols))) {
 }
 
 # undo log transformation 
-if (any(data_table < 0, na.rm=T)) { #log2-transform was performed
+if (any(data_table < 0, na.rm=T) | data_log_transformed) { #log2-transform was performed
   data_table[,-1] <- 2^data_table[,-1] # undo log2-transform
 }
 
@@ -109,15 +118,17 @@ if (any(data_table < 0, na.rm=T)) { #log2-transform was performed
 ## read and process sample annotations
 sample_anno <- read.csv(sample_anno_file)
 
-# find the experiment column
-if (!('Experiment' %in% names(sample_anno))) {
-  warning("Cannot find experiment column in sample annotation file. Defaulting to all same experiment")
-  sample_anno$Experiment <- rep(1, dim(sample_anno)[1])
+# find the batch column
+if (!(batch_colname %in% names(sample_anno))) {
+  warning("Cannot find batch column in sample annotation file. Defaulting to all same batch.")
+  sample_anno$batch <- rep(1L, dim(sample_anno)[1])
+} else {
+  sample_anno$batch <- sample_anno[, batch_colname]
 }
 
-# check that experiment is all integers
-if (!all(is.integer(sample_anno$Experiment))) {
-  stop("Something is wrong with the 'Experiment' column. Make sure all values are integers.")
+# check that batch is all integers
+if (!all(is.integer(sample_anno$batch))) {
+  stop("Something is wrong with the batch column. Make sure all values are integers.")
 }
 
 if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
@@ -130,7 +141,7 @@ if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
 if (!(class_colname %in% names(sample_anno))) {
   stop("Class column name is not in the sample info csv")
 }
-sample_anno_out <- sample_anno[, c('Sample.ID', class_colname, 'Experiment', 'order')]
+sample_anno_out <- sample_anno[, c('Sample.ID', class_colname, 'batch', 'order')]
 names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
 
 
@@ -149,7 +160,7 @@ if (length(geneSymbols) != length(unique(geneSymbols))) {
 }
 
 # undo log transformation 
-if (any(rna_table < 0, na.rm=T)) { #log2-transform was performed
+if (any(rna_table < 0, na.rm=T) | rna_log_transformed) { #log2-transform was performed
   rna_table[,-1] <- 2^rna_table[,-1] # undo log2-transform
 }
 

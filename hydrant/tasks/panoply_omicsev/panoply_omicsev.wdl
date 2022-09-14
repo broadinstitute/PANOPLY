@@ -2,6 +2,9 @@ workflow panoply_omicsev_workflow {
 	Boolean STANDALONE
     File yaml_file
     String? class_column_name
+	String? batch_column_name
+	Boolean? data_log_transformed
+	Boolean? rna_log_transformed
     
     Int? cpu
     Int? memory
@@ -13,6 +16,7 @@ workflow panoply_omicsev_workflow {
         	input: 
             	yaml_file = yaml_file,
             	class_column_name = class_column_name,
+				
                 cpu = cpu,
                 memory = memory,
                 local_disk_gb = local_disk_gb,

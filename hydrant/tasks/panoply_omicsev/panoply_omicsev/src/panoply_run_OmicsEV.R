@@ -2,11 +2,11 @@ library(OmicsEV)
 
 ################################################################################
 # handle command line arguments
-cat("extracting command line arguments")
+cat("\nextracting command line arguments\n")
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 5) {
+if (length(args) == 6) {
   
   # all inputs provided
   data_dir <- args[1]
@@ -14,6 +14,7 @@ if (length(args) == 5) {
   cpu <- as.integer(args[3])
   data_type <- args[4]
   x2 <- args[5]
+  do_fun_pred <- args[6]
   
 } else {
   stop("Incorrect number of arguments")
@@ -25,18 +26,20 @@ if (!file.exists(x2)) {
 
 ################################################################################
 
-cat(paste("data_dir:", data_dir, sep=' '))
-cat(paste("sample_list:", sample_list, sep=' '))
-cat(paste("x2:", x2, sep=' '))
-cat(paste("cpu:", cpu, sep=' '))
-cat(paste("data_type:", data_type, sep=' '))
+cat("data_dir:", data_dir, '\n')
+cat("sample_list:", sample_list, '\n')
+cat("x2:", x2, '\n')
+cat("cpu:", cpu, '\n')
+cat("data_type:", data_type, '\n')
+cat('do_fun_pred:', do_fun_pred, '\n\n')
 
 ################################################################################
 
-print("running the full function")
+cat("running the full function...\n")
 
 run_omics_evaluation(data_dir = data_dir,
                      sample_list = sample_list,
                      x2 = x2,
                      cpu=cpu,
-                     data_type= data_type)
+                     data_type= data_type,
+                     do_fun_pred = do_fun_pred)
