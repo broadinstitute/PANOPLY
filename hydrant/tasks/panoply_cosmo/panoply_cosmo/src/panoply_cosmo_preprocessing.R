@@ -148,9 +148,9 @@ if (is.null(sample_label)) {
 good_sample_labels <- c()
 for (label in sample_label_list) {
   if (!(label %in% names(sample_anno))) {
-    warning(paste(label, "is not in sample annotation file"))
-  } else if (min(base::table(sample_anno[, label]) < min(30, dim(sample_anno)[1] / 5))) {
-    warning(paste("Sample label '", label, "' is not well-balanced. It is being excluded."))
+    warning(paste("Sample label", label, "is not in sample annotation file"))
+  } else if (min(base::table(sample_anno[, label])) < min(10, dim(sample_anno)[1] / 3)) {
+    warning(paste("Sample label", label, "is not well-balanced. It is being excluded."))
   } else if (any(is.na(sample_anno[, label]))) {
     warning(paste("Sample label", label, "has NAs. It is being excluded."))
   } else if (length(unique(sample_anno[, label])) < 2) {
