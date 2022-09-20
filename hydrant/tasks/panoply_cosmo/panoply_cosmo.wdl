@@ -1,18 +1,22 @@
 workflow panoply_cosmo_workflow {
 	Boolean STANDALONE
     File yaml_file
-    String? sample_label
+    String? sample_label = "none"
+    Boolean? do_sample_pred
     
     Int? cpu
     Int? memory
     Int? local_disk_gb
     Int? num_preemptions
     
+    Boolean do_sample_pred_use = select_first([do_sample_pred, defined(sample_label)])
+    
     if (STANDALONE) {
     	call COSMO_task_STANDALONE {
         	input:
             	yaml_file = yaml_file,
                 sample_label = sample_label,
+                do_sample_pred = do_sample_pred_use,
                 cpu = cpu,
                 memory = memory,
                 local_disk_gb = local_disk_gb,
@@ -25,6 +29,7 @@ workflow panoply_cosmo_workflow {
         	input:
             	yaml_file = yaml_file,
                 sample_label = sample_label,
+                do_sample_pred = do_sample_pred_use,
                 cpu = cpu,
                 memory = memory,
                 local_disk_gb = local_disk_gb,
@@ -39,6 +44,7 @@ task COSMO_task {
     File? panoply_harmonize_tar
 	File yaml_file
 	String? sample_label
+    Boolean? do_sample_pred
 
     Int? cpu
     Int? memory
@@ -77,7 +83,8 @@ task COSMO_task {
         Rscript /opt/src/panoply_cosmo_preprocessing.R \
         ${panoply_harmonize_tar} \
 		${yaml_file} \
-		${default="none" sample_label}
+		${sample_label} \
+        ${do_sample_pred}
         
         sample_label=$(cat $sample_label_preprocessed)
 		
@@ -155,6 +162,7 @@ task COSMO_task_STANDALONE {
     File? sample_file
     String? sample_label
     File yaml_file
+    Boolean? do_sample_pred
 
     Int? cpu
     Int? memory
@@ -163,7 +171,9 @@ task COSMO_task_STANDALONE {
     
     String d1_file_base = basename(d1_file, ".gct")
     String d2_file_base = basename(d2_file, ".gct")
-    String sample_file_base = basename(sample_file, ".csv")
+    
+    String sample_file_use = select_first([sample_file, "arbitrary-sample-file.csv"])
+    String sample_file_base = basename(sample_file_use, ".csv")
 
 	command {
 		set -euo pipefail
@@ -189,12 +199,13 @@ task COSMO_task_STANDALONE {
         mkdir $data_use_dir
         
         
-        Rscript /opt/src/panoply_cosmo_preprocessing.R \
+        Rscript /opt/src/panoply_cosmo_preprocessing_standalone.R \
         ${d1_file} \
         ${d2_file} \
-        ${sample_file} \
-        ${default="none" sample_label} \
-		${yaml_file}
+        ${sample_file_use} \
+        ${sample_label} \
+		${yaml_file} \
+        ${do_sample_pred}
         
         sample_label=$(cat $sample_label_preprocessed)
 		

@@ -5,13 +5,14 @@
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 3) {
+if (length(args) == 4) {
 
   harmonize_tar_file <- args[1]
   yaml_file <- args[2]
   sample_label <- args[3]
+  do_sample_pred <- as.logical(args[4])
   
-  if (sample_label == "none") {
+  if (sample_label == "none" || !do_sample_pred) {
     sample_label <- NULL
   }
   
@@ -21,8 +22,8 @@ if (length(args) == 3) {
 
 cat('harmonize_tar_file:', harmonize_tar_file, '\n')
 cat('yaml_file:', yaml_file, '\n')
-cat('sample_label:', sample_label, '\n\n\n')
-
+cat('sample_label:', sample_label, '\n')
+cat('do_sample_pred:', do_sample_pred, '\n\n\n')
 
 ###############################################################################
 library(dplyr)
@@ -117,9 +118,18 @@ rownames(rna_table) <- rna_table[,1]
 rna_table <- rna_table[,-1]
 
 
-## read and process sample annotations
-sample_anno <- read.csv(sample_anno_file)
-
+if (do_sample_pred) {
+  ## read and process sample annotations
+  sample_anno <- read.csv(sample_anno_file)
+} else {
+  sample_anno <- data.frame(Sample.ID = intersect(names(data_table), names(rna_table)))
+  attr <- rep(c('Yes', 'No'), length.out = dim(sample_anno)[1])
+  sample_anno$Arbitrary.Attribute <- attr
+  sample_label <- 'Arbitrary.Attribute'
+  warning("Using arbitraty attribute for sample label, ignore any logs related to clinical attribute prediction.")
+  
+}
+  
 ## use only samples present in all files
 data_samples <- names(data_table)
 rna_samples <- names(rna_table)
@@ -175,7 +185,6 @@ names(sample_anno_out)[1] <- 'sample'
 # save good sample labels
 writeLines(paste(good_sample_labels, collapse=','), 
            con = paste(data_dir, "sample_label.txt", sep=''))
-
 
 
 ## write to tsv files

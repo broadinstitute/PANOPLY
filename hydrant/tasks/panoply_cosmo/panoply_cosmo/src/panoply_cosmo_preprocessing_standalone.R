@@ -5,14 +5,16 @@
 
 args = commandArgs(trailingOnly = T)
 
-if (length(args) == 5) {
+if (length(args) == 6) {
   d1_gct_path <- args[1]
   d2_gct_path <- args[2]
   sample_csv_path <- args[3]
   sample_label <- args[4]
   yaml_file <- args[5]
+  do_sample_pred <- as.logical(args[6])
   
-  if (sample_label == "none") {
+  
+  if (sample_label == "none" || !do_sample_pred) {
     sample_label <- NULL
   }
 }
@@ -22,6 +24,7 @@ cat("d2_gct_path:", d2_gct_path, '\n')
 cat("sample_csv_path:", sample_csv_path, '\n')
 cat("sample_label:", sample_label, '\n')
 cat("yaml_file:", yaml_file, '\n')
+cat('do_sample_pred:', do_sample_pred, '\n\n\n')
 
 
 ###############################################################################
@@ -61,7 +64,17 @@ for (file in c(d1_gct_path, d2_gct_path)) {
 }
 
 ## read and process sample annotations
-sample_anno <- read.csv(sample_csv_path)
+if (do_sample_pred) {
+  ## read and process sample annotations
+  sample_anno <- read.csv(sample_anno_file)
+} else {
+  sample_anno <- data.frame(Sample.ID = names(data_out))
+  attr <- rep(c('Yes', 'No'), length.out = dim(sample_anno)[1])
+  sample_anno$Arbitrary.Attribute <- attr
+  sample_label <- 'Arbitrary.Attribute'
+  warning("Using arbitraty attribute for sample label, ignore any logs related to clinical attribute prediction.")
+  
+}
 
 if (is.null(sample_label)) {
   warning("using groups from yaml file as default sample attributes")
