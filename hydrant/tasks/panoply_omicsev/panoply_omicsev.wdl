@@ -5,6 +5,7 @@ workflow panoply_omicsev_workflow {
 	String? batch_column_name
 	Boolean? data_log_transformed
 	Boolean? rna_log_transformed
+    Boolean? do_function_prediction
     
     Int? cpu
     Int? memory
@@ -16,11 +17,15 @@ workflow panoply_omicsev_workflow {
         	input: 
             	yaml_file = yaml_file,
             	class_column_name = class_column_name,
-				
+                batch_column_name = batch_column_name,
+                data_log_transformed = data_log_transformed,
+                rna_log_transformed = rna_log_transformed,
                 cpu = cpu,
                 memory = memory,
                 local_disk_gb = local_disk_gb,
-                num_preemptions = num_preemptions
+                num_preemptions = num_preemptions,
+                do_function_prediction = do_function_prediction,
+                output_dir = "omicsev_output"
         }
     }
     
@@ -29,10 +34,15 @@ workflow panoply_omicsev_workflow {
         	input: 
             	yaml_file = yaml_file,
             	class_column_name = class_column_name,
+                batch_column_name = batch_column_name,
+                data_log_transformed = data_log_transformed,
+                rna_log_transformed = rna_log_transformed,
                 cpu = cpu,
                 memory = memory,
                 local_disk_gb = local_disk_gb,
-                num_preemptions = num_preemptions
+                num_preemptions = num_preemptions,
+                do_function_prediction = do_function_prediction,
+                output_dir = "omicsev_output"
         }
     }
 }
@@ -44,6 +54,11 @@ task OmicsEV_task_standalone {
     File yaml_file
     String? class_column_name
     String? data_type
+    String? batch_column_name
+	Boolean? data_log_transformed
+	Boolean? rna_log_transformed
+    Boolean? do_function_prediction
+    String output_dir
     
     Int? cpu
     Int? memory
@@ -53,21 +68,36 @@ task OmicsEV_task_standalone {
     command {
 	set -euo pipefail
     
+    mkdir ${output_dir}
+    
+    cd ${output_dir}
+    
     Rscript \
     /src/panoply_omicsev_preprocessing_standalone.R \
 	${sep=',' data_files} \
 	${sample_anno_file} \
 	${default = 'no_rna' rna_file} \
+    ${yaml_file} \
 	${default = 'Type' class_column_name} \
-	${yaml_file}
+    ${default = 'Experiment' batch_column_name} \
+    ${default = true data_log_transformed} \
+    ${default = true rna_log_transformed}
+	
     
     Rscript \
 	/src/panoply_run_OmicsEV.R \
-    datasets \
+    dataset \
     sample_list.tsv \
     ${default=6 cpu} \
     ${default="protein" data_type} \
-	x2.tsv
+	x2.tsv \
+    ${default=true do_function_prediction} \
+    "./"
+    
+    cd ..
+    
+    zip -r "${output_dir}.zip" ${output_dir}
+    
     }
 
     runtime {
@@ -78,7 +108,8 @@ task OmicsEV_task_standalone {
         cpu: "${if defined(cpu) then cpu else '6'}"
     }
     output {
-        File html_report = "final_evaluation_report.html"       
+        File html_report = "${output_dir}/final_evaluation_report.html"
+        File omicsev_output_zip = "${output_dir}.zip"
     }
     parameter_meta {
     	data_files: "Required for STANDALONE. Array of gct files to be used for OmicsEV. Contain same samples. Can be a single data file."
@@ -94,21 +125,32 @@ task OmicsEV_task {
     File? panoply_harmonize_tar_file
     File yaml_file
     String? class_column_name
+    String? batch_column_name
+	Boolean? data_log_transformed
+	Boolean? rna_log_transformed
+    Boolean? do_function_prediction
+    String output_dir
     
     Int? cpu
     Int? memory
-
     Int? local_disk_gb
     Int? num_preemptions
 
     command {
 	set -euo pipefail
     
+    mkdir ${output_dir}
+    
+    cd ${output_dir}
+    
     Rscript \
     /src/panoply_omicsev_preprocessing.R \
 	${panoply_harmonize_tar_file} \
 	${yaml_file} \
-	${default="Type" class_column_name}
+	${default="Type" class_column_name} \
+    ${default = 'Experiment' batch_column_name} \
+    ${default = true data_log_transformed} \
+    ${default = true rna_log_transformed}
     
     Rscript \
 	/src/panoply_run_OmicsEV.R \
@@ -116,7 +158,14 @@ task OmicsEV_task {
     sample_list.tsv \
     ${default=6 cpu} \
     protein \
-	x2.tsv
+	x2.tsv \
+    ${default=true do_function_prediction} \
+    "./"
+    
+    cd ..
+    
+    zip -r "${output_dir}.zip" ${output_dir}
+    
     }
 
     runtime {
@@ -127,7 +176,8 @@ task OmicsEV_task {
         cpu: "${if defined(cpu) then cpu else '6'}"
     }
     output {
-        File html_report = "final_evaluation_report.html"       
+        File html_report = "${output_dir}/final_evaluation_report.html"
+        File omicsev_output_zip = "${output_dir}.zip"
     }
     parameter_meta {
     	panoply_harmonize_tar_file: "Required if not STANDALONE. Tar file output from panoply_harmonize."
