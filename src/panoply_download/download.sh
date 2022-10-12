@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-while getopts ":c:o:r:a:s:l:p:" opt; do
+while getopts ":a:o:r:a:s:p:" opt; do
     case $opt in
         a) association_tar="$OPTARG";;
         o) ssgsea_ome="$OPTARG";;
