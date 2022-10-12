@@ -210,6 +210,7 @@ workflow panoply_main {
 
   call download_wdl.panoply_download {
     input:
+      association_tar = panoply_association.outputs,
       ssgsea_ome_tar = ssgsea_ome.results,
       ssgsea_rna_tar = ssgsea_rna.results,
       analysisDir = job_identifier,
