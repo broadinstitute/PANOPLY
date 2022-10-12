@@ -35,7 +35,7 @@ task panoply_download
 
 
     /prot/proteomics/Projects/PGDAC/src/download.sh \
-        -a ${association_tar} \
+        -t ${association_tar} \
         -o ${ssgsea_ome_tar} \
         -r ${ssgsea_rna_tar} \
         -a ${analysisDir} \
