@@ -112,14 +112,14 @@ workflow panoply_unified_workflow {
   ### Single-ome NMF
   call so_nmf_wdl.panoply_so_nmf_workflow as so_nmf {
     input:
-      yaml_file = yaml,
-      label = job_id,
+      yaml = yaml,
+      job_id = job_id,
       prote_ome = prote_ome,
       phospho_ome = phospho_ome,
       acetyl_ome = acetyl_ome,
-      ubiquityl_ome ubiquityl_ome,
-      rna_ome = rna_data,
-      cna_ome = cna_data
+      ubiquityl_ome = ubiquityl_ome,
+      rna_data = rna_data,
+      cna_data = cna_data
   }
 
   ### Multi-omics NMF:
