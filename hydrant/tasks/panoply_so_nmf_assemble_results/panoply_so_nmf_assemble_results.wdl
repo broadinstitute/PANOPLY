@@ -27,7 +27,11 @@ task panoply_so_nmf_assemble_results {
       for tar in ${sep=' ' so_nmf_tar}
       do
         cp $tar nmf_results/so-nmf #copy tar in
-        for filename in nmf_results/so-nmf/*.tar;do tar -C nmf_results/so-nmf -xvf $filename;rm $filename;done #untar and remove
+        for filename in nmf_results/so-nmf/*.tar
+            do mkdir nmf_results/so-nmf/$(basename "$filename" .tar)
+            tar -C nmf_results/so-nmf/$(basename "$filename" .tar) -xvf $filename
+            rm $filename #untar and remove
+          done
       done
     fi
     
@@ -41,7 +45,11 @@ task panoply_so_nmf_assemble_results {
     mkdir nmf_results/so-nmf_ssgsea
     if [ ${sep='' so_nmf_ssgsea_tar} != '' ]; then
       cp ${sep=' ' so_nmf_ssgsea_tar} nmf_results/so-nmf_ssgsea #copy tars in
-      for filename in nmf_results/so-nmf_ssgsea/*.tar.gz;do tar -C nmf_results/so-nmf_ssgsea -zxvf $filename;rm $filename;done #untar
+      for filename in nmf_results/so-nmf_ssgsea/*.tar.gz
+        do mkdir nmf_results/so-nmf_ssgsea/$(basename "$filename" .tar.gz) #make directory
+    tar -C nmf_results/so-nmf_ssgsea/$(basename "$filename" .tar.gz) -zxvf $filename #untar file
+        rm $filename #remove tar
+      done #untar
     fi
 
     mkdir nmf_results/so-nmf_ssgsea_report
