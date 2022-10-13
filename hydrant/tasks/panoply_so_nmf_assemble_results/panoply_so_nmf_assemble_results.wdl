@@ -7,8 +7,8 @@ task panoply_so_nmf_assemble_results {
   Array[File?] so_nmf_ssgsea_tar
   Array[File?] so_nmf_ssgsea_report
 
-  String output_results_zip = "nmf_results.zip"
-  String output_reports_zip = "nmf_reports.zip"
+  String output_results_tar = "so_nmf_results.tar"
+  String output_reports_tar = "so_nmf_reports.tar"
 
   Int? memory
   Int? disk_space
@@ -59,14 +59,14 @@ task panoply_so_nmf_assemble_results {
       cp ${sep=' ' so_nmf_ssgsea_report} nmf_reports/so-nmf_ssgsea #copy reports to reports
     fi
 
-    ### Zip up final directories
-    zip ${output_results_zip} -r nmf_results
-    zip ${output_reports_zip} -r nmf_reports
+    ### Tar final directories
+    tar -czf ${output_results_tar} nmf_results/
+    tar -czf ${output_reports_tar} nmf_reports/
   }
 
   output {
-    File nmf_results = "${output_results_zip}"
-    File nmf_reports = "${output_reports_zip}"
+    File nmf_results = "${output_results_tar}"
+    File nmf_reports = "${output_reports_tar}"
 
   }
   

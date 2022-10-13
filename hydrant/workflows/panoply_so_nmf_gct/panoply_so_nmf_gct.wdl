@@ -3,6 +3,7 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_pre/versions/11/plain-WDL/descriptor" as panoply_so_nmf_pre_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf/versions/4/plain-WDL/descriptor" as panoply_mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_assemble_drivers/versions/3/plain-WDL/descriptor" as panoply_so_nmf_assemble_drivers
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_report/versions/4/plain-WDL/descriptor" as panoply_mo_nmf_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as panoply_ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/4/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
@@ -39,6 +40,13 @@ workflow panoply_so_nmf_gct_workflow {
 			yaml_file=yaml_file,
             output_prefix="results_nmf-${label}"
 	}
+    
+    
+	call panoply_so_nmf_assemble_drivers.panoply_so_nmf_assemble_drivers {
+		input:
+			nmf_tar=panoply_mo_nmf.results,
+            ome_type=ome_type
+	}
 
 	call panoply_mo_nmf_report_wdl.panoply_mo_nmf_report {
 	        input:
@@ -70,5 +78,6 @@ workflow panoply_so_nmf_gct_workflow {
 		File nmf_clust_report=panoply_mo_nmf_report.report
 		File nmf_ssgsea=panoply_ssgsea.results
 		File nmf_ssgsea_report=panoply_ssgsea_report.report
+        Pair[String, File] nmf_drivers=panoply_so_nmf_assemble_drivers.driver_pair
 	}
 }
