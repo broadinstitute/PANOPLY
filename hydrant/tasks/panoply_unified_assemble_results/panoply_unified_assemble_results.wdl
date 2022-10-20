@@ -115,11 +115,11 @@ task panoply_unified_assemble_results {
     mkdir results/so-nmf
     if [ ${so_nmf_results} != '' ]; then
       mv ${so_nmf_results} results/so-nmf
-      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename;rm $filename;done
+      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 1;rm $filename;done
     fi
     if [ ${so_nmf_reports} != '' ]; then
       mv ${so_nmf_reports} results/so-nmf
-      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename;rm $filename;done
+      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 2;rm $filename;done
     fi
 
     # MO-NMF
