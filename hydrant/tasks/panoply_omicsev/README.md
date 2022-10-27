@@ -1,4 +1,4 @@
-## PANOPLY Implementation of OmiceEV
+## PANOPLY Implementation of OmicsEV
 
 Find full OmicsEV documentation [here](https://github.com/bzhanglab/OmicsEV)
 
@@ -15,14 +15,14 @@ Mandatory inputs if `STANDALONE = false` (preferred):
 
 Mandatory inputs if `STANDALONE = true`:
 
-* `data_files` (Array[File]): Array of .gct files to be used for OmicsEV. These are typically all the same -ome from the same samples with some variation in how abundance values were calculated. For example, multiple proteome files generated using different batch correction methods. Array[File] format is `["path/to/file-1.gct","path/to/file-2.gct","path/to/file-3.gct"]`. Since data file input is acceptable.
+* `data_files` (Array[File]): Array of .gct files to be used for OmicsEV. These are typically all the same -ome from the same samples with some variation in how abundance values were calculated. For example, multiple proteome files generated using different batch correction methods. Array[File] format is `["path/to/file-1.gct","path/to/file-2.gct","path/to/file-3.gct"]`. Single data file input is acceptable.
 * `sample_anno_file` (File): A .csv file with sample annotations. File must include same samples as are in `data_files`.
 
 
 Optional inputs:
 
-* `class_column_name` (String): Column in sample annotation file that contains class information.
-* `batch_column_name` (String): Column in sample annotation file that contains batch information. Must be integer values with no NA's. If `STANDALONE = true`, this can also be a column in the column-description of each .gct file in `data_files`.
+* `class_column_name` (String): Column in sample annotation file that contains class information. This should be a categorical annotation (e.g. sex, cancer type, etc.) to assess differences between phenotypes.
+* `batch_column_name` (String): Column in sample annotation file that contains batch information. This is used to assess batch effects. Must be integer values with no NA's. If `STANDALONE = true`, this can also be a column in the column-description of each .gct file in `data_files`.
 * `data_log_transformed` (Boolean): Indicates whether the protein-level data has been log transformed.
 * `rna_log_transformed` (Boolean): Indicates whether the rna data has been log transformed.
 * `do_function_prediction` (Boolean): Whether or not to perform gene function prediction analysis. If this is not necessary, it is suggested to turn this off. Gene function prediction takes a considerable amount of time. Default is `true`.
@@ -32,6 +32,6 @@ Optional inputs if `STANDALONE = true`:
 * `rna_file` (File): A .gct file of RNAseq data. Used only for RNA-protein correlation at the end of OmicsEV.
 * `data_type` (String): Either "protein" or "gene". Describes the data type of `data_files`. Default is "protein".
 
-## Output
+### Output
 
 The output is `html_report`, a report of OmicsEV evaluation metrics for each dataset.
