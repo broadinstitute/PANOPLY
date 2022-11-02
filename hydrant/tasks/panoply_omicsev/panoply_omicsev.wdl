@@ -1,11 +1,10 @@
 workflow panoply_omicsev_workflow {
-    
     call OmicsEV_task {}
 }
 
 
 task OmicsEV_task {
-	Boolean STANDALONE
+	String STANDALONE
     File yaml_file
 
 	Array[File]? data_files
@@ -39,27 +38,27 @@ task OmicsEV_task {
 	/prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
 	--module omicsev \
 	--master_yaml ${yaml_file} \
-	${if defined(class_column_name) then "--omicsev_class_column_name " + class_column_name else ""} \
-	${if defined(batch_column_name) then "--omicsev_batch_column_name " + batch_column_name else ""} \
-	${if defined(data_log_transformed) then "--omicsev_data_log_transformed " + data_log_transformed else ""} \
-	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " + rna_log_transformed else ""} \
-	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " + do_function_prediction else ""}
+	${if defined(class_column_name) then "--omicsev_class_column_name " else ""}${class_column_name} \
+	${if defined(batch_column_name) then "--omicsev_batch_column_name " else ""}${batch_column_name} \
+	${if defined(data_log_transformed) then "--omicsev_data_log_transformed " else ""}${data_log_transformed} \
+	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " else ""}${rna_log_transformed} \
+	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " else ""}${do_function_prediction}
 
 	echo "Preprocessing"
     
     Rscript \
     /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_omicsev_preprocessing.R \
 	--STANDALONE ${STANDALONE} \
-	--yaml_file ${yaml_file} \
+	--yaml_file final_output_params.yaml \
 	${if defined(data_files) then "--data_files " else ""}${sep=',' data_files} \
-	${if defined(sample_anno_file) then "--sample_anno_file " + sample_anno_file else ""} \
-	${if defined(rna_file) then "--rna_file " + rna_file else ""} \
-	${if defined(panoply_harmonize_tar_file) then "--harmonize_tar_file " + panoply_harmonize_tar_file else ""}
+	${if defined(sample_anno_file) then "--sample_anno_file " else ""}${sample_anno_file} \
+	${if defined(rna_file) then "--rna_file " else ""}${rna_file} \
+	${if defined(panoply_harmonize_tar_file) then "--harmonize_tar_file " else ""}${panoply_harmonize_tar_file}
 
 	echo "Running OmicsEV"
 
     Rscript \
-	/src/panoply_run_OmicsEV.R \
+	/prot/proteomics/Projects/PGDAC/src/omicsev/panoply_run_OmicsEV.R \
     dataset \
     sample_list.tsv \
     ${default=6 cpu} \
@@ -75,7 +74,7 @@ task OmicsEV_task {
     }
 
     runtime {
-    	docker: "broadcptacdev/panoply_omicsev:test"
+    	docker: "broadcptacdev/panoply_omicsev:latest"
         memory: "${if defined(memory) then memory else '96'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
