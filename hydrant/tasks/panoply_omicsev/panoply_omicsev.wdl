@@ -1,11 +1,12 @@
-workflow panoply_omicsev_workflow {
-    call OmicsEV_task {}
+workflow panoply_omicsev {
+    call OmicsEV_task
 }
 
 
 task OmicsEV_task {
 	String STANDALONE
     File yaml_file
+	String label
 
 	Array[File]? data_files
 	File? sample_anno_file
@@ -17,8 +18,6 @@ task OmicsEV_task {
 	Boolean? data_log_transformed
 	Boolean? rna_log_transformed
     Boolean? do_function_prediction
-
-    String output_dir = "omicsev_output"
     
     Int? cpu
     Int? memory
@@ -27,10 +26,34 @@ task OmicsEV_task {
 
     command {
 	set -euo pipefail
-    
-    mkdir ${output_dir}
-    
-    cd ${output_dir}
+
+	if [ ${STANDALONE} == "false" ]; then
+		mkdir panoply_harmonize_output
+		tar -xf ${panoply_harmonize_tar_file} -C panoply_harmonize_output
+		output_dir="$(pwd)/panoply_harmonize_output/$(ls panoply_harmonize_output | head -1)/omicsev-data"
+		tar_dir="$(pwd)/panoply_harmonize_output/$(ls panoply_harmonize_output | head -1)"
+		home_dir="$(pwd)"
+
+		Rscript /prot/proteomics/Projects/PGDAC/src/omicsev/validate_harmonize_tar.R "$(pwd)/panoply_harmonize_output"
+
+		data_files_input="--data_files $(cat data_file.txt)"
+		rna_file_input="--rna_file $tar_dir/harmonized-data/rna-matrix.csv"
+		sample_anno_file_input="--sample_anno_file $tar_dir/harmonized-data/sample-info.csv"
+	fi
+
+	if [ ${STANDALONE} == "true" ]; then
+		output_dir="$(pwd)/omicsev-data"
+		tar_dir=$output_dir
+		home_dir="$(pwd)"
+
+		data_files_input="--data_file${sep=',' data_files}"
+		${if defined(rna_file) then "rna_file_input=--rna_file " else ""}${rna_file}
+		sample_anno_file_input="--sample_anno_file ${sample_anno_file}"
+	fi
+
+	mkdir -p $output_dir
+	cd $output_dir
+
 
 	echo "Managing parameters"
 
@@ -44,16 +67,21 @@ task OmicsEV_task {
 	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " else ""}${rna_log_transformed} \
 	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " else ""}${do_function_prediction}
 
+	if [ ${STANDALONE} == "false" ]; then
+		cp final_output_params.yaml $tar_dir/updated-master-parameter.yaml
+	fi
+
+
 	echo "Preprocessing"
     
     Rscript \
     /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_omicsev_preprocessing.R \
 	--STANDALONE ${STANDALONE} \
 	--yaml_file final_output_params.yaml \
-	${if defined(data_files) then "--data_files " else ""}${sep=',' data_files} \
-	${if defined(sample_anno_file) then "--sample_anno_file " else ""}${sample_anno_file} \
-	${if defined(rna_file) then "--rna_file " else ""}${rna_file} \
-	${if defined(panoply_harmonize_tar_file) then "--harmonize_tar_file " else ""}${panoply_harmonize_tar_file}
+	$data_files_input \
+	$sample_anno_file_input \
+	$rna_file_input
+
 
 	echo "Running OmicsEV"
 
@@ -66,10 +94,13 @@ task OmicsEV_task {
 	x2.tsv \
     $(cat do_function_prediction.txt) \
     "./"
+
+	cd $home_dir
+
+	cp "$output_dir/final_evaluation_report.html" "final_evaluation_report.html"
+	mv "final_evaluation_report.html" "omicsev_${label}.html"
     
-    cd ..
-    
-    zip -r "${output_dir}.zip" ${output_dir}
+    tar -czvf "omicsev_output.tar" $tar_dir
     
     }
 
@@ -81,7 +112,7 @@ task OmicsEV_task {
         cpu: "${if defined(cpu) then cpu else '6'}"
     }
     output {
-        File html_report = "${output_dir}/final_evaluation_report.html"
-        File omicsev_output_zip = "${output_dir}.zip"
+        File report = "omicsev_" + label + ".html"
+        File outputs = "omicsev_output.tar"
     }
 }

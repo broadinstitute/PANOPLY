@@ -125,17 +125,18 @@ workflow panoply_main {
       gene_id_col=gene_id_col
   }
 
-  call omicsev_wdl.panoply_omicsev_workflow {
+  call omicsev_wdl.panoply_omicsev {
     input:
       yaml_file = yaml,
       STANDALONE = standalone,
       do_function_prediction = false,
-      panoply_harmonize_tar_file = panoply_harmonize.outputs
+      panoply_harmonize_tar_file = panoply_harmonize.outputs,
+      label = job_identifier
   }
 
   call sampleqc_wdl.panoply_sampleqc {
     input:
-      tarball = panoply_harmonize.outputs,
+      tarball = panoply_omicsev,
       type = ome_type,
       yaml = yaml
   }
@@ -150,7 +151,7 @@ workflow panoply_main {
 
   call cna_setup_wdl.panoply_cna_setup {
     input:
-      tarball = panoply_sampleqc.outputs,
+      tarball = panoply_omicsev.outputs,
       groupsFile = cna_groups,
       type = ome_type,
       yaml = yaml
@@ -280,6 +281,7 @@ workflow panoply_main {
     File panoply_full = panoply_download.full
     File rna_corr_report = panoply_rna_protein_correlation_report.report
     File cna_corr_report = panoply_cna_correlation_report.report
+	File omicsev_report = panoply_omicsev.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
     File cons_clust_report = panoply_cons_clust_report.report_out

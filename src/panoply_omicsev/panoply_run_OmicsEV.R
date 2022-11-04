@@ -41,7 +41,7 @@ cat('out_dir:', out_dir, '\n\n')
 
 ################################################################################
 
-print("running the full function")
+cat("running the full function\n")
 
 run_omics_evaluation(data_dir = data_dir,
                      sample_list = sample_list,

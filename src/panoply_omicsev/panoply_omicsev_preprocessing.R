@@ -18,15 +18,13 @@ parser <- add_option(parser, c("--data_files"), type = 'character', dest = 'data
 parser <- add_option(parser, c("--rna_file"), type = 'character', dest = 'rna_file')
 parser <- add_option(parser, c("--sample_anno_file"), type = 'character', dest = 'sample_anno_file')
 parser <- add_option(parser, c("--yaml_file"), type = 'character', dest = "yaml_file")
-parser <- add_option(parser, c("--harmonize_tar_file"), type = 'character', dest = 'harmonize_tar_file')
-parser <- add_option(parser, c("--STANDALONE"), type = 'logical', dest = 'STANDALONE')
+parser <- add_option(parser, c("--STANDALONE"), type = 'logical', dest = "STANDALONE")
 options <- parse_args(parser)
 
 data_files <- options$data_files
 rna_file <- options$rna_file
 sample_anno_file <- options$sample_anno_file
 yaml_file <- options$yaml_file
-harmonize_tar_file <- options$harmonize_tar_file
 STANDALONE <- options$STANDALONE
 
 ## extract from yaml file
@@ -39,21 +37,15 @@ rna_log_transformed <- yaml_out$panoply_omicsev$rna_log_transformed
 do_function_prediction <- yaml_out$panoply_omicsev$do_function_prediction
 
 ## make sure required inputs are present
-if (is.null(yaml_file) | is.null(STANDALONE)) {
+if (is.null(yaml_file) | is.null(data_files) | is.null(sample_anno_file) | is.null(STANDALONE)) {
   stop("Required input missing")
 }
-if (STANDALONE & (is.null(data_files) | is.null(sample_anno_file))) {
-  stop("Required STANDALONE input missing")
-}
-if (!STANDALONE & is.null(harmonize_tar_file)) {
-  stop("Harmonized tar file is required")
-}
 
 
+cat("STANDALONE:", STANDALONE, '\n')
 cat("data_files:", data_files, '\n')
 cat("sample_anno_file:", sample_anno_file, '\n')
 cat("rna_file:", rna_file, '\n')
-cat('harmonize_tar_file:', harmonize_tar_file, '\n')
 cat("yaml_file:", yaml_file, '\n')
 cat("class_colname:", class_colname, '\n')
 cat('batch_colname:', batch_colname, '\n')
@@ -73,7 +65,7 @@ preprocessing_STANDALONE <- function(data_files,
                                      data_log_transformed,
                                      rna_log_transformed,
                                      gene.id.col) {
-                                     
+  
   # define directory for dataset
   data_dir <- "dataset/"
   dir.create(data_dir)
@@ -85,7 +77,7 @@ preprocessing_STANDALONE <- function(data_files,
   data_outs <- list()
   
   for (file in data_files) {
-  
+    
     ## read data
     data_gct <- parse_gctx(file)
     data_ids <- data.frame(ID = meta(data_gct, dimension='row')[,gene.id.col])
@@ -102,7 +94,7 @@ preprocessing_STANDALONE <- function(data_files,
     ## collapse to the gene level
     warning("collapsing protein data by geneSymbol")
     data_out <- aggregate(data_out[,-(1)], list(data_out$ID),
-                                    function(x) mean(x, na.rm=T))
+                          function(x) mean(x, na.rm=T))
     names(data_out)[1] <- 'ID'
     
     # save data in list
@@ -233,46 +225,14 @@ preprocessing_STANDALONE <- function(data_files,
 }
 
 # for harmonized inputs
-preprocessing_harmonized <- function(harmonize_tar_file,
+preprocessing_harmonized <- function(data_file,
+                                     sample_anno_file,
+                                     rna_file,
                                      class_colname,
                                      batch_colname,
                                      data_log_transformed,
                                      rna_log_transformed,
                                      gene.id.col) {
-  ## untar harmonize inputs and extract files
-  ex_dir <- 'panoply_harmonize_output'
-  untar(harmonize_tar_file, exdir = ex_dir)
-  
-  # get name of base directory that all files from tar are located in
-  base_dir <- list.files(ex_dir)
-  if (length(base_dir) != 1) {
-    stop("Cannot find base directory in tar. Please provide tar file input from panoply_harmonize.")
-  }
-  
-  # check that harmonize subdirectory is present
-  harmonize_dir <- 'harmonized-data'
-  if (!(harmonize_dir %in% list.files(file.path(ex_dir, base_dir)))) {
-    stop("Cannot find harmonize directory in tar file. Please provide tar file input from panoply_harmonize.")
-  }
-  
-  # check that correct matrix files exist from harmonize output
-  rna_file <- file.path(ex_dir, base_dir, harmonize_dir, 'rna-matrix.csv')
-  if (!file.exists(rna_file)) {
-    stop("RNA file cannot be found. Please provide tar file input from panoply_harmonize.")
-  }
-  sample_anno_file <- file.path(ex_dir, base_dir, harmonize_dir, 'sample-info.csv')
-  if (!file.exists(sample_anno_file)) {
-    stop("Sample annotation file cannot be found. Please provide tar file input from panoply_harmonize.")
-  }
-  
-  # find protein file
-  data_file <- setdiff(list.files(file.path(ex_dir, base_dir, harmonize_dir), 
-                                  pattern = '*-matrix.csv'),
-                       c('cna-matrix.csv', 'rna-matrix.csv'))
-  if (length(data_file) != 1) {
-    stop("Protein data file cannot be found. Please provide tar file input from panoply_harmonize.")
-  }
-  data_file <- file.path(ex_dir, base_dir, harmonize_dir, data_file)
   
   ## define directory for dataset
   data_dir <- "dataset/"
@@ -391,7 +351,7 @@ preprocessing_harmonized <- function(harmonize_tar_file,
 # write do_function_pred to .txt file so it can be read later
 write(do_function_prediction, "do_function_prediction.txt")
 
-if (!is.null(data_files)) {
+if (STANDALONE) {
   preprocessing_STANDALONE(data_files = data_files,
                            sample_anno_file = sample_anno_file,
                            rna_file = rna_file,
@@ -401,7 +361,9 @@ if (!is.null(data_files)) {
                            rna_log_transformed = rna_log_transformed,
                            gene.id.col = gene.id.col)
 } else {
-  preprocessing_harmonized(harmonize_tar_file = harmonize_tar_file,
+  preprocessing_harmonized(data_file = data_files,
+                           sample_anno_file = sample_anno_file,
+                           rna_file = rna_file,
                            class_colname = class_colname,
                            batch_colname = batch_colname,
                            rna_log_transformed = rna_log_transformed,

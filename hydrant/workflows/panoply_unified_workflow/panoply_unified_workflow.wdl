@@ -143,6 +143,7 @@ workflow panoply_unified_workflow {
       norm_report = norm.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,
+      omicsev_report = pome.omicsev_report,
       sampleqc_report = pome.sample_qc_report,
       assoc_report = pome.association_report,
       cons_clust_report = pome.cons_clust_report,
