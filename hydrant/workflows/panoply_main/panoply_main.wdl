@@ -18,7 +18,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/9/plain-WDL/descriptor" as cons_clust_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust_report/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/6/plain-WDL/descriptor" as omicsev_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/1/plain-WDL/descriptor" as omicsev_wdl
 
 
 workflow panoply_main {
@@ -136,7 +136,7 @@ workflow panoply_main {
 
   call sampleqc_wdl.panoply_sampleqc {
     input:
-      tarball = panoply_omicsev,
+      tarball = panoply_omicsev.outputs,
       type = ome_type,
       yaml = yaml
   }

@@ -1,9 +1,9 @@
-workflow panoply_omicsev {
-    call OmicsEV_task
+workflow panoply_omicsev_workflow {
+    call panoply_omicsev
 }
 
 
-task OmicsEV_task {
+task panoply_omicsev {
 	String STANDALONE
     File yaml_file
 	String label
@@ -31,24 +31,26 @@ task OmicsEV_task {
 		mkdir panoply_harmonize_output
 		tar -xf ${panoply_harmonize_tar_file} -C panoply_harmonize_output
 		output_dir="$(pwd)/panoply_harmonize_output/$(ls panoply_harmonize_output | head -1)/omicsev-data"
-		tar_dir="$(pwd)/panoply_harmonize_output/$(ls panoply_harmonize_output | head -1)"
+		tar_dir="$(pwd)/panoply_harmonize_output"
+        tar_name="$(ls panoply_harmonize_output | head -1)"
 		home_dir="$(pwd)"
 
 		Rscript /prot/proteomics/Projects/PGDAC/src/omicsev/validate_harmonize_tar.R "$(pwd)/panoply_harmonize_output"
 
-		data_files_input="--data_files $(cat data_file.txt)"
-		rna_file_input="--rna_file $tar_dir/harmonized-data/rna-matrix.csv"
-		sample_anno_file_input="--sample_anno_file $tar_dir/harmonized-data/sample-info.csv"
-	fi
-
-	if [ ${STANDALONE} == "true" ]; then
+		data_files="$(cat data_file.txt)"
+		rna_file="$tar_dir/$tar_name/harmonized-data/rna-matrix.csv"
+		sample_anno_file="$tar_dir/$tar_name/harmonized-data/sample-info.csv"
+	
+    else
+    
 		output_dir="$(pwd)/omicsev-data"
-		tar_dir=$output_dir
+		tar_dir="$(pwd)"
+        tar_name="omicsev-data"
 		home_dir="$(pwd)"
 
-		data_files_input="--data_file${sep=',' data_files}"
-		${if defined(rna_file) then "rna_file_input=--rna_file " else ""}${rna_file}
-		sample_anno_file_input="--sample_anno_file ${sample_anno_file}"
+		data_files="${sep=',' data_files}"
+		rna_file=${default='' rna_file}
+		sample_anno_file="${sample_anno_file}"
 	fi
 
 	mkdir -p $output_dir
@@ -74,13 +76,26 @@ task OmicsEV_task {
 
 	echo "Preprocessing"
     
-    Rscript \
-    /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_omicsev_preprocessing.R \
-	--STANDALONE ${STANDALONE} \
-	--yaml_file final_output_params.yaml \
-	$data_files_input \
-	$sample_anno_file_input \
-	$rna_file_input
+    if [ -z $rna_file ]; then
+
+      Rscript \
+      /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_omicsev_preprocessing.R \
+      --STANDALONE ${STANDALONE} \
+      --yaml_file final_output_params.yaml \
+      --data_files $data_files \
+      --sample_anno_file $sample_anno_file
+      
+	else
+    
+      Rscript \
+      /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_omicsev_preprocessing.R \
+      --STANDALONE ${STANDALONE} \
+      --yaml_file final_output_params.yaml \
+      --data_files $data_files \
+      --sample_anno_file $sample_anno_file \
+      --rna_file $rna_file
+      
+    fi
 
 
 	echo "Running OmicsEV"
@@ -100,7 +115,8 @@ task OmicsEV_task {
 	cp "$output_dir/final_evaluation_report.html" "final_evaluation_report.html"
 	mv "final_evaluation_report.html" "omicsev_${label}.html"
     
-    tar -czvf "omicsev_output.tar" $tar_dir
+    cd $tar_dir
+    tar -czvf "$home_dir/omicsev_output.tar" $tar_name
     
     }
 
