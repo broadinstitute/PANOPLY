@@ -27,32 +27,40 @@ get_run_name <- function(name = NULL) {
     return(run_name)
 }
 
-list_files_in_bucket <- function(only_gct = FALSE) {
+list_files_in_bucket <- function(only_gct = FALSE, only_gmt = FALSE) {
     file_paths <- system(paste0("gsutil ls -r ", bucket), intern=TRUE)
     files <- gsub(paste0(bucket, "/"), "", file_paths)
     if (only_gct) {
         files <- files[grepl(".gct", files)]
+    }
+    if (only_gmt) {
+        files <- files[grepl(".gmt", files)]
     }
 
     print(files)
 }
 
 copy_from_bucket_to_project_dir <- function(filename) {
-    system(paste("gsutil cp", file.path(bucket, input_file), project_input), intern = TRUE)
+    system(paste("gsutil cp", file.path(bucket, filename), project_input), intern = TRUE)
 }
 
 get_ptm_sig_db <- function(id_type_out, organism) {
-    if (id_type_out == "uniprot") {
-        id_opt <- "uniprot"
-    } else if (id_type_out == "seqwin") {
-        id_opt <- "flanking"
-    } else if (id_type_out == "psp") {
-        id_opt <- "sitegrpid"
+    if (is.null(ptm_sig_db_path)) {
+        if (id_type_out == "uniprot") {
+            id_opt <- "uniprot"
+        } else if (id_type_out == "seqwin") {
+            id_opt <- "flanking"
+        } else if (id_type_out == "psp") {
+            id_opt <- "sitegrpid"
+        } else {
+            print("unsupported `id_type_out` was selected")
+        }
+        ptm_sig_db <- file.path("/ptm-sea/db/ptmsigdb", paste0("ptm.sig.db.all.", id_opt, ".", organism, ".v2.0.0.gmt"))
     } else {
-        print("unsupported `id_type_out` was selected")
+        copy_from_bucket_to_project_dir(ptm_sig_db_path)
+        ptm_sig_db <- file.path(project_input, basename(ptm_sig_db_path))
     }
 
-    ptm_sig_db <- file.path("/ptm-sea/db/ptmsigdb", paste0("ptm.sig.db.all.", id_opt, ".", organism, ".v1.9.0.gmt"))
     return(ptm_sig_db)
 }
 
@@ -114,8 +122,7 @@ save_results_to_bucket <- function(name = NULL) {
     if (!is.null(name)) {
         output_zip <- paste0(name, ".zip")
     } else {
-        output_name <- paste0(workspace, "_", project_name)
-        output_zip <- paste0(output_name, ".zip")
+        output_zip <- paste0(project_name, ".zip")
     }
 
     sys_out <- system(paste("zip -r", output_zip, "output"), intern = TRUE, ignore.stdout = TRUE)

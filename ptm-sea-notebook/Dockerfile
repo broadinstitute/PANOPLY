@@ -1,4 +1,4 @@
-FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-r:2.1.3
+FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-r:2.1.6
 USER root
 
 RUN R -e 'install.packages(c("pacman", "optparse", "gtools", "verification", "doParallel", "foreach", "magrittr", "yaml", "glue", "dplyr"))'
@@ -21,15 +21,15 @@ RUN wget https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panopl
 RUN wget https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panoply_ssgsea/preprocessGCT.R && dos2unix preprocessGCT.R && mv preprocessGCT.R /ptm-sea/src
 
 # download PTM signature databases
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.flanking.human.v1.9.0.gmt && mv ptm.sig.db.all.flanking.human.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.flanking.mouse.v1.9.0.gmt && mv ptm.sig.db.all.flanking.mouse.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.flanking.rat.v1.9.0.gmt && mv ptm.sig.db.all.flanking.rat.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.sitegrpid.human.v1.9.0.gmt && mv ptm.sig.db.all.sitegrpid.human.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.sitegrpid.mouse.v1.9.0.gmt && mv ptm.sig.db.all.sitegrpid.mouse.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.sitegrpid.rat.v1.9.0.gmt && mv ptm.sig.db.all.sitegrpid.rat.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.uniprot.human.v1.9.0.gmt && mv ptm.sig.db.all.uniprot.human.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.uniprot.mouse.v1.9.0.gmt && mv ptm.sig.db.all.uniprot.mouse.v1.9.0.gmt /ptm-sea/db/ptmsigdb
-RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.uniprot.rat.v1.9.0.gmt && mv ptm.sig.db.all.uniprot.rat.v1.9.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.flanking.human.v2.0.0.gmt && mv ptm.sig.db.all.flanking.human.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.flanking.mouse.v2.0.0.gmt && mv ptm.sig.db.all.flanking.mouse.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.flanking.rat.v2.0.0.gmt && mv ptm.sig.db.all.flanking.rat.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.sitegrpid.human.v2.0.0.gmt && mv ptm.sig.db.all.sitegrpid.human.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.sitegrpid.mouse.v2.0.0.gmt && mv ptm.sig.db.all.sitegrpid.mouse.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.sitegrpid.rat.v2.0.0.gmt && mv ptm.sig.db.all.sitegrpid.rat.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.uniprot.human.v2.0.0.gmt && mv ptm.sig.db.all.uniprot.human.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.uniprot.mouse.v2.0.0.gmt && mv ptm.sig.db.all.uniprot.mouse.v2.0.0.gmt /ptm-sea/db/ptmsigdb
+RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/db/ptmsigdb/ptm.sig.db.all.uniprot.rat.v2.0.0.gmt && mv ptm.sig.db.all.uniprot.rat.v2.0.0.gmt /ptm-sea/db/ptmsigdb
 
 RUN chmod +x /ptm-sea/src/preprocessGCT.R
 RUN chmod +x /ptm-sea/ssgsea-cli.R
