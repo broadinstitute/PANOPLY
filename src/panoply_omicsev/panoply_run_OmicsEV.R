@@ -1,8 +1,18 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
+
+################################################################################
+# FUNCTION: run the main OmicsEV function in PANOPLY
+# AUTHOR: Stephanie Vartany
+################################################################################
+
+
 library(OmicsEV)
 
 ################################################################################
 # handle command line arguments
-cat("\nextracting command line arguments\n")
+cat("\nExtracting command line arguments...\n")
 
 args = commandArgs(trailingOnly = T)
 
@@ -41,7 +51,7 @@ cat('out_dir:', out_dir, '\n\n')
 
 ################################################################################
 
-cat("running the full function\n")
+cat("running the full function\n\n")
 
 run_omics_evaluation(data_dir = data_dir,
                      sample_list = sample_list,

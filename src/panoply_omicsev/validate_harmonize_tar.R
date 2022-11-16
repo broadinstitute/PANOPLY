@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
+
 ################################################################################
 # FUNCTION: validate harmonize tar file for omicsev
 # AUTHOR: Stephanie Vartany

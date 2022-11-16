@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
+
 ################################################################################
 # FUNCTION: preprocessing for OmicsEV on PANOPLY
 # AUTHOR: Stephanie Vartany
@@ -155,7 +159,7 @@ preprocessing_STANDALONE <- function(data_files,
     sample_anno$batch <- batch
     
   } else {
-    warning("Cannot find batch in sample annotation file or any of the dataset files. Defaulting to all samples in same batch")
+    warning("Cannot find batch in sample annotation file or any of the dataset files. Defaulting to all samples in same batch.")
     sample_anno$batch <- rep(1L, dim(sample_anno)[1])
     batch <- sample_anno$batch
   }
@@ -165,13 +169,23 @@ preprocessing_STANDALONE <- function(data_files,
     stop("Something is wrong with the batch column. Make sure all values are integers.")
   }
   
+  # reorder based on Experiment and Channel if possible
   if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
     sample_anno$order <- order(sample_anno$Experiment, sample_anno$Channel)
   } else {
     warning("Not reordering data based on experiment/channel. This should only matter for how the data is displayed.")
     sample_anno$order <- 1:nrow(sample_anno)
   }
-  sample_anno_out <- sample_anno[, c('Sample.ID', class_colname, 'batch', 'order')]
+  
+  # find class column if it exists, otherwise default to all in the same class
+  if (class_colname %in% names(sample_anno)) {
+    sample_anno$class <- sample_anno[, class_colname]
+  } else {
+    warning("Cannot find class column name. Defaulting to all in the class 'default'.")
+    sample_anno$class <- rep("Default", dim(sample_anno)[1])
+  }
+  
+  sample_anno_out <- sample_anno[, c('Sample.ID', 'class', 'batch', 'order')]
   names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
   
   
@@ -274,6 +288,7 @@ preprocessing_harmonized <- function(data_file,
     stop("Something is wrong with the batch column. Make sure all values are integers.")
   }
   
+  # get ordering
   if ("Experiment" %in% names(sample_anno) & "Channel" %in% names(sample_anno)) {
     sample_anno$order <- order(sample_anno$Experiment, sample_anno$Channel)
   } else {
@@ -281,10 +296,15 @@ preprocessing_harmonized <- function(data_file,
     sample_anno$order <- 1:nrow(sample_anno)
   }
   
-  if (!(class_colname %in% names(sample_anno))) {
-    stop("Class column name is not in the sample info csv")
+  # get class information, or default to all being in class "default"
+  if (class_colname %in% names(sample_anno)) {
+    sample_anno$class <- sample_anno[, class_colname]
+  } else {
+    warning("Class column name is not in the sample info csv. Default behavior is all samples in class 'default'.")
+    sample_anno$class <- rep('Default', dim(sample_anno)[1])
+    
   }
-  sample_anno_out <- sample_anno[, c('Sample.ID', class_colname, 'batch', 'order')]
+  sample_anno_out <- sample_anno[, c('Sample.ID', 'class', 'batch', 'order')]
   names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
   
   
