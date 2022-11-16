@@ -284,6 +284,7 @@ workflow panoply_main {
     File omicsev_report = panoply_omicsev.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
+	File cons_clust_report = panoply_cons_clust_report.report_out
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
   }
