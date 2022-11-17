@@ -18,6 +18,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/9/plain-WDL/descriptor" as cons_clust_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust_report/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/1/plain-WDL/descriptor" as omicsev_wdl
 
 
 workflow panoply_main {
@@ -123,10 +124,19 @@ workflow panoply_main {
       duplicate_gene_policy=duplicate_gene_policy,
       gene_id_col=gene_id_col
   }
+  
+  call omicsev_wdl.panoply_omicsev {
+    input:
+      yaml_file = yaml,
+      STANDALONE = standalone,
+      do_function_prediction = false,
+      panoply_harmonize_tar_file = panoply_harmonize.outputs,
+      label = job_identifier
+  }
 
   call sampleqc_wdl.panoply_sampleqc {
     input:
-      tarball = panoply_harmonize.outputs,
+      tarball = panoply_omicsev.outputs,
       type = ome_type,
       yaml = yaml
   }
@@ -271,9 +281,10 @@ workflow panoply_main {
     File panoply_full = panoply_download.full
     File rna_corr_report = panoply_rna_protein_correlation_report.report
     File cna_corr_report = panoply_cna_correlation_report.report
+    File omicsev_report = panoply_omicsev.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
-    File cons_clust_report = panoply_cons_clust_report.report_out
+	File cons_clust_report = panoply_cons_clust_report.report_out
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
   }

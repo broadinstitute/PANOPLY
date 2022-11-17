@@ -50,6 +50,12 @@ panoply_harmonize:
   cna_gene_id_col: 'id' # This and below get assigned to the same thing within the script I seperated here for clarity?
   rna_gene_id_col: 'id'
 
+panoply_omicsev:
+  class_column_name: 'Type'
+  batch_column_name: 'Experiment'
+  data_log_transformed: TRUE
+  rna_log_transformed: TRUE
+  do_function_prediction: FALSE
 
 panoply_association:
   fdr_assoc: 0.01

@@ -132,8 +132,13 @@ option_list <- list(
   make_option(c("--mimp_mutation_AA_change_colname"), type = "character", dest = 'mimp_mutation_AA_change_colname', help = "mimp_mutation_AA_change_colname"),
   make_option(c("--mimp_mutation_type_col"), type = "character", dest = 'mimp_mutation_type_col', help = "mimp_mutation_type_col"),
   make_option(c("--mimp_sample_id_col"), type = "character", dest = 'mimp_sample_id_col', help = "mimp_sample_id_col"),
-  make_option(c("--mimp_transcript_id_col"), type = "character", dest = 'mimp_transcript_id_col', help = "mimp_transcript_id_col")
-
+  make_option(c("--mimp_transcript_id_col"), type = "character", dest = 'mimp_transcript_id_col', help = "mimp_transcript_id_col"),
+  # omicsev_module
+  make_option(c("--omicsev_class_column_name"), type = "character", dest = "omicsev_class_column_name", help = "Column name for class input to OmicsEV"),
+  make_option(c("--omicsev_batch_column_name"), type = "character", dest = "omicsev_batch_column_name", help = "Column name for batch information for OmicsEV"),
+  make_option(c("--omicsev_data_log_transformed"), type = "logical", dest = "omicsev_data_log_transformed", help = "Is the proteome data log transformed already?"),
+  make_option(c("--omicsev_rna_log_transformed"), type = "logical", dest = "omicsev_rna_log_transformed", help = "Is the RNA data log transformed for OmicsEV?"),
+  make_option(c("--omicsev_do_function_prediction"), type = "logical", dest = "omicsev_do_function_prediction", help = "Perform gene function prediction in OmicsEV?")
 )
 
 
@@ -164,6 +169,7 @@ p_load('yaml')
 # ssgsea_projection
 # ptm_normalization
 # mimp
+# omicsev
 
 ### FUNCTIONS:
 
@@ -664,6 +670,26 @@ check_mimp_params <- function(opt, yaml){
   return(yaml)
 }
 
+# omicsev:
+check_omicsev_params <- function(opt, yaml) {
+  if (!is.null(opt$omicsev_class_column_name)) {
+    yaml$panoply_omicsev$class_column_name <- opt$omicsev_class_column_name
+  }
+  if (!is.null(opt$omicsev_batch_column_name)) {
+    yaml$panoply_omicsev$batch_column_name <- opt$omicsev_batch_column_name
+  }
+  if (!is.null(opt$omicsev_data_log_transformed)) {
+    yaml$panoply_omicsev$data_log_transformed <- opt$omicsev_data_log_transformed
+  }
+  if (!is.null(opt$omicsev_rna_log_transformed)) {
+    yaml$panoply_omicsev$rna_log_transformed <- opt$omicsev_rna_log_transformed
+  }
+  if (!is.null(opt$omicsev_do_function_prediction)) {
+    yaml$panoply_omicsev$do_function_prediction <- opt$omicsev_do_function_prediction
+  }
+  return(yaml)
+}
+
 # Checks all parameters (maybe use for final output yaml for whole pipeline?)
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
@@ -685,6 +711,7 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_blacksheep_params(opt, yaml)
   yaml <- check_ptm_normalization_params(opt, yaml)
   yaml <- check_mimp_params(opt, yaml)
+  yaml <- check_omicsev_params(opt, yaml)
   return(yaml)
 }
 
@@ -720,6 +747,12 @@ write_custom_config <- function(yaml){
                 paste('pome.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$pome_gene_id_col, '"', sep = '')),
                 paste('cna.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$cna_gene_id_col, '"', sep = '')),
                 paste('rna.gene.id.col', '<-', paste('"', yaml$panoply_harmonize$rna_gene_id_col, '"', sep = '')),
+                #omicsev
+                paste('class.column.name', '<-', paste0('"', yaml$panoply_omicsev$class_column_name, '"')),
+                paste('batch.column.name', '<-', paste0('"', yaml$panoply_omicsev$batch_column_name, '"')),
+                paste('data.log.transformed', '<-', yaml$panoply_omicsev$data_log_transformed),
+                paste('rna.log.transformed', '<-', yaml$panoply_omicsev$rna_log_transformed),
+                paste('do_function_prediction', '<-', yaml$panoply_omicsev$do_function_prediction),
                 #association:
                 paste('assoc.fdr', '<-', yaml$panoply_association$fdr_assoc),
                 #sample_qc:
@@ -830,6 +863,10 @@ parse_command_line_parameters <- function(opt){
     yaml <- check_harmonize_params(opt, yaml) #Returns updated yaml if module params were changed via command line
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
+  }else if (opt$module == 'omicsev' & check_if_any_command_line(opt)){
+    yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
+    yaml <- check_omicsev_params(opt, yaml) #Returns updated yaml if module params were changed via command line
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'sample_qc' & check_if_any_command_line(opt)){
     #yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
