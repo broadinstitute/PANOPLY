@@ -7,6 +7,7 @@ task panoply_unified_assemble_results {
   Array[File?] norm_report
   Array[File?] rna_corr_report
   Array[File?] cna_corr_report
+  Array[File?] omicsev_report
   Array[File?] sampleqc_report
   Array[File?] assoc_report
   Array[File?] blacksheep_tar
@@ -78,6 +79,11 @@ task panoply_unified_assemble_results {
     if [ ${sep='' cna_corr_report} != '' ]; then
       cp ${sep=' ' cna_corr_report} results/proteogenomics_analysis/all_html_reports
       mv ${sep=' ' cna_corr_report} reports/proteogenomics_analysis
+    fi
+
+	if [ ${sep='' omicsev_report} != '' ]; then
+      cp ${sep=' ' omicsev_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' omicsev_report} reports/proteogenomics_analysis
     fi
 
     if [ ${sep='' sampleqc_report} != '' ]; then
