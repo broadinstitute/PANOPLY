@@ -2,22 +2,20 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/4/plain-WDL/descriptor" as rna_prot_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_setup/versions/4/plain-WDL/descriptor" as cna_setup_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation/versions/2/plain-WDL/descriptor" as cna_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/5/plain-WDL/descriptor" as assoc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/4/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/3/plain-WDL/descriptor" as download_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/14/plain-WDL/descriptor" as ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation_report/versions/3/plain-WDL/descriptor" as rna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust/versions/9/plain-WDL/descriptor" as cons_clust_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cons_clust_report/versions/1/plain-WDL/descriptor" as cons_clust_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation/versions/4/plain-WDL/descriptor" as rna_prot_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_setup/versions/4/plain-WDL/descriptor" as cna_setup_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation/versions/4/plain-WDL/descriptor" as cna_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/4/plain-WDL/descriptor" as assoc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/5/plain-WDL/descriptor" as accum_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/8/plain-WDL/descriptor" as download_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation_report/versions/3/plain-WDL/descriptor" as rna_corr_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation_report/versions/3/plain-WDL/descriptor" as cna_corr_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc_report/versions/3/plain-WDL/descriptor" as sampleqc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/3/plain-WDL/descriptor" as assoc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cmap_analysis/versions/3/plain-WDL/descriptor" as cmap_wdl
 
 
 workflow panoply_main {
@@ -36,7 +34,6 @@ workflow panoply_main {
 
   File? cna_groups
   File? association_groups
-  File? cluster_enrichment_groups
 
   ## cmap inputs
   Int cmap_n_permutations = 10
@@ -193,41 +190,6 @@ workflow panoply_main {
         yaml_file = yaml
     }
   }
-
-  call cons_clust_wdl.panoply_cons_clust {
-    input:
-      inputData = panoply_association.outputs,
-      type = ome_type,
-      groupsFile = cluster_enrichment_groups,
-      standalone = "false",
-      yaml=yaml
-  }
-  
-  call cons_clust_report_wdl.panoply_cons_clust_report {
-    input:
-      tar_file = panoply_cons_clust.outputs,
-      yaml_file = yaml,
-      label = job_identifier,
-      type = ome_type
-  }
-
-  call accum_wdl.panoply_accumulate as accumulate_clustering {
-    input:
-      input_tar = panoply_cons_clust.outputs,
-      module = "clustering"
-  }
-
-  Array[File] list_gct_clustering = accumulate_clustering.list_gct
-  scatter (f in list_gct_clustering){
-    call ssgsea_wdl.panoply_ssgsea as ssgsea_clustering {
-      input:
-        input_ds = "${f}",
-        gene_set_database = geneset_db,
-        output_prefix = job_identifier,
-        level = "gc",
-        yaml_file = yaml
-    }
-  }
   
   if ( run_cmap == "true" ){
     if ( ome_type == "proteome" ) {
@@ -248,12 +210,11 @@ workflow panoply_main {
 
   call download_wdl.panoply_download {
     input:
-      cons_clust_tar = panoply_cons_clust.outputs,
+      association_tar = panoply_association.outputs,
       ssgsea_ome_tar = ssgsea_ome.results,
       ssgsea_rna_tar = ssgsea_rna.results,
       analysisDir = job_identifier,
       ssgsea_assoc_tars = ssgsea_assoc.results,
-      ssgsea_clust_tars = ssgsea_clustering.results,
       ptmsea = ptmsea_ome.results,
       output_prefix = ome_type
   }
@@ -273,7 +234,6 @@ workflow panoply_main {
     File cna_corr_report = panoply_cna_correlation_report.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
-    File cons_clust_report = panoply_cons_clust_report.report_out
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
   }
