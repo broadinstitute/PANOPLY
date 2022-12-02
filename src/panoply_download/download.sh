@@ -88,14 +88,13 @@ collect()
 
   if [[ ! -z $nmf ]]; then
     cp -r so_nmf $full_path/.;
-    cp -r so_nmf $summ_path/.;
+    mkdir -p $summ_path/so_nmf
+    cp -r so_nmf/nmf/* $summ_path/so_nmf; # skip nmf_ssgsea into summary tar
     #prune unnecessary files from $summ_path/so_nmf
-    rm -r $summ_path/so_nmf/nmf/K_*/nmf-features #remove K_* nmf-features folder
-    rm -r $summ_path/so_nmf/nmf/submissions #remove submissions folder
-    find $summ_path/so_nmf/nmf/ -type f ! \( -name '*.pdf' -o -name '*.png' -o -name '*.txt' \) -delete
-    find $summ_path/so_nmf/nmf_ssgsea/ -type f ! -name '*.txt' -delete
+    rm -r $summ_path/so_nmf/K_*/nmf-features #remove K_* nmf-features folder
+    rm -r $summ_path/so_nmf/submissions #remove submissions folder
+    find $summ_path/so_nmf/ -type f ! \( -name '*.pdf' -o -name '*.png' \) -delete
     find $summ_path/so_nmf -empty -type d -delete
-    #remove original folder
     rm -rf so_nmf;
   fi
 }
