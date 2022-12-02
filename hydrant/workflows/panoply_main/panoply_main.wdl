@@ -17,6 +17,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_rep
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/1/plain-WDL/descriptor" as omicsev_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
 
 
 workflow panoply_main {
@@ -26,6 +27,7 @@ workflow panoply_main {
   String run_ptmsea # "true" or "false"
   File sample_annotation
   String run_cmap   # "true" or "false"
+  String run_nmf    # "true" or "false"
 
   ## inputs
   File input_pome
@@ -218,6 +220,17 @@ workflow panoply_main {
     }
   }
 
+  if ( run_nmf == "true" ){
+    call so_nmf_wdl.panoply_so_nmf_gct_workflow as so_nmf {
+      input:
+      yaml_file = yaml,
+      label = job_identifier,
+      ome = input_pome,
+      ome_type = ome_type,
+      gene_set_database = geneset_db
+    }
+  }
+
   call download_wdl.panoply_download {
     input:
       association_tar = panoply_association.outputs,
@@ -226,6 +239,8 @@ workflow panoply_main {
       analysisDir = job_identifier,
       ssgsea_assoc_tars = ssgsea_assoc.results,
       ptmsea = ptmsea_ome.results,
+      so_nmf_tar = so_nmf.nmf_clust,
+      so_nmf_ssgsea_tar = so_nmf.nmf_ssgsea,
       output_prefix = ome_type
   }
   
@@ -245,6 +260,8 @@ workflow panoply_main {
     File omicsev_report = panoply_omicsev.report
     File sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_report.report_out
+    File? so_nmf_report = so_nmf.nmf_clust_report
+    File? so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
   }
