@@ -27,7 +27,7 @@ workflow panoply_main {
   String run_ptmsea # "true" or "false"
   File sample_annotation
   String run_cmap   # "true" or "false"
-  String run_nmf    # "true" or "false"
+  String? run_nmf = "true"
 
   ## inputs
   File input_pome
