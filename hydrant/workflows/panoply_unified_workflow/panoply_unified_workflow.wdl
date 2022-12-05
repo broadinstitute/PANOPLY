@@ -82,6 +82,7 @@ workflow panoply_unified_workflow {
             job_identifier="${job_id}-${pair.left}",
             run_ptmsea="${run_ptmsea}",
             run_cmap = "${run_cmap}",
+            run_nmf = "false",
             input_cna="${cna_data}",
             input_rna_v3="${rna_data}",
             sample_annotation="${sample_annotation}",
