@@ -115,10 +115,10 @@ workflow panoply_unified_workflow {
     input:
       yaml = yaml,
       job_id = job_id,
-      prote_ome = prote_ome,
-      phospho_ome = phospho_ome,
-      acetyl_ome = acetyl_ome,
-      ubiquityl_ome = ubiquityl_ome,
+      prote_ome = norm.normalized_data_table[0],
+      phospho_ome = norm.normalized_data_table[1],
+      acetyl_ome = norm.normalized_data_table[2],
+      ubiquityl_ome = norm.normalized_data_table[3],
       rna_data = rna_data,
       cna_data = cna_data
   }
