@@ -44,7 +44,7 @@ source('https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panoply
 # these can be found in the tar outputted by NMF clustering
 
 untar(tar_file)
-data.dir = 'nmf_results/so-nmf'
+data.dir = 'nmf_results/so-nmf' # directory structure within the tar, from panoply_so_nmf_assemble 
 
 # label=paste('results_nmf',job_id,sep="-")
 
