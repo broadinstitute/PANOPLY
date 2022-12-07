@@ -3,6 +3,7 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_assemble_results/versions/13/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey/versions/1/plain-WDL/descriptor" as sankey_wdl
 
 
 workflow panoply_so_nmf_workflow {
@@ -55,17 +56,6 @@ workflow panoply_so_nmf_workflow {
       gene_set_database = gene_set_database
     }
   }
-
-  #### NMF:
-  #call mo_nmf_wdl.panoply_mo_nmf_gct_workflow as nmf {
-  #input:
-  #  yaml_file = yaml,
-  #  label = job_id,
-  #  omes = omes,
-  #  rna_ome = rna_data,
-  #  cna_ome = cna_data,
-  #  gene_set_database = gene_set_database
-  #}
   
   ## assemble final output combining results from all NMFs
   call assemble_wdl.panoply_so_nmf_assemble_results as nmf_assemble {
@@ -76,8 +66,20 @@ workflow panoply_so_nmf_workflow {
       so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report
   }
   
+  
+  ## generate Sankey Diagrams comparing clustering results between -omes
+  call sankey_wdl.panoply_so_nmf_sankey as nmf_sankey {
+    input:
+      tar_file = nmf_assemble.nmf_results,
+      label = "${job_id}"
+  }
+  
+
+
   output {
     File nmf_results = nmf_assemble.nmf_results
     File nmf_reports = nmf_assemble.nmf_reports
+    File sankey_figs = nmf_sankey.tar_out
+    # File sankey_report = nmf_sankey_report.report_out # need to add report module
   }
  }
