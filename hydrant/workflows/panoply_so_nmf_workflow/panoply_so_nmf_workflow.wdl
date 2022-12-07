@@ -4,6 +4,7 @@
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_assemble_results/versions/13/plain-WDL/descriptor" as assemble_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey/versions/1/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_report/versions/1/plain-WDL/descriptor" as so_nmf_report_wdl
 
 
 workflow panoply_so_nmf_workflow {
@@ -73,6 +74,14 @@ workflow panoply_so_nmf_workflow {
       tar_file = nmf_assemble.nmf_results,
       label = "${job_id}"
   }
+
+  ## generate report with sankey diagrams
+  call so_nmf_report_wdl.panoply_so_nmf_report as nmf_report {
+    input:
+      nmf_tar = nmf_assemble.nmf_results,
+      sankey_tar = nmf_sankey.tar_file,
+      label = "${job_id}"
+  }
   
 
 
@@ -80,6 +89,6 @@ workflow panoply_so_nmf_workflow {
     File nmf_results = nmf_assemble.nmf_results
     File nmf_reports = nmf_assemble.nmf_reports
     File sankey_figs = nmf_sankey.tar_out
-    # File sankey_report = nmf_sankey_report.report_out # need to add report module
+    File sankey_report = nmf_report.report_out
   }
  }

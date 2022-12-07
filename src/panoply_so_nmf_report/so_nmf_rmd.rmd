@@ -1,0 +1,31 @@
+---
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      smooth_scroll: no
+params:
+  title: "Single -Ome NMF Comparisons"
+  nmf_tar: NULL
+  sankey_tar: NULL
+  label: NULL
+---
+
+---
+title: `r params$title`
+---
+
+```{r setup, include=FALSE}
+untar(params$sankey_tar)
+```
+
+
+# Test
+
+```{r test}
+print(list.files())
+```
+
+## Description
+
+Words and things.
