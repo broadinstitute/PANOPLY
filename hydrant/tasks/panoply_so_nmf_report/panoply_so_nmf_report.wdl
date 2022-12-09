@@ -7,14 +7,15 @@ task panoply_so_nmf_report {
     Int? num_threads
     Int? num_preemptions
 
-    File nmf_tar
+    File so_nmf_tar
+    File? mo_nmf_tar
     File sankey_tar
     String label
 
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/so-nmf-renderRMD.R "${nmf_tar}" "${sankey_tar}" "${label}"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/so-nmf-renderRMD.R "${so_nmf_tar}" "${sankey_tar}" "${label}" "${mo_nmf_tar}"
     }
 
     output {
@@ -38,4 +39,3 @@ task panoply_so_nmf_report {
 workflow panoply_so_nmf_report_workflow {
     call panoply_so_nmf_report
 }
-

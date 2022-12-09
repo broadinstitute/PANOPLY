@@ -4,11 +4,12 @@
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_workflow/versions/1/plain-WDL/descriptor" as normalize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/14/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/3/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/18/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/23/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_gct/versions/5/plain-WDL/descriptor" as mo_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/3/plain-WDL/descriptor" as immune_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_make_pairs_workflow/versions/3/plain-WDL/descriptor" as make_pairs_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/5/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/3/plain-WDL/descriptor" as so_nmf_sankey_wdl
 
 
 workflow panoply_unified_workflow {
@@ -120,7 +121,8 @@ workflow panoply_unified_workflow {
       acetyl_ome = norm.normalized_data_table[2],
       ubiquityl_ome = norm.normalized_data_table[3],
       rna_data = rna_data,
-      cna_data = cna_data
+      cna_data = cna_data,
+      run_sankey = "false" # run sankey_workflow separately
   }
 
   ### Multi-omics NMF:
@@ -133,6 +135,14 @@ workflow panoply_unified_workflow {
         rna_ome = rna_data,
         cna_ome = cna_data
     }
+  }
+  
+  ### NMF Sankey Diagrams (SO and MO nmf)
+  call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as all_nmf_sankey {
+  input:
+    so_nmf_tar = so_nmf.nmf_results,
+    mo_nmf_tar = mo_nmf.nmf_clust, #will exist if mo_nmf was run
+    label = job_id
   }
   
   ### IMMUNE:
@@ -165,6 +175,8 @@ workflow panoply_unified_workflow {
       blacksheep_report = outlier.blacksheep_report,
       so_nmf_results = so_nmf.nmf_results,
       so_nmf_reports = so_nmf.nmf_reports,
+      so_nmf_sankey_results = all_nmf_sankey.sankey_tar,
+      so_nmf_sankey_report = all_nmf_sankey.sankey_report,
       mo_nmf_tar = mo_nmf.nmf_clust,
       mo_nmf_report = mo_nmf.nmf_clust_report,
       mo_nmf_ssgsea_tar = mo_nmf.nmf_ssgsea,

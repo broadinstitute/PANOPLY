@@ -10,7 +10,9 @@
 
 args = commandArgs(TRUE)
 
-tar_file = args[1]
+so_tar_file = args[1]
+label = args[2]
+mo_tar_file = args[3]
 
 library(pacman)
 p_load(readr)
@@ -43,26 +45,41 @@ source('https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panoply
 # variable naming scheme isn't important
 # these can be found in the tar outputted by NMF clustering
 
-untar(tar_file)
-data.dir = 'nmf_results/so-nmf' # directory structure within the tar, from panoply_so_nmf_assemble 
+### Unpack SO-NMF results
 
-# label=paste('results_nmf',job_id,sep="-")
+untar(so_tar_file)
+data.dir = 'nmf_results/so-nmf' # directory structure within the tar, from panoply_so_nmf_assemble 
 
 ome_dirs = list.files(data.dir, full.names = TRUE)
 ome_types = stringr::str_extract(ome_dirs, '([^-]+?)$') #extract ome-type from directory names
 names(ome_dirs) = ome_types #name ome_dirs with ome_types
 
-### Location of clin_annot_nmf.txt files
+### Location of clin_annot_nmf.txt files for SO analysis
 ome_clust = c()
 for (ome in ome_types) {
   ome_clust[ome] = list.files(ome_dirs[ome], pattern = 'clin_anno_nmf.txt', full.names = TRUE, recursive=TRUE)
 }
 
-tab.str <- ome_clust # renaming this object bc this name is what the old code used
+
+if (file.exists(mo_tar_file)) { #if we have Multiomic data
+  ome_types = c("Multiomic", ome_types) #add Multiomic as an ome-type
+  
+  untar(mo_tar_file, exdir="mo_nmf")
+  mo_file = list.files("mo_nmf", pattern='clin_anno_nmf.txt', full.names =TRUE, recursive=TRUE) #locate clin_annot file
+
+  ome_clust["Multiomic"] = mo_file #add file to ome_clust files
+}
+
 
 # combos to plot (all combos either order)
-ome_combos <- c(combn(ome_types, 2, simplify = FALSE), combn(ome_types, 2, rev, simplify = FALSE))
-                # combn(c("Prot", "RNA","CNV", "pSTY"), 2, FUN = function(arr) {append(arr, "all", after=1)} , simplify = FALSE))
+ome_combos <- c(combn(ome_types, 2, simplify = FALSE), #forwards
+                combn(ome_types, 2, rev, simplify = FALSE)) #backwards
+
+if (file.exists(mo_tar_file)) { #if we have Multiomic data
+  ome_combos = c(ome_combos,
+                 combn(ome_types[which(ome_types!="Multiomic")], 2, #take all ome combos besides Multiomic
+                       FUN = function(arr) {append(arr, "Multiomic", after=1)} , simplify = FALSE)) #add Multiomic in between eaach combo
+}
 
 
 ### End Editable Section -----
@@ -72,7 +89,7 @@ ome_combos <- c(combn(ome_types, 2, simplify = FALSE), combn(ome_types, 2, rev, 
 
 ###################################
 ## import
-tab <-  lapply(tab.str, read_delim, delim='\t') %>%
+tab <-  lapply(ome_clust, read_delim, delim='\t') %>%
   lapply(., function(x){
     x$NMF.consensus = paste0('C', x$NMF.consensus)
     x$NMF.consensus.core[!is.na(x$NMF.consensus.core)] <- paste0('C', x$NMF.consensus.core[!is.na(x$NMF.consensus.core)])
@@ -160,8 +177,8 @@ for (omes_of_interest in ome_combos) {
     # widget    
     
     # ## export
-    label <- paste(omes_of_interest, collapse='_')
-    fn <- glue("sankey-{label}-N-{sum(my.data$freq)}-{link.color}.html")
+    ome_tmp <- paste(omes_of_interest, collapse='_')
+    fn <- glue("sankey-{ome_tmp}-N-{sum(my.data$freq)}-{link.color}.html")
     tmp.dir <- tempdir()
     
     wd <- getwd()

@@ -3,8 +3,7 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_assemble_results/versions/13/plain-WDL/descriptor" as assemble_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey/versions/1/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_report/versions/1/plain-WDL/descriptor" as so_nmf_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/3/plain-WDL/descriptor" as so_nmf_sankey_wdl
 
 
 workflow panoply_so_nmf_workflow {
@@ -16,8 +15,11 @@ workflow panoply_so_nmf_workflow {
   File? nglyco_ome
   File? rna_data      #version 1.3 only!
   File? cna_data
+  File? multiomic_nmf_tar
   File yaml
   String job_id
+
+  String run_sankey = "true"
 
   if (defined(prote_ome)) {
     Pair[String, File?] prote_pair = ("prot", prote_ome)
@@ -67,28 +69,22 @@ workflow panoply_so_nmf_workflow {
       so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report
   }
   
-  
-  ## generate Sankey Diagrams comparing clustering results between -omes
-  call sankey_wdl.panoply_so_nmf_sankey as nmf_sankey {
-    input:
-      tar_file = nmf_assemble.nmf_results,
-      label = "${job_id}"
-  }
 
-  ## generate report with sankey diagrams
-  call so_nmf_report_wdl.panoply_so_nmf_report as nmf_report {
-    input:
-      nmf_tar = nmf_assemble.nmf_results,
-      sankey_tar = nmf_sankey.tar_file,
-      label = "${job_id}"
+  ## generate sankey diagrams and report ()
+  if ( run_sankey == "true" ){
+    call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as nmf_sankey {
+      input:
+        so_nmf_tar = nmf_assemble.nmf_results,
+        mo_nmf_tar = multiomic_nmf_tar,
+        label = "${job_id}",
+    }
   }
-  
 
 
   output {
     File nmf_results = nmf_assemble.nmf_results
     File nmf_reports = nmf_assemble.nmf_reports
-    File sankey_figs = nmf_sankey.tar_out
-    File sankey_report = nmf_report.report_out
+    File? sankey_tar = nmf_sankey.sankey_tar
+    File? sankey_report = nmf_sankey.sankey_report
   }
  }
