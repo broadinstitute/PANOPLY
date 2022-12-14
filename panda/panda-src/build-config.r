@@ -570,6 +570,62 @@ panda_colors_edit <- function(){
   print( DONE )
 }
 
+### ===
+### Section. COSMO labels
+### ===
+
+# initialize this
+cosmo.params <- list(run.cosmo = FALSE)
+
+# function to get used input for cosmo
+select_COSMO_class_columns <- function() {    
+  
+  annot <- read_annot()
+  potential_cols <- setdiff(names(read_annot()), ignore.cols)
+  
+  # make prompt
+  prompt <- paste("POTENTIAL CLASS COLUMNS:",
+                  paste(paste(' *', potential_cols), collapse = '\n'), 
+                  sep,
+                  "Select sample label columns for COSMO: ",
+                  sep = '\n')
+  
+  # get user input
+  user_columns <- readline(prompt)
+  
+  # validate column selection
+  user_columns <- strsplit(gsub(' ', '', user_columns), ',')[[1]]
+  valid_columns <- c()
+  for (col in user_columns) {
+    if (!(col %in% names(annot))) {
+      message(paste0("Sample label '", col, "' is not in sample annotation file"))
+    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 3)) {
+      message(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
+    } else if (any(is.na(annot[, col]))) {
+      message(paste0("Sample label '", col, "' has NAs. It is being excluded."))
+    } else if (length(unique(annot[, col])) < 2) {
+      message(paste0("Sample label '", col, "' only has one level. It is being excluded."))
+    } else if (length(unique(annot[, col])) > 2) {
+      message(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
+    } else {
+      valid_columns <- c(valid_columns, col)
+    }
+  }
+  
+  cat(sep, '\n')
+  
+  if (length(valid_columns) > 0) {
+    cat("VALID COLUMN SELECTION:\n", paste(paste(' *', valid_columns), collapse = '\n'), sep = '')
+    cat("\n\nCOSMO WILL BE RUN.")
+    run.cosmo <- TRUE
+  } else {
+    cat("NO COLUMNS SELECTED. COSMO will not be run.")
+    run.cosmo <- FALSE
+  }
+  
+  cosmo.params <<- list(run.cosmo = run.cosmo,
+                        sample.label = paste(valid_columns, collapse = ','))
+}
 
 ### ===
 ### Section. Sample sets
@@ -722,6 +778,8 @@ panda_finalize <- function (internal=FALSE) {
   }
   lines$sample.sets <- sample.sets
   lines$normalize.proteomics <- normalize.prot
+  lines$cosmo.params <- cosmo.params
+  
   
   # output config for panda and copy to google bucket
   setwd( home )
