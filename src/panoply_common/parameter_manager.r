@@ -129,6 +129,7 @@ option_list <- list(
   make_option(c("--mimp_search_engine"), type = "character", dest = 'mimp_search_engine', help = "mimp_search_engine"),
   make_option(c("--mimp_phosphosite_col"), dest = 'mimp_phosphosite_col', help = "mimp_phosphosite_col"),
   make_option(c("--mimp_protein_id_col"), dest = 'mimp_protein_id_col', help = "mimp_protein_id_col"),
+  make_option(c("--mimp_protein_id_type"), dest = 'mimp_protein_id_type', help = "mimp_protein_id_type"),
   make_option(c("--mimp_mutation_AA_change_colname"), type = "character", dest = 'mimp_mutation_AA_change_colname', help = "mimp_mutation_AA_change_colname"),
   make_option(c("--mimp_mutation_type_col"), type = "character", dest = 'mimp_mutation_type_col', help = "mimp_mutation_type_col"),
   make_option(c("--mimp_sample_id_col"), type = "character", dest = 'mimp_sample_id_col', help = "mimp_sample_id_col"),
@@ -654,6 +655,9 @@ check_mimp_params <- function(opt, yaml){
   }
   if (!is.null(opt$mimp_protein_id_col)){
     yaml$panoply_mimp$protein_id_col <- opt$mimp_protein_id_col
+  }
+  if (!is.null(opt$mimp_protein_id_type)){
+    yaml$panoply_mimp$protein_id_type <- opt$mimp_protein_id_type
   }
   if (!is.null(opt$mimp_mutation_AA_change_colname)){
     yaml$panoply_mimp$mutation_AA_change_colname <- opt$mimp_mutation_AA_change_colname

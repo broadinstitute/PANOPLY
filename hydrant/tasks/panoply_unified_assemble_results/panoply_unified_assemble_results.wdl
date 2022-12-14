@@ -10,11 +10,12 @@ task panoply_unified_assemble_results {
   Array[File?] omicsev_report
   Array[File?] sampleqc_report
   Array[File?] assoc_report
-  Array[File?] cons_clust_report
   Array[File?] blacksheep_tar
   Array[File?] blacksheep_report
   Array[File?] cmap_output
   Array[File?] cmap_ssgsea_output
+  File? so_nmf_results
+  File? so_nmf_reports
   File? mo_nmf_tar
   File? mo_nmf_report
   File? mo_nmf_ssgsea_tar
@@ -95,10 +96,6 @@ task panoply_unified_assemble_results {
       mv ${sep=' ' assoc_report} reports/proteogenomics_analysis
     fi
     
-    if [ ${sep='' cons_clust_report} != '' ]; then
-      cp ${sep=' ' cons_clust_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' cons_clust_report} reports/proteogenomics_analysis
-    fi
 
     # BLACKSHEEP
     if [ ${sep='' blacksheep_tar} != '' ]; then
@@ -118,6 +115,17 @@ task panoply_unified_assemble_results {
       mkdir results/blacksheep_outlier/reports
       cp ${sep=' ' blacksheep_report} results/blacksheep_outlier/reports
       mv ${sep=' ' blacksheep_report} reports/blacksheep_outlier
+    fi
+
+    # SO-NMF
+    mkdir results/so-nmf
+    if [ ${so_nmf_results} != '' ]; then
+      mv ${so_nmf_results} results/so-nmf
+      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 1;rm $filename;done
+    fi
+    if [ ${so_nmf_reports} != '' ]; then
+      mv ${so_nmf_reports} results/so-nmf
+      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 2;rm $filename;done
     fi
 
     # MO-NMF
