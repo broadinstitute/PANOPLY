@@ -583,11 +583,29 @@ select_COSMO_class_columns <- function() {
   annot <- read_annot()
   potential_cols <- setdiff(names(read_annot()), ignore.cols)
   
+  # get valid columns
+  valid_columns <- c()
+  for (col in potential_cols) {
+    if (!(col %in% names(annot))) {
+      warning(paste0("Sample label '", col, "' is not in sample annotation file"))
+    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 3)) {
+      warning(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
+    } else if (any(is.na(annot[, col]))) {
+      warning(paste0("Sample label '", col, "' has NAs. It is being excluded."))
+    } else if (length(unique(annot[, col])) < 2) {
+      warning(paste0("Sample label '", col, "' only has one level. It is being excluded."))
+    } else if (length(unique(annot[, col])) > 2) {
+      warning(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
+    } else {
+      valid_columns <- c(valid_columns, col)
+    }
+  }
+  
   # make prompt
-  prompt <- paste("POTENTIAL CLASS COLUMNS:",
-                  paste(paste(' *', potential_cols), collapse = '\n'), 
+  prompt <- paste("VALID CLASS COLUMNS:",
+                  paste(paste(' *', valid_columns), collapse = '\n'), 
                   sep,
-                  "Select sample label columns for COSMO: ",
+                  "Select sample label column(s) for COSMO: ",
                   sep = '\n')
   
   # get user input
@@ -595,36 +613,31 @@ select_COSMO_class_columns <- function() {
   
   # validate column selection
   user_columns <- strsplit(gsub(' ', '', user_columns), ',')[[1]]
-  valid_columns <- c()
-  for (col in user_columns) {
-    if (!(col %in% names(annot))) {
-      message(paste0("Sample label '", col, "' is not in sample annotation file"))
-    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 3)) {
-      message(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
-    } else if (any(is.na(annot[, col]))) {
-      message(paste0("Sample label '", col, "' has NAs. It is being excluded."))
-    } else if (length(unique(annot[, col])) < 2) {
-      message(paste0("Sample label '", col, "' only has one level. It is being excluded."))
-    } else if (length(unique(annot[, col])) > 2) {
-      message(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
-    } else {
-      valid_columns <- c(valid_columns, col)
-    }
+  
+  invalid_user_columns <- setdiff(user_columns, valid_columns)
+  if (length(invalid_user_columns > 0)) {
+    message(paste("Invalid column:", 
+                  paste(invalid_user_columns, collapse = ', ')))
   }
+  
+  valid_user_columns <- intersect(user_columns, valid_columns)
+  
   
   cat(sep, '\n')
   
-  if (length(valid_columns) > 0) {
-    cat("VALID COLUMN SELECTION:\n", paste(paste(' *', valid_columns), collapse = '\n'), sep = '')
-    cat("\n\nCOSMO WILL BE RUN.")
+  if (length(valid_user_columns) > 0) {
+    cat("COLUMN SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
+    cat("\n\nCOSMO WILL BE RUN.\n")
     run.cosmo <- TRUE
   } else {
-    cat("NO COLUMNS SELECTED. COSMO will not be run.")
+    cat("NO COLUMNS SELECTED. COSMO will not be run.\n")
     run.cosmo <- FALSE
   }
   
   cosmo.params <<- list(run.cosmo = run.cosmo,
-                        sample.label = paste(valid_columns, collapse = ','))
+                        sample.label = paste(valid_user_columns, collapse = ','))
+  
+  cat(DONE)
 }
 
 ### ===
