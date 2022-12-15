@@ -188,6 +188,9 @@ preprocessing_STANDALONE <- function(data_files,
   sample_anno_out <- sample_anno[, c('Sample.ID', 'class', 'batch', 'order')]
   names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
   
+  # replace NAs in class column with "N/A" so they don't cause an error later
+  sample_anno_out$class[is.na(sample_anno_out$class)] <- 'N/A'
+  
   
   ## read and process rna file (x2)
   if (!is.null(rna_file)) {
@@ -306,6 +309,9 @@ preprocessing_harmonized <- function(data_file,
   }
   sample_anno_out <- sample_anno[, c('Sample.ID', 'class', 'batch', 'order')]
   names(sample_anno_out) <- c('sample', 'class', 'batch', 'order')
+  
+  # replace NAs in class column with "N/A" so they don't cause an error later
+  sample_anno_out$class[is.na(sample_anno_out$class)] <- 'N/A'
   
   
   ## read and process rna file (x2)
