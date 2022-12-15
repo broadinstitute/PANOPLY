@@ -16,6 +16,8 @@ task panoply_unified_assemble_results {
   Array[File?] cmap_ssgsea_output
   File? so_nmf_results
   File? so_nmf_reports
+  File? so_nmf_sankey_results
+  File? so_nmf_sankey_report
   File? mo_nmf_tar
   File? mo_nmf_report
   File? mo_nmf_ssgsea_tar
@@ -36,9 +38,9 @@ task panoply_unified_assemble_results {
 
     ### Setup RESULTS and REPORTS directory structure
     mkdir results
-    mkdir results/proteogenomics_analysis results/blacksheep_outlier results/mo-nmf results/immune_analysis
+    mkdir results/proteogenomics_analysis results/blacksheep_outlier results/so-nmf results/mo-nmf results/immune_analysis
     mkdir reports
-    mkdir reports/proteogenomics_analysis reports/blacksheep_outlier reports/mo-nmf reports/immune_analysis
+    mkdir reports/proteogenomics_analysis reports/blacksheep_outlier reports/so-nmf reports/mo-nmf reports/immune_analysis
 
     ### Dump results files into the given folders
     # MAIN 
@@ -118,14 +120,23 @@ task panoply_unified_assemble_results {
     fi
 
     # SO-NMF
-    mkdir results/so-nmf
-    if [ ${so_nmf_results} != '' ]; then
+    if [ ${so_nmf_results} != '' ]; then #has results and reports
       mv ${so_nmf_results} results/so-nmf
       for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 1;rm $filename;done
     fi
-    if [ ${so_nmf_reports} != '' ]; then
-      mv ${so_nmf_reports} results/so-nmf
-      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 2;rm $filename;done
+    if [ ${so_nmf_reports} != '' ]; then #has just reports
+      mv ${so_nmf_reports} reports/so-nmf
+      for filename in reports/so-nmf/*.tar;do tar -C reports/so-nmf -xvf $filename --strip-components 2;rm $filename;done
+      # report files are already in so_nmf_results tar, do not recopy
+    fi
+    if [ ${so_nmf_sankey_results} != '' ]; then
+      mkdir results/so-nmf/sankey
+      mv ${so_nmf_sankey_results} results/so-nmf/sankey
+      for filename in results/so-nmf/sankey/*.tar;do tar -C results/so-nmf/sankey -xvf $filename;rm $filename;done
+    fi
+    if [ ${so_nmf_sankey_report} != '' ]; then
+      cp ${so_nmf_sankey_report} results/so-nmf/sankey
+      mv ${so_nmf_sankey_report} reports/so-nmf
     fi
 
     # MO-NMF
