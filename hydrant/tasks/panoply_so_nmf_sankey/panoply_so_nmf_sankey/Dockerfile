@@ -7,9 +7,11 @@ MAINTAINER proteogenomics@broadinstitute.org
 #     repos = 'http://cran.rstudio.com/')"
 
 # needed for sankeyNetwork()
-RUN R -e "install.packages(c('networkD3'))"
-#     require(devtools);\
-#     install_github(c('Displayr/flipU', 'Displayr/flipFormat', 'Displayr/flipTime'));\
-#     install.packages("/opt/inputs/flipTransformations_1.14.0.tar.gz")"																															
+RUN R -e "install.packages(c('networkD3', 'readr'));\
+     require(devtools);\
+     install_github(c('Displayr/flipU', 'Displayr/flipFormat', 'Displayr/flipTime'));\
+     install.packages('/prot/proteomics/Projects/PGDAC/packages/flipTransformations_1.14.0.tar.gz')"																																																														
 
 COPY src /prot/proteomics/Projects/PGDAC/src
+
+

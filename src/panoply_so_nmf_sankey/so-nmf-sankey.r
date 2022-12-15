@@ -26,11 +26,13 @@ p_load(htmlwidgets)
 # webshot::instfull_phantomjs()
 
 
-source('/prot/proteomics/Projects/PGDAC/src/displayR_functions/sankeydiagram.R') # from displayR/flipPlots
-source('/prot/proteomics/Projects/PGDAC/src/displayR_functions/variable.R') # from displayR/flipTransformations
-source('/prot/proteomics/Projects/PGDAC/src/displayR_functions/properties.R') # from displayR/flipU
+# For SankeyDiagrams()
+p_load(flipTransformations)
 p_load('networkD3') # needed for sankeyNetwork()
+source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
+# NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded
 
+# For NMF-related stuff (I think)
 source('https://raw.githubusercontent.com/karstenkrug/R-code/main/my_plots.r')
 #source('c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/nmf_functions.R')
 source('https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panoply_mo_nmf/nmf_functions.R')
@@ -99,8 +101,9 @@ tab <-  lapply(ome_clust, read_delim, delim='\t') %>%
 
 tab <- lapply(tab, function(x) {
   if (!('Sample.ID' %in% colnames(x))) #if we don't have Sample.ID, 
-    { rename(x,'Sample.ID'='X1') } else #rename the ID column to Sample.ID
-    { colnames(x)[1]='idddd';x} }) #otherwise, name it something that won't overlap anything
+    { warning(paste(glue("Could not locate Sample.ID column; assuming the first column has Sample.IDs.")))
+      colnames(x)[1]='Sample.ID'; return(x)} else # print a WARNING and assume the first column has Sample.ID
+    { colnames(x)[1]='idddd'; return(x)} }) #otherwise, name it something that won't overlap anything
 tab <- lapply(tab, function(x)
   x %>% 
     #filter(!grepl('mixed', NMF.consensus.core)) %>%
