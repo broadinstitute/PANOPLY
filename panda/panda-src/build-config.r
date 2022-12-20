@@ -578,10 +578,13 @@ panda_colors_edit <- function(){
 cosmo.params <- list(run.cosmo = FALSE)
 
 # function to get used input for cosmo
-select_COSMO_class_columns <- function() {    
+select_COSMO_attributes <- function() { 
+  
+  # initialize again
+  cosmo.params <<- list(run.cosmo = FALSE)
   
   annot <- read_annot()
-  potential_cols <- setdiff(names(read_annot()), ignore.cols)
+  potential_cols <- setdiff(names(annot), ignore.cols)
   
   # get valid columns
   valid_columns <- c()
@@ -602,11 +605,16 @@ select_COSMO_class_columns <- function() {
   }
   
   # make prompt
-  prompt <- paste("VALID CLASS COLUMNS:",
-                  paste(paste(' *', valid_columns), collapse = '\n'), 
-                  sep,
-                  "Select sample label column(s) for COSMO: ",
-                  sep = '\n')
+  if (length(valid_columns > 0)) {
+    prompt <- paste("VALID ATTRIBUTES:",
+                    paste(paste(' *', valid_columns), collapse = '\n'), 
+                    sep,
+                    "Select sample label column(s) for COSMO: ",
+                    sep = '\n')
+  } else {
+    cat("NO VALID ATTRIBUTES FOUND. COSMO will not be run.\n", DONE)
+    return()
+  }
   
   # get user input
   user_columns <- readline(prompt)
@@ -616,7 +624,7 @@ select_COSMO_class_columns <- function() {
   
   invalid_user_columns <- setdiff(user_columns, valid_columns)
   if (length(invalid_user_columns > 0)) {
-    message(paste("Invalid column:", 
+    message(paste("Invalid attribute:", 
                   paste(invalid_user_columns, collapse = ', ')))
   }
   
@@ -626,11 +634,11 @@ select_COSMO_class_columns <- function() {
   cat(sep, '\n')
   
   if (length(valid_user_columns) > 0) {
-    cat("COLUMN SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
+    cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
     cat("\n\nCOSMO WILL BE RUN.\n")
     run.cosmo <- TRUE
   } else {
-    cat("NO COLUMNS SELECTED. COSMO will not be run.\n")
+    cat("NO ATTRIBUTES SELECTED. COSMO will not be run.\n")
     run.cosmo <- FALSE
   }
   
