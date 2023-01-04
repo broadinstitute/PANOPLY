@@ -6,9 +6,9 @@ output:
       smooth_scroll: no
 params:
   title: "Single -Ome NMF Comparisons"
+  sankey_tar: NULL
   so_nmf_tar: NULL
   mo_nmf_tar: NULL
-  sankey_tar: NULL
   label: NULL
 ---
 
