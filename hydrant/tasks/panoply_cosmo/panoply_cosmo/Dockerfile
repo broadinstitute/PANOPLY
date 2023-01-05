@@ -3,7 +3,7 @@ MAINTAINER proteogenomics@broadinstitute.org
 
 COPY --from=broadcptacdev/panoply_common:latest /prot/proteomics/Projects/PGDAC/src /prot/proteomics/Projects/PGDAC/src
 
-COPY src /prot/proteomics/Projects/PGDAC/src/cosmo_src
+COPY src /prot/proteomics/Projects/PGDAC/src/cosmo
 
 RUN R -e "BiocManager::install('cmapR')"
 

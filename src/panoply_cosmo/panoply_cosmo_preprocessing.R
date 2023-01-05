@@ -1,4 +1,4 @@
-# preprocess PANOPLY gct files for input to COSMO
+# preprocess PANOPLY files for input to COSMO
 
 ###############################################################################
 # extract command line inputs
@@ -6,71 +6,23 @@
 args = commandArgs(trailingOnly = T)
 
 if (length(args) == 4) {
-
-  harmonize_tar_file <- args[1]
-  yaml_file <- args[2]
-  sample_label <- args[3]
-  do_sample_pred <- as.logical(args[4])
+  d1_path <- args[1]
+  d2_path <- args[2]
+  sample_csv_path <- args[3]
+  yaml_file <- args[4]
   
-  if (sample_label == "none" || !do_sample_pred) {
-    sample_label <- NULL
-  }
-  
-} else {
-  stop("Incorrect number of inputs")
 }
 
-cat('harmonize_tar_file:', harmonize_tar_file, '\n')
-cat('yaml_file:', yaml_file, '\n')
-cat('sample_label:', sample_label, '\n')
-cat('do_sample_pred:', do_sample_pred, '\n\n\n')
+cat("d1_path:", d1_path, '\n')
+cat("d2_path:", d2_path, '\n')
+cat("sample_csv_path:", sample_csv_path, '\n')
+cat("yaml_file:", yaml_file, '\n\n\n')
+
 
 ###############################################################################
 library(dplyr)
 library(yaml)
 library(cmapR)
-library(utils)
-
-###############################################################################
-## untar harmonize inputs and extract files
-
-ex_dir <- 'panoply_harmonize_output'
-untar(harmonize_tar_file, exdir = ex_dir)
-
-# get name of base directory that all files from tar are located in
-base_dir <- list.files(ex_dir)
-if (length(base_dir) != 1) {
-  stop("Cannot find base directory in tar. Please provide tar file input from panoply_harmonize.")
-}
-
-# check that harmonize subdirectory is present
-harmonize_dir <- 'harmonized-data'
-if (!(harmonize_dir %in% list.files(file.path(ex_dir, base_dir)))) {
-  stop("Cannot find harmonize directory in tar file. Please provide tar file input from panoply_harmonize.")
-}
-
-# check that correct matrix files exist from harmonize output
-rna_file <- file.path(ex_dir, base_dir, harmonize_dir, 'rna-matrix.csv')
-if (!file.exists(rna_file)) {
-  stop("RNA file cannot be found. Please provide tar file input from panoply_harmonize.")
-}
-sample_anno_file <- file.path(ex_dir, base_dir, harmonize_dir, 'sample-info.csv')
-if (!file.exists(sample_anno_file)) {
-  stop("Sample annotation file cannot be found. Please provide tar file input from panoply_harmonize.")
-}
-
-# find protein file
-data_file <- setdiff(list.files(file.path(ex_dir, base_dir, harmonize_dir), 
-                                pattern = '*-matrix.csv'),
-                     c('cna-matrix.csv', 'rna-matrix.csv'))
-if (length(data_file) != 1) {
-  stop("Protein data file cannot be found. Please provide tar file input from panoply_harmonize.")
-}
-data_file <- file.path(ex_dir, base_dir, harmonize_dir, data_file)
-
-
-
-###############################################################################
 
 data_dir <- "cosmo_preprocessed_data/"
 dir.create(data_dir)
@@ -78,82 +30,46 @@ dir.create(data_dir)
 ## extract from yaml file
 yaml_out <- read_yaml(yaml_file)
 gene.id.col <- yaml_out$global_parameters$gene_mapping$gene_id_col
+sample_label <- yaml_out$cosmo.params$sample_label
 
-
-## preprocess data file
-data_table <- read.csv(data_file)
-
-# change geneSymbol column name to ID
-stopifnot("First column of data not geneSymbol" = 
-            names(data_table)[1] %in% c('geneSymbol', gene.id.col))
-names(data_table)[1] <- 'ID'
-
-# check that data is collapsed to gene level
-geneSymbols <- data_table$ID
-if (length(geneSymbols) != length(unique(geneSymbols))) {
-  stop("There are gene symbol duplicates. PANOPLY harmonize not run correctly")
-}
-
-# convert gene symbols to row names
-rownames(data_table) <- data_table[,1]
-data_table <- data_table[,-1]
-
-
-## preprocess rna file
-rna_table <- read.csv(rna_file)
-
-# change geneSymbol column name to ID
-stopifnot("First column of rna not geneSymbol" = 
-            names(rna_table)[1] %in% c('geneSymbol', gene.id.col))
-names(rna_table)[1] <- 'ID'
-
-# check that rna is collapsed to gene level
-geneSymbols <- rna_table$ID
-if (length(geneSymbols) != length(unique(geneSymbols))) {
-  stop("There are gene symbol duplicates. PANOPLY harmonize not run correctly")
-}
-
-# convert gene symbols to row names
-rownames(rna_table) <- rna_table[,1]
-rna_table <- rna_table[,-1]
-
-
-if (do_sample_pred) {
-  ## read and process sample annotations
-  sample_anno <- read.csv(sample_anno_file)
-} else {
-  sample_anno <- data.frame(Sample.ID = intersect(names(data_table), names(rna_table)))
-  attr <- rep(c('Yes', 'No'), length.out = dim(sample_anno)[1])
-  sample_anno$Arbitrary.Attribute <- attr
-  sample_label <- 'Arbitrary.Attribute'
-  warning("Using arbitraty attribute for sample label, ignore any logs related to clinical attribute prediction.")
+## read data from d1 file and d2 file
+for (file in c(d1_path, d2_path)) {
+  ## read data
+  ex <- strsplit(basename(file), split="\\.")[[1]][-1]
+  if (ex == 'csv') {
+    data_out <- read.csv(file)
+    # change geneSymbol column name to ID
+    stopifnot("First column of data not geneSymbol" = names(data_out)[1] %in% c('geneSymbol', gene.id.col))
+    names(data_out)[1] <- 'ID'
+  } else if (ex == 'gct') {
+    data_gct <- parse_gctx(file)
+    data_ids <- data.frame(ID = meta(data_gct, dimension='row')[, gene.id.col])
+    data_out <- cbind(data_ids, data.frame(mat(data_gct)))
+  } else {
+    stop("Invalid file input")
+  }
   
-}
   
-## use only samples present in all files
-data_samples <- names(data_table)
-rna_samples <- names(rna_table)
-anno_samples <- sample_anno$Sample.ID
-intersect_samples <- intersect(intersect(data_samples, rna_samples), anno_samples)
-
-if (length(intersect_samples) == 0) {
-  stop("No samples present in all three inputs (data, rna, sample annotation")
-} else if (length(intersect_samples) < max(sapply(list(data_samples, rna_samples, anno_samples), length))) {
-  warning('Not all samples are present in data, rna, and sample annotation file. Subsetting to samples present in all three files.')
+  ## collapse to the gene level
+  warning("collapsing protein data by geneSymbol")
+  data_out <- aggregate(data_out[,-(1)], list(data_out$ID),
+                        function(x) mean(x, na.rm=T))
+  
+  # convert gene symbols to row names
+  rownames(data_out) <- data_out[,1]
+  data_out <- data_out[,-1]
+  
+  # write data
+  file_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(file))
+  file_path <- paste(data_dir, file_basename, ".tsv", sep='')
+  write.table(data_out,
+              file = file_path,
+              row.names=TRUE, sep="\t")
 }
 
-data_table <- data_table[, names(data_table) %in% intersect_samples]
-rna_table <- rna_table[, names(rna_table) %in% intersect_samples]
-sample_anno <- sample_anno[sample_anno$Sample.ID %in% intersect_samples, ]
-
-
-## check sample labels, extract from sample annotation file
-if (is.null(sample_label)) {
-  warning("using groups from yaml file as default sample attributes")
-  sample_label_list <- yaml_out$groups.cols
-} else {
-  sample_label_list <- unlist(strsplit(x=sample_label, split=','))
-}
+## read and process sample annotations
+sample_anno <- read.csv(sample_csv_path)
+sample_label_list <- unlist(strsplit(x=sample_label, split=','))
 
 good_sample_labels <- c()
 for (label in sample_label_list) {
@@ -174,34 +90,19 @@ for (label in sample_label_list) {
 if (length(good_sample_labels) == 0) {
   stop("No valid sample annotation columns were found")
 } else {
-  cat("Sample labels used:", good_sample_labels, '\n')
+  cat("Sample labels used:", good_sample_labels)
 }
 
 sample_anno_out <- sample_anno[, c('Sample.ID', good_sample_labels)]
 names(sample_anno_out)[1] <- 'sample'
 
-
+# write sample annotations to tsv
+file_basename <- sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(sample_csv_path))
+file_path <- paste(data_dir, file_basename, ".tsv", sep='')
+write.table(sample_anno_out,
+            file = file_path,
+            row.names=FALSE, sep="\t")
 
 # save good sample labels
 writeLines(paste(good_sample_labels, collapse=','), 
            con = paste(data_dir, "sample_label.txt", sep=''))
-
-
-## write to tsv files
-
-# write data
-write.table(data_table,
-            file = paste(data_dir, 'data.tsv', sep=''),
-            row.names=TRUE, sep="\t")
-
-# write rna
-write.table(rna_table,
-            file = paste(data_dir, 'rna.tsv', sep=''),
-            row.names=TRUE, sep="\t")
-
-# write sample annotations to tsv
-write.table(sample_anno_out,
-            file = paste(data_dir, 'sample-list.tsv', sep=''),
-            row.names=FALSE, sep="\t")
-
-

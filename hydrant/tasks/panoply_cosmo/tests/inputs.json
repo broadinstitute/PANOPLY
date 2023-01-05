@@ -1,0 +1,9 @@
+{
+"panoply_cosmo_workflow.STANDALONE":"false",
+"panoply_cosmo_workflow.yaml_file": "/Users/svartany/Desktop/master-parameters_tutorial.yaml",
+"panoply_cosmo_workflow.run_cosmo": true,
+"panoply_cosmo_workflow.panoply_cosmo.panoply_harmonize_tar": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/example_datasets/BRCA/panoply_harmonize-output.tar",
+"panoply_cosmo_workflow.panoply_cosmo.d1_file": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/example_datasets/BRCA/proteome-aggregate.gct",
+"panoply_cosmo_workflow.panoply_cosmo.d2_file": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/example_datasets/BRCA/rna-aggregate.gct",
+"panoply_cosmo_workflow.panoply_cosmo.sample_file": "/Volumes/prot_proteomics/LabMembers/Stephanie/OmicsEV_into_PANOPLY/example_datasets/BRCA/annotation-aggregate.csv"
+}
