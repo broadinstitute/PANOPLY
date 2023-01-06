@@ -74,7 +74,7 @@ This report summarizes the significant results for ', type, ' (FDR < ', fdr_valu
         rmd = paste(rmd, '\n###', annotation)
         
         tmp_log_annot <- tmp_log[which(tmp_log$annotation==annotation),]
-        for (j in dim(tmp_log_annot)[1]) { #for each row (i.e. each binary_annotation)
+        for (j in 1:dim(tmp_log_annot)[1]) { #for each row (i.e. each binary_annotation)
           binary_annotation = tmp_log_annot$binary_annotation[j]
           ingroup = tmp_log_annot$ingroup[j]
           outlier_filename=grep(paste0("outlieranalysis_for_",binary_annotation,"__"),

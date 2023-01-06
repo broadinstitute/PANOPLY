@@ -2,15 +2,16 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-while getopts ":c:o:r:a:s:l:p:" opt; do
+while getopts ":t:o:r:a:s:p:n:m:" opt; do
     case $opt in
-        c) cons_clust_tar="$OPTARG";;
+        t) association_tar="$OPTARG";;
         o) ssgsea_ome="$OPTARG";;
         r) ssgsea_rna="$OPTARG";;
 	      a) analysis_dir="$OPTARG";;
         s) ssgsea_assoc="$OPTARG";;
-        l) ssgsea_clust="$OPTARG";;
         p) ptmsea="$OPTARG";;
+        n) nmf="$OPTARG";;
+        m) nmf_ssgsea="$OPTARG";;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
 done
@@ -35,13 +36,17 @@ dir_create()
 {
   cd $src;
   mkdir -p $summ_path
-  mkdir -p cons_clust_tar && tar xf $cons_clust_tar -C cons_clust_tar --strip-components 1
+  mkdir -p association_tar && tar xf $association_tar -C association_tar --strip-components 1
   mkdir -p ssgsea_ome && tar xf $ssgsea_ome -C ssgsea_ome
   mkdir -p ssgsea_rna && tar xf $ssgsea_rna -C ssgsea_rna
   scatter_processing $src/$ssgsea_assoc
-  scatter_processing $src/$ssgsea_clust
   if [[ ! -z $ptmsea ]]; then
     mkdir -p ptmsea && tar xf $ptmsea -C ptmsea
+  fi
+  if [[ ! -z $nmf ]]; then
+    mkdir -p so_nmf
+    mkdir -p so_nmf/nmf && tar xf $nmf -C so_nmf/nmf --strip-components 1
+    mkdir -p so_nmf/nmf_ssgsea && tar xf $nmf_ssgsea -C so_nmf/nmf_ssgsea
   fi
 }
 
@@ -50,41 +55,47 @@ collect()
 {
   cd $src;
   mkdir -p $summ_path/rna; 
-  cp cons_clust_tar/rna/*.pdf $summ_path/rna/.;
+  cp association_tar/rna/*.pdf $summ_path/rna/.;
   mkdir -p $summ_path/cna; 
-  cp cons_clust_tar/cna/*.png $summ_path/cna/.;
+  cp association_tar/cna/*.png $summ_path/cna/.;
   mkdir -p $summ_path/sample-qc; 
-  cp cons_clust_tar/sample-qc/*.pdf $summ_path/sample-qc/.;
+  cp association_tar/sample-qc/*.pdf $summ_path/sample-qc/.;
   mkdir -p $summ_path/association; 
-  cp cons_clust_tar/association/*.pdf $summ_path/association/.;
-  mkdir -p $summ_path/clustering; 
-  cp cons_clust_tar/clustering/*.pdf $summ_path/clustering/.; 
-  cp cons_clust_tar/clustering/*.png $summ_path/clustering/.;
+  cp association_tar/association/*.pdf $summ_path/association/.;
   
   mkdir -p $full_path;
-  cp -r cons_clust_tar/* $full_path/.;
-  rm -rf cons_clust_tar;
+  cp -r association_tar/* $full_path/.;
+  rm -rf association_tar;
   cp -r ssgsea_ome $full_path/ssgsea_ome/;
   cp -r ssgsea_rna $full_path/ssgsea_rna/;
   cp -r $ssgsea_assoc $full_path/$ssgsea_assoc/;
-  cp -r $ssgsea_clust $full_path/$ssgsea_clust/;
 
   mkdir -p $summ_path/ssgsea_ome;
   mkdir -p $summ_path/ssgsea_rna;
   mkdir -p $summ_path/$ssgsea_assoc;
-  mkdir -p $summ_path/$ssgsea_clust;
   cp -r ssgsea_ome/* $summ_path/ssgsea_ome/.;
   cp -r ssgsea_rna/* $summ_path/ssgsea_rna/.;
   cp -r $ssgsea_assoc/* $summ_path/$ssgsea_assoc/.;
-  cp -r $ssgsea_clust/* $summ_path/$ssgsea_clust/.;
 
-  rm -rf ssgsea_ome ssgsea_rna $ssgsea_assoc $ssgsea_clust;
+  rm -rf ssgsea_ome ssgsea_rna $ssgsea_assoc;
 
   if [[ ! -z $ptmsea ]]; then
     cp -r ptmsea $full_path/ptmsea/;
     mkdir -p $summ_path/ptmsea;
     cp -r ptmsea $summ_path/ptmsea/.;
     rm -rf ptmsea;
+  fi
+
+  if [[ ! -z $nmf ]]; then
+    cp -r so_nmf $full_path/.;
+    mkdir -p $summ_path/so_nmf
+    cp -r so_nmf/nmf/* $summ_path/so_nmf; # skip nmf_ssgsea into summary tar
+    #prune unnecessary files from $summ_path/so_nmf
+    rm -r $summ_path/so_nmf/K_*/nmf-features #remove K_* nmf-features folder
+    rm -r $summ_path/so_nmf/submissions #remove submissions folder
+    find $summ_path/so_nmf/ -type f ! \( -name '*.pdf' -o -name '*.png' \) -delete
+    find $summ_path/so_nmf -empty -type d -delete
+    rm -rf so_nmf;
   fi
 }
 

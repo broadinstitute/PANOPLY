@@ -13,6 +13,8 @@ RUN apt-get update
 RUN apt-get -t unstable install -y libxml2-dev  # required for R-package 'XML'
 RUN apt-get -t unstable install -y pandoc  # rmarkdown
 RUN apt-get -t unstable install -y libfontconfig1-dev  # font config library for R-package kableExtra
+RUN apt-get -t unstable install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
+RUN apt-get -t unstable install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
 
 ## ssl (already installed in panoply_libs)
 # RUN apt-get install -y libssl-dev
