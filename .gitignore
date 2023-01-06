@@ -14,4 +14,6 @@ analysis
 hydrant/drmani-github-access-token
 Thumbs.db
 
+panda/.ipynb_checkpoints/
 *.zip
+

@@ -10,7 +10,7 @@ task panoply_mo_nmf_pre {
 
     Array[File?] omes
     
-    Boolean? balance_omes # default is TRUE
+    Boolean? balance_omes # default is FALSE
     Float? tol  # Tolerance specifying the maximal accepted difference (as a fraction of total variance) between contributions from different data types. Used as stopping criterion to end optimization.
     Float? var  # Explained variance by PCA. Used to extract the number of PCs explaining the specified fraction of variance in the multiomics data matrix.
     String? zscore_mode # z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
@@ -77,7 +77,7 @@ task panoply_mo_nmf_pre {
 
 
         ## run balanace filter
-        if [ ${default="true" balance_omes} = true ];then
+        if [ ${default="false" balance_omes} = false ];then
         
                 /home/pgdac/src/filter-gcts-to-balance-omes.R -d . -t ${default="0.01" tol} -v ${default="0.9" var} -z ${default="rowcol" zscore_mode}
                
