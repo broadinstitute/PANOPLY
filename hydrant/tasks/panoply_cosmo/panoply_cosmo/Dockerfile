@@ -7,4 +7,4 @@ COPY src /prot/proteomics/Projects/PGDAC/src/cosmo
 
 RUN R -e "BiocManager::install('cmapR')"
 
-RUN R -e "install.packages(c('pacman', 'optparse'))"
+RUN R -e "install.packages(c('pacman', 'optparse', 'rmarkdown', 'kableExtra'))"

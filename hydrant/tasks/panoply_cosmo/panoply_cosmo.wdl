@@ -1,67 +1,27 @@
 workflow panoply_cosmo_workflow {
 	String STANDALONE
-  File yaml_file
-	Boolean run_cosmo = true
-
-	call panoply_cosmo_manage_parameters {
-		input:
-			yaml_file = yaml_file,
-			run_cosmo = run_cosmo
-	}
 
 	call panoply_cosmo {
 		input:
-			yaml_file = panoply_cosmo_manage_parameters.yaml_file_final,
-			run_cosmo = panoply_cosmo_manage_parameters.run_cosmo_final,
 			STANDALONE = STANDALONE
 	}
-}
-
-task panoply_cosmo_manage_parameters {
-	File yaml_file
-	Boolean run_cosmo
-	String? sample_label
-
-	Int? cpu
-  Int? memory
-  Int? local_disk_gb
-  Int? num_preemptions
-
-	command {
-		set -euo pipefail
-
-		echo "Managing parameters"
-
-		Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
-			--module cosmo \
-			--master_yaml ${yaml_file} \
-			--cosmo_run_cosmo ${run_cosmo} \
-			${if defined(sample_label) then "--cosmo_sample_label " + "'${sample_label}'" else ""}
-
-
-		R -e "cat(yaml::read_yaml('final_output_params.yaml')[['cosmo.params']][['run_cosmo']], file = 'run_cosmo.txt', sep = '\n')"
-
-	}
-
-	runtime {
-		docker: "broadcptacdev/panoply_cosmo:latest"
-		memory: "${if defined(memory) then memory else '16'}GB"
-    disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-    preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
-    cpu: "${if defined(cpu) then cpu else '6'}"
-	}
-
-	output {
-		Boolean run_cosmo_final = read_boolean("run_cosmo.txt")
-		File yaml_file_final = "final_output_params.yaml"
+	
+	if(panoply_cosmo.run_cosmo_final) {
+	  call panoply_cosmo_report {
+	    input:
+	      STANDALONE = STANDALONE,
+	      cosmo_output_tar = panoply_cosmo.cosmo_tar,
+	      d1_file_name = panoply_cosmo.d1_file_name,
+        d2_file_name = panoply_cosmo.d2_file_name
+	  }
 	}
 }
-
 
 task panoply_cosmo {
 	String STANDALONE
 	File yaml_file
-	Boolean run_cosmo
+	Boolean run_cosmo = true
+	String? sample_label
 
 	File? panoply_harmonize_tar
   File? d1_file
@@ -75,8 +35,20 @@ task panoply_cosmo {
 
 	command {
 		set -euo pipefail
+		
+		echo "Managing parameters"
 
-		if [ ${run_cosmo} == true ]; then
+		Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+			--module cosmo \
+			--master_yaml ${yaml_file} \
+			--cosmo_run_cosmo ${run_cosmo} \
+			${if defined(sample_label) then "--cosmo_sample_label " + "'${sample_label}'" else ""}
+
+    yaml_file="final_output_params.yaml"
+		R -e "cat(yaml::read_yaml('$yaml_file')[['cosmo.params']][['run_cosmo']], file = 'run_cosmo.txt', sep = '\n')"
+		run_cosmo=$(cat 'run_cosmo.txt')
+
+		if [ $run_cosmo == true ]; then
 			echo "Running COSMO"
 			
 			if [ ${STANDALONE} == "false" ]; then
@@ -97,7 +69,6 @@ task panoply_cosmo {
   		  sample_file="${sample_file}"
   		fi
 
-      yaml_file=${yaml_file}
 			source /prot/proteomics/Projects/PGDAC/src/cosmo/panoply_run_cosmo.sh
 			
 			if [ ${STANDALONE} == false ]; then
@@ -127,6 +98,9 @@ task panoply_cosmo {
 			else
 			  touch panoply_cosmo_output.tar
 		  fi
+		  
+		  touch d1_file_name.txt
+			touch d2_file_name.txt
 			
 		fi
 
@@ -137,14 +111,62 @@ task panoply_cosmo {
 	runtime {
 		docker: "broadcptacdev/panoply_cosmo:latest"
 		memory: "${if defined(memory) then memory else '16'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
-        cpu: "${if defined(cpu) then cpu else '6'}"
+    disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
+    preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+    cpu: "${if defined(cpu) then cpu else '6'}"
 	}
 
 	output {
 		File cosmo_tar = "panoply_cosmo_output.tar"
+		Boolean run_cosmo_final = read_boolean("run_cosmo.txt")
+		File yaml_file_final = "final_output_params.yaml"
 		String d1_file_name = read_string("d1_file_name.txt")
 		String d2_file_name = read_string("d2_file_name.txt")
 	}
+}
+
+task panoply_cosmo_report {
+  String STANDALONE
+	File cosmo_output_tar
+	String d1_file_name
+	String d2_file_name
+
+  Int? memory
+  Int? local_disk_gb
+  Int? num_preemptions
+
+  command {
+    set -euo pipefail
+  
+    tar_dir="$(pwd)/tar_output"
+    mkdir $tar_dir
+  	tar -xf ${cosmo_output_tar} -C $tar_dir
+  	
+  	if [ ${STANDALONE} == false ]; then
+  	  cosmo_res_path="$tar_dir/$(ls $tar_dir | head -1)/cosmo-data/final_res_folder/cosmo_final_result.tsv"
+  	else
+  	  cosmo_res_path="$tar_dir/$(ls $tar_dir | head -1)/final_res_folder/cosmo_final_result.tsv"
+    fi
+
+  	R -e \
+  	  "rmarkdown::render('/prot/proteomics/Projects/PGDAC/src/cosmo/panoply_cosmo_report.Rmd', 
+  	  params = list(final_table_path = '$cosmo_res_path', d1_file_name = '${d1_file_name}', d2_file_name = '${d2_file_name}'),
+      output_dir = getwd())"
+  }
+
+  output {
+      File cosmo_report_html = "panoply_cosmo_report.html"
+  }
+
+  runtime {
+      docker : "broadcptacdev/panoply_cosmo:latest"
+      memory: "${if defined(memory) then memory else '2'}GB"
+      disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
+      preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+  }
+
+  meta {
+      author : "Stephanie Vartany"
+      email : "proteogenomics@broadinstitute.org"
+  }
 }
