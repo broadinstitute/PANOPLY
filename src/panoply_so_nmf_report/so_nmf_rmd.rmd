@@ -54,10 +54,7 @@ for(ome in ome_types) {
     cat("  \n### ",  other_ome, " \n")
     
     # include Sankey Diagrams
-    html = includeHTML(file) %>% # read in HTML file
-      gsub("return rect.width", "return cel.offsetWidth", .) %>% # modify HTML code for proper sizing inside .{tabset}
-      gsub("return rect.height", "return cel.offsetHeight", .) # modify HTML code for proper sizing inside .{tabset}
-    print(htmltools::tagList(tags$iframe(srcdoc=html, # insert widget into iframe
+    print(htmltools::tagList(tags$iframe(srcdoc=includeHTML(file), # insert widget into iframe
                                          seamless="seamless", frameBorder = 0, height="400vh", width="100%")))
     cat("  \n")
     cat(glue("**{ome} vs {other_ome}** This sankey diagram compares the results clustering when using {ome} features, to clustering when using {other_ome} features."))
