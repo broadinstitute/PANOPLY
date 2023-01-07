@@ -73,7 +73,7 @@ buildDocker() {
 
   dname_1="$docker_ns/$task:$docker_tag"
   dname_2="$docker_ns/$task:latest"
-  docker build --rm --no-cache -t $dname_1 -t $dname_2 . ;
+  docker build --rm --no-cache ${P_flag:-} -t $dname_1 -t $dname_2 . ;
   docker images | grep "$task"
 }
 
@@ -115,7 +115,7 @@ displayUsage() {
   echo "                     [-m [base_task]:[tag]] "
   echo "                     [-n [docker_namespace]] "
   echo "                     [-g [docker_tag_num]] "
-  echo "                     [-y] [-b] [-h] [-x] [-z]"
+  echo "                     [-y] [-b] [-h] [-x] [-z] [-P]"
   echo ""
   echo "==============================================="
   echo "| -t | string | Task name"
@@ -138,12 +138,13 @@ displayUsage() {
   echo "| -x | flag   | Do not prune dockers from local system before building"
   echo "| -z | flag   | Cleanup task directory"
   echo "| -e | falg   | Cleanup hydrant and 'tasks' directory"
+  echo "| -P | flag   | Print full docker build log"
   echo "| -h | flag   | Print Usage"
   echo "==============================================="
   exit
 }
 
-while getopts ":t:c:w:n:m:g:d:praesfybuxzh" opt; do
+while getopts ":t:c:w:n:m:g:d:praesfybuxzPh" opt; do
     case $opt in
         t) task="$OPTARG"; wf_name="$task";;
         p) p_flag="true";;
@@ -163,6 +164,7 @@ while getopts ":t:c:w:n:m:g:d:praesfybuxzh" opt; do
         a) a_flag="true";;
         x) x_flag="true";; ##if calling from update.sh
         z) z_flag="true";;
+        P) P_flag="--progress=plain";;
         h) displayUsage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac

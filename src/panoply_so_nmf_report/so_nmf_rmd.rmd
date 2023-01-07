@@ -6,9 +6,9 @@ output:
       smooth_scroll: no
 params:
   title: "Single -Ome NMF Comparisons"
+  sankey_tar: NULL
   so_nmf_tar: NULL
   mo_nmf_tar: NULL
-  sankey_tar: NULL
   label: NULL
 ---
 
@@ -52,8 +52,10 @@ for(ome in ome_types) {
   for(file in files_tmp) {
     other_ome = str_replace(file, glue("sankey-{ome}_"), "") %>% str_replace(., '-.+html', '')
     cat("  \n### ",  other_ome, " \n")
+    
     # include Sankey Diagrams
-    print(htmltools::tagList(tags$iframe(srcdoc=includeHTML(file), seamless="seamless", frameBorder = 0, height="400vh", width="100%")))
+    print(htmltools::tagList(tags$iframe(srcdoc=includeHTML(file), # insert widget into iframe
+                                         seamless="seamless", frameBorder = 0, height="400vh", width="100%")))
     cat("  \n")
     cat(glue("**{ome} vs {other_ome}** This sankey diagram compares the results clustering when using {ome} features, to clustering when using {other_ome} features."))
     cat("  \n")
