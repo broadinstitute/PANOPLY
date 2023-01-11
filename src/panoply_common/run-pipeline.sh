@@ -571,7 +571,7 @@ case $op in
             ;;
 #   normalize: start with parsed data (SM or other) and normalize/filter
     normalize ) analysisInit "normalize"
-                for f in create-cls.r filter.r normalize.r; do cp $code_dir/$f $norm_dir/$f; done
+                for f in normalize.r; do cp $code_dir/$f $norm_dir/$f; done # no longer copying create-cls.r filter.r
                
                 ## normalization (normalization)
                 (cd $norm_dir;
