@@ -10,7 +10,7 @@
 ## Setup and run analysis pipeline
 ##
 ## Expected usage:
-##  First called with OPERATION = inputSM or inputNorm
+##  First called with OPERATION = inputSM or filter
 ##   - this will create normalized and filtered datasets ready for analysis
 ##   - output: filtered data and tarball
 ##   - experiment design/class labels are embedded in the normalized/filtered data table (gct3)
@@ -80,7 +80,7 @@ function usage {
   echo "     ALL OPERATIONS require -t, optional (-p), in addition to the following options"
   echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
   echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from inputSM "
-  echo "     OPERATION inputNorm requires (-n, -r, -c) or (-i, -c); -i output from normalize"
+  echo "     OPERATION filter requires (-n, -r, -c) or (-i, -c); -i output from normalize"
   echo "     OPERATION RNAcorr requires (-i, -c, -rna) OR (-f, -r, -c, -rna)"
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
@@ -200,8 +200,8 @@ function analysisInit {
     return
   fi
   
-  # for OPERATION = inputNorm (ie filter)
-  if [ "$analysis" = "inputNorm" ]; then
+  # for OPERATION = filter (ie filter)
+  if [ "$analysis" = "filter" ]; then
     createSubdirs $norm_dir
     if [ ! -f "$norm_dir/$normalized_output" ]; then
       if [ "$norm_data" = "" ]; then 
@@ -362,7 +362,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
+  inputSM|filter|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -417,7 +417,7 @@ case $op in
                 usage
                 exit 1
               fi ;;
-  inputNorm ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
+  filter ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
                 usage
                 exit 1
@@ -549,7 +549,7 @@ fi
 #   - copy appropriate code in preparation for running pipeline components
 #   - run various code/components
 case $op in 
-#   inputSM: input is a SpectrumMill ssv file that should be parsed, normalized and filtered
+#   inputSM: input is a SpectrumMill ssv file to be parsed
     inputSM )   createSubdirs $parse_dir
                 cp $sm_file $data_dir/$prefix-SMout.ssv
                 cp $expt_file $data_dir/$expt_design_file
@@ -559,29 +559,22 @@ case $op in
                 (cd $parse_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" parseMSinput.r)
              ;;
-  
-#   inputNorm: input is a normalized gct (v2/v3) file (or tar with normalized data) that should just be filtered
-    inputNorm ) analysisInit "inputNorm"
+#   normalize: start with parsed data (SM or other) and normalize
+    normalize ) analysisInit "normalize"
+                do cp $code_dir/normalize.r $norm_dir/normalize.r
+               
+                ## normalization (normalization)
+                (cd $norm_dir;
+                 R CMD BATCH --vanilla "--args $prefix $data" normalize.r)
+            ;;
+#   filter: input is a normalized gct (v2/v3) file (or tar with normalized data) that should just be filtered
+    filter ) analysisInit "filter"
                 for f in create-cls.r filter.r; do cp $code_dir/$f $norm_dir/$f; done
                 
                 ## filtering and cls file generation
                 (cd $norm_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" filter.r;
                  R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
-            ;;
-#   normalize: start with parsed data (SM or other) and normalize/filter
-    normalize ) analysisInit "normalize"
-                for f in normalize.r; do cp $code_dir/$f $norm_dir/$f; done # no longer copying create-cls.r filter.r
-               
-                ## normalization (normalization)
-                (cd $norm_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" normalize.r)
-                 
-                # filtering is now an independent operation invoked via inputNorm 
-                # ## filtering and cls file generation
-                # (cd $norm_dir;
-                #  R CMD BATCH --vanilla "--args $prefix $data" filter.r;
-                #  R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
             ;;
 #   RNAcorr: RNA-seq (or microarray) expression correlation with proteome
     RNAcorr )   analysisInit "RNAcorr"
