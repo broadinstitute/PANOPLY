@@ -43,6 +43,6 @@ From `dia_nn_match_between_runs`:
     - Final outputs and first pass outputs are stored
 
 ### Paths
-- Working directory is `/root/fragpipe`
-- Input data will be in `/root/fragpipe/data`
-- Outputs will be in `/root/fragpipe/out`
+- Working directory is `dia_nn`
+- Input data will be in `dia_nn/data`
+- Outputs will be in `dia_nn/out`

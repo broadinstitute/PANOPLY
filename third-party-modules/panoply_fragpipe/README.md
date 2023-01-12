@@ -23,7 +23,7 @@ Once you save this file and upload to Google Bucket, you'd then configure the fo
 
 ## Developer guide 
 ### Flow
-1. Files are localized into `/root/fragpipe/data` data folder from `files_folder` of `file_of_files` (if supplied)
+1. Files are localized into `/root/fragpipe/data` data folder from `files_folder` or `file_of_files` (if supplied)
 2. (Experimental) `try_one_file` flag removes all but one file in data folder. Used to test if workflow works without running on the whole dataset
 3. Manifest can either be user-supplied or automatically generated with `get_fp_manifest.py` script which doesn't assume any experimental design
 4. Docker contains MSFragger, philosopher, IonQuant, easyPQP that FragPipe headless uses
