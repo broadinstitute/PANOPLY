@@ -1,1 +1,1 @@
-Analysis method for data normalization and filtering (proteome/PTM)
+Analysis method for data normalization (proteome/PTM)

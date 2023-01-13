@@ -10,7 +10,7 @@
 ## Setup and run analysis pipeline
 ##
 ## Expected usage:
-##  First called with OPERATION = inputSM or filter
+##  First called with OPERATION = parseSM or filter
 ##   - this will create normalized and filtered datasets ready for analysis
 ##   - output: filtered data and tarball
 ##   - experiment design/class labels are embedded in the normalized/filtered data table (gct3)
@@ -78,8 +78,8 @@ function usage {
   echo "   <CMAP-config-file> is file with CMAP analysis parameters to over-ride defaults"
   echo "   Input Requirements:"
   echo "     ALL OPERATIONS require -t, optional (-p), in addition to the following options"
-  echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
-  echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from inputSM "
+  echo "     OPERATION parseSM requires (-s, -e, -r, -c, -d)"
+  echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from parseSM "
   echo "     OPERATION filter requires (-n, -r, -c) or (-i, -c); -i output from normalize"
   echo "     OPERATION RNAcorr requires (-i, -c, -rna) OR (-f, -r, -c, -rna)"
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
@@ -362,7 +362,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|filter|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
+  parseSM|filter|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -411,7 +411,7 @@ done
 
 ## check appropriate parameters have been provided
 case $op in 
-  inputSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = ""   \
+  parseSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = ""   \
                     || "$code_dir" = "" || "$common_data" = "" ]]
               then
                 usage
@@ -515,9 +515,9 @@ cna_data_file="cna-data.gct"
 
 ## INITIALIZATION 
 ## Directory setup and/or extract tarball
-if [ $op = "inputSM" -o "$input_tar" = "" ]
+if [ $op = "parseSM" -o "$input_tar" = "" ]
 then
-  ### input tar file not specified, or ignored (when $op=inputSM)
+  ### input tar file not specified, or ignored (when $op=parseSM)
   ## create directory where all files are put
   createAnalysisDir $analysis_dir
   cd $analysis_dir
@@ -549,8 +549,8 @@ fi
 #   - copy appropriate code in preparation for running pipeline components
 #   - run various code/components
 case $op in 
-#   inputSM: input is a SpectrumMill ssv file to be parsed
-    inputSM )   createSubdirs $parse_dir
+#   parseSM: input is a SpectrumMill ssv file to be parsed
+    parseSM )   createSubdirs $parse_dir
                 cp $sm_file $data_dir/$prefix-SMout.ssv
                 cp $expt_file $data_dir/$expt_design_file
                 for f in parseMSinput.r; do cp $code_dir/$f $parse_dir/$f; done
