@@ -41,6 +41,7 @@ Source ('io.r')
 data.dir <- '../data'
 pre.dir <- '../parsed-data'
 norm.dir <- '../normalized-data'
+filt.dir <- '../filtered-data'
 harmonize.dir <- '../harmonized-data'
 
 
@@ -55,7 +56,7 @@ subset.str <- ifelse (data.subset=="", data.subset, paste ('-', data.subset, sep
 ## data subset -- whether to process the entire data set or only QC.pass samples
 #  (applicable for analysis that uses a specific dataset)
 master.prefix <- paste (type, '-ratio-norm-NArm', subset.str, sep='')
-master.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
+master.file <- file.path (filt.dir, paste (master.prefix, '.gct', sep=''))
 
 # id column (with unique row ids) in the gct file
 # and other differences between proteome and phosphoproteome
