@@ -11,7 +11,7 @@ option.list <- list(
   make_option(c("-l", "--label"), action="store", dest='label', type="character", help=""),
   make_option(c("-t", "--type"), action="store", dest='type', type="character", help="Data type, i.e. proteome, phospho, rna, ..."),
   make_option(c("-d", "--tempdir"), action="store", dest='tmp.dir', type="character", help="temp-folder", default="tmp"),
-  make_option(c("-n", "--normdir"), action="store", dest='norm.dir', type="character", help="normalization-folder", default="normalized-data"),
+  make_option(c("-f", "--filtdir"), action="store", dest='filt.dir', type="character", help="filtered-folder", default="filtered-data"),
   make_option(c("-c", "--clustdir"), action="store", dest='clust.dir', type="character", help="clustering-folder", default="clustering"),
   make_option(c("-u", "--k_min"), action="store", dest='k_min', type="numeric", help="Minimal cluster number.", default=2),
   make_option(c("-v", "--k_max"), action="store", dest='k_max', type="numeric", help="Maximal cluster number.", default=10),
@@ -58,10 +58,10 @@ main <- function(opt) {
     cluster.path.full <- file.path( opt$tmp.dir, opt$label, opt$clust.dir)
     
     ## path to GCT file
-    gct.str <- file.path(opt$tmp.dir, opt$label, opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+    gct.str <- file.path(opt$tmp.dir, opt$label, opt$filt.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
     
     ## ################################################
-    ## if the input is not a .tar file assume that the
+    ## if the input is not a .tar file assume that theÍ
     ## function is called from the PGDAC-main pipeline
     } else if(suffix == 'gct'){
       
@@ -72,7 +72,7 @@ main <- function(opt) {
       cat(glue('Using minimal sd of: {opt$clustering.sd.threshold}\n\n'))
       
         cluster.path.full <- getwd()
-        gct.str <- file.path('..', opt$norm.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+        gct.str <- file.path('..', opt$filt.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
     }
   
   if(!dir.exists(cluster.path.full))

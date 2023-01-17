@@ -1,15 +1,13 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_normalize_ms_data {
+task panoply_filter {
   File inputData
   String type
   String standalone
   String analysisDir
   File yaml
-  String? normalizeProteomics
-  String? normMethod
-  String? altMethod
+  String? filterProteomics
   Int? ndigits
   Float? naMax
   String? geneIdCol
@@ -19,8 +17,8 @@ task panoply_normalize_ms_data {
   Int? minNumratioPTMs
   String? applySMfilter
 
-  String outTar = "panoply_normalize_ms_data-output.tar"
-  String outTable = "normalized_table-output.gct"
+  String outTar = "panoply_filter-output.tar"
+  String outTable = "filter_table-output.gct"
 
   Int? memory
   Int? disk_space
@@ -34,11 +32,9 @@ task panoply_normalize_ms_data {
     dataDir="/prot/proteomics/Projects/PGDAC/data"
     
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
-      --module normalize_ms_data \
+      --module filter \
       --master_yaml ${yaml} \
-      ${"--normalize_proteomics " + normalizeProteomics} \
-      ${"--norm_method " + normMethod} \
-      ${"--alt_method " + altMethod} \
+      ${"--filter_proteomics " + filterProteomics} \
       ${"--ndigits " + ndigits} \
       ${"--gene_id_col " + geneIdCol} \
       ${"--na_max " + naMax} \
@@ -48,19 +44,19 @@ task panoply_normalize_ms_data {
       ${"--min_numratio_ptms " + minNumratioPTMs} \
       ${"--apply_sm_filter " + applySMfilter}
 
-    # Find the flag for normalize.proteomics in the yaml:
+    # Find the flag for filter.proteomics in the yaml:
     cfg='final_output_params.yaml'
-    echo "library(yaml);yaml=read_yaml('$cfg');norm=yaml[['normalize.proteomics']];writeLines(as.character(norm), con='norm.txt')" > cmd.r
+    echo "library(yaml);yaml=read_yaml('$cfg');filt=yaml[['filter.proteomics']];writeLines(as.character(filt), con='filt.txt')" > cmd.r
     Rscript cmd.r
-    norm=`cat norm.txt`
+    filt=`cat filt.txt`
     
-    # If not normalizing input is the normalized tab and becomes the output, else run normalizing:
-    if [ $norm = FALSE ]; then
+    # If not filtering input is the filtered tab and becomes the output, else run filtering:
+    if [ $filt = FALSE ]; then
       cp ${inputData} ${type}-${outTable}
       tar -c -f ${outTar} ${type}-${outTable}
     else
       if [[ ${standalone} = false ]]; then
-        /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
+        /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
               -i ${inputData} \
               -t ${type} \
               -c $codeDir \
@@ -68,7 +64,7 @@ task panoply_normalize_ms_data {
               -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
               -y "final_output_params.yaml"
       else
-        /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
+        /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
               -a ${inputData} \
               -r ${analysisDir} \
               -t ${type} \
@@ -78,8 +74,8 @@ task panoply_normalize_ms_data {
               -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
               -y "final_output_params.yaml"
       fi
-      # Grab the norm/filtered gct to set as output with appropriate name
-      outGCT=`find ${analysisDir}/normalized-data -type f -iname "*-ratio-norm-NArm.gct"`
+      # Grab the filtered gct to set as output with appropriate name
+      outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-filt-NArm.gct"`
       outTableName=${type}-${outTable} 
       cp $outGCT $outTableName
     fi
@@ -92,7 +88,7 @@ task panoply_normalize_ms_data {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_normalize_ms_data:latest"
+    docker : "broadcptacdev/panoply_filter:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -100,12 +96,12 @@ task panoply_normalize_ms_data {
   }
 
   meta {
-    author : "Ramani Kothadia"
+    author : "C.M. Williams"
     email : "proteogenomics@broadinstitute.org"
   }
 }
 
-workflow panoply_normalize_ms_data_workflow {
+workflow panoply_filter {
   File inputData
   String dataType
   String standalone
@@ -117,7 +113,7 @@ workflow panoply_normalize_ms_data_workflow {
   Float? sdFilterThreshold
   Float? minNumratioFraction
 
-  call panoply_normalize_ms_data {
+  call panoply_filter {
     input:
       inputData=inputData,
       type=dataType,

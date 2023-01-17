@@ -15,9 +15,6 @@ task panoply_normalize_ms_data {
   String? geneIdCol
   Float? sdFilterThreshold
   Float? minNumratioFraction
-  Int? minNumratioProteome
-  Int? minNumratioPTMs
-  String? applySMfilter
 
   String outTar = "panoply_normalize_ms_data-output.tar"
   String outTable = "normalized_table-output.gct"
@@ -43,10 +40,7 @@ task panoply_normalize_ms_data {
       ${"--gene_id_col " + geneIdCol} \
       ${"--na_max " + naMax} \
       ${"--sd_filter_threshold " + sdFilterThreshold} \
-      ${"--min_numratio_fraction " + minNumratioFraction} \
-      ${"--min_numratio_proteome " + minNumratioProteome} \
-      ${"--min_numratio_ptms " + minNumratioPTMs} \
-      ${"--apply_sm_filter " + applySMfilter}
+      ${"--min_numratio_fraction " + minNumratioFraction}
 
     # Find the flag for normalize.proteomics in the yaml:
     cfg='final_output_params.yaml'
@@ -78,7 +72,7 @@ task panoply_normalize_ms_data {
               -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
               -y "final_output_params.yaml"
       fi
-      # Grab the norm/filtered gct to set as output with appropriate name
+      # Grab the normalized gct to set as output with appropriate name
       outGCT=`find ${analysisDir}/normalized-data -type f -iname "*-ratio-norm-NArm.gct"`
       outTableName=${type}-${outTable} 
       cp $outGCT $outTableName

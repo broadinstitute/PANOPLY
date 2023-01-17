@@ -7,7 +7,7 @@ Source ('markersel-classify.r')
 Source ('stats.r')
 
 
-gct.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
+gct.file <- file.path (filt.dir, paste (master.prefix, '.gct', sep=''))
 
 
 run.marker.selection <- function (input.gct.file, input.cls.file, prefix, run.1vAll=FALSE) {
@@ -49,8 +49,8 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix, run.1v
 
 # obtain cls's
 if (! exists ("assoc.subgroups")) {
-  # no class vectors specified -- use all cls files from norm.dir (these have between 2-5 classes)
-  cls.files <- list.files (norm.dir, pattern=".*\\.cls", full.names=TRUE)
+  # no class vectors specified -- use all cls files from filt.dir (these have between 2-5 classes)
+  cls.files <- list.files (filt.dir, pattern=".*\\.cls", full.names=TRUE)
   if (length (cls.files) > 0) {
     # marker selection and classification for each file in cls.files
     for (cls in cls.files) {   

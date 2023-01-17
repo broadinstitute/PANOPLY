@@ -27,6 +27,8 @@ option_list <- list(
   make_option(c("--normalize_proteomics"), type = "logical", dest = 'normalize_proteomics', help = "true/false indicating if input data should be normalized"),
   make_option(c("--norm_method"), type = "character", dest = 'norm_method', help = "normalization method ex: '2comp', median, mean"),
   make_option(c("--alt_method"), type = "character", dest = 'alt_method', help = "alt.method for comparison -- filtered datasets not generated"),
+    #filter:
+  make_option(c("--filter_proteomics"), type = "logical", dest = 'filter_proteomics', help = "true/false indicating if input data should be normalized"),
   make_option(c("--min_numratio_proteome", type = "integer", dest = 'min_numratio_proteome', help = "min_numratio value for proteome analysis")),
   make_option(c("--min_numratio_ptms", type = "integer", dest = 'min_numratio_ptms', help = "min_numratio value for PTM analysis (all types except proteome)")),
   make_option(c("--apply_sm_filter"), type="logical", dest = 'apply_sm_filter', help="if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)"),
@@ -154,6 +156,7 @@ p_load('yaml')
 # pipeline --evals all parameters at once
 # parse_sm_table
 # normalize_ms_data
+# filter
 # rna_protein_correlation
 # harmonize
 # sample_qc
@@ -269,26 +272,38 @@ check_parse_sm_params <- function(opt, yaml){
   }
 }
 
-# normalize_sm_data:
-check_normalize_sm_params <- function(opt, yaml){
-  if (!is.null(opt$norm_method) | !is.null(opt$alt_method) | !is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$apply_sm_filter) | !is.null(opt$normalize_proteomics)){
+# normalize_ms_data:
+check_normalize_ms_params <- function(opt, yaml){
+  if (!is.null(opt$norm_method) | !is.null(opt$alt_method) | !is.null(opt$normalize_proteomics)){
     if (!is.null(opt$norm_method)){
       yaml$panoply_normalize_ms_data$normalization$norm_method <- opt$norm_method
     }
     if (!is.null(opt$alt_method)) {
       yaml$panoply_normalize_ms_data$normalization$alt_method <- opt$alt_method
     }
-    if (!is.null(opt$min_numratio_proteome)) {
-      yaml$panoply_normalize_ms_data$gct_file_ids$proteome$min_numratio <- opt$min_numratio_proteome
-    }
-    if (!is.null(opt$min_numratio_ptms)) {
-      yaml$panoply_normalize_ms_data$gct_file_ids$phosphoproteome$min_numratio <- opt$min_numratio_ptms
-    }
-    if (!is.null(opt$apply_sm_filter)) {
-      yaml$panoply_normalize_ms_data$apply_sm_filter <- opt$apply_sm_filter
-    }
     if (!is.null(opt$normalize_proteomics)) {
       yaml$normalize.proteomics <- opt$normalize_proteomics
+    }
+    return(yaml)
+  }else{
+    return(yaml)
+  }
+}
+
+# filter:
+check_filter_params <- function(opt, yaml){
+  if (!is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$apply_sm_filter) | !is.null(opt$filter_proteomics)){
+    if (!is.null(opt$min_numratio_proteome)) {
+      yaml$panoply_filter$gct_file_ids$proteome$min_numratio <- opt$min_numratio_proteome
+    }
+    if (!is.null(opt$min_numratio_ptms)) {
+      yaml$panoply_filter$gct_file_ids$phosphoproteome$min_numratio <- opt$min_numratio_ptms
+    }
+    if (!is.null(opt$apply_sm_filter)) {
+      yaml$panoply_filter$apply_sm_filter <- opt$apply_sm_filter
+    }
+    if (!is.null(opt$filter_proteomics)) {
+      yaml$filter.proteomics <- opt$filter_proteomics
     }
     return(yaml)
   }else{
@@ -698,7 +713,8 @@ check_omicsev_params <- function(opt, yaml) {
 check_pipeline_params <- function(opt,yaml){
   yaml <- check_global_params(opt, yaml)
   yaml <- check_parse_sm_params(opt,yaml)
-  yaml <- check_normalize_sm_params(opt,yaml)
+  yaml <- check_normalize_ms_params(opt,yaml)
+  yaml <- check_filter_params(opt,yaml)
   yaml <- check_rna_protein_correlation_params(opt,yaml)
   yaml <- check_harmonize_params(opt,yaml)
   yaml <- check_association_params(opt,yaml)
@@ -738,11 +754,12 @@ write_custom_config <- function(yaml){
                 paste('label.type', '<-', paste('"', yaml$panoply_parse_sm_table$label_type_for_ms_exp$label_type, '"', sep = '')),
                 'set.label.type (label.type)', #This needs to be run after label.type in config.r!
                 paste('species.filter', '<-', yaml$panoply_parse_sm_table$species_filter),
-                #normalize_sm_data:
-                paste('apply.sm.filter', '<-', yaml$panoply_normalize_ms_data$apply_sm_filter),
+                #normalize_ms_data:
                 paste('norm.method', '<-', paste('"', yaml$panoply_normalize_ms_data$normalization$norm_method, '"', sep = '')),
                 paste('alt.method', '<-', paste('"', yaml$panoply_normalize_ms_data$normalization$alt_method, '"', sep = '')),
                 'if (norm.method == alt.method) alt.method <- NULL', #This should be run after norm and alt methods are defined
+                #filter:
+                paste('apply.sm.filter', '<-', yaml$panoply_filter$apply_sm_filter),
                 #rna_protein_correlation:
                 paste('rna.sd.threshold', '<-', yaml$panoply_rna_protein_correlation$rna$rna_sd_threshold),
                 paste('profile.plot.top.n', '<-', yaml$panoply_rna_protein_correlation$rna$profile_plot_top_n),
@@ -790,11 +807,11 @@ write_custom_config <- function(yaml){
                 "if (type == 'proteome') {",
                 paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$id_col),
                 paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$desc_col),
-                paste('  min.numratio', '<-', yaml$panoply_normalize_ms_data$gct_file_ids$proteome$min_numratio),
+                paste('  min.numratio', '<-', yaml$panoply_filter$gct_file_ids$proteome$min_numratio),
                 "} else {",
                 paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$id_col),
                 paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$desc_col),
-                paste('  min.numratio', '<-', yaml$panoply_normalize_ms_data$gct_file_ids$phosphoproteome$min_numratio),
+                paste('  min.numratio', '<-', yaml$panoply_filter$gct_file_ids$phosphoproteome$min_numratio),
                 '}',
                 #DEV_directory_and_file_names:
                 paste('rna.output.prefix', '<-', paste('"', yaml$DEV_directory_and_file_names$rna_output_prefix, '"', sep = '')),
@@ -852,7 +869,13 @@ parse_command_line_parameters <- function(opt){
     
   }else if (opt$module == 'normalize_ms_data' & check_if_any_command_line(opt)){
     yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
-    yaml <- check_normalize_sm_params(opt, yaml) #Returns updated yaml if module params were changed via command line
+    yaml <- check_normalize_ms_params(opt, yaml) #Returns updated yaml if module params were changed via command line
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+    
+    
+  }else if (opt$module == 'filter' & check_if_any_command_line(opt)){
+    yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
+    yaml <- check_filter_params(opt, yaml) #Returns updated yaml if module params were changed via command line
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
     

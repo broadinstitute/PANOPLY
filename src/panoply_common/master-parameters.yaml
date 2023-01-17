@@ -27,16 +27,17 @@ panoply_parse_sm_table:
 
 
 panoply_normalize_ms_data:
-  apply_sm_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
   normalization:
     norm_method: '2comp'           # options: 2comp (default), median, mean
     alt_method: 'median'           # alt.method for comparison -- filtered datasets not generated
+
+panoply_filter:
+  apply_sm_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
   gct_file_ids: #used in config.r 
     proteome:
       min_numratio: 2
     phosphoproteome:
       min_numratio: 1
-
 
 panoply_rna_protein_correlation:
   rna:

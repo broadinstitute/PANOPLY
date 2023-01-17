@@ -59,6 +59,7 @@ function usage {
   echo "   <SM-output-file> is Spectrum Mill output in ssv format"
   echo "   <parsed-data> is parsed (SM or other) data file, before normalization/filtering"
   echo "   <normalized-data> is normalized input data table in gct2 or gct3 format"
+  echo "   <filtered-data> is filtered input data table in gct2 or gct3 format"
   echo "   <expt-design-file> should contain Sample.ID, Experiment, Channel columns + optional annotation"
   echo "   <analysis_directory> is the directory name where the analysis is performed"
   echo "       if path is specified, only the basename is used; also used as tarfile name"
@@ -88,8 +89,8 @@ function usage {
   echo "     OPERATION CNAcorr requires (-i, -c), optional (-z); -i is tar output from CNAsetup"
   echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
-  echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
-  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
+  echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from filter/harmonize"
+  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from filter/harmonize"
   echo "     OPERATION immune required (-i, -c) OR (-rna, -r, -c), optional (-g, -z, -y); -i is tar output from harmonize (with RNA data)"
   echo "   Use -h to print this message."
 }
@@ -203,6 +204,7 @@ function analysisInit {
   # for OPERATION = filter (ie filter)
   if [ "$analysis" = "filter" ]; then
     createSubdirs $norm_dir
+    createSubdirs $filt_dir
     if [ ! -f "$norm_dir/$normalized_output" ]; then
       if [ "$norm_data" = "" ]; then 
         echo "Normalized data not found ... abort"
@@ -216,19 +218,19 @@ function analysisInit {
   
   
   # all other OPERATIONs
-  if [ ! -d $norm_dir ]; then
-    echo "Directory not found: $analysis_dir/$norm_dir ... abort"
+  if [ ! -d $filt_dir ]; then
+    echo "Directory not found: $analysis_dir/$filt_dir ... abort"
     exit 1
   fi
   # immune analysis needs only RNA data -- all others need filtered data
   if [ "$analysis" != "immune" ]; then 
     if [ "$filt_data" = "" ]; then
-      if [ ! -f $norm_dir/$filtered_output ]; then
-        echo "Filtered dataset not found: $norm_dir/$filtered_output ... abort"
+      if [ ! -f $filt_dir/$filtered_output ]; then
+        echo "Filtered dataset not found: $filt_dir/$filtered_output ... abort"
         exit 1
       fi
     else
-      cp $filt_data $norm_dir/$filtered_output
+      cp $filt_data $filt_dir/$filtered_output
     fi
   fi
   
@@ -329,8 +331,8 @@ function analysisInit {
 ## set defaults
 #  work with absolute paths for file/dir links/names
 sm_file=
-norm_data=
 parsed_data=
+norm_data=
 filt_data=
 expt_file=
 input_tar=
@@ -362,7 +364,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  parseSM|filter|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
+  parseSM|normalize|filter|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -417,12 +419,12 @@ case $op in
                 usage
                 exit 1
               fi ;;
-  filter ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
+  normalize ) if [[ ("$input_tar" = "")  &&  ("$parsed_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
                 usage
                 exit 1
               fi ;;
-  normalize ) if [[ ("$input_tar" = "")  &&  ("$parsed_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
+  filter ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
                 usage
                 exit 1
@@ -492,6 +494,7 @@ esac
 data_dir="data"
 parse_dir="parsed-data"
 norm_dir="normalized-data"
+filt_dir="filtered-data"
 harmonize_dir="harmonized-data"
 rna_dir="rna"
 cna_dir="cna"
@@ -528,7 +531,7 @@ then
   initDataDir
   ## copy config and concat parameters -- this could change from run to run
   createConfig
-  createSubdirs $norm_dir   # always needed for any OPERATION
+  createSubdirs $filt_dir   # always needed for any OPERATION
 else   
   ### tar file specified
   ## extract tarball in current directory and set $analysis_dir
@@ -569,10 +572,10 @@ case $op in
             ;;
 #   filter: input is a normalized gct (v2/v3) file (or tar with normalized data) that should just be filtered
     filter ) analysisInit "filter"
-                for f in create-cls.r filter.r; do cp $code_dir/$f $norm_dir/$f; done
+                for f in create-cls.r filter.r; do cp $code_dir/$f $filt_dir/$f; done
                 
                 ## filtering and cls file generation
-                (cd $norm_dir;
+                (cd $filt_dir;
                  R CMD BATCH --vanilla "--args $prefix $data" filter.r;
                  R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
             ;;
@@ -676,7 +679,7 @@ case $op in
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
                  # number of bootstrap iterations are fixed
-                 Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
+                 Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -f $filt_dir -c $cluster_dir -d $tmpdir -z $code_dir
                  
                  # run association analysis on clusters to determine markers
                  R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
