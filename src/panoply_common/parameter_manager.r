@@ -820,6 +820,7 @@ write_custom_config <- function(yaml){
                 paste('data.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$data_dir,"'", sep = '')),
                 paste('parse.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$parse_dir,"'", sep = '')),
                 paste('norm.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$norm_dir,"'", sep = '')),
+                paste('filt.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$filt_dir,"'", sep = '')),
                 paste('harmonize.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$harmonize_dir,"'", sep = '')),
                 paste('expt.design.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$expt_design_file, "'", sep = ''), ')', sep = ''),
                 paste('rna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$rna_data_file, "'", sep = ''), ')', sep = ''),

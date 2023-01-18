@@ -21,7 +21,7 @@ p_load(purrr)
 p_load(glue)
 p_load(tibble)
 
-p_load(htmlwidgets)
+library(htmlwidgets) #must be 1.2.0, don't try to p_load
 # p_load(webshot)
 # webshot::instfull_phantomjs()
 

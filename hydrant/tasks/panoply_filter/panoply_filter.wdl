@@ -65,7 +65,7 @@ task panoply_filter {
               -y "final_output_params.yaml"
       else
         /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
-              -a ${inputData} \
+              -n ${inputData} \
               -r ${analysisDir} \
               -t ${type} \
               -c $codeDir \
@@ -75,7 +75,7 @@ task panoply_filter {
               -y "final_output_params.yaml"
       fi
       # Grab the filtered gct to set as output with appropriate name
-      outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-filt-NArm.gct"`
+      outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm-NArm.gct"`
       outTableName=${type}-${outTable} 
       cp $outGCT $outTableName
     fi
@@ -101,7 +101,7 @@ task panoply_filter {
   }
 }
 
-workflow panoply_filter {
+workflow panoply_filter_workflow {
   File inputData
   String dataType
   String standalone

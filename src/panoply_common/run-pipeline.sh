@@ -405,7 +405,7 @@ while [ "$1" != "" ]; do
 	-CMAPcfg )
 	         shift; cmap_config_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
-	* )      usage; exit 1
+	* )      echo "ERROR: Unknown ARGUMENT $1"; exit 1 
   esac
   shift
 done
@@ -416,76 +416,63 @@ case $op in
   parseSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = ""   \
                     || "$code_dir" = "" || "$common_data" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   normalize ) if [[ ("$input_tar" = "")  &&  ("$parsed_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   filter ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   RNAcorr )   if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
                     || "$code_dir" = "" || "$rna_data" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   harmonize ) if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
                     || "$code_dir" = "" || "$common_data" = "" || "$rna_data" = "" || "$cna_data" = "" ]] 
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CNAsetup )  if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CNAcorr )   if [[ ("$input_tar" = "") ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CMAPsetup ) if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CMAPconn ) if [[ ("$input_tar" = "") || "$cmap_scores" = "" || ($cmap_nperm -gt 0 && "$cmap_permutation" = "") ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   sampleQC )  if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   assoc )     if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "" || "$groups" = "")   \
                     || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   cluster )   if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
                     || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   immune )   if [[ ("$input_tar" = "")  &&  ("rna_data" = "" || "$analysis_dir" = "")   \
                    || "$code_dir" = "" ]]
              then
-               usage
-               exit 1
+               echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
              fi ;;
 
-  * )        usage           # unknown operation
+  * )        echo "ERROR: Unknown OPERATION $op"; exit 1          # unknown operation
              exit 1
 esac
   
@@ -564,7 +551,7 @@ case $op in
              ;;
 #   normalize: start with parsed data (SM or other) and normalize
     normalize ) analysisInit "normalize"
-                do cp $code_dir/normalize.r $norm_dir/normalize.r
+                cp $code_dir/normalize.r $norm_dir/normalize.r
                
                 ## normalization (normalization)
                 (cd $norm_dir;

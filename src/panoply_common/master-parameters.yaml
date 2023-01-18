@@ -288,6 +288,8 @@ DEV_directory_and_file_names:
   parse_dir: "parsed-data" 
   # norm.dir in config.r:         
   norm_dir: "normalized-data" 
+  # filt.dir in config.r:         
+  filt_dir: "filtered-data" 
   # harmonize.dir in config.r:      
   harmonize_dir: "harmonized-data" 
   # only run-pipeline.sh: 

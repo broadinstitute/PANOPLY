@@ -32,7 +32,7 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
   if (is.null (out.prefix)) out.prefix <- file.prefix
   
   
-  ds <- parse.gctx ( paste (file.prefix, '.gct', sep='') )
+  ds <- parse.gctx ( file.path( norm.dir, paste (file.prefix, '.gct', sep='') ) )
   input.ver <- ifelse (ds@version=="#1.3", 3, 2)
   # replace Description with gene names
   if (input.ver == 3 && any (grepl ('gene[.-_]?(name|id|symbol)s?$', colnames (ds@rdesc), ignore.case=TRUE))) {
@@ -147,7 +147,7 @@ filter.dataset <- function (file.prefix, numratio.file=NULL, out.prefix=NULL,
 
 ## apply filtering
 # enable num-ratio filter only if apply.SM.filter is set and the file is present
-nr.file.path <- file.path (pre.dir, paste (type, '-num-ratio.gct', sep=''))
+nr.file.path <- file.path (parse.dir, paste (type, '-num-ratio.gct', sep=''))
 if (apply.SM.filter && file.exists(nr.file.path)) {
   nr.file <- nr.file.path
 } else {
