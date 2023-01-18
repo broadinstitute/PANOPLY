@@ -24,8 +24,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_harmonize",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_harmonize/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptacdev/panoply_harmonize/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_harmonize",

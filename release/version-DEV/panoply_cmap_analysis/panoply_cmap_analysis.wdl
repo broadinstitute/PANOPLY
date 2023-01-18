@@ -65,7 +65,7 @@ task panoply_cmap_connectivity {
 
   runtime {
     docker : "broadcptacdev/panoply_cmap_analysis:DEV"
-    memory : select_first ([memory, 32]) + "GB"
+    memory : select_first ([memory, 60]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, permutations+1]) + ""
     preemptible : select_first ([num_preemptions, 1])

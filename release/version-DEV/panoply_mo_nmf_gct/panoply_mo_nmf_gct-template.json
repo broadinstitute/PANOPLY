@@ -1,6 +1,7 @@
 {
   "deleted": false,
   "inputs": {
+    "panoply_mo_nmf_gct_workflow.balance_omes": "",
     "panoply_mo_nmf_gct_workflow.cna_ome": "",
     "panoply_mo_nmf_gct_workflow.gene_set_database": "",
     "panoply_mo_nmf_gct_workflow.label": "",
@@ -56,19 +57,23 @@
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea_report.num_preemptions": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea_report.num_threads": "",
     "panoply_mo_nmf_gct_workflow.rna_ome": "",
-    "panoply_mo_nmf_gct_workflow.yaml_file": ""
+    "panoply_mo_nmf_gct_workflow.tol": "",
+    "panoply_mo_nmf_gct_workflow.var": "",
+    "panoply_mo_nmf_gct_workflow.yaml_file": "",
+    "panoply_mo_nmf_gct_workflow.zscore_mode": ""
   },
   "methodConfigVersion": 1,
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf_gct",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_mo_nmf_gct/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptacdev/panoply_mo_nmf_gct/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf_gct",
   "namespace": "broadcptacdev",
   "outputs": {
+    "panoply_mo_nmf_gct_workflow.nmf_balance_filter": "",
     "panoply_mo_nmf_gct_workflow.nmf_clust": "",
     "panoply_mo_nmf_gct_workflow.nmf_clust_report": "",
     "panoply_mo_nmf_gct_workflow.nmf_ssgsea": "",

@@ -5,7 +5,7 @@ PANOPLY is a platform for applying state-of-the-art statistical and machine lear
 This PANOPLY tutorial provides a tour of how to use the PANOPLY proteogenomic data analysis pipeline, using the breast cancer dataset published in Mertins, et. al.<sup>1</sup> The input dataset (`tutorial-brca-input.zip` file) can be found in the [tutorial](https://github.com/broadinstitute/PANOPLY/tree/dev/tutorial) subdirectory, along with a HTML version of this tutorial.
 
 ## 1. Requirements
-1. To run PANOPLY, you need a Terra account. To create an account follow the steps [here](https://support.terra.bio/hc/en-us/articles/360034677651-Account-setup-and-exploring-Terra). 
+1. To run PANOPLY, you need a Terra account. To create an account follow the steps [here](https://support.terra.bio/hc/en-us/articles/360034677651-Account-setup-and-exploring-Terra). A Google account is required to create a Terra account.
 2. Once you have an account, you need to create a [cloud billing account and project](https://support.terra.bio/hc/en-us/articles/360026182251-How-to-set-up-billing-in-Terra). Here, you will find step-by-step instructions to set up billing, including a free credits program for new users to try out Terra with $300 in Google Cloud credits.
 
 ## 2. Clone PANOPLY production workspace
@@ -182,6 +182,24 @@ Running PANOPLY workflows generate several interactive `*_report`s that are HTML
 ## panoply_unified_workflow
 
 In a manner similar to running `panoply_main_proteome` (which runs the full proteogenomic analysis workflow for the global *proteome* data), the `panoply_unified_workflow` can also be run. This workflow automatically runs proteogenomic analysis for the proteome and phosphoproteome data, in addition to immune analysis (using `panoply_immune_analysis`), outlier analysis (using `panoply_blacksheep`) and NMF multi-omic clustering (using `panoply_mo_nmf`). The `panoply_unified_workflow` can also run CMAP analysis (using `panoply_cmap_analysis`) but this modules is disabled, since running it can be expensive (about $150). The CMAP module can be enabled by setting `run_cmap` to `"true"`. Again, all results and reports can be found under the `OUTPUTS` tab, with descriptions of reports at [Navigating Results](https://github.com/broadinstitute/PANOPLY/wiki/Navigating-Results).
+
+
+## Time and Cost
+
+The table below summarizes expected time and cost for running various components of PANOPLY on the tutorial dataset. The table also provides ballpark estimates and ranges for each component assuming default parameter settings.
+
+The time and cost can vary depending on runtime conditions, pre-emption of running jobs, and parameter settings. For example, increasing the number of random permutations for multi-omics NMF clusters (`panoply_mo_nmf`) or CMAP analysis (`panoply_cmap_analysis`) will result in proportional increase in cost and time. Terra also includes a caching mechanism that reuses results for modules with no changes (to the module and input data/parameters). Enabling call caching can result in significant cost and time savings when only a few modules in a pipeline need to be rerun. In addition, Terra dispatches modules in parallel -- modules with input data available are run in parallel. This reduces total pipeline run time when compared to the cumulative time needed to run all modules.
+
+| Item                     |             |Approx. Time (Range)|Approx. Cost (Range)|
+|--------------------------|-------------|:------------------:|:------------------:|
+| Startup Notebook to prepare workspace (`panda`) | | 45 min <br />(30-60 min) | $1 <br />($0-$1) |
+| Main pipeline for proteome data (`panoply_main`) | | 3.5 hr <br />(3-4 hr) | $2 <br />($1-$5) |
+| Unified pipeline for proteome+PTM, including NMF multi-omics clustering and CMAP analysis (`panoply_unified_workflow`) |||
+| |Total | 9.5 hr <br />(8-10 hr) | $55 <br />($50-$75) |
+| |Main pipeline on proteome+PTM (`panoply_main`) | 4.5 hr <br />(3-5 hr) | $5 <br />($1-$10) |
+| |Multi-omics NMF clustering (`panoply_mo_nmf`) | 4 hr <br />(3-4 hr) | $25 <br />($15-$50) | 
+| |CMAP analysis (`panoply_cmap_analysis`) | 3 hr <br />(2-3 hr) | $25 <br />($15-$50) |
+| Storage for input data + results of pipeline runs (~15 GB total) | | | $2-$3 / month |
 
 
 ### References

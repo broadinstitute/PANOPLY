@@ -1,13 +1,15 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data_workflow/versions/1/plain-WDL/descriptor" as normalize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/3/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/1/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/16/plain-WDL/descriptor" as mo_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_immune_analysis_workflow/versions/2/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_make_pairs_workflow/versions/1/plain-WDL/descriptor" as make_pairs_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_assemble_results/versions/1/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_workflow/versions/1/plain-WDL/descriptor" as normalize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/14/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/3/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/23/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_gct/versions/5/plain-WDL/descriptor" as mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/3/plain-WDL/descriptor" as immune_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_make_pairs_workflow/versions/3/plain-WDL/descriptor" as make_pairs_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/5/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/3/plain-WDL/descriptor" as so_nmf_sankey_wdl
 
 
 workflow panoply_unified_workflow {
@@ -81,6 +83,7 @@ workflow panoply_unified_workflow {
             job_identifier="${job_id}-${pair.left}",
             run_ptmsea="${run_ptmsea}",
             run_cmap = "${run_cmap}",
+            run_nmf = "false",
             input_cna="${cna_data}",
             input_rna_v3="${rna_data}",
             sample_annotation="${sample_annotation}",
@@ -108,9 +111,23 @@ workflow panoply_unified_workflow {
     }
   }
   
-  ### NMF:
+  ### Single-ome NMF
+  call so_nmf_wdl.panoply_so_nmf_workflow as so_nmf {
+    input:
+      yaml = yaml,
+      job_id = job_id,
+      prote_ome = norm.normalized_data_table[0],
+      phospho_ome = norm.normalized_data_table[1],
+      acetyl_ome = norm.normalized_data_table[2],
+      ubiquityl_ome = norm.normalized_data_table[3],
+      rna_data = rna_data,
+      cna_data = cna_data,
+      run_sankey = "false" # run sankey_workflow separately
+  }
+
+  ### Multi-omics NMF:
   if ( run_nmf == "true" ){
-    call mo_nmf_wdl.panoply_mo_nmf_gct_workflow as nmf {
+    call mo_nmf_wdl.panoply_mo_nmf_gct_workflow as mo_nmf {
       input:
         yaml_file = yaml,
         label = job_id,
@@ -118,6 +135,14 @@ workflow panoply_unified_workflow {
         rna_ome = rna_data,
         cna_ome = cna_data
     }
+  }
+  
+  ### NMF Sankey Diagrams (SO and MO nmf)
+  call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as all_nmf_sankey {
+  input:
+    so_nmf_tar = so_nmf.nmf_results,
+    mo_nmf_tar = mo_nmf.nmf_clust, #will exist if mo_nmf was run
+    label = job_id
   }
   
   ### IMMUNE:
@@ -143,15 +168,19 @@ workflow panoply_unified_workflow {
       norm_report = norm.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,
+      omicsev_report = pome.omicsev_report,
       sampleqc_report = pome.sample_qc_report,
       assoc_report = pome.association_report,
-      cons_clust_report = pome.cons_clust_report,
       blacksheep_tar = outlier.blacksheep_tar,
       blacksheep_report = outlier.blacksheep_report,
-      mo_nmf_tar = nmf.nmf_clust,
-      mo_nmf_report = nmf.nmf_clust_report,
-      mo_nmf_ssgsea_tar = nmf.nmf_ssgsea,
-      mo_nmf_ssgsea_report = nmf.nmf_ssgsea_report,
+      so_nmf_results = so_nmf.nmf_results,
+      so_nmf_reports = so_nmf.nmf_reports,
+      so_nmf_sankey_results = all_nmf_sankey.sankey_tar,
+      so_nmf_sankey_report = all_nmf_sankey.sankey_report,
+      mo_nmf_tar = mo_nmf.nmf_clust,
+      mo_nmf_report = mo_nmf.nmf_clust_report,
+      mo_nmf_ssgsea_tar = mo_nmf.nmf_ssgsea,
+      mo_nmf_ssgsea_report = mo_nmf.nmf_ssgsea_report,
       immune_tar = immune.outputs,
       immune_report = immune.report
 
