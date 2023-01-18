@@ -144,13 +144,15 @@ task panoply_cosmo_report {
   	
   	if [ ${STANDALONE} == false ]; then
   	  cosmo_res_path="$tar_dir/$(ls $tar_dir | head -1)/cosmo-data/final_res_folder/cosmo_final_result.tsv"
+  	  sample_corr_path="$tar_dir/$(ls $tar_dir | head -1)/cosmo-data/method1_folder/sample_correlation.csv"
   	else
   	  cosmo_res_path="$tar_dir/$(ls $tar_dir | head -1)/final_res_folder/cosmo_final_result.tsv"
+  	  sample_corr_path="$tar_dir/$(ls $tar_dir | head -1)/method1_folder/sample_correlation.csv"
     fi
 
   	R -e \
   	  "rmarkdown::render('/prot/proteomics/Projects/PGDAC/src/cosmo/panoply_cosmo_report.Rmd', 
-  	  params = list(final_table_path = '$cosmo_res_path', d1_file_name = '${d1_file_name}', d2_file_name = '${d2_file_name}'),
+  	  params = list(final_result_path = '$cosmo_res_path', d1_file_name = '${d1_file_name}', d2_file_name = '${d2_file_name}', sample_corr_path = '$sample_corr_path'),
       output_dir = getwd())"
   }
 

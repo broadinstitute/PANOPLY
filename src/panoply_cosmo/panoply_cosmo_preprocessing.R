@@ -35,7 +35,7 @@ sample_label <- yaml_out$cosmo.params$sample_label
 ## read data from d1 file and d2 file
 for (file in c(d1_path, d2_path)) {
   ## read data
-  ex <- strsplit(basename(file), split="\\.")[[1]][-1]
+  ex <- tail(strsplit(basename(file), split="\\.")[[1]], n=1)
   if (ex == 'csv') {
     data_out <- read.csv(file)
     # change geneSymbol column name to ID
@@ -71,16 +71,19 @@ for (file in c(d1_path, d2_path)) {
 sample_anno <- read.csv(sample_csv_path)
 sample_label_list <- unlist(strsplit(x=sample_label, split=','))
 
+# Check for good sample annotations only
+# NOTE: if you change anything here, also change it in PANOPLY/panda/panda-src/build-config.r
+# in the select_COSMO_attributes function
 good_sample_labels <- c()
 for (label in sample_label_list) {
   if (!(label %in% names(sample_anno))) {
     warning(paste("Sample label", label, "is not in sample annotation file"))
-  } else if (min(base::table(sample_anno[, label])) < min(10, dim(sample_anno)[1] / 3)) {
+  } else if (min(base::table(sample_anno[, label])) < min(10, dim(sample_anno)[1] / 5)) {
     warning(paste("Sample label", label, "is not well-balanced. It is being excluded."))
   } else if (any(is.na(sample_anno[, label]))) {
     warning(paste("Sample label", label, "has NAs. It is being excluded."))
   } else if (length(unique(sample_anno[, label])) < 2) {
-    warning("Sample label", label, "only has one level. It is being excluded.")
+    warning(paste("Sample label", label, "only has one level. It is being excluded."))
   } else if (length(unique(sample_anno[, label])) > 2) {
     warning(paste("Sample label", label, "being excluded because COSMO does not handle classes with more than 2 levels."))
   } else {

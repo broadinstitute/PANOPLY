@@ -591,7 +591,7 @@ select_COSMO_attributes <- function() {
   for (col in potential_cols) {
     if (!(col %in% names(annot))) {
       warning(paste0("Sample label '", col, "' is not in sample annotation file"))
-    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 3)) {
+    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 5)) {
       warning(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
     } else if (any(is.na(annot[, col]))) {
       warning(paste0("Sample label '", col, "' has NAs. It is being excluded."))
