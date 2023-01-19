@@ -3,8 +3,8 @@ title: "PANOPLY COSMO Report"
 output: html_document
 date: "`r Sys.Date()`"
 params:
-  final_result_path: "final_res_folder/cosmo_final_result.tsv"
-  sample_corr_path: "method1_folder/sample_correlation.csv"
+  final_result_path: "/Users/svartany/Downloads/output 13/final_res_folder/cosmo_final_result.tsv"
+  sample_corr_path: "/Users/svartany/Downloads/output 13/method1_folder/sample_correlation.csv"
   d1_file_name: "Data1"
   d2_file_name: "Data2"
 ---
@@ -32,7 +32,7 @@ for (column in names(final_result_table)[2:4]) {
 # index to just samples with mislabeling
 mislabeled_element <- t(apply(final_result_table, 1, function(r) r != r[1]))
 mislabeled_row <- apply(mislabeled_element, 1, any)
-mislabeled_sample_names <- final_result_table$Sample[mislabeled_row]
+mislabeled_sample_names <- unique(unlist(final_result_table[mislabeled_row,]))
 
 # add coloring
 final_result_table[mislabeled_element] <- cell_spec(final_result_table[mislabeled_element], color = 'red')
@@ -50,8 +50,6 @@ cat("COSMO found ",
     " mislabeled samples in these datasets. Only the mislabeled samples are shown below.", sep = '')
 ```
 ```{r cosmo_table_2}
-mislabeled_result_table <- mislabeled_result_table[1:5,]
-
 mislabeled_result_table[,-1] %>%
   kable(escape = FALSE) %>%
   kable_styling("striped", full_width = F) %>% 
@@ -66,7 +64,8 @@ sample_corr <- as.matrix(read.csv(params$sample_corr_path))
 sample_corr_mislabeled <- sample_corr[mislabeled_sample_names, mislabeled_sample_names]
 heatmap(sample_corr_mislabeled,
         Rowv = NA,
-        Colv = NA)
+        Colv = NA,
+        margins = c(6, 6))
 ```
 
 
