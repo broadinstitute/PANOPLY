@@ -1,5 +1,10 @@
 #!/bin/bash
 
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
+
+
 # get the file basenames, remove extension (only csv of gct allowed)
 d1_file_name=$(basename -s .csv $(basename -s .gct $d1_file))
 d2_file_name=$(basename -s .csv $(basename -s .gct $d2_file))

@@ -1,9 +1,13 @@
 workflow panoply_cosmo_workflow {
 	String STANDALONE
+	File yaml_file
+	File? panoply_harmonize_tar
 
 	call panoply_cosmo {
 		input:
-			STANDALONE = STANDALONE
+			STANDALONE = STANDALONE,
+			yaml_file = yaml_file,
+			panoply_harmonize_tar = panoply_harmonize_tar
 	}
 	
 	if(panoply_cosmo.run_cosmo_final) {
@@ -15,12 +19,17 @@ workflow panoply_cosmo_workflow {
         d2_file_name = panoply_cosmo.d2_file_name
 	  }
 	}
+	
+	output {
+	  File cosmo_tar = panoply_cosmo.cosmo_tar
+	  File? cosmo_report = panoply_cosmo_report.cosmo_report_html
+	}
 }
 
 task panoply_cosmo {
 	String STANDALONE
 	File yaml_file
-	Boolean run_cosmo = true
+	Boolean? run_cosmo
 	String? sample_label
 
 	File? panoply_harmonize_tar
@@ -41,11 +50,11 @@ task panoply_cosmo {
 		Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
 			--module cosmo \
 			--master_yaml ${yaml_file} \
-			--cosmo_run_cosmo ${run_cosmo} \
+			${if defined(run_cosmo) then "--cosmo_run_cosmo " + "'${run_cosmo}'" else ""} \
 			${if defined(sample_label) then "--cosmo_sample_label " + "'${sample_label}'" else ""}
 
     yaml_file="final_output_params.yaml"
-		R -e "cat(yaml::read_yaml('$yaml_file')[['cosmo.params']][['run_cosmo']], file = 'run_cosmo.txt', sep = '\n')"
+		R -e "cat(tolower(yaml::read_yaml('$yaml_file')[['cosmo.params']][['run_cosmo']]), file = 'run_cosmo.txt', sep = '\n')"
 		run_cosmo=$(cat 'run_cosmo.txt')
 
 		if [ $run_cosmo == true ]; then

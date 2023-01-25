@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
+
+
 # preprocess PANOPLY files for input to COSMO
 
 ###############################################################################

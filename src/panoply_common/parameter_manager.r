@@ -173,11 +173,8 @@ p_load('yaml')
 # ssgsea_projection
 # ptm_normalization
 # mimp
-<<<<<<< HEAD
 # cosmo
-=======
 # omicsev
->>>>>>> dev
 
 ### FUNCTIONS:
 
@@ -681,7 +678,6 @@ check_mimp_params <- function(opt, yaml){
   return(yaml)
 }
 
-<<<<<<< HEAD
 # cosmo:
 check_cosmo_params <- function(opt, yaml){
   if (!is.null(opt$cosmo_run_cosmo)){
@@ -689,7 +685,10 @@ check_cosmo_params <- function(opt, yaml){
   }
   if (!is.null(opt$cosmo_sample_label)){
     yaml$cosmo.params$sample_label <- opt$cosmo_sample_label
-=======
+  }
+  return(yaml)
+}
+
 # omicsev:
 check_omicsev_params <- function(opt, yaml) {
   if (!is.null(opt$omicsev_class_column_name)) {
@@ -706,7 +705,6 @@ check_omicsev_params <- function(opt, yaml) {
   }
   if (!is.null(opt$omicsev_do_function_prediction)) {
     yaml$panoply_omicsev$do_function_prediction <- opt$omicsev_do_function_prediction
->>>>>>> dev
   }
   return(yaml)
 }

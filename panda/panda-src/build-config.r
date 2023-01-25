@@ -575,13 +575,13 @@ panda_colors_edit <- function(){
 ### ===
 
 # initialize this
-cosmo.params <- list(run.cosmo = FALSE)
+cosmo.params <- list(run_cosmo = FALSE)
 
 # function to get used input for cosmo
 select_COSMO_attributes <- function() { 
   
   # initialize again
-  cosmo.params <<- list(run.cosmo = FALSE)
+  cosmo.params <<- list(run_cosmo = FALSE)
   
   annot <- read_annot()
   potential_cols <- setdiff(names(annot), ignore.cols)
@@ -636,14 +636,14 @@ select_COSMO_attributes <- function() {
   if (length(valid_user_columns) > 0) {
     cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
     cat("\n\nCOSMO WILL BE RUN.\n")
-    run.cosmo <- TRUE
+    run_cosmo <- TRUE
   } else {
     cat("NO ATTRIBUTES SELECTED. COSMO will not be run.\n")
-    run.cosmo <- FALSE
+    run_cosmo <- FALSE
   }
   
-  cosmo.params <<- list(run.cosmo = run.cosmo,
-                        sample.label = paste(valid_user_columns, collapse = ','))
+  cosmo.params <<- list(run_cosmo = run_cosmo,
+                        sample_label = paste(valid_user_columns, collapse = ','))
   
   cat(DONE)
 }
