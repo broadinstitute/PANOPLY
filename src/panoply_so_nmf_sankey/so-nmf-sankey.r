@@ -28,6 +28,7 @@ p_load(htmlwidgets)
 
 # For SankeyDiagram()
 library('flipTransformations')
+library('flipU')
 p_load('networkD3') # needed for sankeyNetwork()
 source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
 # NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded
