@@ -730,11 +730,8 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_blacksheep_params(opt, yaml)
   yaml <- check_ptm_normalization_params(opt, yaml)
   yaml <- check_mimp_params(opt, yaml)
-<<<<<<< HEAD
   yaml <- check_cosmo_params(opt, yaml)
-=======
   yaml <- check_omicsev_params(opt, yaml)
->>>>>>> dev
   return(yaml)
 }
 
@@ -894,6 +891,11 @@ parse_command_line_parameters <- function(opt){
     yaml <- check_omicsev_params(opt, yaml) #Returns updated yaml if module params were changed via command line
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
+  }else if (opt$module == 'cosmo' & check_if_any_command_line(opt)){
+    yaml <- check_global_params(opt, yaml)
+    yaml <- check_cosmo_params(opt,yaml)
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+    
   }else if (opt$module == 'sample_qc' & check_if_any_command_line(opt)){
     #yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
     yaml <- check_sample_qc_params(opt, yaml) #Returns updated yaml if module params were changed via command line
@@ -960,10 +962,6 @@ parse_command_line_parameters <- function(opt){
 
   }else if (opt$module == 'mimp' & check_if_any_command_line(opt)){
     yaml <- check_mimp_params(opt,yaml)
-    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
-    
-  }else if (opt$module == 'cosmo' & check_if_any_command_line(opt)){
-    yaml <- check_cosmo_params(opt,yaml)
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'pipeline'){
