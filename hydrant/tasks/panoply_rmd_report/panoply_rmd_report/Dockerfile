@@ -19,8 +19,6 @@ RUN R -e "library(pacman);p_install('shiny')"
 RUN R -e "library(pacman);p_install('plotly')"
 RUN R -e "library(pacman);p_install('seriation')"
 RUN R -e "library(pacman);p_install('kableExtra')"
-RUN R -e "library(pacman);p_install('networkD3')"
-RUN R -e "library(pacman);p_install('readr')"
 
 
 ## install missing fonts and images required for morpheus

@@ -13,7 +13,7 @@ RUN echo 'if (! require (mimp)) { \
       > /tmp/mimp-packages.R \
    && Rscript /tmp/mimp-packages.R
 
-RUN R -e "install.packages(c('stringr', 'tibble', 'yaml', 'seqinr'),\
+RUN R -e "install.packages(c('yaml', 'seqinr'),\
     dependencies=TRUE,\
     repos = 'http://cran.rstudio.com/')"
 

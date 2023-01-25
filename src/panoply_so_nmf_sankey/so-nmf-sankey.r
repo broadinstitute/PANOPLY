@@ -27,6 +27,7 @@ library(htmlwidgets) #must be 1.2.0, don't try to p_load
 
 
 # For SankeyDiagram()
+library('flipU')
 library('flipTransformations')
 p_load('networkD3') # needed for sankeyNetwork()
 source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
