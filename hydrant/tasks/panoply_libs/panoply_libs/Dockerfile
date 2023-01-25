@@ -44,10 +44,8 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( caret ); \
 	p_install( circlize ); \
 	p_install( cluster ); \
-	p_install( dplyr ); \
 	p_install( e1071 ); \
 	p_install( fastcluster ); \
-	p_install( ggplot2 ); \
 	p_install( glmnet ); \
 	p_install( gplots ); \
 	p_install( lattice ); \
@@ -68,6 +66,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( smacof ); \
 	p_install( sn ); \
 	p_install( tensor ); \
+	p_install( tidyverse ); \
 	p_install( tools ); \
 	p_install( verification ); \
 	p_install( WGCNA ); \

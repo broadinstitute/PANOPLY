@@ -27,6 +27,7 @@ p_load(htmlwidgets)
 
 
 # For SankeyDiagram()
+library('flipU')
 library('flipTransformations')
 library('flipU')
 p_load('networkD3') # needed for sankeyNetwork()
