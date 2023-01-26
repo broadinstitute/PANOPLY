@@ -21,7 +21,7 @@ p_load(purrr)
 p_load(glue)
 p_load(tibble)
 
-p_load(htmlwidgets)
+library(htmlwidgets) #must be 1.2.0, don't try to p_load
 # p_load(webshot)
 # webshot::instfull_phantomjs()
 
@@ -29,7 +29,6 @@ p_load(htmlwidgets)
 # For SankeyDiagram()
 library('flipU')
 library('flipTransformations')
-library('flipU')
 p_load('networkD3') # needed for sankeyNetwork()
 source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
 # NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded

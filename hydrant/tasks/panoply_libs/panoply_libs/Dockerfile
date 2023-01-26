@@ -6,6 +6,13 @@ RUN apt-get -t unstable install -y libssl-dev
 RUN apt-get -t unstable install -y libcurl4-openssl-dev
 RUN apt-get install -y jags
 
+# devtools dependencies
+RUN apt-get -t unstable install -y libxml2-dev  # required for R-package 'XML'
+RUN apt-get -t unstable install -y pandoc  # rmarkdown
+RUN apt-get -t unstable install -y libfontconfig1-dev  # font config library for R-package kableExtra
+RUN apt-get -t unstable install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
+RUN apt-get -t unstable install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
+
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
 RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
@@ -33,6 +40,7 @@ RUN echo 'install.packages ( "estimate", \
 
 RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
         dependencies = TRUE ); library( pacman ); \
+	p_install( devtools ); \
 	p_install( data.table ); \
 	p_install( MASS ); \
 	p_install( NMF ); \
@@ -53,7 +61,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( maptools ); \
 	p_install( mclust ); \
 	p_install( misc3d ); \
-	p_install( mixtools ); \
+	devtools::install_version("mixtools", version = "1.2.0"); \
 	p_install( nlme ); \
 	p_install( optparse ); \
 	p_install( parmigene ); \

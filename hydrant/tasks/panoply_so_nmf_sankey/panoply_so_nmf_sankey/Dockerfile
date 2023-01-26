@@ -9,7 +9,6 @@ RUN R -e "install.packages('/prot/proteomics/Projects/PGDAC/packages/flipTransfo
 # earlier version for proper formatting in .{tabset} HTML
 RUN R -e "devtools::install_version('htmlwidgets', version = '1.5.4')"
 
-
 COPY src /prot/proteomics/Projects/PGDAC/src
 
 
