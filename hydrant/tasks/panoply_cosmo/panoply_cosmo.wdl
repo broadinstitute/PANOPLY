@@ -2,6 +2,7 @@ workflow panoply_cosmo_workflow {
 	String STANDALONE
 	File yaml_file
 	File? panoply_harmonize_tar
+	String label
 
 	call panoply_cosmo {
 		input:
@@ -16,7 +17,8 @@ workflow panoply_cosmo_workflow {
 	      STANDALONE = STANDALONE,
 	      cosmo_output_tar = panoply_cosmo.cosmo_tar,
 	      d1_file_name = panoply_cosmo.d1_file_name,
-        d2_file_name = panoply_cosmo.d2_file_name
+        d2_file_name = panoply_cosmo.d2_file_name,
+        label = label
 	  }
 	}
 	
@@ -139,6 +141,7 @@ task panoply_cosmo_report {
 	File cosmo_output_tar
 	String d1_file_name
 	String d2_file_name
+	String label
 
   Int? memory
   Int? local_disk_gb
@@ -163,10 +166,12 @@ task panoply_cosmo_report {
   	  "rmarkdown::render('/prot/proteomics/Projects/PGDAC/src/cosmo/panoply_cosmo_report.Rmd', 
   	  params = list(final_result_path = '$cosmo_res_path', d1_file_name = '${d1_file_name}', d2_file_name = '${d2_file_name}', sample_corr_path = '$sample_corr_path'),
       output_dir = getwd())"
+      
+      mv panoply_cosmo_report.html cosmo_${label}.html
   }
 
   output {
-      File cosmo_report_html = "panoply_cosmo_report.html"
+      File cosmo_report_html = "cosmo_" + label + ".html"
   }
 
   runtime {
