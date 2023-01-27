@@ -3,8 +3,8 @@ title: "PANOPLY COSMO Report"
 output: html_document
 date: "`r Sys.Date()`"
 params:
-  final_result_path: "final_res_folder/cosmo_final_result.tsv"
-  sample_corr_path: "method1_folder/sample_correlation.csv"
+  final_result_path: "/Users/svartany/Downloads/output 13/final_res_folder/cosmo_final_result.tsv"
+  sample_corr_path: "/Users/svartany/Downloads/output 13/method1_folder/sample_correlation.csv"
   d1_file_name: "Data1"
   d2_file_name: "Data2"
 ---
@@ -12,6 +12,9 @@ params:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(kableExtra)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
 ```
 
 ### COSMO Results
@@ -62,16 +65,30 @@ Below is a plot of pair-wise sample correlations for *only COSMO-identified misl
 ``` {r cosmo_sample_corr}
 sample_corr <- as.matrix(read.csv(params$sample_corr_path))
 sample_corr_mislabeled <- sample_corr[mislabeled_sample_names, mislabeled_sample_names]
-heatmap(sample_corr_mislabeled,
-        Rowv = NA,
-        Colv = NA,
-        margins = c(6, 6))
+
+heatmap.colors <- brewer.pal (11, "RdYlBu")
+
+myCorrHeatmap <- function(df, full_mat = F) {
+  heatmap.range <- range(as.vector(unlist(df)))
+  H <- Heatmap(df,
+        col=colorRamp2 (c(-1, 0, 1), c('blue', 'white', 'red')),
+        cluster_rows = F,
+        cluster_columns = F,
+        name = "corr.",
+        row_names_gp = gpar(fontsize = 10),
+        column_names_gp = gpar(fontsize = 10),
+        show_column_names = !(full_mat && dim(df)[1] > 35),
+        show_row_names = !(full_mat && dim(df)[1] > 35))
+  
+  draw(H)
+}
+
+myCorrHeatmap(sample_corr_mislabeled, full_mat = F)
+
 ```
 
 
 Below is a plot of pair-wise sample correlations for *all samples*.
 ``` {r cosmo_sample_corr_2}
-heatmap(sample_corr,
-        Rowv = NA,
-        Colv = NA)
+myCorrHeatmap(sample_corr, full_mat = T)
 ```
