@@ -19,7 +19,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cmap_anal
 
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/15/plain-WDL/descriptor" as omicsev_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/6/plain-WDL/descriptor" as cosmo_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/7/plain-WDL/descriptor" as cosmo_wdl
 
 
 workflow panoply_main {

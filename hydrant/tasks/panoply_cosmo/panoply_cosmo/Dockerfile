@@ -5,6 +5,6 @@ COPY --from=broadcptacdev/panoply_common:latest /prot/proteomics/Projects/PGDAC/
 
 COPY src /prot/proteomics/Projects/PGDAC/src/cosmo
 
-RUN R -e "BiocManager::install('cmapR')"
+RUN R -e "BiocManager::install(c('cmapR', 'ComplexHeatmap'))"
 
 RUN R -e "install.packages(c('pacman', 'optparse', 'rmarkdown', 'kableExtra'))"
