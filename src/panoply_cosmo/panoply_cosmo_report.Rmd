@@ -3,8 +3,8 @@ title: "PANOPLY COSMO Report"
 output: html_document
 date: "`r Sys.Date()`"
 params:
-  final_result_path: "/Users/svartany/Downloads/output 13/final_res_folder/cosmo_final_result.tsv"
-  sample_corr_path: "/Users/svartany/Downloads/output 13/method1_folder/sample_correlation.csv"
+  final_result_path: "final_res_folder/cosmo_final_result.tsv"
+  sample_corr_path: "method1_folder/sample_correlation.csv"
   d1_file_name: "Data1"
   d2_file_name: "Data2"
 ---
