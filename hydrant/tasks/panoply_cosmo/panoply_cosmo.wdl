@@ -1,3 +1,7 @@
+#
+# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+#
+
 workflow panoply_cosmo_workflow {
 	String STANDALONE
 	File yaml_file

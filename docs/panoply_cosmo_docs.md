@@ -8,6 +8,7 @@ Mandatory inputs:
 
 -   `STANDALONE` (Boolean): Determines whether COSMO should run as part of `panoply_main` pipeline with inputs from `panoply_harmonize`, or if COSMO should run independently with user-selected .gct inputs.
 -   `yaml_file` (File): Parameters yaml file from PANOPLY setup. Must contain `gene.id.col` and cosmo default parameters in the `cosmo.params` section.
+-   `label` (String): Label to use for output files.
 
 Mandatory inputs if `STANDALONE == "false"`:
 
@@ -22,11 +23,11 @@ Mandatory inputs if `STANDALONE == "true"`:
 Optional inputs:
 
 -   `sample_label` (String): Column header(s) in `sample_file` to use for prediction. This typically includes 'gender'/'sex'. Column will be excluded if it is unbalanced (likely to cause an error). If multiple inputs, separate inputs with a comma (e.g. 'gender,msi'). If no input, columns are pulled from default set in yaml file.
--   `run_cosmo` (Boolean): whether or not to actually run the cosmo functions. If `false`, the original tar file is saved as the final output and the cosmo html report is not generated.
+-   `run_cosmo` (Boolean): whether or not to actually run the cosmo functions. If `false`, the original tar file is saved as the final output and the cosmo html report is not generated. If no input, `run_cosmo` is pulled from default set in yaml file.
 
 ### Output
 
--   `cosmo_tar` (File): The main tar output. When `STANDALONE == "false"`, this tar has the same format as the original tar input (plus cosmo results if cosmo was run).
+-   `cosmo_tar` (File): The main tar output. When `STANDALONE == "false"`, this tar has the same data and format as the original tar input (plus cosmo results if cosmo was run).
 -   `cosmo_report_html` (File): The html report summarizing cosmo results.
 
 ### Common Pitfalls

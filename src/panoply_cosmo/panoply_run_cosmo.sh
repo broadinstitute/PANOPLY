@@ -4,11 +4,18 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
+#
+# COSMO code adapted from:
+# 1. Yoo, S. et al. A community effort to identify and correct mislabeled samples in proteogenomic studies. Patterns 2, 100245 (2021).
+# https://doi.org/10.1016/j.patter.2021.100245
+# 
 
-# get the file basenames, remove extension (only csv of gct allowed)
+
+
+# get the file basenames, remove extension (only csv or gct allowed)
 d1_file_name=$(basename -s .csv $(basename -s .gct $d1_file))
 d2_file_name=$(basename -s .csv $(basename -s .gct $d2_file))
-sample_file_name=$(basename -s .csv $(basename -s .gct $sample_file))
+sample_file_name=$(basename -s .csv $sample_file)
 
 # write file with d1 and d2 file names to use as task outputs
 echo $d1_file_name > d1_file_name.txt

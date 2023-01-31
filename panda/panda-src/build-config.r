@@ -574,13 +574,13 @@ panda_colors_edit <- function(){
 ### Section. COSMO labels
 ### ===
 
-# initialize this
+# initialize cosmo parameters in case user never runs COSMO cell
 cosmo.params <- list(run_cosmo = FALSE)
 
-# function to get used input for cosmo
+# function to get user input for cosmo
 select_COSMO_attributes <- function() { 
   
-  # initialize again
+  # initialize again in case user runs cell multiple times
   cosmo.params <<- list(run_cosmo = FALSE)
   
   annot <- read_annot()
