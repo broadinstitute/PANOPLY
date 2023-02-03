@@ -22,3 +22,27 @@
 From `dia_nn_match_between_runs`:
 - diann_first_pass_out (File): zip containing search results and spectral library for individual runs
 - diann_out (File): zip containing final search results (after match-between-runs) and spectral library
+
+## Developer guide 
+### Flow (`panoply_diann_speclib_gen`)
+1. Only FASTA (and DDA library) are supplied with no data
+2. Digest parameters and PTMs are specified
+3. If no DDA library supplied, `--lib` flag will be ignored
+
+### Flow (`panoply_diann_search`)
+1. `is_timsTOF` flag specifies how to convert files if needed
+    - `true` would call conversion from timsTOF `.d` (a folder) to DIA-NN internal format `.d.dia` (a file)
+    - `false` would call (parallelized) conversion from Exploris `.raw` to `.mzML` using [ThermoRawFileParser](https://github.com/compomics/ThermoRawFileParser)
+2. Converted files are fed into first pass via scatter
+    - Each first pass call receives a single `dia_file` and `speclib` to search with
+    - Search parameters are passed down from main workflow
+    - All generated `.quant` files and reports are gathered to pass to final step
+3. First pass search results are fed into match-between-runs step
+    - Converted and `.quant` files are used to do MBR (`--reanalyse` flag) 
+    - Search parameters are passed down from main workflow
+    - Final outputs and first pass outputs are stored
+
+### Paths
+- Working directory is `dia_nn`
+- Input data will be in `dia_nn/data`
+- Outputs will be in `dia_nn/out`
