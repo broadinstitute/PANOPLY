@@ -1,5 +1,5 @@
 # FragPipe DDA search and spectral library creation
-**Version**: FragPipe 19.0, MSFragger 3.6, Philosopher 4.7.0, IonQuant 1.8.9
+**Version**: FragPipe 19.1, MSFragger 3.7, Philosopher 4.8.0, IonQuant 1.8.10
 
 ## `panoply_fragpipe` — workflow to run FragPipe pipeline (equivalent to GUI version)
 ### Inputs
