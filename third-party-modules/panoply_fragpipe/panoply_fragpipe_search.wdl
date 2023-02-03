@@ -96,7 +96,7 @@ task fragpipe {
       frag_manifest=$(basename ${fragpipe_manifest})
     fi
     
-    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.6/MSFragger-3.6.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.8.9/IonQuant-1.8.9.jar --config-python /opt/conda/envs/fragpipe/bin/python
+    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.7/MSFragger-3.7.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.8.10/IonQuant-1.8.10.jar --config-python /opt/conda/envs/fragpipe/bin/python
 
     cd ..
     zip -r $out_zip $projdir/out -x \*.zip

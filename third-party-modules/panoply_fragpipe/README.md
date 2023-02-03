@@ -1,5 +1,5 @@
 # FragPipe DDA search and spectral library creation
-**Version**: FragPipe 19.0, MSFragger 3.6, Philosopher 4.7.0, IonQuant 1.8.9
+**Version**: FragPipe 19.1, MSFragger 3.7, Philosopher 4.8.0, IonQuant 1.8.10
 
 ## `panoply_fragpipe` — workflow to run FragPipe pipeline (equivalent to GUI version)
 ### Inputs
@@ -20,3 +20,14 @@ Paths to the raw files must start with `/root/fragpipe_fragpipe/data/` (this is 
 ```
 Once you save this file and upload to Google Bucket, you'd then configure the following parameter:
 - `fragpipe_manifest` (File): Google Bucket path to manifest file (.fp-manifest)
+
+## Developer guide 
+### Flow
+1. Files are localized into `/root/fragpipe/data` data folder from `files_folder` or `file_of_files` (if supplied)
+2. (Experimental) `try_one_file` flag removes all but one file in data folder. Used to test if workflow works without running on the whole dataset
+3. Manifest can either be user-supplied or automatically generated with `get_fp_manifest.py` script which doesn't assume any experimental design
+4. Docker contains MSFragger, philosopher, IonQuant, easyPQP that FragPipe headless uses
+### Paths
+- Working directory is `/root/fragpipe`
+- Input data will be in `/root/fragpipe/data`
+- Outputs will be in `/root/fragpipe/out`
