@@ -229,6 +229,7 @@ panoply_preprocess_gct:
  acc_type_in: refseq            ## Type of accession number in 'rid' object in GCT file (uniprot, refseq, symbol).
  seqwin_column: VMsiteFlanks    ## Column containing flanking sequences, separated by '|'. Only relevant if '--id_type_out' = 'seqwin'
  gene_symbol_column: geneSymbol ## Name of column listing gene names; used for gene centric reports.
+ humanize_gene_names: FALSE     ## If TRUE, gene symbols will be capitalized (for e.g. mouse or rat).
  sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
  localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
  mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
