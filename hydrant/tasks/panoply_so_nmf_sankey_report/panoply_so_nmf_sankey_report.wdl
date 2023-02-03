@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_so_nmf_report {
+task panoply_so_nmf_sankey_report {
     Int? memory
     Int? disk_space
     Int? num_threads
@@ -21,7 +21,7 @@ task panoply_so_nmf_report {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_so_nmf_report:latest"
+        docker : "broadcptacdev/panoply_so_nmf_sankey_report:latest"
         memory : select_first ([memory, 10]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""
@@ -34,6 +34,6 @@ task panoply_so_nmf_report {
     }
 }
 
-workflow panoply_so_nmf_report_workflow {
-    call panoply_so_nmf_report
+workflow panoply_so_nmf_sankey_report_workflow {
+    call panoply_so_nmf_sankey_report
 }

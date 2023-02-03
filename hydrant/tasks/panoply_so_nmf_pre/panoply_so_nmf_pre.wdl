@@ -11,10 +11,6 @@ task panoply_so_nmf_pre {
     File ome
     String ome_type
     
-    Float? tol  # Tolerance specifying the maximal accepted difference (as a fraction of total variance) between contributions from different data types. Used as stopping criterion to end optimization.
-    Float? var  # Explained variance by PCA. Used to extract the number of PCs explaining the specified fraction of variance in the multiomics data matrix.
-    String? zscore_mode # z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
-
     Int? memory
     Int? disk_space
     Int? num_threads
@@ -23,7 +19,7 @@ task panoply_so_nmf_pre {
     command {
         set -euo pipefail
         
-        # move $ome here, so the directory structure isn't retained
+        # move $ome to PWD, so the directory structure isn't retained
         cp ${ome} .
         ome_fname=$(basename ${ome})
         
@@ -42,7 +38,7 @@ task panoply_so_nmf_pre {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_mo_nmf_pre:DEV"
+        docker : "broadcptacdev/panoply_mo_nmf_pre:latest"
         memory: select_first ([memory, 16]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""
