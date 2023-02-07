@@ -58,7 +58,7 @@ main <- function(opt) {
     cluster.path.full <- file.path( opt$tmp.dir, opt$label, opt$clust.dir)
     
     ## path to GCT file
-    gct.str <- file.path(opt$tmp.dir, opt$label, opt$filt.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+    gct.str <- file.path(opt$tmp.dir, opt$label, opt$filt.dir, glue('{opt$type}-ratio-norm-filt.gct'))
     
     ## ################################################
     ## if the input is not a .tar file assume that theÍ
@@ -72,7 +72,7 @@ main <- function(opt) {
       cat(glue('Using minimal sd of: {opt$clustering.sd.threshold}\n\n'))
       
         cluster.path.full <- getwd()
-        gct.str <- file.path('..', opt$filt.dir, glue('{opt$type}-ratio-norm-NArm.gct'))
+        gct.str <- file.path('..', opt$filt.dir, glue('{opt$type}-ratio-norm-filt.gct'))
     }
   
   if(!dir.exists(cluster.path.full))

@@ -303,7 +303,7 @@ DEV_directory_and_file_names:
   expt_design_file: "exptdesign.csv"  
   parsed_output: "$prefix-ratio.gct"
   normalized_output: "$prefix-ratio-norm.gct"
-  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
+  filtered_output: "$prefix-ratio-norm-filt$subset_str.gct"
   # affects rna.data.file in config.r:
   rna_data_file: "rna-data.gct" 
   # affects cna.data.file in config.r :     

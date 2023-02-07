@@ -7,15 +7,15 @@ task panoply_filter {
   String standalone
   String analysisDir
   File yaml
+  String? combineReplicates
   String? filterProteomics
+  String? geneIdCol
   Int? ndigits
   Float? naMax
-  String? geneIdCol
+  String? noNA
+  String? proteinIdCol
+  String? proteinIdType
   Float? sdFilterThreshold
-  Float? minNumratioFraction
-  Int? minNumratioProteome
-  Int? minNumratioPTMs
-  String? applySMfilter
 
   String outTar = "panoply_filter-output.tar"
   String outTable = "filter_table-output.gct"
@@ -34,51 +34,45 @@ task panoply_filter {
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
       --module filter \
       --master_yaml ${yaml} \
+      ${"--combine_replicates " + combineReplicates} \
       ${"--filter_proteomics " + filterProteomics} \
-      ${"--ndigits " + ndigits} \
       ${"--gene_id_col " + geneIdCol} \
+      ${"--ndigits " + ndigits} \
       ${"--na_max " + naMax} \
-      ${"--sd_filter_threshold " + sdFilterThreshold} \
-      ${"--min_numratio_fraction " + minNumratioFraction} \
-      ${"--min_numratio_proteome " + minNumratioProteome} \
-      ${"--min_numratio_ptms " + minNumratioPTMs} \
-      ${"--apply_sm_filter " + applySMfilter}
-
-    # Find the flag for filter.proteomics in the yaml:
-    cfg='final_output_params.yaml'
-    echo "library(yaml);yaml=read_yaml('$cfg');filt=yaml[['filter.proteomics']];writeLines(as.character(filt), con='filt.txt')" > cmd.r
-    Rscript cmd.r
-    filt=`cat filt.txt`
+      ${"--no_na " + noNA} \
+      ${"--protein_id_col " + proteinIdCol} \
+      ${"--protein_id_type " + proteinIdType} \
+      ${"--sd_filter_threshold " + sdFilterThreshold}
     
-    # If not filtering input is the filtered tab and becomes the output, else run filtering:
-    if [ $filt = FALSE ]; then
-      cp ${inputData} ${type}-${outTable}
-      tar -c -f ${outTar} ${type}-${outTable}
+
+    if [[ ${standalone} = false ]]; then
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
+            -i ${inputData} \
+            -t ${type} \
+            -c $codeDir \
+            -o ${outTar} \
+            -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
+            -y "final_output_params.yaml"
     else
-      if [[ ${standalone} = false ]]; then
-        /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
-              -i ${inputData} \
-              -t ${type} \
-              -c $codeDir \
-              -o ${outTar} \
-              -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
-              -y "final_output_params.yaml"
-      else
-        /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
-              -n ${inputData} \
-              -r ${analysisDir} \
-              -t ${type} \
-              -c $codeDir \
-              -d $dataDir \
-              -o ${outTar} \
-              -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
-              -y "final_output_params.yaml"
-      fi
-      # Grab the filtered gct to set as output with appropriate name
-      outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm-NArm.gct"`
-      outTableName=${type}-${outTable} 
-      cp $outGCT $outTableName
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
+            -n ${inputData} \
+            -r ${analysisDir} \
+            -t ${type} \
+            -c $codeDir \
+            -d $dataDir \
+            -o ${outTar} \
+            -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
+            -y "final_output_params.yaml"
     fi
+
+    # Grab the filtered gct to set as output with appropriate name
+    outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm-filt.gct"` # grab filtered file
+    if [[ -z $outGCT ]]; then
+        echo "No filtered file detected. Using unfiltered file with qc-pass samples."
+        outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm.gct"` # grab normalized, unfiltered file
+    fi
+    outTableName=${type}-${outTable} 
+    cp $outGCT $outTableName
   >>>
 
   output {
@@ -102,28 +96,6 @@ task panoply_filter {
 }
 
 workflow panoply_filter_workflow {
-  File inputData
-  String dataType
-  String standalone
-  String analysisDir
-  File yaml
-  Int? ndigits
-  String? geneIdCol
-  Float? naMax
-  Float? sdFilterThreshold
-  Float? minNumratioFraction
 
-  call panoply_filter {
-    input:
-      inputData=inputData,
-      type=dataType,
-      standalone=standalone,
-      analysisDir=analysisDir,
-      yaml=yaml,
-      ndigits=ndigits,
-      geneIdCol=geneIdCol,
-      naMax=naMax,
-      sdFilterThreshold=sdFilterThreshold,
-      minNumratioFraction=minNumratioFraction
-  }
+  call panoply_filter
 }

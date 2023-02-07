@@ -16,7 +16,9 @@ global_parameters:
   gene_mapping:
     # Policy for combining/collapsing duplicate gene names:
     duplicate_gene_policy: maxvar
-    gene_id_col: geneSymbol           #now used by cmap to determine genesymbol column name
+    protein_id_col: 'id'              # provide name of column in phospho row metadata that indicates protein identifier/accession number
+    protein_id_type: 'ENSEMBLPROT'    # if 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
+    gene_id_col: 'geneSymbol'         # now used by cmap to determine genesymbol column name
 
   organism: human
 
@@ -24,6 +26,11 @@ panoply_parse_sm_table:
   label_type_for_ms_exp:
     label_type: TMT10          # alternatives: iTRAQ4, TMT10.126, TMT11
   species_filter: TRUE
+  gct_file_ids: #used in config.r 
+    proteome:
+      min_numratio: 2
+    phosphoproteome:
+      min_numratio: 1
 
 
 panoply_normalize_ms_data:
@@ -31,13 +38,12 @@ panoply_normalize_ms_data:
     norm_method: '2comp'           # options: 2comp (default), median, mean
     alt_method: 'median'           # alt.method for comparison -- filtered datasets not generated
 
+
 panoply_filter:
-  apply_sm_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
-  gct_file_ids: #used in config.r 
-    proteome:
-      min_numratio: 2
-    phosphoproteome:
-      min_numratio: 1
+  combine_replicates: 'mean'
+  no_na: FALSE
+  separate_qc_types: FALSE
+
 
 panoply_rna_protein_correlation:
   rna:
@@ -130,7 +136,7 @@ panoply_mimp:
   search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
   phosphosite_col: NULL                         # if search_engine = "other," provide name of column in phospho row metadata that indicates phosphosite position
   protein_id_col: NULL                          # if search_engine = "other," provide name of column in phospho row metadata that indicates protein identifier/accession number
-  protein_id_type: NULL                         # if search_engine = "other," assumed to be REFSEQ by default. If 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
+  protein_id_type: NULL                         # if 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
   mutation_AA_change_colname: "Protein_Change"  # name of column in mutation MAF file that indicates amino acid change due to mutation
   mutation_type_col: "Variant_Classification"   # name of column in mutation MAF file that indicates type of mutation (aka missense)
   sample_id_col: "Tumor_Sample_Barcode"         # name of column in mutation MAF file that indicates patient/sample ID 
@@ -307,7 +313,7 @@ DEV_directory_and_file_names:
   expt_design_file: "exptdesign.csv"  
   parsed_output: "$prefix-ratio.gct"
   normalized_output: "$prefix-ratio-norm.gct"
-  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
+  filtered_output: "$prefix-ratio-norm-filt$subset_str.gct"
   # affects rna.data.file in config.r:
   rna_data_file: "rna-data.gct" 
   # affects cna.data.file in config.r :     

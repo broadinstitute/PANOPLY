@@ -55,7 +55,7 @@ subset.str <- ifelse (data.subset=="", data.subset, paste ('-', data.subset, sep
 
 ## data subset -- whether to process the entire data set or only QC.pass samples
 #  (applicable for analysis that uses a specific dataset)
-master.prefix <- paste (type, '-ratio-norm-NArm', subset.str, sep='')
+master.prefix <- paste (type, '-ratio-norm-filt', subset.str, sep='')
 master.file <- file.path (filt.dir, paste (master.prefix, '.gct', sep=''))
 
 # id column (with unique row ids) in the gct file

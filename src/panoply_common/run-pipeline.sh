@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e # exit upon error condition
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
@@ -270,7 +271,7 @@ function analysisInit {
                 else
                   createSubdirs $cna_dir
                   #if [ "$fdr" != "" ]; then
-                  	 #echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
+                     #echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
                   #fi
                 fi ;;
     CMAPsetup ) if [ ! -f $cna_dir/$cmap_prefix-matrix.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-sigevents.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-pval.csv -o ! -f $data_dir/cmap-knockdown-genes-list.txt ]; then
@@ -315,7 +316,7 @@ function analysisInit {
                 createSubdirs $immune_dir
                 # add to config.r if specified 
                 if [ "$fdr" != "" ]; then
-                	 echo "immune.enrichment.fdr <- $fdr" >> $immune_dir/config.r;
+                   echo "immune.enrichment.fdr <- $fdr" >> $immune_dir/config.r;
                 fi
                 if [ "$groups" != "" ]; then
                   # class vectors to determine cluster enrichment
@@ -373,39 +374,39 @@ esac
 ## read in arguments
 while [ "$1" != "" ]; do
   case $1 in
-	-a )     shift; parsed_data=`readlink -f $1` ;;
-	-c )     shift; code_dir=`readlink -f $1` ;;
-	-d )     shift; common_data=`readlink -f $1` ;;
-	-e )     shift; expt_file=`readlink -f $1` ;;
-	-f )     shift; filt_data=`readlink -f $1` ;;
-	-g )     shift; groups=`readlink -f $1` ;;
-	-i )     shift; input_tar=`readlink -f $1` ;;
-	-o )     shift; output_tar=`readlink -f $1` ;;
-	-m )     shift; data=$1 ;;
-	-n )     shift; norm_data=`readlink -f $1` ;;
-	-p )     shift; param_file=`readlink -f $1` ;;
-	-r )     shift; analysis_dir=`readlink -f $1` ;;
-	-s )     shift; sm_file=`readlink -f $1` ;;
-	-t )     shift; prefix=$1 ;;
-	-pe )    shift; pe=$1 ;;
-	-y )     shift; yaml=`readlink -f $1` ;;
+  -a )     shift; parsed_data=`readlink -f $1` ;;
+  -c )     shift; code_dir=`readlink -f $1` ;;
+  -d )     shift; common_data=`readlink -f $1` ;;
+  -e )     shift; expt_file=`readlink -f $1` ;;
+  -f )     shift; filt_data=`readlink -f $1` ;;
+  -g )     shift; groups=`readlink -f $1` ;;
+  -i )     shift; input_tar=`readlink -f $1` ;;
+  -o )     shift; output_tar=`readlink -f $1` ;;
+  -m )     shift; data=$1 ;;
+  -n )     shift; norm_data=`readlink -f $1` ;;
+  -p )     shift; param_file=`readlink -f $1` ;;
+  -r )     shift; analysis_dir=`readlink -f $1` ;;
+  -s )     shift; sm_file=`readlink -f $1` ;;
+  -t )     shift; prefix=$1 ;;
+  -pe )    shift; pe=$1 ;;
+  -y )     shift; yaml=`readlink -f $1` ;;
   -z )     shift; fdr=$1 ;;
-	-rna )   shift; rna_data=`readlink -f $1` ;;
-	-cna )   shift; cna_data=`readlink -f $1` ;;
-	-CMAPgroup )
-	         shift; cmap_group=$1 ;;
-	-CMAPtype )
-	         shift; cmap_type=$1 ;;
-	-CMAPscr )
-	         shift; cmap_scores=$1 ;;
-	-CMAPnperm )
+  -rna )   shift; rna_data=`readlink -f $1` ;;
+  -cna )   shift; cna_data=`readlink -f $1` ;;
+  -CMAPgroup )
+           shift; cmap_group=$1 ;;
+  -CMAPtype )
+           shift; cmap_type=$1 ;;
+  -CMAPscr )
+           shift; cmap_scores=$1 ;;
+  -CMAPnperm )
            shift; cmap_nperm=$1 ;;
   -CMAPpmt )
            shift; cmap_permutation=$1 ;;
-	-CMAPcfg )
-	         shift; cmap_config_file=`readlink -f $1` ;;
+  -CMAPcfg )
+           shift; cmap_config_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
-	* )      echo "ERROR: Unknown ARGUMENT $1"; exit 1 
+  * )      echo "ERROR: Unknown ARGUMENT $1"; exit 1 
   esac
   shift
 done
@@ -499,7 +500,7 @@ fi
 expt_design_file="exptdesign.csv"
 parsed_output="$prefix-ratio.gct"
 normalized_output="$prefix-ratio-norm.gct"
-filtered_output="$prefix-ratio-norm-NArm$subset_str.gct"
+filtered_output="$prefix-ratio-norm-filt$subset_str.gct"
 rna_data_file="rna-data.gct"
 cna_data_file="cna-data.gct"
 
@@ -547,7 +548,7 @@ case $op in
 
                 ## data preprocessing (parsed-data)
                 (cd $parse_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" parseMSinput.r)
+                 Rscript parseMSinput.r $prefix $data)
              ;;
 #   normalize: start with parsed data (SM or other) and normalize
     normalize ) analysisInit "normalize"
@@ -555,37 +556,36 @@ case $op in
                
                 ## normalization (normalization)
                 (cd $norm_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" normalize.r)
+                 Rscript normalize.r $prefix $data)
             ;;
 #   filter: input is a normalized gct (v2/v3) file (or tar with normalized data) that should just be filtered
     filter ) analysisInit "filter"
-                for f in create-cls.r filter.r; do cp $code_dir/$f $filt_dir/$f; done
+                cp $code_dir/filter.r $filt_dir/filter.r
                 
                 ## filtering and cls file generation
                 (cd $filt_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" filter.r;
-                 R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
+                 Rscript filter.r $prefix $data)
             ;;
 #   RNAcorr: RNA-seq (or microarray) expression correlation with proteome
     RNAcorr )   analysisInit "RNAcorr"
                 for f in rna-seq.r rna-seq-correlation.r; do cp $code_dir/$f $rna_dir/$f; done
                 (cd $rna_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" rna-seq.r;
-                 R CMD BATCH --vanilla "--args $prefix $data" rna-seq-correlation.r)
+                 Rscript rna-seq.r $prefix $data;
+                 Rscript rna-seq-correlation.r $prefix $data)
              ;;
 #   harmonize: Harmonize RNA, CNA and proteome data to create gene-centric tables with common
 #              rows (genes) and columns (samples)
     harmonize ) analysisInit "harmonize"
                 for f in harmonize.r; do cp $code_dir/$f $harmonize_dir/$f; done
                 (cd $harmonize_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" harmonize.r)
+                 Rscript harmonize.r $prefix $data)
              ;;
 #   CNAsetup: setup directories and code for running CNA analysis
 #             input must be tar file obtained after harmonize
     CNAsetup )  analysisInit "CNAsetup"
                 for f in cna-analysis.r cna-analysis-setup.r generate-cna-plots.r; do cp $code_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" cna-analysis-setup.r)
+                 Rscript cna-analysis-setup.r $prefix $data)
                 # copy required outputs to job wd (parent of $analysis_dir)
                 cp $cna_dir/subgroups.txt $cna_dir/file_table.tsv ../.
                 for f in `cat $cna_dir/file_table.tsv`; do cp $cna_dir/$f ../.; done
@@ -597,7 +597,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-		            #echo "fdr_cna_corr <- $fdr" >> config.r;
+                #echo "fdr_cna_corr <- $fdr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
@@ -640,13 +640,13 @@ case $op in
     sampleQC )  analysisInit "sampleQC"
                 for f in sample-qc.r; do cp $code_dir/$f $qc_dir/$f; done
                 (cd $qc_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" sample-qc.r)
+                 Rscript sample-qc.r $prefix $data)
              ;;
 #   assoc: association analysis for cls's in GCT or supplied in input
     assoc )     analysisInit "assoc"
                 for f in assoc-analysis.r; do cp $code_dir/$f $assoc_dir/$f; done
                 (cd $assoc_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
+                 Rscript assoc-analysis.r $prefix $data)
              ;;
 #   cluster: perform consensus kmeans clustering
     cluster )   analysisInit "cluster"
@@ -669,14 +669,14 @@ case $op in
                  Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -f $filt_dir -c $cluster_dir -d $tmpdir -z $code_dir
                  
                  # run association analysis on clusters to determine markers
-                 R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
-                 R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r
+                 Rscript postprocess.R $prefix $data;
+                 Rscript assoc-analysis.r $prefix $data
              );;
 #   immune: immune analysis using RNA expression data
     immune )     analysisInit "immune"
                 for f in immune-analysis.r; do cp $code_dir/$f $immune_dir/$f; done
                 (cd $immune_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" immune-analysis.r)
+                 Rscript immune-analysis.r $prefix $data)
              ;;
 #   Unknown operation
     * )         echo "ERROR: Unknown OPERATION $op"; exit 1 
@@ -698,12 +698,12 @@ fi
 # ## netgestalt
 # echo "Generating tables for NetGestalt ..." >> $log_file
 # (cd netgestalt;
-#  R CMD BATCH --vanilla "--args $prefix $data" netgestalt-input-data.r)
+#  Rscript netgestalt-input-data.r $prefix $data)
 #   
 #   
 # ## correlation (needs tables from netgestalt)
 # echo "Correlation analysis ..." >> $log_file
 # (cd correlation;
-#  R CMD BATCH --vanilla "--args $prefix $data" run-correlation.r)
+#  Rscript run-correlation.r $prefix $data)
 # 
 

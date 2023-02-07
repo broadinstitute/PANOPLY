@@ -6,7 +6,7 @@ source ('config.r')
 library (pamr)
 
 
-data <- parse.gctx (file.path (filt.dir, sprintf ("%s-ratio-norm-NArm.gct", type)))
+data <- parse.gctx (file.path (filt.dir, sprintf ("%s-ratio-norm-filt.gct", type)))
 
 # if data has missing values, remove items with > na.threshold NAs and impute
 if (sum (is.na(data@mat)) > 0) {

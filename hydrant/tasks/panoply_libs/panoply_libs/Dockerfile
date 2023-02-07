@@ -29,6 +29,8 @@ RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
         "rhdf5", \
         "prada", \
 	"AnnotationDbi", \
+	"org.Hs.eg.db", \
+	"EnsDb.Hsapiens.v79", \
         "ComplexHeatmap", \
         "SummarizedExperiment" ) );' > /tmp/biocpkgs.R \
   && Rscript /tmp/biocpkgs.R

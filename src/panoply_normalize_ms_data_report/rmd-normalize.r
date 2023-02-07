@@ -43,7 +43,7 @@ rmd_normalize <- function(tar.file, label='pipeline-test', type='proteome', tmp.
     ## ##################################
     ## gather data for markdown file
     ## normalized data
-    gct.norm.str <- paste(tmp.dir, '/', label, '/normalized-data/', type, '-ratio-norm-NArm.gct', sep='')
+    gct.norm.str <- paste(tmp.dir, '/', label, '/normalized-data/', type, '-ratio-norm.gct', sep='')
     cat('## Importing file ', gct.norm.str, '\n', file=logfile, append=T)
 
     gct.norm <- parse.gctx( gct.norm.str )
