@@ -9,15 +9,16 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_setup/ve
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation/versions/2/plain-WDL/descriptor" as cna_corr_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/5/plain-WDL/descriptor" as assoc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/4/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/10/plain-WDL/descriptor" as download_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/14/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation_report/versions/3/plain-WDL/descriptor" as rna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
+
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/10/plain-WDL/descriptor" as download_wdl
 
 
 workflow panoply_main {

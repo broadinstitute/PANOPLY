@@ -15,6 +15,7 @@ A tool for large scale omics data tables evaluation. Find full OmicsEV documenta
 **Mandatory inputs if `STANDALONE = "false"`:**
 
 * `panoply_harmonize_tar` (File): Tar output from panoply_harmonize module.
+* `ome_type` (String): The PANOPLY omics type of the input (e.g. `"proteome").
 
 **Mandatory inputs if `STANDALONE = "true"`:**
 
