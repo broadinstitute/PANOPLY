@@ -33,23 +33,23 @@ RUN set -ex \
     && unzip ThermoRawFileParser1.4.1.zip \
     && rm ThermoRawFileParser1.4.1.zip && cd -
 
-ADD src/FragPipe-19.0.zip /
-RUN unzip FragPipe-19.0.zip \
-    && rm FragPipe-19.0.zip \
+ADD src/FragPipe-19.1.zip /
+RUN unzip FragPipe-19.1.zip \
+    && rm FragPipe-19.1.zip \
     && chmod 755 /fragpipe/bin/fragpipe
 
 RUN set -ex \
     && cd /usr/local/bin \
-    && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v4.7.0/philosopher_v4.7.0_linux_amd64.zip \
-    && unzip philosopher_v4.7.0_linux_amd64.zip && rm philosopher_v4.7.0_linux_amd64.zip \
+    && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v4.8.0/philosopher_v4.8.0_linux_amd64.zip \
+    && unzip philosopher_v4.8.0_linux_amd64.zip && rm philosopher_v4.8.0_linux_amd64.zip \
     && chmod 755 philosopher \
     && cd -
 
-ADD src/IonQuant-1.8.9.zip /
-RUN unzip IonQuant-1.8.9.zip && rm IonQuant-1.8.9.zip && chmod 755 /IonQuant-1.8.9/IonQuant-1.8.9.jar
+ADD src/IonQuant-1.8.10.zip /
+RUN unzip IonQuant-1.8.10.zip && rm IonQuant-1.8.10.zip && chmod 755 /IonQuant-1.8.10/IonQuant-1.8.10.jar
  
-ADD src/MSFragger-3.6.zip /
-RUN unzip MSFragger-3.6.zip && rm MSFragger-3.6.zip && chmod 755 /MSFragger-3.6/MSFragger-3.6.jar
+ADD src/MSFragger-3.7.zip /
+RUN unzip MSFragger-3.7.zip && rm MSFragger-3.7.zip && chmod 755 /MSFragger-3.7/MSFragger-3.7.jar
 
 COPY src/collect_psm.sh /usr/local/bin/
 COPY src/package.sh /usr/local/bin/
