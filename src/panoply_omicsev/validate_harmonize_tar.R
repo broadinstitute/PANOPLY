@@ -36,5 +36,6 @@ if (!file.exists(sample_anno_file)) {
 # find protein file
 data_file <- file.path(tar_dir, harmonize_dir, paste0(ome_type, '-matrix.csv'))
 if (!file.exists(data_file)) {
-  stop("Protein data file cannot be found. Please provide tar file input from panoply_harmonize.")
+  stop(paste("The", paste0(ome_type, '-matrix.csv'), 
+             "file cannot be found. Please provide tar file input from panoply_harmonize or double check the 'ome_type' input."))
 }
