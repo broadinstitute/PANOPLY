@@ -10,7 +10,7 @@ A tool for large scale omics data tables evaluation. Find full OmicsEV documenta
 
 -   `STANDALONE` (String): Either `"true"` or `"false"`. Determines whether OmicsEV should run as part of `panoply_main` pipeline with inputs from `panoply_harmonize`, or if OmicsEV should run independently with .gct inputs. Preference is to run with `STANDALONE == "false"` if possible.
 -   `yaml_file` (File): Parameters yaml file from PANOPLY setup. Must contain gene.id.col, groups information, an defaults for OmicsEV parameters.
--   `label` (String): Label for this data set (e.g. "BRCA.proteome"). HTML report will include this label in the file name. Tarball output will also be in this folder if `STANDALONE == "false"`.
+-   `label` (String): Label for this data set (e.g. "BRCA.proteome"). HTML report will include this label in the file name.
 
 **Mandatory inputs if `STANDALONE = "false"`:**
 
