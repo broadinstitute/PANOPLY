@@ -29,7 +29,7 @@ sample_file_preprocessed="$preprocessed_dir/$sample_file_name.tsv"
 sample_label_preprocessed="$preprocessed_dir/sample_label.txt"
 
 # directory where the outputs will go
-out_dir="./output"
+out_dir="./cosmo-data"
 
 # directory and files where the data to use in COSMO will go
 data_use_dir="./data_use"
@@ -47,6 +47,7 @@ mkdir $out_dir
 mkdir $data_use_dir
 
 # run panoply-specific preprocessing
+# the $sample_label_preprocessed .txt file is created in this script
 Rscript /prot/proteomics/Projects/PGDAC/src/cosmo/panoply_cosmo_preprocessing.R \
   $d1_file \
   $d2_file \

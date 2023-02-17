@@ -7,18 +7,19 @@ workflow panoply_cosmo_workflow {
 	File yaml_file
 	File? panoply_harmonize_tar
 	String label
+	String? ome_type
 
 	call panoply_cosmo {
 		input:
 			STANDALONE = STANDALONE,
 			yaml_file = yaml_file,
-			panoply_harmonize_tar = panoply_harmonize_tar
+			panoply_harmonize_tar = panoply_harmonize_tar,
+			ome_type = ome_type,
 	}
 	
 	if(panoply_cosmo.run_cosmo_final) {
 	  call panoply_cosmo_report {
 	    input:
-	      STANDALONE = STANDALONE,
 	      cosmo_output_tar = panoply_cosmo.cosmo_tar,
 	      d1_file_name = panoply_cosmo.d1_file_name,
         d2_file_name = panoply_cosmo.d2_file_name,
@@ -37,6 +38,7 @@ task panoply_cosmo {
 	File yaml_file
 	Boolean? run_cosmo
 	String? sample_label
+	String? ome_type
 
 	File? panoply_harmonize_tar
   File? d1_file
@@ -67,53 +69,44 @@ task panoply_cosmo {
 			echo "Running COSMO"
 			
 			if [ ${STANDALONE} == "false" ]; then
-  			mkdir panoply_harmonize_output
-  			tar -xf ${panoply_harmonize_tar} -C panoply_harmonize_output
-  			tar_dir="$(pwd)/panoply_harmonize_output"
-  			tar_name="$(ls panoply_harmonize_output | head -1)"
+  			tar -xf ${panoply_harmonize_tar}
+  	  
+    	  # get the root directory of the tar file
+    	  tar -tf ${panoply_harmonize_tar} > all_files_in_tar.txt
+    	  tar_dir=$(pwd)/$(basename $(head -n 1 all_files_in_tar.txt))
+    	  
+    	  Rscript /prot/proteomics/Projects/PGDAC/src/cosmo/validate_harmonize_tar.R $tar_dir ${ome_type}
   
-  			Rscript /prot/proteomics/Projects/PGDAC/src/cosmo/validate_harmonize_tar.R "$(pwd)/panoply_harmonize_output"
-  
-  			d1_file="$(cat data_file.txt)"
-  			d2_file="$tar_dir/$tar_name/harmonized-data/rna-matrix.csv"
-  			sample_file="$tar_dir/$tar_name/harmonized-data/sample-info.csv"
+  			d1_file="$tar_dir/harmonized-data/${ome_type}-matrix.csv"
+  			d2_file="$tar_dir/harmonized-data/rna-matrix.csv"
+  			sample_file="$tar_dir/harmonized-data/sample-info.csv"
   	
     	else
         d1_file="${d1_file}"
   		  d2_file="${d2_file}"
   		  sample_file="${sample_file}"
   		fi
-
+      
+      # run code for COSMO
+      # the following variables are set in panoply_run_cosmo.sh:
+        # $method1_out_folder
+        # $method2_out_folder
+        # $final_res_out_folder
+        # $out_dir
+        # $d1_file_name
+        # $d2_file_name
 			source /prot/proteomics/Projects/PGDAC/src/cosmo/panoply_run_cosmo.sh
 			
-			if [ ${STANDALONE} == false ]; then
-		    cp $yaml_file $tar_dir/$tar_name/updated-master-parameter.yaml
-			
-			  cosmo_tar_dir="$tar_dir/$tar_name/cosmo-data"
-			  mkdir $cosmo_tar_dir
-			  cp -R $method1_out_folder $cosmo_tar_dir
-        cp -R $method2_out_folder $cosmo_tar_dir
-        cp -R $final_res_out_folder $cosmo_tar_dir
-			  
-			  home_dir=$(pwd)
-			  cd $tar_dir
-        tar -czvf "$home_dir/panoply_cosmo_output.tar" $tar_name
-        cd $home_dir
-        
-      else
-        tar -czvf panoply_cosmo_output.tar $out_dir
-			
-			fi
+			cp $yaml_file $out_dir/updated-master-parameter.yaml
+			tar -czvf "panoply_cosmo_output.tar" $(basename $out_dir)
 
 		else
 			echo "COSMO not run"
 			
-			if [ ${STANDALONE} == false ]; then
-			  mv ${panoply_harmonize_tar} panoply_cosmo_output.tar
-			else
-			  touch panoply_cosmo_output.tar
-		  fi
-		  
+			mkdir cosmo-data
+			echo "COSMO not run" > cosmo-data/README.txt
+			tar -czvf "panoply_cosmo_output.tar" cosmo-data
+			
 		  touch d1_file_name.txt
 			touch d2_file_name.txt
 			
@@ -126,7 +119,7 @@ task panoply_cosmo {
 	runtime {
 		docker: "broadcptacdev/panoply_cosmo:latest"
 		memory: "${if defined(memory) then memory else '16'}GB"
-    disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
+    disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '32'} HDD"
     preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
     cpu: "${if defined(cpu) then cpu else '6'}"
 	}
@@ -141,7 +134,6 @@ task panoply_cosmo {
 }
 
 task panoply_cosmo_report {
-  String STANDALONE
 	File cosmo_output_tar
 	String d1_file_name
 	String d2_file_name
@@ -154,24 +146,16 @@ task panoply_cosmo_report {
   command {
     set -euo pipefail
   
-    tar_dir="$(pwd)/tar_output"
-    mkdir $tar_dir
-  	tar -xf ${cosmo_output_tar} -C $tar_dir
+  	tar -xf ${cosmo_output_tar}
   	
-  	if [ ${STANDALONE} == false ]; then
-  	  cosmo_res_path="$tar_dir/$(ls $tar_dir | head -1)/cosmo-data/final_res_folder/cosmo_final_result.tsv"
-  	  sample_corr_path="$tar_dir/$(ls $tar_dir | head -1)/cosmo-data/method1_folder/sample_correlation.csv"
-  	else
-  	  cosmo_res_path="$tar_dir/$(ls $tar_dir | head -1)/final_res_folder/cosmo_final_result.tsv"
-  	  sample_corr_path="$tar_dir/$(ls $tar_dir | head -1)/method1_folder/sample_correlation.csv"
-    fi
+	  cosmo_res_path="$(pwd)/cosmo-data/final_res_folder/cosmo_final_result.tsv"
+	  sample_corr_path="$(pwd)/cosmo-data/method1_folder/sample_correlation.csv"
 
   	R -e \
   	  "rmarkdown::render('/prot/proteomics/Projects/PGDAC/src/cosmo/panoply_cosmo_report.Rmd', 
   	  params = list(final_result_path = '$cosmo_res_path', d1_file_name = '${d1_file_name}', d2_file_name = '${d2_file_name}', sample_corr_path = '$sample_corr_path'),
-      output_dir = getwd())"
-      
-      mv panoply_cosmo_report.html cosmo_${label}.html
+      output_dir = getwd(),
+      output_file = 'cosmo_${label}.html')"
   }
 
   output {

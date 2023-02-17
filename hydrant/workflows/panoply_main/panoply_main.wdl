@@ -18,8 +18,8 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_associati
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/10/plain-WDL/descriptor" as download_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/7/plain-WDL/descriptor" as cosmo_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/11/plain-WDL/descriptor" as download_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/11/plain-WDL/descriptor" as cosmo_wdl
 
 
 workflow panoply_main {
@@ -131,7 +131,8 @@ workflow panoply_main {
       STANDALONE = standalone,
       yaml_file = yaml,
       panoply_harmonize_tar = panoply_harmonize.outputs,
-      label = job_identifier
+      label = job_identifier,
+      ome_type = ome_type
   }
   
   call omicsev_wdl.panoply_omicsev {
@@ -248,6 +249,7 @@ workflow panoply_main {
       ssgsea_ome_tar = ssgsea_ome.results,
       ssgsea_rna_tar = ssgsea_rna.results,
       omicsev_tar = panoply_omicsev.outputs,
+      cosmo_tar = panoply_cosmo_workflow.cosmo_tar,
       analysisDir = job_identifier,
       ssgsea_assoc_tars = ssgsea_assoc.results,
       ptmsea = ptmsea_ome.results,

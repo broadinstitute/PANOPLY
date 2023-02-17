@@ -15,7 +15,8 @@ if (length(args) == 4) {
   d2_path <- args[2]
   sample_csv_path <- args[3]
   yaml_file <- args[4]
-  
+} else {
+  stop("Incorrect number of arguments")
 }
 
 cat("d1_path:", d1_path, '\n')
@@ -56,9 +57,13 @@ for (file in c(d1_path, d2_path)) {
   
   
   ## collapse to the gene level
-  warning("collapsing protein data by geneSymbol")
-  data_out <- aggregate(data_out[,-(1)], list(data_out$ID),
-                        function(x) mean(x, na.rm=T))
+  if (length(unique(data_out$ID)) == length(data_out$ID)) {
+    cat("\nAssuming data has been collapsed to gene-level\n\n")
+  } else {
+    cat("\nDuplicate genes, collapsing geneSymbol by mean\n\n")
+    data_out <- aggregate(data_out[,-(1)], list(data_out$ID),
+                          function(x) mean(x, na.rm=T))
+  }
   
   # convert gene symbols to row names
   rownames(data_out) <- data_out[,1]
