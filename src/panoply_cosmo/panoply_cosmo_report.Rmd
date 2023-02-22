@@ -61,6 +61,8 @@ mislabeled_result_table[,-1] %>%
 
 ### Sample Correlation
 
+Sample correlation heatmaps can be used to cross-reference COSMO-identified mislabeled samples. A more interactive version of these plots can be found in the `panoply_sampleqc` module.
+
 Below is a plot of pair-wise sample correlations for *only COSMO-identified mislabeled samples*.
 ``` {r cosmo_sample_corr}
 sample_corr <- as.matrix(read.csv(params$sample_corr_path))
