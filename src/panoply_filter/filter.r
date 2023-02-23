@@ -135,7 +135,7 @@ filter.dataset <- function (ds, out.prefix=NULL, silent=FALSE,
                                " columns removed."))
   }
   
-  # filter rows with too many NAs across samples
+  # filter rows with too many NAs across samples (ideally should happen LAST before write.gct(); other filters impact % missing value)
   if (!is.null (na.max)) {
     # tags = paste(tags, "NArm", sep="-") # add NArm tag to output filename
     
@@ -203,17 +203,8 @@ if (filter.proteomics) {
                   combine.replicates=combine.replicates,
                   na.max=na.max,
                   no.na=no.na)
+} else {
+  print(paste0(ncol(ds_qcpass@mat), " of ", ncol(ds@mat), " samples are ", qc.pass.label,
+               ". Filtering will not be applied."))
+  file.copy( paste0(file.prefix, '.gct', sep=''), paste0(file.prefix, '-filt', '.gct', sep='') )
 }
-
-# # With SD filter
-# filter.dataset (paste (type, '-ratio-norm', sep=''), 
-#                 numratio.file=nr.file,
-#                 na.max=na.max, min.numratio=min.numratio, sd.threshold=sd.filter.threshold,
-#                 combine.replicates='mean', n.min.numratio=min.numratio.fraction)
-# # No SD filter (to retain max proteins, for mRNA correlation)
-# filter.dataset (paste (type, '-ratio-norm', sep=''), 
-#                 numratio.file=nr.file,
-#                 out.prefix=paste (type, '-ratio-norm-nosdfilter', sep=''),
-#                 na.max=na.max, no.na=FALSE, min.numratio=min.numratio, sd.threshold=NULL,
-#                 combine.replicates='mean', n.min.numratio=min.numratio.fraction)
-

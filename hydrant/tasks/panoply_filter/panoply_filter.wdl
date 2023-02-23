@@ -67,10 +67,6 @@ task panoply_filter {
 
     # Grab the filtered gct to set as output with appropriate name
     outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm-filt.gct"` # grab filtered file
-    if [[ -z $outGCT ]]; then
-        echo "No filtered file detected. Using unfiltered file with qc-pass samples."
-        outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm.gct"` # grab normalized, unfiltered file
-    fi
     outTableName=${type}-${outTable} 
     cp $outGCT $outTableName
   >>>

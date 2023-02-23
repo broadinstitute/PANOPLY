@@ -7,6 +7,8 @@ task panoply_parse_sm_table {
   String analysisDir
   String type
   File yaml
+  String? applyNumratioFilter
+  Float? minNumratioFraction
   String? labelType
   String? speciesFilter
   Int? ndigits
@@ -24,6 +26,8 @@ task panoply_parse_sm_table {
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     --module parse_sm_table \
     --master_yaml ${yaml} \
+    ${"--apply_numratio_filter " + applyNumratioFilter} \
+    ${"--min_numratio_fraction " + minNumratioFraction} \
     ${"--label_type " + labelType} \
     ${"--species_filter " + speciesFilter} \
     ${"--ndigits " + ndigits}

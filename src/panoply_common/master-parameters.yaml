@@ -4,11 +4,14 @@ global_parameters:
     ndigits: 5
 
   missing_values_and_filtering:
-    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction 
+    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction. Set as NULL to turn off na filtering.
     sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
-    min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
     nmiss_factor: 0.5            # for some situations, a more stringent condition is needed
-    sd_filter_threshold: 0.5     # SD threshold for SD filtering
+    # panoply_filter specific
+    sd_filter_threshold: 0.5     # SD threshold for SD filtering. Set as NULL to turn off SD filtering.
+    combine_replicates: 'mean'   # method for combining replicate samples; can be 'first', 'mean', or 'median'. Set as NULL to turn off replicate combination.
+    no_na: FALSE                 # filter rows with any NA values.
+    separate_qc_types: FALSE     # separate different QC types (e.g. pass, fail, etc.) into distinct GCT files
 
 
   ### Gene mapping
@@ -19,12 +22,13 @@ global_parameters:
     protein_id_col: 'id'              # provide name of column in phospho row metadata that indicates protein identifier/accession number
     protein_id_type: 'ENSEMBLPROT'    # if 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
     gene_id_col: 'geneSymbol'         # now used by cmap to determine genesymbol column name
-
   organism: human
 
 panoply_parse_sm_table:
+  apply_numratio_filter: TRUE     # filter rows by min.numratio
+  min_numratio_fraction: 0.25     # fraction of samples in which min.numratio should be present to retain protein/phosphosite
   label_type_for_ms_exp:
-    label_type: TMT10          # alternatives: iTRAQ4, TMT10.126, TMT11
+    label_type: TMT10             # alternatives: iTRAQ4, TMT10.126, TMT11
   species_filter: TRUE
   gct_file_ids: #used in config.r 
     proteome:
@@ -36,13 +40,7 @@ panoply_parse_sm_table:
 panoply_normalize_ms_data:
   normalization:
     norm_method: '2comp'           # options: 2comp (default), median, mean
-    alt_method: 'median'           # alt.method for comparison -- filtered datasets not generated
-
-
-panoply_filter:
-  combine_replicates: 'mean'
-  no_na: FALSE
-  separate_qc_types: FALSE
+    alt_method: 'median'           # alt.method for comparison -- will not be used downstream
 
 
 panoply_rna_protein_correlation:

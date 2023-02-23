@@ -11,11 +11,17 @@ option_list <- list(
   make_option(c("--master_yaml"), type="character", dest = 'master_yaml', help="master-parameters.yaml file to provide defaults"),
   # Global:
   make_option(c("--ndigits"), type = "integer", dest = 'ndigits', help = "Output precision for gct tables"),
+    #missing_value_and_filtering:
   make_option(c("--na_max"), type = "double", dest = 'na_max', help = "maximum allowed NA values (per protein/site/row), can be fraction"),
   make_option(c("--sample_na_max"), type = "double", dest = 'sample_na_max', help = "maximum allowed fraction of NA values per sample/column; pipeline error if violated"),
-  make_option(c("--min_numratio_fraction"), type = "double", dest = 'min_numratio_fraction', help = "fraction of samples in which min. numratio should be present to retain protein/phosphosite"),
   make_option(c("--nmiss_factor"), type = "double", dest = 'nmiss_factor', help = "for some situations, a more stringent condition is needed"),
+    #panoply_filter:
+  make_option(c("--filter_proteomics"), type = "logical", dest = 'filter_proteomics', help = "true/false indicating if input data should be normalized"),
   make_option(c("--sd_filter_threshold"), type = "double", dest = 'sd_filter_threshold', help = "SD threshold for SD filtering"),
+  make_option(c("--combine_replicates"), type = "character", dest = 'combine_replicates', help = "method for combining replicate samples ('first', 'mean', or 'median')"),
+  make_option(c("--no_na"), type = "logical", dest = 'no_na', help = "true/false indicating if a GCT with no NA values should be generated"),
+  make_option(c("--separate_qc_types"), type = "logical", dest = 'separate_qc_types', help = "true/false indicating if QC types should be separated into different GCT files"),
+    #gene_mapping:
   make_option(c("--duplicate_gene_policy"), type="character", dest = 'duplicate_gene_policy', help="Policy for combining/collapsing duplicate gene names"),
   make_option(c("--gene_id_col"), type="character", dest = 'gene_id_col', help="column name containing gene id"),
   make_option(c("--protein_id_col"), type="character", dest = 'protein_id_col', help="column name containing protein id"),
@@ -23,20 +29,17 @@ option_list <- list(
   make_option(c("--organism"), type="character", dest = 'organism', help="organism of study"),
   # All Command line possibles:
     # parse_SM_table:
+  make_option(c("--apply_numratio_filter"), type="logical", dest = 'apply_numratio_filter', help="if TRUE, apply numRatio based filter"), 
+  make_option(c("--min_numratio_fraction"), type = "double", dest = 'min_numratio_fraction', help = "fraction of samples in which min. numratio should be present to retain protein/phosphosite"),
+  make_option(c("--min_numratio_proteome", type = "integer", dest = 'min_numratio_proteome', help = "min_numratio value for proteome analysis")),
   make_option(c("--label_type"), type="character", dest = 'label_type', help="label type for MS experiment. ex: TMT10", metavar="character"),
   make_option(c("--species_filter"), type="logical", dest = 'species_filter', help="if TRUE will discard all proteins/peptides not from homo sapiens"),
-  make_option(c("--min_numratio_proteome", type = "integer", dest = 'min_numratio_proteome', help = "min_numratio value for proteome analysis")),
   make_option(c("--min_numratio_ptms", type = "integer", dest = 'min_numratio_ptms', help = "min_numratio value for PTM analysis (all types except proteome)")),
-  #normalize_ms_data:
+    #normalize_ms_data:
   make_option(c("--normalize_proteomics"), type = "logical", dest = 'normalize_proteomics', help = "true/false indicating if input data should be normalized"),
   make_option(c("--norm_method"), type = "character", dest = 'norm_method', help = "normalization method ex: '2comp', median, mean"),
   make_option(c("--alt_method"), type = "character", dest = 'alt_method', help = "alt.method for comparison -- filtered datasets not generated"),
-    #filter:
-  make_option(c("--filter_proteomics"), type = "logical", dest = 'filter_proteomics', help = "true/false indicating if input data should be normalized"),
-  make_option(c("--combine_replicates"), type = "character", dest = 'combine_replicates', help = "method for combining replicate samples ('first', 'mean', or 'median')"),
-  make_option(c("--no_na"), type = "logical", dest = 'no_na', help = "true/false indicating if a GCT with no NA values should be generated"),
-  make_option(c("--separate_qc_types"), type = "logical", dest = 'separate_qc_types', help = "true/false indicating if QC types should be separated into different GCT files"),
-    #rna_protein_correlation:
+     #rna_protein_correlation:
   make_option(c("--rna_sd_threshold"), type = "integer", dest = 'rna_sd_threshold', help = "for variation filter (set to NA to disable)"),
   make_option(c("--profile_plot_top_n"), type = "integer", dest = 'profile_plot_top_n', help = "defined in rna-seq-correlation.r"),
   make_option(c("--rna_row_norm_method"), type = "character", dest = 'rna_row_norm_method', help = "method for row normalization of mrna (median by default)"),
@@ -218,8 +221,11 @@ write_yaml_file <- function(yaml){
 ######################################## CHECK PARAMS FUNCTIONS ################################
 #Checks if any of the global vals are being changed from commandline. if yes will change them in yaml if no returns org yaml
 check_global_params <- function(opt,yaml){
-  if (!is.null(opt$ndigits) | !is.null(opt$na_max) | !is.null(opt$sample_na_max) | !is.null(opt$min_numratio_fraction) | !is.null(opt$nmiss_factor) | !is.null(opt$sd_filter_threshold) |
-      !is.null(opt$duplicate_gene_policy | !is.null(opt$gene_id_col) | !is.null(opt$protein_id_col) | !is.null(opt$protein_id_type) | !is.null(opt$organism))){
+  if (!is.null(opt$ndigits) |
+      !is.null(opt$na_max) | !is.null(opt$sample_na_max) | !is.null(opt$nmiss_factor) |
+      !is.null(opt$sd_filter_threshold) | !is.null(opt$combine_replicates) | !is.null(opt$no_na) | !is.null(opt$separate_qc_types) | 
+      !is.null(opt$duplicate_gene_policy | !is.null(opt$gene_id_col) | !is.null(opt$protein_id_col) | !is.null(opt$protein_id_type) | 
+      !is.null(opt$organism))){
     yaml <- change_global_params(opt,yaml)
     return(yaml)
   }else{
@@ -229,24 +235,34 @@ check_global_params <- function(opt,yaml){
 
 #Is called when globals are being changed via command line. Will change any globals and return updated yaml
 change_global_params <- function(opt,yaml){
+  # output_precision
   if (!is.null(opt$ndigits)){
     yaml$global_parameters$output_precision$ndigits <- opt$ndigits
   }
+  # missing_values_and_filtering
   if (!is.null(opt$na_max)){
     yaml$global_parameters$missing_values_and_filtering$na_max <- opt$na_max
   }
   if (!is.null(opt$sample_na_max)){
     yaml$global_parameters$missing_values_and_filtering$sample_na_max <- opt$sample_na_max
   }
-  if (!is.null(opt$min_numratio_fraction)){
-    yaml$global_parameters$missing_values_and_filtering$min_numratio_fraction <- opt$min_numratio_fraction
-  }
   if (!is.null(opt$nmiss_factor)){
     yaml$global_parameters$missing_values_and_filtering$nmiss_factor <- opt$nmiss_factor
   }
+  # panoply_filter
   if (!is.null(opt$sd_filter_threshold)){
     yaml$global_parameters$missing_values_and_filtering$sd_filter_threshold <- opt$sd_filter_threshold
   }
+  if (!is.null(opt$combine_replicates)) {
+    yaml$global_parameters$missing_values_and_filtering$combine_replicates <- opt$combine_replicates
+  }
+  if (!is.null(opt$no_na)) {
+    yaml$global_parameters$missing_values_and_filtering$no_na <- opt$no_na
+  }
+  if (!is.null(opt$separate_qc_types)) {
+    yaml$global_parameters$missing_values_and_filtering$separate_qc_types <- opt$separate_qc_types
+  }
+  # gene_mapping
   if (!is.null(opt$duplicate_gene_policy)){
     yaml$global_parameters$gene_mapping$duplicate_gene_policy <- opt$duplicate_gene_policy
   }
@@ -267,7 +283,13 @@ change_global_params <- function(opt,yaml){
 
 # parse_sm_table:
 check_parse_sm_params <- function(opt, yaml){
-  if (!is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$label_type) | !is.null(opt$species_filter)){
+  if (!is.null(opt$apply_numratio_filter) | !is.null(opt$min_numratio_fraction) | !is.null(opt$min_numratio_proteome) | !is.null(opt$min_numratio_ptms) | !is.null(opt$label_type) | !is.null(opt$species_filter)){
+    if (!is.null(opt$apply_numratio_filter)) {
+      yaml$panoply_parse_sm_table$apply_numratio_filter <- opt$apply_numratio_filter
+    }
+    if (!is.null(opt$min_numratio_fraction)){
+      yaml$panoply_parse_sm_table$min_numratio_fraction <- opt$min_numratio_fraction
+    }
     if (!is.null(opt$min_numratio_proteome)) {
       yaml$panoply_parse_sm_table$gct_file_ids$proteome$min_numratio <- opt$min_numratio_proteome
     }
@@ -309,15 +331,6 @@ check_filter_params <- function(opt, yaml){
   if (!is.null(opt$filter_proteomics) | !is.null(opt$combine_replicates) | !is.null(opt$no_na) | !is.null(opt$separate_qc_types)){
     if (!is.null(opt$filter_proteomics)) {
       yaml$filter.proteomics <- opt$filter_proteomics
-    }
-    if (!is.null(opt$combine_replicates)) {
-      yaml$panoply_filter$combine_replicates <- opt$combine_replicates
-    }
-    if (!is.null(opt$no_na)) {
-      yaml$panoply_filter$no_na <- opt$no_na
-    }
-    if (!is.null(opt$separate_qc_types)) {
-      yaml$panoply_filter$separate_qc_types <- opt$separate_qc_types
     }
     return(yaml)
   }else{
@@ -755,96 +768,102 @@ check_pipeline_params <- function(opt,yaml){
 write_custom_config <- function(yaml){
   custom_config_path <- "/prot/proteomics/Projects/PGDAC/src"
   #custom_config_path <- '/output/'
-  output <- paste(paste('ndigits', '<-', yaml$global_parameters$output_precision$ndigits),
-                paste('na.max', '<-', yaml$global_parameters$missing_values_and_filtering$na_max), 
-                paste('sample.na.max', '<-', yaml$global_parameters$missing_values_and_filtering$sample_na_max),
-                paste('min.numratio.fraction', '<-', yaml$global_parameters$missing_values_and_filtering$min_numratio_fraction),
-                paste('nmiss.factor', '<-', yaml$global_parameters$missing_values_and_filtering$nmiss_factor),
-                paste('sd.filter.threshold', '<-', yaml$global_parameters$missing_values_and_filtering$sd_filter_threshold),
-                paste('duplicate.gene.policy', '<-', paste0('"', yaml$global_parameters$gene_mapping$duplicate_gene_policy, '"')),
-                paste('gene.id.col', '<-', paste0('"', yaml$global_parameters$gene_mapping$gene_id_col, '"')),
-                paste('protein.id.col', '<-', paste0('"', yaml$global_parameters$gene_mapping$protein_id_col, '"')),
-                paste('protein.id.type', '<-', paste0('"', yaml$global_parameters$gene_mapping$protein_id_type, '"')),
-                paste('organism', '<-', paste0('"', yaml$global_parameters$organism, '"')),
-                #parse_sm_table:
-                paste('label.type', '<-', paste0('"', yaml$panoply_parse_sm_table$label_type_for_ms_exp$label_type, '"')),
-                'set.label.type (label.type)', #This needs to be run after label.type in config.r!
-                paste('species.filter', '<-', yaml$panoply_parse_sm_table$species_filter),
-                "if (type == 'proteome') {",
-                paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$id_col),
-                paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$desc_col),
-                paste('  min.numratio', '<-', yaml$panoply_parse_sm_table$gct_file_ids$proteome$min_numratio),
-                "} else {",
-                paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$id_col),
-                paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$desc_col),
-                paste('  min.numratio', '<-', yaml$panoply_parse_sm_table$gct_file_ids$phosphoproteome$min_numratio),
-                '}',
-                #normalize_ms_data:
-                paste('norm.method', '<-', paste0('"', yaml$panoply_normalize_ms_data$normalization$norm_method, '"')),
-                paste('alt.method', '<-', paste0('"', yaml$panoply_normalize_ms_data$normalization$alt_method, '"')),
-                'if (norm.method == alt.method) alt.method <- NULL', #This should be run after norm and alt methods are defined
-                #filter:
-                paste('filter.proteomics', '<-', yaml$filter.proteomics),
-                paste('combine.replicates', '<-', paste0('"', yaml$panoply_filter$combine_replicates, '"')),
-                paste('no.na', '<-', yaml$panoply_filter$no_na),
-                paste('separate.qc.types', '<-', yaml$panoply_filter$separate_qc_types),
-                #rna_protein_correlation:
-                paste('rna.sd.threshold', '<-', yaml$panoply_rna_protein_correlation$rna$rna_sd_threshold),
-                paste('profile.plot.top.n', '<-', yaml$panoply_rna_protein_correlation$rna$profile_plot_top_n),
-                paste('rna.row.norm.method', '<-',  paste0('"', yaml$panoply_rna_protein_correlation$rna$rna_row_norm_method, '"')),
-                #harmonize:
-                paste('pome.gene.id.col', '<-', paste0('"', yaml$panoply_harmonize$pome_gene_id_col, '"')),
-                paste('cna.gene.id.col', '<-', paste0('"', yaml$panoply_harmonize$cna_gene_id_col, '"')),
-                paste('rna.gene.id.col', '<-', paste0('"', yaml$panoply_harmonize$rna_gene_id_col, '"')),
-                #omicsev
-                paste('class.column.name', '<-', paste0('"', yaml$panoply_omicsev$class_column_name, '"')),
-                paste('batch.column.name', '<-', paste0('"', yaml$panoply_omicsev$batch_column_name, '"')),
-                paste('data.log.transformed', '<-', yaml$panoply_omicsev$data_log_transformed),
-                paste('rna.log.transformed', '<-', yaml$panoply_omicsev$rna_log_transformed),
-                paste('do_function_prediction', '<-', yaml$panoply_omicsev$do_function_prediction),
-                #association:
-                paste('assoc.fdr', '<-', yaml$panoply_association$fdr_assoc),
-                #sample_qc:
-                paste('cor.threshold', '<-', yaml$panoply_sample_qc$cor_threshold),
-                #cna_analysis:
-                paste('pe.max.default', '<-', yaml$panoply_cna_analysis$cna_parallelism$pe_max_default),
-                paste('fdr_cna_corr', '<-', yaml$panoply_cna_analysis$fdr_cna_corr),
-                paste('min.cna.N', '<-', yaml$panoply_cna_analysis$min_cna_N),
-                #cna_correlation_report:
-                paste('cna.report.fdr', '<-', yaml$panoply_cna_correlation_report$fdr),
-                #rna_protein_correlation_report:
-                paste('rna.report.fdr', '<-', yaml$panoply_rna_protein_correlation_report$fdr),
-                #cons_cluster:
-                paste('clustering.sd.threshold', '<-', yaml$panoply_cons_cluster$clustering_sd_threshold),
-                paste('clustering.na.threshold', '<-', yaml$panoply_cons_cluster$clustering_na_threshold),
-                #cmap_analysis: HAS ITS OWN FUNCTION below
-                #immune_analysis:
-                paste('immune.enrichment.fdr', '<-', yaml$panoply_immune_analysis$immune_enrichment_fdr),
-                paste('immune.enrichment.subgroups', '<-', ifelse(is.null(yaml$panoply_immune_analysis$immune_enrichment_subgroups),'NULL', paste0('"',yaml$panoply_immune_analysis$immune_enrichment_subgroups,'"'))),
-                paste('immune.heatmap.width', '<-', yaml$panoply_immune_analysis$immune_heatmap_width),
-                paste('immune.heatmap.height', '<-', yaml$panoply_immune_analysis$immune_heatmap_height),
-                #DEV_sample_annotations:
-                paste('sample.id.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$sample_id_col_name, '"')),
-                paste('experiment.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$experiment_col_name, '"')),
-                paste('channel.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$channel_col_name, '"')),
-                paste('participant.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$participant_col_name, '"')),
-                paste('type.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$type_col_name, '"')),
-                paste('sampleQC.cls', '<-', yaml$DEV_sample_annotation$QC$sampleQC_cls),
-                paste('qc.col', '<-', paste0('"', yaml$DEV_sample_annotation$QC$qc_col, '"')),
-                paste('qc.pass.label', '<-', paste0('"', yaml$DEV_sample_annotation$QC$qc_pass_label, '"')),
-                #DEV_directory_and_file_names:
-                paste('rna.output.prefix', '<-', paste0('"', yaml$DEV_directory_and_file_names$rna_output_prefix, '"')),
-                paste('official.genesyms', '<-', paste0('"', yaml$DEV_directory_and_file_names$gene_mapping$official_genesyms, '"')),
-                paste('protein.gene.map', '<-', paste0('"', yaml$DEV_directory_and_file_names$gene_mapping$protein_gene_map, '"')),
-                paste('data.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$data_dir,"'", sep = '')),
-                paste('parse.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$parse_dir,"'", sep = '')),
-                paste('norm.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$norm_dir,"'", sep = '')),
-                paste('filt.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$filt_dir,"'", sep = '')),
-                paste('harmonize.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$harmonize_dir,"'", sep = '')),
-                paste('expt.design.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$expt_design_file, "'", sep = ''), ')', sep = ''),
-                paste('rna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$rna_data_file, "'", sep = ''), ')', sep = ''),
-                paste('cna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$cna_data_file, "'", sep = ''), ')', sep = ''),
-                sep = "\n")
+  output <- paste(
+    # global params
+    paste('ndigits', '<-', yaml$global_parameters$output_precision$ndigits),
+    # missing_values_and_filtering
+    paste('na.max', '<-', ifelse(is.null(yaml$global_parameters$missing_values_and_filtering$na_max), 'NULL', yaml$global_parameters$missing_values_and_filtering$na_max)), 
+    paste('sample.na.max', '<-', yaml$global_parameters$missing_values_and_filtering$sample_na_max),
+    paste('nmiss.factor', '<-', yaml$global_parameters$missing_values_and_filtering$nmiss_factor),
+    # panoply_filter:
+    paste('filter.proteomics', '<-', yaml$filter.proteomics),
+    paste('sd.filter.threshold', '<-', ifelse(is.null(yaml$global_parameters$missing_values_and_filtering$sd_filter_threshold), 'NULL', yaml$global_parameters$missing_values_and_filtering$sd_filter_threshold)),
+    paste('combine.replicates', '<-', ifelse(is.null(yaml$global_parameters$missing_values_and_filtering$combine_replicates), 'NULL', paste0('"', yaml$global_parameters$missing_values_and_filtering$combine_replicates, '"'))),
+    paste('no.na', '<-', yaml$global_parameters$missing_values_and_filtering$no_na),
+    paste('separate.qc.types', '<-', yaml$global_parameters$missing_values_and_filtering$separate_qc_types),
+    # gene_mapping
+    paste('duplicate.gene.policy', '<-', paste0('"', yaml$global_parameters$gene_mapping$duplicate_gene_policy, '"')),
+    paste('gene.id.col', '<-', paste0('"', yaml$global_parameters$gene_mapping$gene_id_col, '"')),
+    paste('protein.id.col', '<-', paste0('"', yaml$global_parameters$gene_mapping$protein_id_col, '"')),
+    paste('protein.id.type', '<-', paste0('"', yaml$global_parameters$gene_mapping$protein_id_type, '"')),
+    paste('organism', '<-', paste0('"', yaml$global_parameters$organism, '"')),
+    #parse_sm_table:
+    paste('apply.numratio.filter', '<-', yaml$panoply_parse_sm_table$apply_numratio_filter),
+    paste('min.numratio.fraction', '<-', yaml$panoply_parse_sm_table$min_numratio_fraction),
+    paste('label.type', '<-', paste0('"', yaml$panoply_parse_sm_table$label_type_for_ms_exp$label_type, '"')),
+    'set.label.type (label.type)', #This needs to be run after label.type in config.r!
+    paste('species.filter', '<-', yaml$panoply_parse_sm_table$species_filter),
+    "if (type == 'proteome') {",
+    paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$id_col),
+    paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$proteome$desc_col),
+    paste('  min.numratio', '<-', yaml$panoply_parse_sm_table$gct_file_ids$proteome$min_numratio),
+    "} else {",
+    paste('  id.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$id_col),
+    paste('  desc.col', '<-', yaml$DEV_sample_annotation$gct_file_ids$phosphoproteome$desc_col),
+    paste('  min.numratio', '<-', yaml$panoply_parse_sm_table$gct_file_ids$phosphoproteome$min_numratio),
+    '}',
+    #normalize_ms_data:
+    paste('normalize.proteomics', '<-', paste0('"', yaml$normalize.proteomics, '"')),
+    paste('norm.method', '<-', paste0('"', yaml$panoply_normalize_ms_data$normalization$norm_method, '"')),
+    paste('alt.method', '<-', paste0('"', yaml$panoply_normalize_ms_data$normalization$alt_method, '"')),
+    'if (norm.method == alt.method) alt.method <- NULL', #This should be run after norm and alt methods are defined
+    #rna_protein_correlation:
+    paste('rna.sd.threshold', '<-', yaml$panoply_rna_protein_correlation$rna$rna_sd_threshold),
+    paste('profile.plot.top.n', '<-', yaml$panoply_rna_protein_correlation$rna$profile_plot_top_n),
+    paste('rna.row.norm.method', '<-',  paste0('"', yaml$panoply_rna_protein_correlation$rna$rna_row_norm_method, '"')),
+    #harmonize:
+    paste('pome.gene.id.col', '<-', paste0('"', yaml$panoply_harmonize$pome_gene_id_col, '"')),
+    paste('cna.gene.id.col', '<-', paste0('"', yaml$panoply_harmonize$cna_gene_id_col, '"')),
+    paste('rna.gene.id.col', '<-', paste0('"', yaml$panoply_harmonize$rna_gene_id_col, '"')),
+    #omicsev
+    paste('class.column.name', '<-', paste0('"', yaml$panoply_omicsev$class_column_name, '"')),
+    paste('batch.column.name', '<-', paste0('"', yaml$panoply_omicsev$batch_column_name, '"')),
+    paste('data.log.transformed', '<-', yaml$panoply_omicsev$data_log_transformed),
+    paste('rna.log.transformed', '<-', yaml$panoply_omicsev$rna_log_transformed),
+    paste('do_function_prediction', '<-', yaml$panoply_omicsev$do_function_prediction),
+    #association:
+    paste('assoc.fdr', '<-', yaml$panoply_association$fdr_assoc),
+    #sample_qc:
+    paste('cor.threshold', '<-', yaml$panoply_sample_qc$cor_threshold),
+    #cna_analysis:
+    paste('pe.max.default', '<-', yaml$panoply_cna_analysis$cna_parallelism$pe_max_default),
+    paste('fdr_cna_corr', '<-', yaml$panoply_cna_analysis$fdr_cna_corr),
+    paste('min.cna.N', '<-', yaml$panoply_cna_analysis$min_cna_N),
+    #cna_correlation_report:
+    paste('cna.report.fdr', '<-', yaml$panoply_cna_correlation_report$fdr),
+    #rna_protein_correlation_report:
+    paste('rna.report.fdr', '<-', yaml$panoply_rna_protein_correlation_report$fdr),
+    #cons_cluster:
+    paste('clustering.sd.threshold', '<-', yaml$panoply_cons_cluster$clustering_sd_threshold),
+    paste('clustering.na.threshold', '<-', yaml$panoply_cons_cluster$clustering_na_threshold),
+    #cmap_analysis: HAS ITS OWN FUNCTION below
+    #immune_analysis:
+    paste('immune.enrichment.fdr', '<-', yaml$panoply_immune_analysis$immune_enrichment_fdr),
+    paste('immune.enrichment.subgroups', '<-', ifelse(is.null(yaml$panoply_immune_analysis$immune_enrichment_subgroups),'NULL', paste0('"',yaml$panoply_immune_analysis$immune_enrichment_subgroups,'"'))),
+    paste('immune.heatmap.width', '<-', yaml$panoply_immune_analysis$immune_heatmap_width),
+    paste('immune.heatmap.height', '<-', yaml$panoply_immune_analysis$immune_heatmap_height),
+    #DEV_sample_annotations:
+    paste('sample.id.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$sample_id_col_name, '"')),
+    paste('experiment.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$experiment_col_name, '"')),
+    paste('channel.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$channel_col_name, '"')),
+    paste('participant.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$participant_col_name, '"')),
+    paste('type.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$type_col_name, '"')),
+    paste('sampleQC.cls', '<-', yaml$DEV_sample_annotation$QC$sampleQC_cls),
+    paste('qc.col', '<-', paste0('"', yaml$DEV_sample_annotation$QC$qc_col, '"')),
+    paste('qc.pass.label', '<-', paste0('"', yaml$DEV_sample_annotation$QC$qc_pass_label, '"')),
+    #DEV_directory_and_file_names:
+    paste('rna.output.prefix', '<-', paste0('"', yaml$DEV_directory_and_file_names$rna_output_prefix, '"')),
+    paste('official.genesyms', '<-', paste0('"', yaml$DEV_directory_and_file_names$gene_mapping$official_genesyms, '"')),
+    paste('protein.gene.map', '<-', paste0('"', yaml$DEV_directory_and_file_names$gene_mapping$protein_gene_map, '"')),
+    paste('data.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$data_dir,"'", sep = '')),
+    paste('parse.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$parse_dir,"'", sep = '')),
+    paste('norm.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$norm_dir,"'", sep = '')),
+    paste('filt.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$filt_dir,"'", sep = '')),
+    paste('harmonize.dir', '<-', paste("'",'../', yaml$DEV_directory_and_file_names$harmonize_dir,"'", sep = '')),
+    paste('expt.design.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$expt_design_file, "'", sep = ''), ')', sep = ''),
+    paste('rna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$rna_data_file, "'", sep = ''), ')', sep = ''),
+    paste('cna.data.file <- file.path (data.dir, ', paste("'", yaml$DEV_directory_and_file_names$cna_data_file, "'", sep = ''), ')', sep = ''),
+    sep = "\n")
   write(output, 'config-custom.r')
   write(output, file.path(custom_config_path, "new-config-custom.r"))
 }
