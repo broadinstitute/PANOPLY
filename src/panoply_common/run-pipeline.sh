@@ -90,7 +90,7 @@ function usage {
   echo "     OPERATION CNAcorr requires (-i, -c), optional (-z); -i is tar output from CNAsetup"
   echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
-  echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from filter/harmonize"
+  echo "     OPERATION assoc requires (-i, -c, -g); or (-f, -r, -c, -g); -i is tar output from filter/harmonize"
   echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from filter/harmonize"
   echo "     OPERATION immune required (-i, -c) OR (-rna, -r, -c), optional (-g, -z, -y); -i is tar output from harmonize (with RNA data)"
   echo "   Use -h to print this message."
@@ -294,10 +294,8 @@ function analysisInit {
                 fi ;;
     assoc )     createSubdirs $assoc_dir
                 # add to config.r if specified
-                if [ "$groups" != "" ]; then
-                    echo "assoc.subgroups <- \"$groups\"" >> $assoc_dir/config.r
-                    cp $groups $assoc_dir/.
-                fi ;;
+                echo "assoc.subgroups <- \"$groups\"" >> $assoc_dir/config.r
+                cp $groups $assoc_dir/. ;;
     cluster )   createSubdirs $cluster_dir
                 # add to config.r if specified 
                 if [ "$groups" != "" ]; then
@@ -562,7 +560,7 @@ case $op in
     filter ) analysisInit "filter"
                 cp $code_dir/filter.r $filt_dir/filter.r
                 
-                ## filtering and cls file generation
+                ## ensures that data has necessary columns, and filters 
                 (cd $filt_dir;
                  Rscript filter.r $prefix $data)
             ;;
@@ -642,7 +640,7 @@ case $op in
                 (cd $qc_dir;
                  Rscript sample-qc.r $prefix $data)
              ;;
-#   assoc: association analysis for cls's in GCT or supplied in input
+#   assoc: association analysis for subset of sample annotations, as specified by groups file
     assoc )     analysisInit "assoc"
                 for f in assoc-analysis.r; do cp $code_dir/$f $assoc_dir/$f; done
                 (cd $assoc_dir;

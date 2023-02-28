@@ -98,10 +98,6 @@ if (length (common.samples) > 0 && length (common.genes) > 0) {
     out.file <- 'sample-info.csv'
     write.csv (sinfo, out.file, row.names=FALSE, quote=FALSE)
 
-    # recreate cls files (since sample subset included in matrix files could be different)
-    for (g in setdiff (colnames (sinfo), c('id', 'Sample.ID'))) {
-      write.cls (sinfo[,g], sprintf ("%s.cls", g))
-    }
   }
 } else {
   stop ("Harmonized datasets have no data -- check data formats and sample names")

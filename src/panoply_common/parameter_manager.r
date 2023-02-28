@@ -848,7 +848,6 @@ write_custom_config <- function(yaml){
     paste('channel.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$channel_col_name, '"')),
     paste('participant.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$participant_col_name, '"')),
     paste('type.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$type_col_name, '"')),
-    paste('sampleQC.cls', '<-', yaml$DEV_sample_annotation$QC$sampleQC_cls),
     paste('qc.col', '<-', paste0('"', yaml$DEV_sample_annotation$QC$qc_col, '"')),
     paste('qc.pass.label', '<-', paste0('"', yaml$DEV_sample_annotation$QC$qc_pass_label, '"')),
     #DEV_directory_and_file_names:

@@ -258,7 +258,6 @@ DEV_sample_annotation:
   type_col_name: "Type"
   
   QC:
-    sampleQC_cls: "NULL"
     qc_col: QC.status
     qc_pass_label: QC.pass
 

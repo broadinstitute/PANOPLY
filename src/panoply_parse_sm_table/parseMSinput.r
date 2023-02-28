@@ -110,8 +110,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
       sample.annotations <- d[, c('Sample.ID', annot.cols)]
       # add sample QC info (pass/fail)
       if (! qc.col %in% sample.annotations) {
-        if (!is.null(sampleQC.cls)) qc <- read.cls (sampleQC.cls)
-        else qc <- rep (qc.pass.label, nrow(sample.annotations))
+        qc <- rep (qc.pass.label, nrow(sample.annotations))
         # add to annotation table
         sample.annotations <- cbind (sample.annotations, qc)
         colnames (sample.annotations)[ncol(sample.annotations)] <- qc.col

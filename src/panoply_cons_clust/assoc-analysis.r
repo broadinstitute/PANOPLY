@@ -39,27 +39,14 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix) {
 }
 
 
-# obtain cls's
+
+# this module ASSUMES that a groups file (assoc.subgroups) is specified
+
 if (! exists ("assoc.subgroups")) {
-  # no class vectors specified -- use all cls files from filt.dir (these have between 2-5 classes)
-  cls.files <- list.files (filt.dir, pattern=".*\\.cls", full.names=TRUE)
-  if (length (cls.files) > 0) {
-    # marker selection and classification for each file in cls.files
-    for (cls in cls.files) {   
-      out.prefix <- gsub ("\\.cls$", "", basename (cls))
-      if (min (summary (factor (read.cls (cls)))) < 3)  {
-        # too few members in some class(es)
-        warning ( paste (cls, "has classes with < 3 members ... skipping") )
-        next
-      }
-      run.marker.selection (gct.file, cls, out.prefix)
-    } 
-  } else {
-    warning ("No cls files to run association analysis on ... ignoring")
-  }
+  stop("A groups file must be provided. This file should include Sample.ID,
+       additional row-description columns to be analyzed for enrichent.")
 } else {
-  # groups file specified
-  # (format similar to expt-design-file with Sample.ID and additional columns)
+  # (groups file format is similar to expt-design-file, with Sample.ID and additional columns)
   # association analysis will be run for each additional column, excluding samples marked 'ignore'
   # (different columns cannot have the same subgroup name)
   subgroup.table <- read.csv (assoc.subgroups)
@@ -93,3 +80,4 @@ if (! exists ("assoc.subgroups")) {
     warning ("No cls files to run association analysis on ... ignoring")
   }
 }
+
