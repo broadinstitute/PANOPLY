@@ -7,18 +7,18 @@ task panoply_filter {
   String standalone
   String analysisDir
   File yaml
-  String? combineReplicates
-  String? filterProteomics
   String? geneIdCol
+  String? proteinIdCol
+  String? proteinIdType
+  String? filterProteomics
+  String? combineReplicates
   Int? ndigits
   Float? naMax
   String? noNA
-  String? proteinIdCol
-  String? proteinIdType
   Float? sdFilterThreshold
 
   String outTar = "panoply_filter-output.tar"
-  String outTable = "filter_table-output.gct"
+  String outTable = "filtered_table-output.gct"
 
   Int? memory
   Int? disk_space
@@ -34,14 +34,14 @@ task panoply_filter {
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
       --module filter \
       --master_yaml ${yaml} \
-      ${"--combine_replicates " + combineReplicates} \
       ${"--filter_proteomics " + filterProteomics} \
       ${"--gene_id_col " + geneIdCol} \
+      ${"--protein_id_col " + proteinIdCol} \
+      ${"--protein_id_type " + proteinIdType} \
+      ${"--combine_replicates " + combineReplicates} \
       ${"--ndigits " + ndigits} \
       ${"--na_max " + naMax} \
       ${"--no_na " + noNA} \
-      ${"--protein_id_col " + proteinIdCol} \
-      ${"--protein_id_type " + proteinIdType} \
       ${"--sd_filter_threshold " + sdFilterThreshold}
     
 
