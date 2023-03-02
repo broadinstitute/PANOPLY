@@ -767,6 +767,8 @@ check_pipeline_params <- function(opt,yaml){
 # For all modules other than cmap:
 write_custom_config <- function(yaml){
   custom_config_path <- "/prot/proteomics/Projects/PGDAC/src"
+  print(opt$min_numratio_proteome)
+  print(yaml$panoply_parse_sm_table$gct_file_ids$phosphoproteome$min_numratio)
   #custom_config_path <- '/output/'
   output <- paste(
     # global params

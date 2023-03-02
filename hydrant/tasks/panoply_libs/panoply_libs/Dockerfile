@@ -12,12 +12,15 @@ RUN apt-get -t unstable install -y pandoc  # rmarkdown
 RUN apt-get -t unstable install -y libfontconfig1-dev  # font config library for R-package kableExtra
 RUN apt-get -t unstable install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
 RUN apt-get -t unstable install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
+# devtools install
+RUN R -e 'install.packages( "devtools" )'
 
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
 RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
   install.packages( "BiocManager", \
     repos = "http://cran.us.r-project.org", dependencies = TRUE ); \
+  devtools::install_version("rjson", version = "0.2.20"); \
   BiocManager::install( version = "3.10" ); \
   BiocManager::install( c( "Biobase", \
 	"graph", \
@@ -42,7 +45,6 @@ RUN echo 'install.packages ( "estimate", \
 
 RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
         dependencies = TRUE ); library( pacman ); \
-	p_install( devtools ); \
 	p_install( data.table ); \
 	p_install( MASS ); \
 	p_install( NMF ); \

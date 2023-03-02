@@ -44,7 +44,7 @@ preprocess.dataset <- function (ds, out.prefix=NULL, protein.id.type="REFSEQ",
   # Check if qc.col column exists
   if ( is.null(ds@cdesc[[qc.col]]) ) { # if qc.col doesn't exists in ds@cdesc
     warning("No QC column detected. Assuming all samples passed QC.")
-    ds@cdesc [[qc.col]] <- rep (qc.pass.label, ncol (ds@mat)) # assign qc.pass.label to every sample
+    ds@cdesc[[qc.col]] <- rep (qc.pass.label, ncol (ds@mat)) # assign qc.pass.label to every sample
   }
   # Separate QC.Pass samples 
   qc.types = unique ( ds@cdesc[[qc.col]] ) 
