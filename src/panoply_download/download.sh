@@ -2,16 +2,18 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-while getopts ":t:o:r:a:s:p:n:m:" opt; do
+while getopts ":t:o:r:a:s:p:n:m:e:c:" opt; do
     case $opt in
         t) association_tar="$OPTARG";;
         o) ssgsea_ome="$OPTARG";;
         r) ssgsea_rna="$OPTARG";;
-	      a) analysis_dir="$OPTARG";;
+        a) analysis_dir="$OPTARG";;
         s) ssgsea_assoc="$OPTARG";;
         p) ptmsea="$OPTARG";;
         n) nmf="$OPTARG";;
         m) nmf_ssgsea="$OPTARG";;
+        e) omicsev_tar="$OPTARG";;
+        c) cosmo_tar="$OPTARG";;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
 done
@@ -37,6 +39,8 @@ dir_create()
   cd $src;
   mkdir -p $summ_path
   mkdir -p association_tar && tar xf $association_tar -C association_tar --strip-components 1
+  mkdir -p omicsev_tar && tar xf $omicsev_tar -C omicsev_tar
+  mkdir -p cosmo_tar && tar xf $cosmo_tar -C cosmo_tar
   mkdir -p ssgsea_ome && tar xf $ssgsea_ome -C ssgsea_ome
   mkdir -p ssgsea_rna && tar xf $ssgsea_rna -C ssgsea_rna
   scatter_processing $src/$ssgsea_assoc
@@ -66,6 +70,10 @@ collect()
   mkdir -p $full_path;
   cp -r association_tar/* $full_path/.;
   rm -rf association_tar;
+  cp -r omicsev_tar/* $full_path/.;
+  rm -rf omicsev_tar;
+  cp -r cosmo_tar/* $full_path/.;
+  rm -rf cosmo_tar;
   cp -r ssgsea_ome $full_path/ssgsea_ome/;
   cp -r ssgsea_rna $full_path/ssgsea_rna/;
   cp -r $ssgsea_assoc $full_path/$ssgsea_assoc/;

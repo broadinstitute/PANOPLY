@@ -143,6 +143,9 @@ option_list <- list(
   make_option(c("--mimp_mutation_type_col"), type = "character", dest = 'mimp_mutation_type_col', help = "mimp_mutation_type_col"),
   make_option(c("--mimp_sample_id_col"), type = "character", dest = 'mimp_sample_id_col', help = "mimp_sample_id_col"),
   make_option(c("--mimp_transcript_id_col"), type = "character", dest = 'mimp_transcript_id_col', help = "mimp_transcript_id_col"),
+  # COSMO module
+  make_option(c("--cosmo_run_cosmo"), dest = 'cosmo_run_cosmo', help = "boolean whether to run the cosmo module"),
+  make_option(c("--cosmo_sample_label"), dest = 'cosmo_sample_label', help = 'clinical attribute(s) for cosmo'),
   # omicsev_module
   make_option(c("--omicsev_class_column_name"), type = "character", dest = "omicsev_class_column_name", help = "Column name for class input to OmicsEV"),
   make_option(c("--omicsev_batch_column_name"), type = "character", dest = "omicsev_batch_column_name", help = "Column name for batch information for OmicsEV"),
@@ -180,6 +183,7 @@ p_load('yaml')
 # ssgsea_projection
 # ptm_normalization
 # mimp
+# cosmo
 # omicsev
 
 ### FUNCTIONS:
@@ -716,6 +720,17 @@ check_mimp_params <- function(opt, yaml){
   return(yaml)
 }
 
+# cosmo:
+check_cosmo_params <- function(opt, yaml){
+  if (!is.null(opt$cosmo_run_cosmo)){
+    yaml$cosmo.params$run_cosmo <- opt$cosmo_run_cosmo
+  }
+  if (!is.null(opt$cosmo_sample_label)){
+    yaml$cosmo.params$sample_label <- opt$cosmo_sample_label
+  }
+  return(yaml)
+}
+
 # omicsev:
 check_omicsev_params <- function(opt, yaml) {
   if (!is.null(opt$omicsev_class_column_name)) {
@@ -758,6 +773,7 @@ check_pipeline_params <- function(opt,yaml){
   yaml <- check_blacksheep_params(opt, yaml)
   yaml <- check_ptm_normalization_params(opt, yaml)
   yaml <- check_mimp_params(opt, yaml)
+  yaml <- check_cosmo_params(opt, yaml)
   yaml <- check_omicsev_params(opt, yaml)
   return(yaml)
 }
@@ -844,6 +860,9 @@ write_custom_config <- function(yaml){
     paste('immune.enrichment.subgroups', '<-', ifelse(is.null(yaml$panoply_immune_analysis$immune_enrichment_subgroups),'NULL', paste0('"',yaml$panoply_immune_analysis$immune_enrichment_subgroups,'"'))),
     paste('immune.heatmap.width', '<-', yaml$panoply_immune_analysis$immune_heatmap_width),
     paste('immune.heatmap.height', '<-', yaml$panoply_immune_analysis$immune_heatmap_height),
+    #cosmo:
+    paste('cosmo.run.cosmo', '<-', as.logical(yaml$cosmo.params$run_cosmo)),
+    paste('cosmo.sample.label <- "', yaml$cosmo.params$sample_label, '"', sep = ''),
     #DEV_sample_annotations:
     paste('sample.id.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$sample_id_col_name, '"')),
     paste('experiment.col.name', '<-', paste0('"',yaml$DEV_sample_annotation$experiment_col_name, '"')),
@@ -935,6 +954,11 @@ parse_command_line_parameters <- function(opt){
   }else if (opt$module == 'omicsev' & check_if_any_command_line(opt)){
     yaml <- check_global_params(opt, yaml) #Returns updated yaml if globals were changed via command line
     yaml <- check_omicsev_params(opt, yaml) #Returns updated yaml if module params were changed via command line
+    write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
+    
+  }else if (opt$module == 'cosmo' & check_if_any_command_line(opt)){
+    yaml <- check_global_params(opt, yaml)
+    yaml <- check_cosmo_params(opt,yaml)
     write_custom_config(yaml) #Write params to custom-config.r (GENERIC)
     
   }else if (opt$module == 'sample_qc' & check_if_any_command_line(opt)){

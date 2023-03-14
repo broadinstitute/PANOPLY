@@ -571,6 +571,83 @@ panda_colors_edit <- function(){
   print( DONE )
 }
 
+### ===
+### Section. COSMO labels
+### ===
+
+# initialize cosmo parameters in case user never runs COSMO cell
+cosmo.params <- list(run_cosmo = FALSE)
+
+# function to get user input for cosmo
+select_COSMO_attributes <- function() { 
+  
+  # initialize again in case user runs cell multiple times
+  cosmo.params <<- list(run_cosmo = FALSE)
+  
+  annot <- read_annot()
+  potential_cols <- setdiff(names(annot), ignore.cols)
+  
+  # get valid columns
+  valid_columns <- c()
+  for (col in potential_cols) {
+    if (!(col %in% names(annot))) {
+      warning(paste0("Sample label '", col, "' is not in sample annotation file"))
+    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 5)) {
+      warning(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
+    } else if (any(is.na(annot[, col]))) {
+      warning(paste0("Sample label '", col, "' has NAs. It is being excluded."))
+    } else if (length(unique(annot[, col])) < 2) {
+      warning(paste0("Sample label '", col, "' only has one level. It is being excluded."))
+    } else if (length(unique(annot[, col])) > 2) {
+      warning(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
+    } else {
+      valid_columns <- c(valid_columns, col)
+    }
+  }
+  
+  # make prompt
+  if (length(valid_columns > 0)) {
+    prompt <- paste("VALID ATTRIBUTES:",
+                    paste(paste(' *', valid_columns), collapse = '\n'), 
+                    sep,
+                    "Select sample label column(s) for COSMO: ",
+                    sep = '\n')
+  } else {
+    cat("NO VALID ATTRIBUTES FOUND. COSMO will not be run.\n", DONE)
+    return()
+  }
+  
+  # get user input
+  user_columns <- readline(prompt)
+  
+  # validate column selection
+  user_columns <- strsplit(gsub(' ', '', user_columns), ',')[[1]]
+  
+  invalid_user_columns <- setdiff(user_columns, valid_columns)
+  if (length(invalid_user_columns > 0)) {
+    message(paste("Invalid attribute:", 
+                  paste(invalid_user_columns, collapse = ', ')))
+  }
+  
+  valid_user_columns <- intersect(user_columns, valid_columns)
+  
+  
+  cat(sep, '\n')
+  
+  if (length(valid_user_columns) > 0) {
+    cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
+    cat("\n\nCOSMO WILL BE RUN.\n")
+    run_cosmo <- TRUE
+  } else {
+    cat("NO ATTRIBUTES SELECTED. COSMO will not be run.\n")
+    run_cosmo <- FALSE
+  }
+  
+  cosmo.params <<- list(run_cosmo = run_cosmo,
+                        sample_label = paste(valid_user_columns, collapse = ','))
+  
+  cat(DONE)
+}
 
 ### ===
 ### Section. Sample sets
@@ -724,6 +801,7 @@ panda_finalize <- function (internal=FALSE) {
   lines$sample.sets <- sample.sets
   lines$normalize.proteomics <- normalize.prot
   lines$filter.proteomics <- filter.prot
+  lines$cosmo.params <- cosmo.params
   
   # output config for panda and copy to google bucket
   setwd( home )

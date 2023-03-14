@@ -1,0 +1,96 @@
+---
+title: "PANOPLY COSMO Report"
+output: html_document
+date: "`r Sys.Date()`"
+params:
+  final_result_path: "final_res_folder/cosmo_final_result.tsv"
+  sample_corr_path: "method1_folder/sample_correlation.csv"
+  d1_file_name: "Data1"
+  d2_file_name: "Data2"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(kableExtra)
+library(ComplexHeatmap)
+library(RColorBrewer)
+library(circlize)
+```
+
+### COSMO Results
+
+Below is a table of corrected labels. The table is generated using methods described in the COSMO [paper](https://doi.org/10.1016/j.patter.2021.100245) and [github](https://github.com/bzhanglab/COSMO). A row with the consistent sample ID across all the columns indicates all the data belongs to the same patient and there is no mislabeling. A row with different sample ID's indicates mislabeling error. Mislabeling can occur in the sample annotations ("Clinical") or in either of the two -omic datasets. Mislabeled elements are highlighted in red.
+
+If you would like to view the raw data as a .tsv file, it is located in the COSMO tar output at `final_res_folder/cosmo_final_result.tsv`. You can also browse other intermediate outputs in `method1_folder` and `method2_folder`.
+
+```{r cosmo_table, results='asis'}
+final_result_table <- read.csv(params$final_result_path, sep='\t')
+names(final_result_table) <- c("Sample", "Clinical", params$d1_file_name, params$d2_file_name)
+
+# convert from numbers to sample names
+for (column in names(final_result_table)[2:4]) {
+  final_result_table[, column] <- final_result_table$Sample[final_result_table[[column]]]
+}
+
+# index to just samples with mislabeling
+mislabeled_element <- t(apply(final_result_table, 1, function(r) r != r[1]))
+mislabeled_row <- apply(mislabeled_element, 1, any)
+mislabeled_sample_names <- unique(unlist(final_result_table[mislabeled_row,]))
+
+# add coloring
+final_result_table[mislabeled_element] <- cell_spec(final_result_table[mislabeled_element], color = 'red')
+
+# make sample column bold
+final_result_table[,1] <- cell_spec(final_result_table[,1], bold = T)
+
+# subset to only rows with some sort of mislabeling
+mislabeled_result_table <- final_result_table[mislabeled_row, ]
+rownames(mislabeled_result_table) <- mislabeled_result_table$Sample
+
+cat("COSMO found ", 
+    '**', dim(mislabeled_result_table)[1], ' / ',
+    dim(final_result_table)[1], '**',
+    " mislabeled samples in these datasets. Only the mislabeled samples are shown below.", sep = '')
+```
+```{r cosmo_table_2}
+mislabeled_result_table[,-1] %>%
+  kable(escape = FALSE) %>%
+  kable_styling("striped", full_width = F) %>% 
+  scroll_box(height = paste0(min(nrow(mislabeled_result_table) + 1, 10) * 40, "px"))
+```
+
+### Sample Correlation
+
+Sample correlation heatmaps can be used to cross-reference COSMO-identified mislabeled samples. A more interactive version of these plots can be found in the `panoply_sampleqc` module.
+
+Below is a plot of pair-wise sample correlations for *only COSMO-identified mislabeled samples*.
+``` {r cosmo_sample_corr}
+sample_corr <- as.matrix(read.csv(params$sample_corr_path))
+sample_corr_mislabeled <- sample_corr[mislabeled_sample_names, mislabeled_sample_names]
+
+heatmap.colors <- brewer.pal (11, "RdYlBu")
+
+myCorrHeatmap <- function(df, full_mat = F) {
+  heatmap.range <- range(as.vector(unlist(df)))
+  H <- Heatmap(df,
+        col=colorRamp2 (c(-1, 0, 1), c('blue', 'white', 'red')),
+        cluster_rows = F,
+        cluster_columns = F,
+        name = "corr.",
+        row_names_gp = gpar(fontsize = 10),
+        column_names_gp = gpar(fontsize = 10),
+        show_column_names = !(full_mat && dim(df)[1] > 35),
+        show_row_names = !(full_mat && dim(df)[1] > 35))
+  
+  draw(H)
+}
+
+myCorrHeatmap(sample_corr_mislabeled, full_mat = F)
+
+```
+
+
+Below is a plot of pair-wise sample correlations for *all samples*.
+``` {r cosmo_sample_corr_2}
+myCorrHeatmap(sample_corr, full_mat = T)
+```
