@@ -28,7 +28,7 @@ if (normalize.proteomics) { # if normalization is on
                        qc.col=qc.col, ndigits=ndigits)
 } else { # otherwise
   # copy old file to new file location
-  print( "No filtering applied." )
+  print( "No normalization applied." )
   file.prefix <- paste (type, '-ratio', sep='')
   file.copy( file.path (pre.dir, paste (file.prefix, '.gct', sep='')), paste (file.prefix, '-norm.gct', sep='') )
 }
