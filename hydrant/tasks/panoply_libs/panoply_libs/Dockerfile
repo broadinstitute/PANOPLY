@@ -31,6 +31,7 @@ RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
 	"GO.db", \
         "rhdf5", \
         "prada", \
+        "limma", \
 	"AnnotationDbi", \
 	"org.Hs.eg.db", \
 	"EnsDb.Hsapiens.v79", \
@@ -70,7 +71,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( optparse ); \
 	p_install( parmigene ); \
 	p_install( psych ); \
-	p_install( randomForest ); \
+	devtools::install_version("randomForest", version = "4.6-14"); \
 	p_install( reshape ); \
 	p_install( samr ); \
 	p_install( scales ); \
@@ -93,8 +94,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( GlobalOptions); \
 	p_install( GetoptLong ); \
         p_install( coda ); \
-        p_install( rjags ); \
-        p_install( limma );' > /tmp/packages.R  && Rscript /tmp/packages.R
+        p_install( rjags );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
 
 RUN echo 'install.packages( \
