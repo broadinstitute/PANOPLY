@@ -4,10 +4,6 @@ MAINTAINER proteogenomics@broadinstitute.org
 RUN apt-get update 
 RUN echo Y | apt-get install libxml2 libxml2-dev
 
-RUN echo 'pacman::p_load (devtools, ComplexHeatmap)' \
-        > /tmp/packages-devtools.R \
-    && Rscript /tmp/packages-devtools.R
-
 RUN echo 'if (! require (estimate)) { \
         install.packages("estimate", repos="http://r-forge.r-project.org", dependencies=TRUE)}; \
       if (! require (XML)) { \

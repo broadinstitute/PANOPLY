@@ -50,8 +50,7 @@ data <- parse.gctx ( file.path (pre.dir, paste (type, '-ratio.gct', sep='')) )
 if (qc.col %in% colnames (data@cdesc)) { 
   sinfo <- data@cdesc [, c ('Sample.ID', qc.col)]
 } else {
-  if (!is.null (sampleQC.cls)) sinfo <- data.frame (data@cid, read.cls ( file.path (data.dir, sampleQC.cls) ))
-  else sinfo <- data.frame (data@cid, rep (qc.pass.label))
+  sinfo <- data.frame (data@cid, rep (qc.pass.label))
 }
 plot.profiles (data@mat, paste (type, '-density-profiles.pdf', sep=''), 
                paste (toupper (type), ': Distribution of log ratios', sep=''), 

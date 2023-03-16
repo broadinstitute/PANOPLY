@@ -266,6 +266,7 @@ load_unzipped_files <- function(){
   
   # check if proteomics data should be normalized
   normalize.prot <<- y2true ("Does proteomics data need normalization?")
+  filter.prot <<- y2true ("Does proteomics data need filtering?")
 }
 
 validate_annotation_table <- function (typemap.csv) {
@@ -799,8 +800,8 @@ panda_finalize <- function (internal=FALSE) {
   }
   lines$sample.sets <- sample.sets
   lines$normalize.proteomics <- normalize.prot
+  lines$filter.proteomics <- filter.prot
   lines$cosmo.params <- cosmo.params
-  
   
   # output config for panda and copy to google bucket
   setwd( home )

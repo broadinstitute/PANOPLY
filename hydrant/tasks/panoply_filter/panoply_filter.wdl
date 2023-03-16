@@ -1,19 +1,25 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_normalize_ms_data {
+task panoply_filter {
   File inputData
   String type
   String standalone
   String analysisDir
   File yaml
-  String? normalizeProteomics
-  String? normMethod
-  String? altMethod
+  String? geneIdCol
+  String? proteinIdCol
+  String? proteinIdType
+  String? filterProteomics
+  String? separateQCTypes
+  String? combineReplicates
   Int? ndigits
+  Float? naMax
+  String? noNA
+  Float? sdFilterThreshold
 
-  String outTar = "panoply_normalize_ms_data-output.tar"
-  String outTable = "normalized_table-output.gct"
+  String outTar = "panoply_filter-output.tar"
+  String outTable = "filtered_table-output.gct"
 
   Int? memory
   Int? disk_space
@@ -27,21 +33,22 @@ task panoply_normalize_ms_data {
     dataDir="/prot/proteomics/Projects/PGDAC/data"
     
     Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
-      --module normalize_ms_data \
+      --module filter \
       --master_yaml ${yaml} \
-      ${"--normalize_proteomics " + normalizeProteomics} \
-      ${"--norm_method " + normMethod} \
-      ${"--alt_method " + altMethod} \
+      ${"--filter_proteomics " + filterProteomics} \
+      ${"--gene_id_col " + geneIdCol} \
+      ${"--protein_id_col " + proteinIdCol} \
+      ${"--protein_id_type " + proteinIdType} \
+      ${"--combine_replicates " + combineReplicates} \
+      ${"--separate_qc_types " + separateQCTypes} \
       ${"--ndigits " + ndigits} \
-
-    # Find the flag for normalize.proteomics in the yaml:
-    cfg='final_output_params.yaml'
-    echo "library(yaml);yaml=read_yaml('$cfg');norm=yaml[['normalize.proteomics']];writeLines(as.character(norm), con='norm.txt')" > cmd.r
-    Rscript cmd.r
-    norm=`cat norm.txt`
+      ${"--na_max " + naMax} \
+      ${"--no_na " + noNA} \
+      ${"--sd_filter_threshold " + sdFilterThreshold}
     
+
     if [[ ${standalone} = false ]]; then
-      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
             -i ${inputData} \
             -t ${type} \
             -c $codeDir \
@@ -49,8 +56,8 @@ task panoply_normalize_ms_data {
             -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
             -y "final_output_params.yaml"
     else
-      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
-            -a ${inputData} \
+      /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh filter \
+            -n ${inputData} \
             -r ${analysisDir} \
             -t ${type} \
             -c $codeDir \
@@ -59,11 +66,11 @@ task panoply_normalize_ms_data {
             -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
             -y "final_output_params.yaml"
     fi
-    # Grab the normalized gct to set as output with appropriate name
-    outGCT=`find ${analysisDir}/normalized-data -type f -iname "*-ratio-norm.gct"`
+
+    # Grab the filtered gct to set as output with appropriate name
+    outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm-filt.gct"` # grab filtered file
     outTableName=${type}-${outTable} 
     cp $outGCT $outTableName
-    
   >>>
 
   output {
@@ -73,7 +80,7 @@ task panoply_normalize_ms_data {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_normalize_ms_data:latest"
+    docker : "broadcptacdev/panoply_filter:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -81,13 +88,12 @@ task panoply_normalize_ms_data {
   }
 
   meta {
-    author : "Ramani Kothadia"
+    author : "C.M. Williams"
     email : "proteogenomics@broadinstitute.org"
   }
 }
 
-workflow panoply_normalize_ms_data_workflow {
+workflow panoply_filter_workflow {
 
-  call panoply_normalize_ms_data
-
+  call panoply_filter
 }

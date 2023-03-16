@@ -700,7 +700,7 @@ simulate.data <- function(p=100,       # number of features
   gct@rid <- rid
   gct@cid <- cid
   
-  write.gct(gct, ofile=glue('proteome-ratio-norm-NArm'), appenddim = F)
+  write.gct(gct, ofile=glue('proteome-ratio-norm-filt'), appenddim = F)
   
   pheatmap(mat, annotation_col=cdesc)
 }
