@@ -11,6 +11,7 @@ task panoply_filter {
   String? proteinIdCol
   String? proteinIdType
   String? filterProteomics
+  String? separateQCTypes
   String? combineReplicates
   Int? ndigits
   Float? naMax
@@ -39,6 +40,7 @@ task panoply_filter {
       ${"--protein_id_col " + proteinIdCol} \
       ${"--protein_id_type " + proteinIdType} \
       ${"--combine_replicates " + combineReplicates} \
+      ${"--separate_qc_types " + separateQCTypes} \
       ${"--ndigits " + ndigits} \
       ${"--na_max " + naMax} \
       ${"--no_na " + noNA} \

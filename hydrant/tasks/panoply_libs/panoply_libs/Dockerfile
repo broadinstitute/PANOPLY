@@ -82,6 +82,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( tidyverse ); \
 	p_install( tools ); \
 	p_install( verification ); \
+	devtools::install_version("Hmisc", version = "4.0"); \
 	p_install( WGCNA ); \
 	p_install( factoextra ); \
 	p_install( glue ); \
