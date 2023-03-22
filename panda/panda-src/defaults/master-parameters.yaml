@@ -138,7 +138,7 @@ panoply_mimp:
 panoply_ptm_normalization:
   accession_number_colname: 'accession_number'
   accession_numbers_colname: 'accession_numbers'    # set to NULL if not present
-  accession_numbers_separator: '\|'                # ignored if accession_numbers_colname is NULL
+  accession_numbers_separator: '|'                  # ignored if accession_numbers_colname is NULL
   score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
 
 ########################################
