@@ -6,6 +6,9 @@ RUN apt-get -t unstable install -y libssl-dev
 RUN apt-get -t unstable install -y libcurl4-openssl-dev
 RUN apt-get install -y jags
 
+# Freeze cran Repository to end of 2020
+RUN sed -i 's/cloud.r-project.org/packagemanager.rstudio.com\/cran\/2020-12-31/' /etc/R/Rprofile.site
+
 # devtools dependencies
 RUN apt-get -t unstable install -y libxml2-dev  # required for R-package 'XML'
 RUN apt-get -t unstable install -y pandoc  # rmarkdown
@@ -18,9 +21,7 @@ RUN R -e 'install.packages( "devtools" )'
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
 RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
-  install.packages( "BiocManager", \
-    repos = "http://cran.us.r-project.org", dependencies = TRUE ); \
-  devtools::install_version("rjson", version = "0.2.20"); \
+  install.packages( "BiocManager", dependencies = TRUE ); \
   BiocManager::install( version = "3.10" ); \
   BiocManager::install( c( "Biobase", \
 	"graph", \
@@ -66,12 +67,12 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( maptools ); \
 	p_install( mclust ); \
 	p_install( misc3d ); \
-	devtools::install_version("mixtools", version = "1.2.0"); \
+	p_install( mixtools ); \
 	p_install( nlme ); \
 	p_install( optparse ); \
 	p_install( parmigene ); \
 	p_install( psych ); \
-	devtools::install_version("randomForest", version = "4.6-14"); \
+	p_install( randomForest ); \
 	p_install( reshape ); \
 	p_install( samr ); \
 	p_install( scales ); \
@@ -82,7 +83,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( tidyverse ); \
 	p_install( tools ); \
 	p_install( verification ); \
-	devtools::install_version("Hmisc", version = "4.0"); \
+	p_install( Hmisc ); \
 	p_install( WGCNA ); \
 	p_install( factoextra ); \
 	p_install( glue ); \
