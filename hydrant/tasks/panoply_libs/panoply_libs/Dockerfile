@@ -15,8 +15,6 @@ RUN apt-get -t unstable install -y pandoc  # rmarkdown
 RUN apt-get -t unstable install -y libfontconfig1-dev  # font config library for R-package kableExtra
 RUN apt-get -t unstable install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
 RUN apt-get -t unstable install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
-# devtools install
-RUN R -e 'install.packages( "devtools" )'
 
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
@@ -93,11 +91,14 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( pheatmap ); \
 	p_install( NbClust ); \
 	p_install( rjson ); \
+	p_install( yaml ); \
 	p_install( GlobalOptions); \
 	p_install( GetoptLong ); \
         p_install( coda ); \
         p_install( rjags );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
+# Install devtools directly from crane, NOT from mirror repository
+RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
 
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \
