@@ -9,8 +9,6 @@ COPY . $wd
 WORKDIR $wd
 
 ## install R-packages
-# cmapR already installed in panoply_libs
-# RUN R -e "devtools::install_github('cmap/cmapR')"
 RUN R -e "devtools::install_github('cmap/morpheus.R')"
 RUN R -e "library(pacman);p_install('DT')"
 RUN R -e "library(pacman);p_install('gtools')"
