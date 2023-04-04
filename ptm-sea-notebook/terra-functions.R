@@ -1,3 +1,9 @@
+script.dir <<- "/ptm-sea"  # needed for ssGSEA2.0
+
+source("/ptm-sea/src/ssGSEA2.0.R")
+source("/ptm-sea/src/preprocess_gct.R")
+
+
 MAIN_WD <- getwd()
 project <- Sys.getenv('WORKSPACE_NAMESPACE')
 workspace <- Sys.getenv('WORKSPACE_NAME')
@@ -67,48 +73,53 @@ get_ptm_sig_db <- function(id_type_out, organism) {
 preprocess_gct <- function() {
     setwd(project_output)  # change to folder to write
 
-    sys_out <- system(paste("/ptm-sea/src/preprocessGCT.R",
-        "-i", input_ds,
-        "-l", "ssc",  # single-site centric
-        "-t", id_type,
-        "-o", id_type_out,
-        "-a", acc_type_in,
-        "-s", seqwin_col,
-        "-d", localized,
-        "-m", mode,
-        "-r", residue,
-        "-p", ptm,
-        "-u", TRUE,
-        "-z", "/ptm-sea/src/"
-    ), intern = TRUE)
+    out <- preprocessGCT(
+        gct.str = input_ds,
+        level = "ssc",  # single-site centric
+        id.type = id_type,
+        id.type.out = id_type_out,
+        acc.type = acc_type_in,
+        seqwin.col = seqwin_col,
+        gene.col = gene_symbol_col,
+        humanize.gene.names = humanize_gene,
+        loc = localized,
+        mode = mode,
+        mod.res = residue,
+        mod.type = ptm,
+        appenddim = FALSE,
+        preprocess.gct = TRUE
+    )
 
-    print(sys_out)
+    out_path <- file.path(project_output, "fn.out")
+    writeLines(out, con = out_path)
+    input_ds_proc <<- file.path(project_output, system(paste("cat", out_path), intern = TRUE))  # locate processed GCT file
+
     setwd(MAIN_WD)  # change to normal work directory
-    fn <<- file.path(project_output, "fn.out")
-    input_ds_proc <<- file.path(project_output, system(paste("cat", fn), intern = TRUE))  # locate processed GCT file
 }
 
 run_ptm_sea <- function(save_to_bucket = TRUE, name = NULL) {
     setwd(project_output)  # change to folder to write
+    
+    log.file <- file.path(project_output, paste0(output_prefix, '_ssgsea.log.txt'))
+    res <- ssGSEA2(
+        input.ds = input_ds_proc,
+        gene.set.databases = ptm_sig_db,
+        output.prefix = output_prefix,
+        sample.norm.type = sample_norm_type,
+        weight = weight,
+        correl.type = correl_type,
+        statistic = statistic,
+        output.score.type = output_score_type,
+        nperm = nperm,
+        min.overlap = min_overlap,
+        extended.output = extended_output,
+        export.signat.gct = export_signal_gct,
+        global.fdr = global_fdr,
+        par = TRUE,
+        spare.cores = 0,
+        log.file = log.file
+    )
 
-    sys_out <- system(paste("/ptm-sea/ssgsea-cli.R",
-        "-i", input_ds_proc,
-        "-d", ptm_sig_db,
-        "-o", output_prefix,
-        "-n", sample_norm_type,
-        "-w", weight,
-        "-c", correl_type,
-        "-t", statistic,
-        "-s", output_score_type,
-        "-p", nperm,
-        "-m", min_overlap,
-        "-x", extended_output,
-        "-e", export_signal_gct,
-        "-g", global_fdr,
-        "-l", TRUE
-    ), intern = TRUE)
-
-    print(sys_out)
     setwd(MAIN_WD)  # change to normal work directory
     
     if (save_to_bucket) {
