@@ -33,6 +33,13 @@ Step-by-step slides for running this workflow are available [here](https://docs.
 - `precursor_charge_min` (Integer, default=1): minimum precursor charge for DIA search
 - `precursor_mz_max` (Integer, default=1800): maximum precursor m/z for DIA search
 - `precursor_mz_min` (Integer, default=300): minimum precursor m/z for DIA search
+- To specify modifications not included by default, in `additional_options`, add flags of format `--var-mod UniMid:<NUMBER>,<MASS_SHIFT>,<RESIDUE>` (e.g., `--var-mod UniMod:259,8.014199,K  --var-mod UniMod:267,10.008269,R`)
+
+**Skyline report (optional)**
+- `skyline_generate_report` (Boolean, default=false): generate Skyline report from searched files
+- `skyline_use_explicit_peak_bounds` (Boolean, default=true): if (`generate_skyline_report == true`), use the retention time apex and pick the peak boundaries (most users don't need to change this)
+- `skyline_background_proteome_fasta` (File): Google Bucket path to background proteome file (.fasta)
+- `skyline_template_zip` (File, optional): Google Bucket path to empty Skyline template (most users don't need to change this)
 
 **Terra parameters**
 - `local_disk_gb` (Integer, default=1000): GB of storage space in the compute instance

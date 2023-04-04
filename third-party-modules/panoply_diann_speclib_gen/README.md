@@ -30,6 +30,7 @@ Step-by-step slides for running this workflow are available [here](https://docs.
 - `precursor_charge_min` (Integer, default=1): minimum precursor charge for in silico library generation
 - `precursor_mz_max` (Integer, default=1800): maximum precursor m/z for in silico library generation
 - `precursor_mz_min` (Integer, default=300): minimum precursor m/z for in silico library generation
+- To specify modifications not included by default, in `additional_options`, add flags of format `--var-mod UniMid:<NUMBER>,<MASS_SHIFT>,<RESIDUE>` (e.g., `--var-mod UniMod:259,8.014199,K  --var-mod UniMod:267,10.008269,R`)
 
 **Terra parameters**
 - `local_disk_gb` (Integer, default=1000): GB of storage space in the compute instance

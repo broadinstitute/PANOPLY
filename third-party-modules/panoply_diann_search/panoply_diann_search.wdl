@@ -30,6 +30,9 @@ workflow panoply_dia_nn_search {
     String additional_options=""
     Boolean try_one_file=false
 
+    Boolean skyline_generate_report=false
+    Boolean skyline_use_explicit_peak_bounds=true
+
     Int num_cpus=32
     Int ram_gb=128
     Int local_disk_gb=1000
@@ -147,6 +150,35 @@ workflow panoply_dia_nn_search {
       ram_gb=ram_gb,
       local_disk_gb=local_disk_gb,
       num_preemptions=num_preemptions
+  }
+
+  if (skyline_generate_report) {
+    call build_blib_library as build_blib {
+      input:
+        speclib=dia_nn_match_between_runs.speclib_file,
+        precursor_tsv=dia_nn_match_between_runs.precursor_tsv_file
+    }
+
+    call skyline_add_library {
+      input:
+        library=build_blib.blib,
+    }
+
+    if (!skyline_use_explicit_peak_bounds) {
+      call skyline_turn_off_library_explicit_peak_bounds {
+        input:
+          skyline_zip = skyline_add_library.skyline_output
+      }
+    }
+
+    call skyline_import_results {
+      input:
+        skyline_zip = select_first([
+          skyline_turn_off_library_explicit_peak_bounds.skyline_output,
+          skyline_add_library.skyline_output
+          ]),
+        mzml_files=(if is_timsTOF then select_first([convert_d_to_dia.converted_files]) else select_first([convert_raw_to_mzml.converted_files])),
+    }
   }
 }
 
@@ -318,6 +350,9 @@ task dia_nn_match_between_runs {
 
     # Archive results
     cd ..
+    mv $projdir/out/spect_lib.tsv.speclib .
+    mv $projdir/out/report.tsv .
+
     zip -r "diann_first_pass_out.zip" $projdir/first_pass_out
     zip -r "diann_out.zip" $projdir/out
   }
@@ -325,7 +360,11 @@ task dia_nn_match_between_runs {
   output {
     File diann_first_pass_out="diann_first_pass_out.zip"
     File diann_out="diann_out.zip"
+    
+    File precursor_tsv_file="report.tsv"
+    File speclib_file="spect_lib.tsv.speclib"
   }
+
 
   runtime {
     docker      : "broadcptacdev/panoply_dia_nn:latest"
@@ -504,4 +543,224 @@ task get_array_of_files {
     author: "Khoi Pham Munchic"
     email : "kpham@broadinstitute.org"
   }
+}
+
+task build_blib_library {
+    input {
+        File speclib
+        File precursor_tsv
+    }
+
+    command {
+        ln -sv '${speclib}' ./report.tsv.speclib
+        ln -sv '${precursor_tsv}' ./report.tsv
+
+        wine BlibBuild.exe report.tsv.speclib lib_redundant.blib
+        wine BlibFilter.exe lib_redundant.blib lib.blib
+    }
+
+    runtime {
+        docker: "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:latest"
+    }
+
+    output {
+        File blib = "lib.blib"
+    }
+
+    meta {
+        description: "Build a .blib library from a DiaNN search."
+    }
+    parameter_meta {
+        speclib: "DiaNN .speclib file"
+        precursor_tsv: "DiaNN precursor report .tsv file."
+    }
+}
+
+
+task skyline_add_library {
+    input {
+        File skyline_template_zip = "gs://fc-045627cd-c6a2-4d9e-ad53-88dc1bffafd3/DiaNN_template.sky.zip"
+        File skyline_background_proteome_fasta = ""
+        File library
+        
+    } 
+
+    String skyline_share_zip_type = "minimal"
+    String skyline_template_basename = basename(skyline_template_zip, ".sky.zip")
+    String local_skyline_output_name = basename(skyline_template_zip, ".sky.zip") + "_withTargets"
+
+    command <<<
+        # unzip skyline template file
+        unzip "~{skyline_template_zip}"
+
+        # link blib to execution directory
+        lib_basename=$(basename '~{library}')
+        ln -sv '~{library}' "$lib_basename"
+
+        # add library and fasta file to skyline template and save to new file
+        wine SkylineCmd --in="~{skyline_template_basename}.sky" --log-file=skyline_add_library.log \
+            --import-fasta="~{skyline_background_proteome_fasta}" --add-library-path="$lib_basename" \
+            --out="~{local_skyline_output_name}.sky" --save \
+            --share-zip="~{local_skyline_output_name}.sky.zip" --share-type="~{skyline_share_zip_type}"
+    >>>
+
+    runtime {
+        docker: "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:latest"
+    }
+
+    output {
+        File skyline_output = "${local_skyline_output_name}.sky.zip"
+    }
+
+    parameter_meta {
+        skyline_template_zip: "An empty skyline document with the desired transition and peptide settings."
+        library: "A library file in a format natively supported by Skyline (.blib or .elib)"
+    }
+
+    meta {
+        author: "Aaron Maurais"
+        email: "mauraisa@uw.edu"
+        description: "Add a library and fasta file to an empty skyline template"
+    }
+}
+
+
+task skyline_import_results {
+    input {
+        File skyline_zip
+        Array[File] mzml_files
+        
+    }
+
+    String? skyline_share_zip_type = "minimal"
+    String local_skyline_output_name = basename(skyline_zip, ".sky.zip") + "_results"
+    Int skyline_files_to_import_at_once = 10
+    Int skyline_import_retries = 3
+
+    command <<<
+        declare -i RETRIES=~{skyline_import_retries}
+
+        unzip "~{skyline_zip}"
+
+        # Link mzML files to execution directory
+        # This is necissary because Windows does not allow file paths longer than 250 characters.
+        mkdir ./mzML
+        for f in ~{sep=' ' mzml_files}; do ln -v "$f" "./mzML/$(basename $f)"; done
+
+        # create array of import commands
+        files=( $(ls ./mzML/*.mzML) )
+        echo -e "\nImporting ${#files[@]} files in total."
+        file_count=0
+        not_done=true
+        add_commands=()
+        while $not_done; do
+            add_command=""
+            for ((i=0; i < ~{skyline_files_to_import_at_once}; i++)); do
+                if [[ $file_count -ge "${#files[@]}" ]] ; then
+                    not_done=false
+                    break
+                fi
+                add_command="${add_command} --import-file=${files[$file_count]}"
+                (( file_count++ ))
+            done
+            if [[ "$add_command" != "" ]] ; then
+                add_commands+=("$add_command")
+            fi
+        done
+
+        # run skyline import in groups of n files
+        # Importing in groups is necissary because sometimes there are random errors when accessing
+        # files on the network file system inside of wine. By importing in groups we can avoid having
+        # to start over at the begining if one of these intermittent errors occurs.
+        files_imported=0
+        skyline_input="--in=\"$(basename '~{skyline_zip}' '.zip')\" --out=\"~{local_skyline_output_name}.sky\""
+        for c in "${add_commands[@]}" ; do
+
+            # write import command to temporary file
+            # This is necissary because wine is stupid and dosen't expand shell varaibles.
+            echo "wine SkylineCmd $skyline_input \
+                      --log-file=skyline_import_files.log \
+                      $c --save" > import_command.sh
+
+            # update skyline_input variable to use the new file name
+            skyline_input="--in=\"~{local_skyline_output_name}.sky\""
+
+            # print progress
+            files_in_group=$(cat import_command.sh |grep -o '\.mzML\s'|wc -l)
+            (( files_imported += files_in_group ))
+            echo -e "\nImporting ${files_imported} of ${#files[@]} files..."
+            echo "The SkylineCmd import command was..."
+            cat import_command.sh
+
+            # Import file group with retries if there is an error
+            import_sucessful=false
+            for ((i=0; i < RETRIES; i++)); do
+                printf "\nTry number: %s of %s\n" $((i + 1)) $RETRIES
+                bash import_command.sh
+                if [[ $? -eq 0 ]] ; then
+                    echo "Import was sucessful!"
+                    import_sucessful=true
+                    break
+                fi
+                echo "Import failed!"
+            done
+            if ! $import_sucessful ; then
+                exit 1
+            fi
+        done
+
+        # create skyline zip file
+        wine SkylineCmd --in="~{local_skyline_output_name}.sky" --log-file=skyline_share_zip.log \
+            --share-zip="~{local_skyline_output_name}.sky.zip" --share-type="~{skyline_share_zip_type}"
+    >>>
+
+    runtime {
+        docker: "proteowizard/pwiz-skyline-i-agree-to-the-vendor-licenses:latest"
+    }
+
+    output {
+        File skyline_output = "${local_skyline_output_name}.sky.zip"
+    }
+
+    meta {
+        author: "Aaron Maurais"
+        email: "mauraisa@uw.edu"
+        description: "Add mzML files to a skyline document with an existing target list."
+    }
+}
+
+
+task skyline_turn_off_library_explicit_peak_bounds {
+    input {
+        File skyline_zip
+    }
+
+    String skyline_input_basename=basename(skyline_zip, ".sky.zip")
+
+    command {
+        # unzip skyline input file
+        unzip "${skyline_zip}"| grep 'inflating'| sed -E 's/\s?inflating:\s?//' > archive_files.txt
+
+        xmlstarlet ed --inplace \
+            --insert '/srm_settings/settings_summary/peptide_settings/peptide_libraries/bibliospec_lite_library' \
+            --type attr -n 'skyline_use_explicit_peak_bounds' --value "false" \
+            "${skyline_input_basename}".sky
+
+        cat archive_files.txt| xargs -t zip ${skyline_input_basename}.sky.zip
+        cat archive_files.txt| xargs -t rm -v
+    }
+
+    runtime {
+        docker: "mauraisa/wdl_array_tools:0.4"
+    }
+
+    output {
+        File skyline_output = "${skyline_input_basename}.sky.zip"
+    }
+
+    meta {
+        description: "Set skyline_use_explicit_peak_bounds to false for all libraries used in Skyline document."
+        author: "Aaron Maurais"
+        email: "mauraisa@uw.edu"
+    }
 }
