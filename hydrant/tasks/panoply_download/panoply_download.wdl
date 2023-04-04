@@ -9,6 +9,8 @@ task panoply_download
   File? ptmsea
   File? so_nmf_tar
   File? so_nmf_ssgsea_tar
+  File? omicsev_tar
+  File? cosmo_tar
   String output_prefix
   String analysisDir
   String summary_tar = "panoply_main_summary.tar"
@@ -44,7 +46,9 @@ task panoply_download
         -s ${ssgsea_assoc_dir} \
         ${"-p" + ptmsea} \
         ${"-n" + so_nmf_tar} \
-        ${"-m" + so_nmf_ssgsea_tar};
+        ${"-m" + so_nmf_ssgsea_tar} \
+        ${"-e" + omicsev_tar} \
+        ${"-c" + cosmo_tar};
     mv ${summary_tar} ${output_prefix}-${summary_tar}
     mv ${full_tar} ${output_prefix}-${full_tar}
   }

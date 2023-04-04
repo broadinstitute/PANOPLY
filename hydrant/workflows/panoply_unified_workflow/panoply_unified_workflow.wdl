@@ -1,15 +1,15 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_workflow/versions/1/plain-WDL/descriptor" as normalize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/14/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/2/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/28/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/3/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/23/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/24/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_gct/versions/5/plain-WDL/descriptor" as mo_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/3/plain-WDL/descriptor" as immune_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_make_pairs_workflow/versions/3/plain-WDL/descriptor" as make_pairs_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/5/plain-WDL/descriptor" as assemble_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/3/plain-WDL/descriptor" as so_nmf_sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/18/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/4/plain-WDL/descriptor" as so_nmf_sankey_wdl
 
 
 workflow panoply_unified_workflow {
@@ -28,6 +28,7 @@ workflow panoply_unified_workflow {
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
+  String? filterProteomics # "true" or "false"
 
   
   Array[File] omes = ["${prote_ome}", "${phospho_ome}", "${acetyl_ome}", "${ubiquityl_ome}"]
@@ -53,27 +54,28 @@ workflow panoply_unified_workflow {
   ### Normalize the data first so downstream modules (NMF etc) can run in parallel to main:
   scatter (pair in ome_pairs.zipped) {
     if ("${pair.right}" != "") {
-      call normalize_wdl.panoply_normalize_ms_data_workflow as norm {
+      call norm_filt_wdl.panoply_normalize_filter_workflow as norm_filt {
         input:
           input_pome="${pair.right}",
           ome_type="${pair.left}",
           job_identifier="${job_id}-${pair.left}",
           yaml="${yaml}",
-          normalizeProteomics=normalizeProteomics
+          normalizeProteomics=normalizeProteomics,
+          filterProteomics=filterProteomics
       }
     }
   }
 
   # Make an array of pairs from the normalized data for input to main and other modules:
-  call make_pairs_wdl.panoply_make_pairs_workflow as norm_pairs {
+  call make_pairs_wdl.panoply_make_pairs_workflow as norm_filt_pairs {
     input:
-      files = norm.normalized_data_table,
-      suffix = "-normalized_table-output.gct"
+      files = norm_filt.filtered_data_table,
+      suffix = "-filtered_table-output.gct"
 
   }
 
   ### MAIN:
-  scatter (pair in norm_pairs.zipped) {
+  scatter (pair in norm_filt_pairs.zipped) {
     if ("${pair.right}" != "") {
         call main_wdl.panoply_main as pome {
           input:
@@ -96,7 +98,7 @@ workflow panoply_unified_workflow {
   
 
   # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for Blacksheep use:
-  Array[Pair[String?,File?]] all_pairs = flatten([norm_pairs.zipped,type_pairs.zipped])
+  Array[Pair[String?,File?]] all_pairs = flatten([norm_filt_pairs.zipped,type_pairs.zipped])
   
   ### BLACKSHEEP:
   scatter (pair in all_pairs) {
@@ -116,10 +118,10 @@ workflow panoply_unified_workflow {
     input:
       yaml = yaml,
       job_id = job_id,
-      prote_ome = norm.normalized_data_table[0],
-      phospho_ome = norm.normalized_data_table[1],
-      acetyl_ome = norm.normalized_data_table[2],
-      ubiquityl_ome = norm.normalized_data_table[3],
+      prote_ome = norm_filt.filtered_data_table[0],
+      phospho_ome = norm_filt.filtered_data_table[1],
+      acetyl_ome = norm_filt.filtered_data_table[2],
+      ubiquityl_ome = norm_filt.filtered_data_table[3],
       rna_data = rna_data,
       cna_data = cna_data,
       run_sankey = "false" # run sankey_workflow separately
@@ -131,7 +133,7 @@ workflow panoply_unified_workflow {
       input:
         yaml_file = yaml,
         label = job_id,
-        omes = norm.normalized_data_table,
+        omes = norm_filt.filtered_data_table,
         rna_ome = rna_data,
         cna_ome = cna_data
     }
@@ -165,10 +167,11 @@ workflow panoply_unified_workflow {
       main_summary = pome.summary_and_ssgsea,
       cmap_output = pome.cmap_output,
       cmap_ssgsea_output = pome.cmap_ssgsea_output,
-      norm_report = norm.normalize_report,
+      norm_report = norm_filt.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,
       omicsev_report = pome.omicsev_report,
+      cosmo_report = pome.cosmo_report,
       sampleqc_report = pome.sample_qc_report,
       assoc_report = pome.association_report,
       blacksheep_tar = outlier.blacksheep_tar,

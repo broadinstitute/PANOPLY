@@ -12,7 +12,9 @@ source ('config.r')
 
 
 process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE, 
-                             additional.cols=NULL, species.filter=TRUE, expt.design=NULL) {
+                             additional.cols=NULL, species.filter=TRUE,
+                             apply.numratio.filter=FALSE, min.numratio.fraction=NULL, min.numratio=NULL,
+                             expt.design=NULL) {
   # the input dataset is an ssv file that is output from Spectrum Mill
   # if proteome=FALSE, ssv is treated as a site-level PTM report
   #
@@ -108,8 +110,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
       sample.annotations <- d[, c('Sample.ID', annot.cols)]
       # add sample QC info (pass/fail)
       if (! qc.col %in% sample.annotations) {
-        if (!is.null(sampleQC.cls)) qc <- read.cls (sampleQC.cls)
-        else qc <- rep (qc.pass.label, nrow(sample.annotations))
+        qc <- rep (qc.pass.label, nrow(sample.annotations))
         # add to annotation table
         sample.annotations <- cbind (sample.annotations, qc)
         colnames (sample.annotations)[ncol(sample.annotations)] <- qc.col
@@ -180,6 +181,34 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
                                 d[, intersect (additional.cols, colnames(d))], 
                                 stringsAsFactors=FALSE)
   
+  
+  # if we want to apply the SM filter
+  if ( apply.numratio.filter ) {
+    # extract numratio data
+    d.numratios <- d[ , header.info$col.numbers[['numratio.fields']] ]
+    
+    if ( dim(d.numratios)[1]==0 ) { # if the numratio datatable is empty, warn user that data is missing
+      warning('Numratio data is empty; min.numratio filtering could not be applied')
+    } else {
+      
+      # Determine which rows satisfy the min.numratio filter
+      if ( is.null (min.numratio.fraction) ) {
+        # normally, ALL samples must have num ratio >= min.numratio
+        numratio.keep <- unlist (apply (d.numratios, 1, function (x) all (x >= min.numratio, na.rm=TRUE)))
+      } else {
+        # if min.numratio.fraction is specified, then at least that many samples should have num ratios >= min.numratios
+        if (min.numratio.fraction < 1) min.numratio.fraction <- ceiling (ncol(ds@mat) * min.numratio.fraction)    # convert to integer if a fraction
+        numratio.keep <- unlist (apply (d.numratios, 1, 
+                               function (x) sum (x >= min.numratio, na.rm=TRUE) >= min.numratio.fraction))
+      }
+      # Subset data, according to numratio filter
+      info.data = info.data[ which(numratio.keep), ]
+      d = d[ which(numratio.keep), ]
+    }
+    
+  }
+  
+  # Write out Each Datatype as GCT files
   for (i in 1:length (header.info$cols.list)) {
     fields <- header.info$col.numbers[[i]]
     if (length(fields) == 0) next
@@ -187,7 +216,7 @@ process.dataset <- function (dataset, out.prefix, id.col, proteome=FALSE,
     data <- d [ , fields]
     colnames (data) <-  header.info$col.names
     
-    # write out raw data file with no normalization and no filtering    
+    # write out raw data file with no normalization and no filtering (unless apply.numratio.filter is selected)
     write.out (info.data, data, paste (out.prefix, '-', header.info$cols.list[i], '.gct', sep=''))
   }
   
@@ -215,11 +244,12 @@ if (type == "proteome") {
                   'entry_name',
                   'scoreUniqueSubgroupSpecificCI',
                   'numPepsUniqueSubgroupSpecificCI',
-		  'coverage_map',
-		  'coverage_maps')
+                  'coverage_map',
+                  'coverage_maps')
   process.dataset (dataset = input.data.file,
                    out.prefix = 'proteome', proteome=TRUE, 
                    id.col = 'accession_number', additional.cols=info.cols,
+                   apply.numratio.filter=apply.numratio.filter, min.numratio.fraction=min.numratio.fraction, min.numratio=min.numratio,
                    expt.design=expt.design.file)
 } else { 
   # phosphoproteome, acetylome, or other ptm-ome
@@ -248,11 +278,12 @@ if (type == "proteome") {
                   'accession_numbers',
                   'protein_group_num',
                   'entry_name',
-		  'coverage_map',
-		  'coverage_maps')
+                  'coverage_map',
+                  'coverage_maps')
   process.dataset (dataset = input.data.file,
                    out.prefix = type, proteome=FALSE, additional.cols=info.cols,
                    id.col = 'accessionNumber_VMsites_numVMsitesPresent_numVMsitesLocalizedBest_earliestVMsiteAA_latestVMsiteAA',
+                   apply.numratio.filter=apply.numratio.filter, min.numratio.fraction=min.numratio.fraction, min.numratio=min.numratio,
                    expt.design=expt.design.file)
 }
 

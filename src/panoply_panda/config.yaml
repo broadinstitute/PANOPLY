@@ -6,8 +6,8 @@ wkspace: tedmint-test
 freeze.path: /Users/rkothadi/Documents/code/tedmint/safe-bckup/df
 
 typemap.gct:
-  proteome: tedmint-test-proteome-ratio-norm-NArm.gct
-  phosphoproteome: tedmint-test-phosphoproteome-ratio-norm-NArm.gct
+  proteome: tedmint-test-proteome-ratio-norm-filt.gct
+  phosphoproteome: tedmint-test-phosphoproteome-ratio-norm-filt.gct
   acetylome:
   rna:
   cna: 

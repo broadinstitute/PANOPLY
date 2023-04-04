@@ -21,7 +21,7 @@ if [[ $# -ne 6 ]]; then
 fi
 
 
-./common-code/run-pipeline.sh inputSM -s $1 -e $2 -r $3 -t $4 \
+./common-code/run-pipeline.sh parseSM -s $1 -e $2 -r $3 -t $4 \
      -c common-code -d common-data -p config-custom.r -o tar/$3-sm.tar
 
 ./common-code/run-pipeline.sh normalize -i tar/$3-sm.tar  -t $4 \

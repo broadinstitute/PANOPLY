@@ -201,7 +201,7 @@ panda_initialize <- function (workspace.type) {
       typemap.gmt <<- p$typemap.gmt
       typemap.yml <<- p$typemap.yml
       groups.cols <<- p$groups.cols
-      groups.continuous <<- p$groups.continuous
+      groups.cols.continuous <<- p$groups.cols.continuous
       groups.colors <<- list()
       for ( group in names( p$groups.colors ) ) {
         groups.colors[[group]] <<- list()
@@ -266,6 +266,7 @@ load_unzipped_files <- function(){
   
   # check if proteomics data should be normalized
   normalize.prot <<- y2true ("Does proteomics data need normalization?")
+  filter.prot <<- y2true ("Does proteomics data need filtering?")
 }
 
 validate_annotation_table <- function (typemap.csv) {
@@ -389,25 +390,25 @@ select_groups <- function( all.groups ){
 verify_group_validity <- function( groups.cols, typemap.csv ){
   if (length (groups.cols) == 0) return (groups.cols)
   drop <- c()
-  cont <- groups.continuous <- c()
+  cont <- groups.cols.continuous <- c()
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- unique( annot[[groups.cols[group.idx]]] )
     if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
       # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
       # if column has > max.categories, drop from groups.cols, 
-      #   but, if numeric, treat as a continuous column and add to groups.continuous
+      #   but, if numeric, treat as a continuous column and add to groups.cols.continuous
       drop <- c( drop, group.idx )
       if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) 
         cont <- c (cont, group.idx)
     }
   }
-  if ( length( cont ) > 0 ) groups.continuous <- groups.cols[cont]
+  if ( length( cont ) > 0 ) groups.cols.continuous <- groups.cols[cont]
   if ( length( drop ) > 0 ) groups.cols <- groups.cols[-drop]     # do this last
-  return( list (groups.cols=groups.cols, groups.continuous=groups.continuous) )
+  return( list (groups.cols=groups.cols, groups.cols.continuous=groups.cols.continuous) )
 }
 
-display_validated_groups <- function( groups.cols, groups.continuous, groups=FALSE ){
+display_validated_groups <- function( groups.cols, groups.cols.continuous, groups=FALSE ){
   if (!groups ) {
     warning <- glue( "Annotations (if any) with <2 categories were excluded." )
     warning <- glue( "\nAnnotations with > {max.categories} are considered continuous. ")
@@ -415,9 +416,9 @@ display_validated_groups <- function( groups.cols, groups.continuous, groups=FAL
   }
   print( glue( "\n.. Selected groups:\n" ) )
   print( glue( "{add_space( 1:length( groups.cols ) )}: {groups.cols}" ) )
-  if (length (groups.continuous) > 0) {
+  if (length (groups.cols.continuous) > 0) {
     print( glue( "\n\n.. Continuous groups:\n" ) )
-    print( glue( "{add_space( 1:length( groups.continuous ) )}: {groups.continuous}" ) )
+    print( glue( "{add_space( 1:length( groups.cols.continuous ) )}: {groups.cols.continuous}" ) )
   }
 }
 
@@ -430,7 +431,7 @@ panda_select_groups <- function(){
   }
   final.cols <- verify_group_validity( groups.cols, typemap.csv )
   groups.cols <<- final.cols$groups.cols
-  groups.continuous <<- final.cols$groups.continuous
+  groups.cols.continuous <<- final.cols$groups.cols.continuous
 }
 
 panda_groups <- function(){
@@ -444,7 +445,7 @@ panda_groups <- function(){
                       stringsAsFactors = F, quote = '"' )
       final.cols <- verify_group_validity( as.vector (unlist (gr)), typemap.csv )
       groups.cols <<- final.cols$groups.cols
-      groups.continuous <<- final.cols$groups.continuous
+      groups.cols.continuous <<- final.cols$groups.cols.continuous
     }
   } 
   
@@ -454,7 +455,7 @@ panda_groups <- function(){
     panda_select_groups ()
   }
   
-  display_validated_groups( groups.cols, groups.continuous, groups=keep )
+  display_validated_groups( groups.cols, groups.cols.continuous, groups=keep )
   panda_colors_defaults (display=FALSE)  ## always set default colors automatically
   print( DONE )
 }
@@ -570,6 +571,83 @@ panda_colors_edit <- function(){
   print( DONE )
 }
 
+### ===
+### Section. COSMO labels
+### ===
+
+# initialize cosmo parameters in case user never runs COSMO cell
+cosmo.params <- list(run_cosmo = FALSE)
+
+# function to get user input for cosmo
+select_COSMO_attributes <- function() { 
+  
+  # initialize again in case user runs cell multiple times
+  cosmo.params <<- list(run_cosmo = FALSE)
+  
+  annot <- read_annot()
+  potential_cols <- setdiff(names(annot), ignore.cols)
+  
+  # get valid columns
+  valid_columns <- c()
+  for (col in potential_cols) {
+    if (!(col %in% names(annot))) {
+      warning(paste0("Sample label '", col, "' is not in sample annotation file"))
+    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 5)) {
+      warning(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
+    } else if (any(is.na(annot[, col]))) {
+      warning(paste0("Sample label '", col, "' has NAs. It is being excluded."))
+    } else if (length(unique(annot[, col])) < 2) {
+      warning(paste0("Sample label '", col, "' only has one level. It is being excluded."))
+    } else if (length(unique(annot[, col])) > 2) {
+      warning(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
+    } else {
+      valid_columns <- c(valid_columns, col)
+    }
+  }
+  
+  # make prompt
+  if (length(valid_columns > 0)) {
+    prompt <- paste("VALID ATTRIBUTES:",
+                    paste(paste(' *', valid_columns), collapse = '\n'), 
+                    sep,
+                    "Select sample label column(s) for COSMO: ",
+                    sep = '\n')
+  } else {
+    cat("NO VALID ATTRIBUTES FOUND. COSMO will not be run.\n", DONE)
+    return()
+  }
+  
+  # get user input
+  user_columns <- readline(prompt)
+  
+  # validate column selection
+  user_columns <- strsplit(gsub(' ', '', user_columns), ',')[[1]]
+  
+  invalid_user_columns <- setdiff(user_columns, valid_columns)
+  if (length(invalid_user_columns > 0)) {
+    message(paste("Invalid attribute:", 
+                  paste(invalid_user_columns, collapse = ', ')))
+  }
+  
+  valid_user_columns <- intersect(user_columns, valid_columns)
+  
+  
+  cat(sep, '\n')
+  
+  if (length(valid_user_columns) > 0) {
+    cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
+    cat("\n\nCOSMO WILL BE RUN.\n")
+    run_cosmo <- TRUE
+  } else {
+    cat("NO ATTRIBUTES SELECTED. COSMO will not be run.\n")
+    run_cosmo <- FALSE
+  }
+  
+  cosmo.params <<- list(run_cosmo = run_cosmo,
+                        sample_label = paste(valid_user_columns, collapse = ','))
+  
+  cat(DONE)
+}
 
 ### ===
 ### Section. Sample sets
@@ -710,7 +788,7 @@ panda_finalize <- function (internal=FALSE) {
   lines$typemap.gmt <- typemap.gmt
   lines$typemap.yml <- typemap.yml
   lines$groups.cols <- groups.cols
-  lines$groups.cols.continuous <- groups.continuous
+  lines$groups.cols.continuous <- groups.cols.continuous
   lines$groups.colors <- list()
   for ( group in names( groups.colors ) ) {
     lines$groups.colors[[group]] <- list()
@@ -722,6 +800,8 @@ panda_finalize <- function (internal=FALSE) {
   }
   lines$sample.sets <- sample.sets
   lines$normalize.proteomics <- normalize.prot
+  lines$filter.proteomics <- filter.prot
+  lines$cosmo.params <- cosmo.params
   
   # output config for panda and copy to google bucket
   setwd( home )

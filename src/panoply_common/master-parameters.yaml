@@ -4,11 +4,14 @@ global_parameters:
     ndigits: 5
 
   missing_values_and_filtering:
-    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction 
+    na_max: 0.7                  # maximum allowed NA values (per protein/site/row), can be fraction. Set as NULL to turn off na filtering.
     sample_na_max: 0.8           # maximum allowed fraction of NA values per sample/column; pipeline error if violated
-    min_numratio_fraction: 0.25  # fraction of samples in which min. numratio should be present to retain protein/phosphosite
     nmiss_factor: 0.5            # for some situations, a more stringent condition is needed
-    sd_filter_threshold: 0.5     # SD threshold for SD filtering
+    # panoply_filter specific
+    sd_filter_threshold: 0.5     # SD threshold for SD filtering. Set as NULL to turn off SD filtering.
+    combine_replicates: 'mean'   # method for combining replicate samples; can be 'first', 'mean', or 'median'. Set as NULL to turn off replicate combination.
+    no_na: FALSE                 # filter rows with any NA values.
+    separate_qc_types: FALSE     # separate different QC types (e.g. pass, fail, etc.) into distinct GCT files
 
 
   ### Gene mapping
@@ -16,26 +19,28 @@ global_parameters:
   gene_mapping:
     # Policy for combining/collapsing duplicate gene names:
     duplicate_gene_policy: maxvar
-    gene_id_col: geneSymbol           #now used by cmap to determine genesymbol column name
-
+    protein_id_col: 'id'              # provide name of column in phospho row metadata that indicates protein identifier/accession number
+    protein_id_type: 'ENSEMBLPROT'    # if 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
+    gene_id_col: 'geneSymbol'         # now used by cmap to determine genesymbol column name
   organism: human
 
 panoply_parse_sm_table:
+  apply_numratio_filter: TRUE     # filter rows by min.numratio
+  min_numratio_fraction: 0.25     # fraction of samples in which min.numratio should be present to retain protein/phosphosite
   label_type_for_ms_exp:
-    label_type: TMT10          # alternatives: iTRAQ4, TMT10.126, TMT11
+    label_type: TMT10             # alternatives: iTRAQ4, TMT10.126, TMT11
   species_filter: TRUE
-
-
-panoply_normalize_ms_data:
-  apply_sm_filter: TRUE        # if TRUE, apply numRatio based filter (use TRUE if input is SM ssv)
-  normalization:
-    norm_method: '2comp'           # options: 2comp (default), median, mean
-    alt_method: 'median'           # alt.method for comparison -- filtered datasets not generated
   gct_file_ids: #used in config.r 
     proteome:
       min_numratio: 2
     phosphoproteome:
       min_numratio: 1
+
+
+panoply_normalize_ms_data:
+  normalization:
+    norm_method: '2comp'           # options: 2comp (default), median, mean
+    alt_method: 'median'           # alt.method for comparison -- will not be used downstream
 
 
 panoply_rna_protein_correlation:
@@ -129,7 +134,7 @@ panoply_mimp:
   search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
   phosphosite_col: NULL                         # if search_engine = "other," provide name of column in phospho row metadata that indicates phosphosite position
   protein_id_col: NULL                          # if search_engine = "other," provide name of column in phospho row metadata that indicates protein identifier/accession number
-  protein_id_type: NULL                         # if search_engine = "other," assumed to be REFSEQ by default. If 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
+  protein_id_type: NULL                         # if 'protein_id_col' uses a different protein identifier/accession number, please specify: "ACCNUM", "ALIAS", "ENSEMBL", "ENSEMBLPROT", "ENSEMBLTRANS", "ENTREZID", "ENZYME", "EVIDENCE", "EVIDENCEALL", "GENENAME", "GENETYPE", "GO", "GOALL", "IPI", "MAP", "OMIM", "ONTOLOGY", "ONTOLOGYALL", "PATH", "PFAM", "PMID", "PROSITE", "REFSEQ", "SYMBOL", "UCSCKG", "UNIPROT"
   mutation_AA_change_colname: "Protein_Change"  # name of column in mutation MAF file that indicates amino acid change due to mutation
   mutation_type_col: "Variant_Classification"   # name of column in mutation MAF file that indicates type of mutation (aka missense)
   sample_id_col: "Tumor_Sample_Barcode"         # name of column in mutation MAF file that indicates patient/sample ID 
@@ -138,7 +143,7 @@ panoply_mimp:
 panoply_ptm_normalization:
   accession_number_colname: 'accession_number'
   accession_numbers_colname: 'accession_numbers'    # set to NULL if not present
-  accession_numbers_separator: '\|'                # ignored if accession_numbers_colname is NULL
+  accession_numbers_separator: '|'                  # ignored if accession_numbers_colname is NULL
   score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
 
 ########################################
@@ -229,6 +234,7 @@ panoply_preprocess_gct:
  acc_type_in: refseq            ## Type of accession number in 'rid' object in GCT file (uniprot, refseq, symbol).
  seqwin_column: VMsiteFlanks    ## Column containing flanking sequences, separated by '|'. Only relevant if '--id_type_out' = 'seqwin'
  gene_symbol_column: geneSymbol ## Name of column listing gene names; used for gene centric reports.
+ humanize_gene_names: FALSE     ## If TRUE, gene symbols will be capitalized (for e.g. mouse or rat).
  sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
  localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
  mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
@@ -253,7 +259,6 @@ DEV_sample_annotation:
   type_col_name: "Type"
   
   QC:
-    sampleQC_cls: "NULL"
     qc_col: QC.status
     qc_pass_label: QC.pass
 
@@ -287,6 +292,8 @@ DEV_directory_and_file_names:
   parse_dir: "parsed-data" 
   # norm.dir in config.r:         
   norm_dir: "normalized-data" 
+  # filt.dir in config.r:         
+  filt_dir: "filtered-data" 
   # harmonize.dir in config.r:      
   harmonize_dir: "harmonized-data" 
   # only run-pipeline.sh: 
@@ -304,7 +311,7 @@ DEV_directory_and_file_names:
   expt_design_file: "exptdesign.csv"  
   parsed_output: "$prefix-ratio.gct"
   normalized_output: "$prefix-ratio-norm.gct"
-  filtered_output: "$prefix-ratio-norm-NArm$subset_str.gct"
+  filtered_output: "$prefix-ratio-norm-filt$subset_str.gct"
   # affects rna.data.file in config.r:
   rna_data_file: "rna-data.gct" 
   # affects cna.data.file in config.r :     

@@ -6,7 +6,6 @@ This workflow wraps the FragPipe program using the CLI interface. All of the con
 
 Step-by-step slides for running this workflow are available [here](https://docs.google.com/presentation/d/1Rmer-oOaP-Eqo5tyxtGG-AlM4BpQaWjkpL0GBxd-VlY/edit?usp=sharing).
 
-
 ## `panoply_fragpipe` — workflow to run FragPipe pipeline (equivalent to GUI version)
 ### Inputs
 **Workflow inputs**

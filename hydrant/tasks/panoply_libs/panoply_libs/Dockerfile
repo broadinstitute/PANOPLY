@@ -6,11 +6,20 @@ RUN apt-get -t unstable install -y libssl-dev
 RUN apt-get -t unstable install -y libcurl4-openssl-dev
 RUN apt-get install -y jags
 
+# Freeze cran Repository to end of 2020
+RUN sed -i 's/cloud.r-project.org/packagemanager.rstudio.com\/cran\/2020-12-31/' /etc/R/Rprofile.site
+
+# devtools dependencies
+RUN apt-get -t unstable install -y libxml2-dev  # required for R-package 'XML'
+RUN apt-get -t unstable install -y pandoc  # rmarkdown
+RUN apt-get -t unstable install -y libfontconfig1-dev  # font config library for R-package kableExtra
+RUN apt-get -t unstable install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
+RUN apt-get -t unstable install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
+
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
 RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
-  install.packages( "BiocManager", \
-    repos = "http://cran.us.r-project.org", dependencies = TRUE ); \
+  install.packages( "BiocManager", dependencies = TRUE ); \
   BiocManager::install( version = "3.10" ); \
   BiocManager::install( c( "Biobase", \
 	"graph", \
@@ -21,7 +30,10 @@ RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
 	"GO.db", \
         "rhdf5", \
         "prada", \
+        "limma", \
 	"AnnotationDbi", \
+	"org.Hs.eg.db", \
+	"EnsDb.Hsapiens.v79", \
         "ComplexHeatmap", \
         "SummarizedExperiment" ) );' > /tmp/biocpkgs.R \
   && Rscript /tmp/biocpkgs.R
@@ -44,10 +56,8 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( caret ); \
 	p_install( circlize ); \
 	p_install( cluster ); \
-	p_install( dplyr ); \
 	p_install( e1071 ); \
 	p_install( fastcluster ); \
-	p_install( ggplot2 ); \
 	p_install( glmnet ); \
 	p_install( gplots ); \
 	p_install( lattice ); \
@@ -68,8 +78,10 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( smacof ); \
 	p_install( sn ); \
 	p_install( tensor ); \
+	p_install( tidyverse ); \
 	p_install( tools ); \
 	p_install( verification ); \
+	p_install( Hmisc ); \
 	p_install( WGCNA ); \
 	p_install( factoextra ); \
 	p_install( glue ); \
@@ -79,12 +91,14 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( pheatmap ); \
 	p_install( NbClust ); \
 	p_install( rjson ); \
+	p_install( yaml ); \
 	p_install( GlobalOptions); \
 	p_install( GetoptLong ); \
         p_install( coda ); \
-        p_install( rjags ); \
-        p_install( limma );' > /tmp/packages.R  && Rscript /tmp/packages.R
+        p_install( rjags );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
+# Install devtools directly from crane, NOT from mirror repository
+RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
 
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \

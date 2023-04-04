@@ -6,7 +6,7 @@ task panoply_association {
   String type
   String standalone
   String? analysisDir
-  File? groupsFile
+  File groupsFile
   File yaml
   Float? fdr_assoc
   Float? sample_na_max
@@ -38,7 +38,7 @@ task panoply_association {
                   -t ${type} \
                   -c $codeDir \
                   -o ${outFile} \
-                  ${"-g " + groupsFile} \
+                  -g ${groupsFile} \
                   -y "final_output_params.yaml" \
                   -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r";
     else

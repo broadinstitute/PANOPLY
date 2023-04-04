@@ -59,7 +59,7 @@ rna <- data.matrix.harmonize( rna.data.file,
 # PTM/Proteome Data
 if( !( exists( "pome.duplicate.gene.policy" ) ) )
   pome.duplicate.gene.policy <- duplicate.gene.policy
-pome <- data.matrix.harmonize( file.path( norm.dir, master.file ),
+pome <- data.matrix.harmonize( file.path( filt.dir, master.file ),
                                pome.duplicate.gene.policy )
 # CNA Data
 cna <- data.matrix.harmonize( cna.data.file, 
@@ -98,10 +98,6 @@ if (length (common.samples) > 0 && length (common.genes) > 0) {
     out.file <- 'sample-info.csv'
     write.csv (sinfo, out.file, row.names=FALSE, quote=FALSE)
 
-    # recreate cls files (since sample subset included in matrix files could be different)
-    for (g in setdiff (colnames (sinfo), c('id', 'Sample.ID'))) {
-      write.cls (sinfo[,g], sprintf ("%s.cls", g))
-    }
   }
 } else {
   stop ("Harmonized datasets have no data -- check data formats and sample names")

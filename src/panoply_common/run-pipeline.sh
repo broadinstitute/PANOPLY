@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e # exit upon error condition
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
@@ -10,7 +11,7 @@
 ## Setup and run analysis pipeline
 ##
 ## Expected usage:
-##  First called with OPERATION = inputSM or inputNorm
+##  First called with OPERATION = parseSM or filter
 ##   - this will create normalized and filtered datasets ready for analysis
 ##   - output: filtered data and tarball
 ##   - experiment design/class labels are embedded in the normalized/filtered data table (gct3)
@@ -59,6 +60,7 @@ function usage {
   echo "   <SM-output-file> is Spectrum Mill output in ssv format"
   echo "   <parsed-data> is parsed (SM or other) data file, before normalization/filtering"
   echo "   <normalized-data> is normalized input data table in gct2 or gct3 format"
+  echo "   <filtered-data> is filtered input data table in gct2 or gct3 format"
   echo "   <expt-design-file> should contain Sample.ID, Experiment, Channel columns + optional annotation"
   echo "   <analysis_directory> is the directory name where the analysis is performed"
   echo "       if path is specified, only the basename is used; also used as tarfile name"
@@ -78,9 +80,9 @@ function usage {
   echo "   <CMAP-config-file> is file with CMAP analysis parameters to over-ride defaults"
   echo "   Input Requirements:"
   echo "     ALL OPERATIONS require -t, optional (-p), in addition to the following options"
-  echo "     OPERATION inputSM requires (-s, -e, -r, -c, -d)"
-  echo "     OPERATION inputNorm requires (-n, -r, -c)"
-  echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from inputSM "
+  echo "     OPERATION parseSM requires (-s, -e, -r, -c, -d)"
+  echo "     OPERATION normalize requires (-a, -r, -c) or (-i, -c); -i output from parseSM "
+  echo "     OPERATION filter requires (-n, -r, -c) or (-i, -c); -i output from normalize"
   echo "     OPERATION RNAcorr requires (-i, -c, -rna) OR (-f, -r, -c, -rna)"
   echo "     OPERATION harmonize requires (-i, -c, -d, -rna, -cna) OR (-r, -f, -c, -d, -rna, -cna)"
   echo "     OPERATION sampleQC requires (-i, -c); -i is tar output from harmonize"
@@ -88,8 +90,8 @@ function usage {
   echo "     OPERATION CNAcorr requires (-i, -c), optional (-z); -i is tar output from CNAsetup"
   echo "     OPERATION CMAPsetup reqires (-i, -c); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm); -i is tar output from CNAcorr"
   echo "     OPERATION CMAPconn reqires (-i, -CMAPscr); optional (-CMAPgroup, -CMAPtype, -CMAPcfg, -CMAPnperm, -CMAPpmt); -i is tar output from CMAPsetup"
-  echo "     OPERATION assoc requires (-i, -c), optional (-g); or (-f, -r, -c, -g); -i is tar output from normalize/harmonize"
-  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from normalize/harmonize"
+  echo "     OPERATION assoc requires (-i, -c, -g); or (-f, -r, -c, -g); -i is tar output from filter/harmonize"
+  echo "     OPERATION cluster required (-i, -c) OR (-f, -r, -c), optional (-g); -i is tar output from filter/harmonize"
   echo "     OPERATION immune required (-i, -c) OR (-rna, -r, -c), optional (-g, -z, -y); -i is tar output from harmonize (with RNA data)"
   echo "   Use -h to print this message."
 }
@@ -200,20 +202,36 @@ function analysisInit {
     return
   fi
   
+  # for OPERATION = filter (ie filter)
+  if [ "$analysis" = "filter" ]; then
+    createSubdirs $norm_dir
+    createSubdirs $filt_dir
+    if [ ! -f "$norm_dir/$normalized_output" ]; then
+      if [ "$norm_data" = "" ]; then 
+        echo "Normalized data not found ... abort"
+        exit 1
+      else
+        cp $norm_data $norm_dir/$normalized_output
+      fi
+    fi
+    return
+  fi
+  
+  
   # all other OPERATIONs
-  if [ ! -d $norm_dir ]; then
-    echo "Directory not found: $analysis_dir/$norm_dir ... abort"
+  if [ ! -d $filt_dir ]; then
+    echo "Directory not found: $analysis_dir/$filt_dir ... abort"
     exit 1
   fi
   # immune analysis needs only RNA data -- all others need filtered data
   if [ "$analysis" != "immune" ]; then 
     if [ "$filt_data" = "" ]; then
-      if [ ! -f $norm_dir/$filtered_output ]; then
-        echo "Filtered dataset not found: $norm_dir/$filtered_output ... abort"
+      if [ ! -f $filt_dir/$filtered_output ]; then
+        echo "Filtered dataset not found: $filt_dir/$filtered_output ... abort"
         exit 1
       fi
     else
-      cp $filt_data $norm_dir/$filtered_output
+      cp $filt_data $filt_dir/$filtered_output
     fi
   fi
   
@@ -253,7 +271,7 @@ function analysisInit {
                 else
                   createSubdirs $cna_dir
                   #if [ "$fdr" != "" ]; then
-                  	 #echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
+                     #echo "fdr_cna_corr <- $fdr" >> $cna_dir/config.r
                   #fi
                 fi ;;
     CMAPsetup ) if [ ! -f $cna_dir/$cmap_prefix-matrix.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-sigevents.csv -o ! -f $cna_dir/$cmap_prefix-vs-cna-pval.csv -o ! -f $data_dir/cmap-knockdown-genes-list.txt ]; then
@@ -276,10 +294,8 @@ function analysisInit {
                 fi ;;
     assoc )     createSubdirs $assoc_dir
                 # add to config.r if specified
-                if [ "$groups" != "" ]; then
-                    echo "assoc.subgroups <- \"$groups\"" >> $assoc_dir/config.r
-                    cp $groups $assoc_dir/.
-                fi ;;
+                echo "assoc.subgroups <- \"$groups\"" >> $assoc_dir/config.r
+                cp $groups $assoc_dir/. ;;
     cluster )   createSubdirs $cluster_dir
                 # add to config.r if specified 
                 if [ "$groups" != "" ]; then
@@ -298,7 +314,7 @@ function analysisInit {
                 createSubdirs $immune_dir
                 # add to config.r if specified 
                 if [ "$fdr" != "" ]; then
-                	 echo "immune.enrichment.fdr <- $fdr" >> $immune_dir/config.r;
+                   echo "immune.enrichment.fdr <- $fdr" >> $immune_dir/config.r;
                 fi
                 if [ "$groups" != "" ]; then
                   # class vectors to determine cluster enrichment
@@ -314,8 +330,8 @@ function analysisInit {
 ## set defaults
 #  work with absolute paths for file/dir links/names
 sm_file=
-norm_data=
 parsed_data=
+norm_data=
 filt_data=
 expt_file=
 input_tar=
@@ -347,7 +363,7 @@ shift
 
 ## check $op is a supported operation
 case $op in
-  inputSM|inputNorm|normalize|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
+  parseSM|normalize|filter|RNAcorr|harmonize|CNAsetup|CNAcorr|CMAPsetup|CMAPconn|sampleQC|assoc|cluster|immune) # OK
     ;;
   *)    echo "ERROR: Unknown OPERATION $op"; usage
         exit 1
@@ -356,39 +372,39 @@ esac
 ## read in arguments
 while [ "$1" != "" ]; do
   case $1 in
-	-a )     shift; parsed_data=`readlink -f $1` ;;
-	-c )     shift; code_dir=`readlink -f $1` ;;
-	-d )     shift; common_data=`readlink -f $1` ;;
-	-e )     shift; expt_file=`readlink -f $1` ;;
-	-f )     shift; filt_data=`readlink -f $1` ;;
-	-g )     shift; groups=`readlink -f $1` ;;
-	-i )     shift; input_tar=`readlink -f $1` ;;
-	-o )     shift; output_tar=`readlink -f $1` ;;
-	-m )     shift; data=$1 ;;
-	-n )     shift; norm_data=`readlink -f $1` ;;
-	-p )     shift; param_file=`readlink -f $1` ;;
-	-r )     shift; analysis_dir=`readlink -f $1` ;;
-	-s )     shift; sm_file=`readlink -f $1` ;;
-	-t )     shift; prefix=$1 ;;
-	-pe )    shift; pe=$1 ;;
-	-y )     shift; yaml=`readlink -f $1` ;;
+  -a )     shift; parsed_data=`readlink -f $1` ;;
+  -c )     shift; code_dir=`readlink -f $1` ;;
+  -d )     shift; common_data=`readlink -f $1` ;;
+  -e )     shift; expt_file=`readlink -f $1` ;;
+  -f )     shift; filt_data=`readlink -f $1` ;;
+  -g )     shift; groups=`readlink -f $1` ;;
+  -i )     shift; input_tar=`readlink -f $1` ;;
+  -o )     shift; output_tar=`readlink -f $1` ;;
+  -m )     shift; data=$1 ;;
+  -n )     shift; norm_data=`readlink -f $1` ;;
+  -p )     shift; param_file=`readlink -f $1` ;;
+  -r )     shift; analysis_dir=`readlink -f $1` ;;
+  -s )     shift; sm_file=`readlink -f $1` ;;
+  -t )     shift; prefix=$1 ;;
+  -pe )    shift; pe=$1 ;;
+  -y )     shift; yaml=`readlink -f $1` ;;
   -z )     shift; fdr=$1 ;;
-	-rna )   shift; rna_data=`readlink -f $1` ;;
-	-cna )   shift; cna_data=`readlink -f $1` ;;
-	-CMAPgroup )
-	         shift; cmap_group=$1 ;;
-	-CMAPtype )
-	         shift; cmap_type=$1 ;;
-	-CMAPscr )
-	         shift; cmap_scores=$1 ;;
-	-CMAPnperm )
+  -rna )   shift; rna_data=`readlink -f $1` ;;
+  -cna )   shift; cna_data=`readlink -f $1` ;;
+  -CMAPgroup )
+           shift; cmap_group=$1 ;;
+  -CMAPtype )
+           shift; cmap_type=$1 ;;
+  -CMAPscr )
+           shift; cmap_scores=$1 ;;
+  -CMAPnperm )
            shift; cmap_nperm=$1 ;;
   -CMAPpmt )
            shift; cmap_permutation=$1 ;;
-	-CMAPcfg )
-	         shift; cmap_config_file=`readlink -f $1` ;;
+  -CMAPcfg )
+           shift; cmap_config_file=`readlink -f $1` ;;
   -h )     usage; exit ;;
-	* )      usage; exit 1
+  * )      echo "ERROR: Unknown ARGUMENT $1"; exit 1 
   esac
   shift
 done
@@ -396,79 +412,66 @@ done
 
 ## check appropriate parameters have been provided
 case $op in 
-  inputSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = ""   \
+  parseSM )   if [[ "$sm_file" = "" || "$expt_file" = "" || "$analysis_dir" = ""   \
                     || "$code_dir" = "" || "$common_data" = "" ]]
               then
-                usage
-                exit 1
-              fi ;;
-  inputNorm ) if [[ "$norm_data" = "" || "$analysis_dir" = "" || "$code_dir" = "" ]]
-              then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   normalize ) if [[ ("$input_tar" = "")  &&  ("$parsed_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
+              fi ;;
+  filter ) if [[ ("$input_tar" = "")  &&  ("$norm_data" = "" || "$analysis_dir" = "") || "$code_dir" = "" ]]
+              then
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   RNAcorr )   if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
                     || "$code_dir" = "" || "$rna_data" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   harmonize ) if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
                     || "$code_dir" = "" || "$common_data" = "" || "$rna_data" = "" || "$cna_data" = "" ]] 
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CNAsetup )  if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CNAcorr )   if [[ ("$input_tar" = "") ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CMAPsetup ) if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   CMAPconn ) if [[ ("$input_tar" = "") || "$cmap_scores" = "" || ($cmap_nperm -gt 0 && "$cmap_permutation" = "") ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   sampleQC )  if [[ ("$input_tar" = "") || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   assoc )     if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "" || "$groups" = "")   \
                     || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   cluster )   if [[ ("$input_tar" = "")  &&  ("$filt_data" = "" || "$analysis_dir" = "")   \
                     || "$code_dir" = "" ]]
               then
-                usage
-                exit 1
+                echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
               fi ;;
   immune )   if [[ ("$input_tar" = "")  &&  ("rna_data" = "" || "$analysis_dir" = "")   \
                    || "$code_dir" = "" ]]
              then
-               usage
-               exit 1
+               echo "ERROR: Missing a required ARGUMENT for $op module"; usage; exit 1
              fi ;;
 
-  * )        usage           # unknown operation
+  * )        echo "ERROR: Unknown OPERATION $op"; exit 1          # unknown operation
              exit 1
 esac
   
@@ -477,6 +480,7 @@ esac
 data_dir="data"
 parse_dir="parsed-data"
 norm_dir="normalized-data"
+filt_dir="filtered-data"
 harmonize_dir="harmonized-data"
 rna_dir="rna"
 cna_dir="cna"
@@ -494,15 +498,15 @@ fi
 expt_design_file="exptdesign.csv"
 parsed_output="$prefix-ratio.gct"
 normalized_output="$prefix-ratio-norm.gct"
-filtered_output="$prefix-ratio-norm-NArm$subset_str.gct"
+filtered_output="$prefix-ratio-norm-filt$subset_str.gct"
 rna_data_file="rna-data.gct"
 cna_data_file="cna-data.gct"
 
 ## INITIALIZATION 
 ## Directory setup and/or extract tarball
-if [ $op = "inputSM" -o $op = "inputNorm" -o "$input_tar" = "" ]
+if [ $op = "parseSM" -o "$input_tar" = "" ]
 then
-  ### input tar file not specified, or ignored (when $op=inputSM or inputNorm)
+  ### input tar file not specified, or ignored (when $op=parseSM)
   ## create directory where all files are put
   createAnalysisDir $analysis_dir
   cd $analysis_dir
@@ -513,7 +517,7 @@ then
   initDataDir
   ## copy config and concat parameters -- this could change from run to run
   createConfig
-  createSubdirs $norm_dir   # always needed for any OPERATION
+  createSubdirs $filt_dir   # always needed for any OPERATION
 else   
   ### tar file specified
   ## extract tarball in current directory and set $analysis_dir
@@ -534,59 +538,52 @@ fi
 #   - copy appropriate code in preparation for running pipeline components
 #   - run various code/components
 case $op in 
-#   inputSM: input is a SpectrumMill ssv file that should be parsed, normalized and filtered
-    inputSM )   createSubdirs $parse_dir
+#   parseSM: input is a SpectrumMill ssv file to be parsed
+    parseSM )   createSubdirs $parse_dir
                 cp $sm_file $data_dir/$prefix-SMout.ssv
                 cp $expt_file $data_dir/$expt_design_file
                 for f in parseMSinput.r; do cp $code_dir/$f $parse_dir/$f; done
 
                 ## data preprocessing (parsed-data)
                 (cd $parse_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" parseMSinput.r)
+                 Rscript parseMSinput.r $prefix $data)
              ;;
-  
-#   inputNorm: input is a normalized gct (2 or 3) file that should just be filtered
-    inputNorm ) cp $norm_data $norm_dir/$normalized_output
-                for f in create-cls.r filter.r; do cp $code_dir/$f $norm_dir/$f; done
-                
-                ## filtering and cls file generation
-                (cd $norm_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" filter.r;
-                 R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
-            ;;
-#   normalize: start with parsed data (SM or other) and normalize/filter
+#   normalize: start with parsed data (SM or other) and normalize
     normalize ) analysisInit "normalize"
-                for f in create-cls.r filter.r normalize.r; do cp $code_dir/$f $norm_dir/$f; done
+                cp $code_dir/normalize.r $norm_dir/normalize.r
                
                 ## normalization (normalization)
                 (cd $norm_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" normalize.r)
-                 
-                ## filtering and cls file generation
-                (cd $norm_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" filter.r;
-                 R CMD BATCH --vanilla "--args $prefix $data" create-cls.r)
+                 Rscript normalize.r $prefix $data)
+            ;;
+#   filter: input is a normalized gct (v2/v3) file (or tar with normalized data) that should just be filtered
+    filter ) analysisInit "filter"
+                cp $code_dir/filter.r $filt_dir/filter.r
+                
+                ## ensures that data has necessary columns, and filters 
+                (cd $filt_dir;
+                 Rscript filter.r $prefix $data)
             ;;
 #   RNAcorr: RNA-seq (or microarray) expression correlation with proteome
     RNAcorr )   analysisInit "RNAcorr"
                 for f in rna-seq.r rna-seq-correlation.r; do cp $code_dir/$f $rna_dir/$f; done
                 (cd $rna_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" rna-seq.r;
-                 R CMD BATCH --vanilla "--args $prefix $data" rna-seq-correlation.r)
+                 Rscript rna-seq.r $prefix $data;
+                 Rscript rna-seq-correlation.r $prefix $data)
              ;;
 #   harmonize: Harmonize RNA, CNA and proteome data to create gene-centric tables with common
 #              rows (genes) and columns (samples)
     harmonize ) analysisInit "harmonize"
                 for f in harmonize.r; do cp $code_dir/$f $harmonize_dir/$f; done
                 (cd $harmonize_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" harmonize.r)
+                 Rscript harmonize.r $prefix $data)
              ;;
 #   CNAsetup: setup directories and code for running CNA analysis
 #             input must be tar file obtained after harmonize
     CNAsetup )  analysisInit "CNAsetup"
                 for f in cna-analysis.r cna-analysis-setup.r generate-cna-plots.r; do cp $code_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" cna-analysis-setup.r)
+                 Rscript cna-analysis-setup.r $prefix $data)
                 # copy required outputs to job wd (parent of $analysis_dir)
                 cp $cna_dir/subgroups.txt $cna_dir/file_table.tsv ../.
                 for f in `cat $cna_dir/file_table.tsv`; do cp $cna_dir/$f ../.; done
@@ -598,7 +595,7 @@ case $op in
                 # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
-		            #echo "fdr_cna_corr <- $fdr" >> config.r;
+                #echo "fdr_cna_corr <- $fdr" >> config.r;
                  # read subgroups.txt into array
                  groups=`cat subgroups.txt`
                  g=($groups)
@@ -641,13 +638,13 @@ case $op in
     sampleQC )  analysisInit "sampleQC"
                 for f in sample-qc.r; do cp $code_dir/$f $qc_dir/$f; done
                 (cd $qc_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" sample-qc.r)
+                 Rscript sample-qc.r $prefix $data)
              ;;
-#   assoc: association analysis for cls's in GCT or supplied in input
+#   assoc: association analysis for subset of sample annotations, as specified by groups file
     assoc )     analysisInit "assoc"
                 for f in assoc-analysis.r; do cp $code_dir/$f $assoc_dir/$f; done
                 (cd $assoc_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r)
+                 Rscript assoc-analysis.r $prefix $data)
              ;;
 #   cluster: perform consensus kmeans clustering
     cluster )   analysisInit "cluster"
@@ -667,17 +664,17 @@ case $op in
                  # run kmeans clustering and best cluster selection
                  # parmaters for minimal and maximal cluster numbers as well as 
                  # number of bootstrap iterations are fixed
-                 Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -n $norm_dir -c $cluster_dir -d $tmpdir -z $code_dir
+                 Rscript panoply_kmeans_consensus.R -i "${analysis_dir}" -u 2 -v 10 -b 1000 -s $sdclust -l $label -t $prefix -f $filt_dir -c $cluster_dir -d $tmpdir -z $code_dir
                  
                  # run association analysis on clusters to determine markers
-                 R CMD BATCH --vanilla "--args $prefix $data" postprocess.R;
-                 R CMD BATCH --vanilla "--args $prefix $data" assoc-analysis.r
+                 Rscript postprocess.R $prefix $data;
+                 Rscript assoc-analysis.r $prefix $data
              );;
 #   immune: immune analysis using RNA expression data
     immune )     analysisInit "immune"
                 for f in immune-analysis.r; do cp $code_dir/$f $immune_dir/$f; done
                 (cd $immune_dir;
-                 R CMD BATCH --vanilla "--args $prefix $data" immune-analysis.r)
+                 Rscript immune-analysis.r $prefix $data)
              ;;
 #   Unknown operation
     * )         echo "ERROR: Unknown OPERATION $op"; exit 1 
@@ -699,12 +696,12 @@ fi
 # ## netgestalt
 # echo "Generating tables for NetGestalt ..." >> $log_file
 # (cd netgestalt;
-#  R CMD BATCH --vanilla "--args $prefix $data" netgestalt-input-data.r)
+#  Rscript netgestalt-input-data.r $prefix $data)
 #   
 #   
 # ## correlation (needs tables from netgestalt)
 # echo "Correlation analysis ..." >> $log_file
 # (cd correlation;
-#  R CMD BATCH --vanilla "--args $prefix $data" run-correlation.r)
+#  Rscript run-correlation.r $prefix $data)
 # 
 

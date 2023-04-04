@@ -24,7 +24,7 @@ normalize_ptm <- function (proteome.gct, ptm.gct, output.prefix=NULL,
                            try.all.accession.numbers=TRUE,        # try hard to find a match (using accession_numbers)
                            accession_number='accession_number',   # column with protein/PTM accession number
                            accession_numbers='accession_numbers', # accession_numbers for protein/PTM group
-                           accession_sep='|',                     # spearator for each accession number in accession_numbers
+                           accession_sep='|',                     # separator for each accession number in accession_numbers
                            score='scoreUnique',                   # column with protein scores
                            ndigits=5)
 {
@@ -68,13 +68,13 @@ swap.accession.numbers <- function (PTM.rdesc, prot.rdesc, accession_number,
 {
   # Matches PTM and proteome by accession number, and tries all possible PTM accession numbers if primary
   # accession number doesn't have proteome match
-  prot.rdesc.expanded <- prot.rdesc %>% separate_rows(!!as.name (accession_numbers), sep=accession_sep)
+  prot.rdesc.expanded <- prot.rdesc %>% separate_longer_delim(!!as.name(accession_numbers), delim = accession_sep)
   
   for (row in c(1:nrow(PTM.rdesc))) {
     match <- which (prot.rdesc[,accession_number] == PTM.rdesc[row, accession_number])
     if(length(match) == 0){
       # first try to match PTM accession_numbers to protein primary ID
-      accession.numbers <- unlist(strsplit(PTM.rdesc[row,accession_numbers], accession_sep))
+      accession.numbers <- unlist(strsplit(PTM.rdesc[row,accession_numbers], accession_sep, fixed = TRUE))
       matches <- prot.rdesc[which(unlist (prot.rdesc[,accession_number]) %in% accession.numbers),]
       
       if (nrow(matches) >= 1) {
@@ -164,6 +164,10 @@ accession_numbers_sep <- yaml_params$panoply_ptm_normalization$accession_numbers
 score_col <- yaml_params$panoply_ptm_normalization$score_colname
 ndigits <- yaml_params$global_parameters$output_precision$ndigits
 
+# support for old separator
+if (accession_numbers_sep == "\\|") {
+  accession_numbers_sep <- "|"
+}
 
 # call ptm normalization
 normalize_ptm (proteome.gct=proteome_gct, ptm.gct=ptm_gct, output.prefix=output_prefix,

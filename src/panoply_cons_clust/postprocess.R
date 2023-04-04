@@ -25,7 +25,7 @@ if (exists ("cluster.enrichment.subgroups")) {
   rownames (subgroup.table) <- subgroup.table [, 'Sample.ID']
   cls.list <- setdiff (colnames (subgroup.table), 'Sample.ID')
   
-  gct.file <- file.path (norm.dir, paste (master.prefix, '.gct', sep=''))
+  gct.file <- file.path (filt.dir, paste (master.prefix, '.gct', sep=''))
   ds <- parse.gctx (gct.file)
   sample.order <- ds@cid
   subgroup.table <- subgroup.table [ sample.order, ]     # match sample order with cluster cls vector
