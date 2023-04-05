@@ -77,8 +77,12 @@ myCorrHeatmap <- function(df, full_mat = F) {
         cluster_rows = F,
         cluster_columns = F,
         name = "corr.",
+        row_title = params$d1_file_name,
+        row_names_side = 'left',
         row_names_gp = gpar(fontsize = 10),
+        column_title = params$d2_file_name,
         column_names_gp = gpar(fontsize = 10),
+        column_names_side = 'top',
         show_column_names = !(full_mat && dim(df)[1] > 35),
         show_row_names = !(full_mat && dim(df)[1] > 35))
   
