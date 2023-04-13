@@ -1,20 +1,31 @@
 ## functions used in panoply_mimp.R
 
 # this function prepares fasta file for mimp input
-format_fasta_file = function(fasta_path){
-  # Preprocessing the fasta file in RefSeq format
-  fasta = Biostrings::readAAStringSet(fasta_path)
-  names(fasta) <- names(fasta) %>% sub('\\..*', '', .) %>% sub('^>','', .)
-  keep = grepl("^NP", names(fasta))
-  seqdata = as.list( as.character( fasta[keep] ) )
+format_fasta_file = function(fasta_path, protein_id_type) {
+  if (protein_id_type == "REFSEQ") {
+    # Preprocessing the fasta file in RefSeq format
+    fasta = Biostrings::readAAStringSet(fasta_path)
+    names(fasta) <- names(fasta) %>% sub('\\..*', '', .) %>% sub('^>','', .)
+    keep = grepl("^NP", names(fasta))
+    seqdata = as.list( as.character( fasta[keep] ) )
+
+  } else if (protein_id_type == "ENSEMBLPROT") {
+    # Preprocessing the fasta file in ENSEMBL ID format
+    seqdata <- read.fasta(fasta_path, seqtype = "AA", as.string = T, strip.desc = T, set.attributes = F)
+    names(seqdata) <- extract_names(seqdata, level = "protein")
+  } else {
+    stop('Protein type is not supported. Use "REFSEQ" or "ENSEMBLPROT"')
+  }
   
   return(seqdata)
 }
 
 # this function formats the phospho GCT row metadata
-format_phospho_rdesc = function(gct, search_engine, protein_id_col, protein_id_type){
-  source ('config.r') # needed to access Rutils
+format_phospho_rdesc = function(gct, search_engine, protein_id_col, protein_id_type, convert_to_refseq = TRUE){
+  source ('/prot/proteomics/Projects/PGDAC/src/config.r') # needed to access Rutils
   Source ('map-to-genes.r') # needed for map_id() function
+  # TODO edit
+  # source("/Users/kpham/Desktop/PANOPLae/proteomics-Rutil/map-to-genes.r")
   
   phos_rdesc = gct@rdesc
   
@@ -25,8 +36,12 @@ format_phospho_rdesc = function(gct, search_engine, protein_id_col, protein_id_t
     rownames(phos_rdesc) = phos_rdesc$id
   }
   
-  phos_rdesc$protein_id = map_id(sub('\\..*','', phos_rdesc[, protein_id_col]),
+  if (convert_to_refseq) {
+    phos_rdesc$protein_id = map_id(sub('\\..*','', phos_rdesc[, protein_id_col]),
                                  keytype_from = protein_id_type, ome_lookup_key="P")
+  } else {
+    phos_rdesc$protein_id <- phos_rdesc[, protein_id_col]
+  }
 
   return(phos_rdesc)
 }
@@ -40,10 +55,60 @@ format_phospho_mat = function(gct, rdesc){
   return(phos_mat)
 }
 
+#' @title Extract mutations and sample IDs into a long format using transcript IDs and other transcript IDs
+#'
+#' @param mut_data_path Path to .maf file with mutation calls
+#' @param transcript_id_col Column name for chosen mapped transcript
+#' @param other_transcript_id_col Column name for other mapped transcript
+#'
+#' @return Dataframe  | gene (transcript) | sample_id | position | wt_residue | mut_residue |
+format_mutation_ensembl <- function(
+  mut_data_path,
+  ids,
+  mutation_type_col,
+  transcript_id_col,
+  seqdata,
+  sample_id_col = "Sample.ID",
+  mutation_AA_change_colname = "Protein_Change",
+  other_transcript_id_col = "Other_Transcripts",
+  variant_types = c("SNP"),
+  variant_classes = c("Missense_Mutation")
+) {
+  wxs_maf <- read.maf(maf = mut_data_path)
+  all_mutations <- wxs_maf@data
+  filtered_muts <- all_mutations %>% filter(Variant_Type %in% variant_types & Variant_Classification %in% variant_classes)
+  
+  # grab all other transcripts and corresponding protein changes
+  all_other_transcript_mutations <- str_extract_all(filtered_muts[[other_transcript_id_col]], "ENST\\d+.\\d+_\\w*_p.[A-Z]\\d+[A-Z]")
+  all_other_transcripts <- str_extract_all(all_other_transcript_mutations, "ENST\\d+.\\d+")
+  all_other_protein_change <- str_extract_all(all_other_transcript_mutations, "[A-Z]\\d+[A-Z]")
+  protein_change <- str_extract_all(filtered_muts[[mutation_AA_change_colname]], "[A-Z]\\d+[A-Z]")
+  
+  # pre-format multiple other transcripts and corresponding protein changes into an "explodable" format
+  all_transcripts <- list()
+  all_protein_change <- list()
+  for (i in 1:length(all_other_transcripts)) {
+    all_transcripts[i] <- paste(c(all_other_transcripts[[i]], filtered_muts[[transcript_id_col]][i]), collapse = "|")
+    all_protein_change[i] <- paste(c(all_other_protein_change[[i]], protein_change[[i]]), collapse = "|")
+  }
+  filtered_muts$transcript_id <- unlist(all_transcripts)
+  filtered_muts$prot_change <- unlist(all_protein_change)
+  
+  # expand so that each row is a separate transcript with a corresponding protein change
+  all_mutations_exploded <- filtered_muts %>% separate_rows(transcript_id, prot_change)
+
+  # use transcript to protein ENSEMBL ID derived from FASTA to map mutations onto FASTA
+  names(ids) <- c("transcript_id", "protein_id")
+  mut_data <- all_mutations_exploded %>% left_join(ids) %>% filter(protein_id %in% names(seqdata))
+  mut_data[[mutation_AA_change_colname]] <- mut_data$prot_change  # re-assign to the original column for protein change
+  
+  return(as.data.frame(mut_data))
+}
+
 # this function prepares the mutation maf file before sample-wise filtering
-format_mutation_full = function(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata){
-  mut_maf = read_tsv(mut_data_path)
-  mut_data = as.data.frame(mut_maf) 
+format_mutation_refseq = function(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata){
+  wxs_maf <- read.maf(maf = mut_data_path)
+  mut_data = wxs_maf@data
   mut_data[, mutation_type_col] = as.character(mut_data[, mutation_type_col])
   mut_data2 = mut_data[which(grepl("missense",mut_data[, mutation_type_col], ignore.case = TRUE)),]
   
@@ -297,4 +362,21 @@ generate_mimp_heatmap = function(full_results, groups_file_path, groups_file_Sam
     mimp_heatmap_function(full_results_edit, "kinase_gene_mut", groups_file_path, groups_file_SampleID_column)
   }
 
+}
+
+extract_names <- function(fasta, level = "protein") {
+  if (level == "gene") {
+    ids_regex <- "ENSG\\d+.\\d+"
+  } else if (level == "protein") {
+    ids_regex <- "ENSP\\d+.\\d+"
+  } else if (level == "transcript") {
+    ids_regex <- "ENST\\d+.\\d+"
+  } else if (level == "geneSymbol") {
+    ids_regex <- "GN=\\w+"
+  } else {
+    stop('Supplied naming level does not exist. Options: "gene", "protein", "transcript"')
+  } 
+  seq_ids <- str_extract(names(fasta), ids_regex)
+  
+  return(seq_ids)
 }

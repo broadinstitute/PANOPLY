@@ -4,7 +4,7 @@ MAINTAINER proteogenomics@broadinstitute.org
 RUN apt-get update --allow-releaseinfo-change
 RUN echo Y | apt-get install libxml2
 
-RUN R -e 'pacman::p_load ( Biostrings, sequinr )'
+RUN R -e 'pacman::p_load ( Biostrings, seqinr, maftools )'
 
 RUN echo 'if (! require (mimp)) { \
         devtools::install_github("omarwagih/rmimp", INSTALL_opts="--no-staged-install")};' \

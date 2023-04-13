@@ -11,8 +11,18 @@ library(ComplexHeatmap)
 library(circlize)
 library(stringr)
 library(yaml)
+library(maftools)
 
 args <- commandArgs(TRUE)
+
+# # TODO: rm
+# args <- c(
+#   "/Users/kpham/Desktop/mutation_ptm/luad-v1.3/luad-comb-v1.3-wxs_snv_maftools.maf", 
+#   "/Users/kpham/Desktop/mutation_ptm/luad-v1.3/luad-comb-v1.3-phosphoproteome-filtered-combined-bridging-batch-correct.gct",
+#   "/Users/kpham/Desktop/mutation_ptm/Gencode.v34.pc_translations_clean3nr.fasta",
+#   "/Users/kpham/Desktop/mutation_ptm/MIMP/ids.RData",
+#   "/Users/kpham/Desktop/mutation_ptm/MIMP/master-parameters-mimp.yaml"
+# )
 
 mut_data_path = as.character(args[1])
 phospho_path = as.character(args[2])
@@ -27,6 +37,7 @@ search_engine = yaml_params$panoply_mimp$search_engine
 phosphosite_col = yaml_params$panoply_mimp$phosphosite_col
 protein_id_col = yaml_params$panoply_mimp$protein_id_col
 protein_id_type = yaml_params$panoply_mimp$protein_id_type
+protein_id_type_out = yaml_params$panoply_mimp$protein_id_type_out
 mutation_AA_change_colname = yaml_params$panoply_mimp$mutation_AA_change_colname
 mutation_type_col = yaml_params$panoply_mimp$mutation_type_col
 sample_id_col = yaml_params$panoply_mimp$sample_id_col 
@@ -34,9 +45,16 @@ transcript_id_col = yaml_params$panoply_mimp$transcript_id_col
 
 ## phospho file column names - can add other options as we add new search engines
 if (search_engine == "SpectrumMill"){
-  phosphosite_col = "variableSites"
-  protein_id_col = "accession_number"
-  protein_id_type = "ENSEMBLPROT"
+  if (is.null(phosphosite_col)) {
+    phosphosite_col = "variableSites"
+  }
+  if (is.null(protein_id_col)) {
+    protein_id_col = "accession_number"
+  }
+  if (is.null(protein_id_type)) {
+    protein_id_type = "ENSEMBLPROT"
+  }
+  
 } else if (search_engine == "other"){
   if (is.null(phosphosite_col)){
     stop("Please update the 'phosphosite_col' field in the yaml file to the name of the row-metadata field in the phopho GCT that indicates phosphosite information e.g. S18s.")
@@ -48,12 +66,14 @@ if (search_engine == "SpectrumMill"){
     warning("The 'protein_id_type' field has been left blank, and will be assumed 'REFSEQ' by default. If the 'protein_id_col' column uses a different protein ID type, please update the 'protein_id_type' field in the yaml file.")
     protein_id_type="REFSEQ"
   }
+  
 } else {
   stop("Please enter a valid option for 'search_engine' parameter. Options are 'SpectrumMill' or 'other.'")
 }
 
-# source helper functions
+# TODO replace: source helper functions
 source("/prot/proteomics/Projects/PGDAC/src/mimp_helper_functions.R")
+# source("/Users/kpham/Desktop/PANOPLae/PANOPLY_activedriver_mimp/src/panoply_mimp/mimp_helper_functions.R")
 
 run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_mat, 
                                phosphosite_col, mutation_AA_change_colname){
@@ -214,24 +234,39 @@ run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
                     mut_data_path, ids_path, mutation_type_col, transcript_id_col, 
                     phosphosite_col, mutation_AA_change_colname){
 
+  # TODO rm
+  # setwd("/Users/kpham/Desktop/mutation_ptm/MIMP")
   dir.create("mimp_results_dir")
   setwd("mimp_results_dir")
   dir.create("results_by_sample")
 
-  # Loading NP data, different for different datatypes
+  # load mapping between transcripts to protein IDs
   load(ids_path)
   
   # prepare fasta file for mimp input
-  seqdata = format_fasta_file(fasta_path)
+  seqdata = format_fasta_file(fasta_path, protein_id_type)
 
   # read phospho gct file, format rdesc and mat
   phospho_gct = parse.gctx(phospho_path)
   phos_cid = phospho_gct@cid %>% sub('^X', '', .)
-  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, protein_id_col, protein_id_type)
+  convert_to_refseq = ifelse(protein_id_type_out == "REFSEQ", TRUE, FALSE)
+  phos_rdesc = format_phospho_rdesc(phospho_gct, search_engine, protein_id_col, protein_id_type, convert_to_refseq = convert_to_refseq)
   phos_mat = format_phospho_mat(phospho_gct, phos_rdesc)
   
   # prepare mutation maf file before for loop sample-wise processing
-  mut_data = format_mutation_full(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata)
+  if (convert_to_refseq) {
+    mut_data = format_mutation_refseq(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata)
+  } else {
+    mut_data = format_mutation_ensembl(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata)
+  }
+  
+  # TODO rm
+  # load("/Users/kpham/Desktop/mutation_ptm/MIMP/ids-refseq.RData")
+  # seqdata <- format_fasta_file("/Users/kpham/Desktop/mutation_ptm/MIMP/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams.fasta", "REFSEQ")
+  # mut_data_path = "/Users/kpham/Desktop/mutation_ptm/MIMP/luad-conf-v2.0-wxs_snv_maftools.maf"
+  # transcript_id_col <- "Refseq_mRNA_Id"
+  # mut_data = format_mutation_full(mut_data_path, ids, "Variant_Classification", "Refseq_mRNA_Id", seqdata)
+  # mut_data = get_mutations_all(mut_data_path, ids, mutation_type_col, transcript_id_col, seqdata)
 
   # prepare sample-wise mutation and phospho dfs, and then run mimp on each sample
   heatmap_df = run_mimp_samplewise(phos_cid, mut_data, seqdata, phos_rdesc, phos_mat,
