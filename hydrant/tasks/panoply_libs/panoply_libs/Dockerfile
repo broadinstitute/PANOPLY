@@ -6,21 +6,20 @@ RUN apt-get -t unstable install -y libssl-dev
 RUN apt-get -t unstable install -y libcurl4-openssl-dev
 RUN apt-get install -y jags
 
+# Freeze cran Repository to end of 2020
+RUN sed -i 's/cloud.r-project.org/packagemanager.rstudio.com\/cran\/2020-12-31/' /etc/R/Rprofile.site
+
 # devtools dependencies
 RUN apt-get -t unstable install -y libxml2-dev  # required for R-package 'XML'
 RUN apt-get -t unstable install -y pandoc  # rmarkdown
 RUN apt-get -t unstable install -y libfontconfig1-dev  # font config library for R-package kableExtra
 RUN apt-get -t unstable install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
 RUN apt-get -t unstable install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
-# devtools install
-RUN R -e 'install.packages( "devtools" )'
 
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
 RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
-  install.packages( "BiocManager", \
-    repos = "http://cran.us.r-project.org", dependencies = TRUE ); \
-  devtools::install_version("rjson", version = "0.2.20"); \
+  install.packages( "BiocManager", dependencies = TRUE ); \
   BiocManager::install( version = "3.10" ); \
   BiocManager::install( c( "Biobase", \
 	"graph", \
@@ -66,12 +65,12 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( maptools ); \
 	p_install( mclust ); \
 	p_install( misc3d ); \
-	devtools::install_version("mixtools", version = "1.2.0"); \
+	p_install( mixtools ); \
 	p_install( nlme ); \
 	p_install( optparse ); \
 	p_install( parmigene ); \
 	p_install( psych ); \
-	devtools::install_version("randomForest", version = "4.6-14"); \
+	p_install( randomForest ); \
 	p_install( reshape ); \
 	p_install( samr ); \
 	p_install( scales ); \
@@ -82,7 +81,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( tidyverse ); \
 	p_install( tools ); \
 	p_install( verification ); \
-	devtools::install_version("Hmisc", version = "4.0"); \
+	p_install( Hmisc ); \
 	p_install( WGCNA ); \
 	p_install( factoextra ); \
 	p_install( glue ); \
@@ -92,11 +91,14 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( pheatmap ); \
 	p_install( NbClust ); \
 	p_install( rjson ); \
+	p_install( yaml ); \
 	p_install( GlobalOptions); \
 	p_install( GetoptLong ); \
         p_install( coda ); \
         p_install( rjags );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
+# Install devtools directly from crane, NOT from mirror repository
+RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
 
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \
