@@ -115,7 +115,6 @@ panoply_cmap_analysis:
   alpha: fdr.pvalue      # p-value threshold for cmap profile zscores and enrichments
 
 
-
 panoply_immune_analysis:
   immune_enrichment_fdr: 0.05
   immune_enrichment_subgroups: NULL
@@ -128,6 +127,20 @@ panoply_blacksheep:
   groups_file: NULL
   fraction_samples_cutoff: 0.3
   fdr_value: 0.05
+
+panoply_activedriver:    
+  search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "FragPipe"           
+  group_by_column: "id.description"             # column to group sites (gene/protein/transcript) by for ActiveDriver analysis. Example: "id.description", "ProteinID", "geneID", "transcriptID"
+  residues: "STYK"                              # modified residues to filter in the set of PTMs for ActiveDriver
+  level: "protein"                              # grouping level to get correct FASTA headers. Options: "gene", "protein", "transcript"
+  
+  mutation_AA_change_colname: "Protein_Change"  # name of column in mutation MAF file that indicates amino acid change due to mutation
+  sample_id_col: "Sample.ID"                    # name of column in mutation MAF file that indicates patient/sample ID 
+  transcript_id_col: "Annotation_Transcript"    # name of column in mutation MAF file that indicates transcript identifier
+  other_transcript_col: "Other_Transcripts"     # name of column in mutation MAF file that indicates other transcript identifiers
+  
+  region_pval_adj_method: "BH"                  # method for p.adjust calculation. Default: "BH" (Bonferonni-Hochberg)
+                                                # ActiveDriver only adjusts p-values at gene level so we are correcting region p-value on our own
 
 panoply_mimp:
   groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap
