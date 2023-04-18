@@ -20,7 +20,7 @@ p_load(tidyr)
 p_load(dplyr)
 p_load(purrr)
 
-# source("panoply_ptm_normalization/helper.R")
+source("/prot/proteomics/Projects/PGDAC/src/helper.R")
 
 
 run_all_metrics <- function(

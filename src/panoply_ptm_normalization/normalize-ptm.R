@@ -22,9 +22,9 @@ p_load(limma)
 p_load(lme4)
 p_load(stats)
 
-# source("panoply_ptm_normalization/helper.R")
-# source("panoply_ptm_normalization/metrics.R")
-# source("panoply_ptm_normalization/analyze.R")
+source("/prot/proteomics/Projects/PGDAC/src/helper.R")
+source("/prot/proteomics/Projects/PGDAC/src/metrics.R")
+source("/prot/proteomics/Projects/PGDAC/src/analyze.R")
 
 
 #' @title Normalize PTM levels with respect to protein levels
