@@ -3,6 +3,10 @@ project <- Sys.getenv('WORKSPACE_NAMESPACE')
 workspace <- Sys.getenv('WORKSPACE_NAME')
 bucket <- Sys.getenv('WORKSPACE_BUCKET')
 
+
+#' @title Set up directories
+#'
+#' @param name (optional): supply a custom PTM-SEA run name, otherwise dates
 init_project_dir <- function(name = NULL) {
     data_dir <<- file.path(MAIN_WD, "data")
     project_name <<- get_run_name(name)
@@ -40,10 +44,19 @@ list_files_in_bucket <- function(only_gct = FALSE, only_gmt = FALSE) {
     print(files)
 }
 
+#' @title Use gsutil to copy from bucket to current environment
+#'
+#' @param filename: file name in the bucket (including folder path)
 copy_from_bucket_to_project_dir <- function(filename) {
     system(paste("gsutil cp", file.path(bucket, filename), project_input), intern = TRUE)
 }
 
+#' @title Get correct PTMsigDB for PTM-SEA
+#'
+#' @param id_type_out: type of IDs in PTM (options: "uniprot", "flanking", "sitegrpid")
+#' @param organism: organism database (options: "human", "mouse", "rat")
+#'
+#' @return protein | transcript | gene_id |
 get_ptm_sig_db <- function(id_type_out, organism) {
     if (is.null(ptm_sig_db_path)) {
         if (id_type_out == "uniprot") {
@@ -64,6 +77,9 @@ get_ptm_sig_db <- function(id_type_out, organism) {
     return(ptm_sig_db)
 }
 
+#' @title Runs preprocess-GCT.R to keep fully localized sites
+#'
+#' @return input_ds_proc: processed GCT input for PTM-SEA
 preprocess_gct <- function() {
     setwd(project_output)  # change to folder to write
 
@@ -88,6 +104,9 @@ preprocess_gct <- function() {
     input_ds_proc <<- file.path(project_output, system(paste("cat", fn), intern = TRUE))  # locate processed GCT file
 }
 
+#' @title Runs PTM-SEA on preprocessed 
+#'
+#' @return input_ds_proc
 run_ptm_sea <- function(save_to_bucket = TRUE, name = NULL) {
     setwd(project_output)  # change to folder to write
 
@@ -115,7 +134,7 @@ run_ptm_sea <- function(save_to_bucket = TRUE, name = NULL) {
         save_results_to_bucket(name)
     }
 }
-
+#' @title Zips outputs and saves back to original bucket
 save_results_to_bucket <- function(name = NULL) {
     setwd(project_dir) 
     

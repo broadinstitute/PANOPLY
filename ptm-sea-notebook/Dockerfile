@@ -1,4 +1,4 @@
-FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-r:2.1.6
+FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-r:2.1.9
 USER root
 
 RUN R -e 'install.packages(c("pacman", "optparse", "gtools", "verification", "doParallel", "foreach", "magrittr", "yaml", "glue", "dplyr"))'
