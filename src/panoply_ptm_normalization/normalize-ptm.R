@@ -1,11 +1,11 @@
 #
-# Copyright (c) 2021 The Broad Institute, Inc. All rights reserved.
+# Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 
 #########################################################################################################
 #
 # Normalizes ptm to protein level by fitting a global linear model and returning residuals
-# Harry Kane, Pierre Beltran, D. R. Mani, Karsten Krug, Zachery Gillette, Surya Mani, Khoi Pham (Munchic)
+# Harry Kane, Pierre Beltran, D. R. Mani, Karsten Krug, Zachery Gillette, Surya Mani, Khoi Pham Munchic
 #
 # Fits ptm = beta_0 + beta_1*protein to all matched points in a dataset, and returns residuals as
 # protein-corrected ptm values.
@@ -27,23 +27,33 @@ p_load(stats)
 # source("panoply_ptm_normalization/analyze.R")
 
 
-normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL, 
+#' @title Normalize PTM levels with respect to protein levels
+#'
+#' @param proteome.gct Path to proteome GCT inside of "`data_dir`/input"
+#' @param ptm.gct Path to PTM GCT inside of "`data_dir`/input"
+#' @param data_dir Path to directory with "input/" subdirectory containing input GCTs
+#' @param output.prefix Output file name (default: NULL)
+#'
+#' @return Long format PTM site level and cognate protein level
+normalize_ptm <- function(proteome.gct, ptm.gct, data_dir, output.prefix = NULL,
                           try.all.accession.numbers = TRUE,              # try hard to find a match (using accession_numbers)
                           accession_number = "accession_number",         # column with protein/ptm accession number
                           accession_numbers = "accession_numbers",       # accession_numbers for protein/ptm group
                           accession_sep = "|",                           # separator for each accession number in accession_numbers
                           score = "scoreUnique",                         # column with protein scores
                           ndigits = 5,                                   # precision level
-                          center_data = TRUE,                            # whether to center the data with median
-                          norm_method = "global",                        # normalization method (options: global, per_ptm_site, subtract)
+
+                          center_data = FALSE,                           # whether to center the data with median
+                          norm_method = "global",                        # normalization method (options: "global", "per_ptm_site", "subtract", "mixed_eff_protein", "mixed_eff_ptm_site", "mixed_eff_nested")
                           lm_method = "ls",                              # method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
                           lm_formula = value ~ value.prot,               # formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
-                          loess = FALSE,                                 # whether to use loess regression
+                          loess = FALSE,                                 # whether to use loess regression (applicable to global, per protein, and per PTM models)
+                          model_name = "proteome_relative_norm")         # subfolder name in which to store results)
+
                           groups_colname = NULL,                         # NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
                           subset_cond = NULL,                            # string: logical condition by which to subset the data (e.g., "as.character(pert_time) %in% c('6', '24')")
                           min_n_values = 4,                              # per_ptm_site: what least number of samples must contain both non-NA PTM and protein values
-                          data_dir = "data",
-                          model_name = "proteome_relative_norm")         # subfolder name in which to store results)
+
 {
   # import GCT files
   proteome <- parse_gctx(file.path(data_dir, "input", proteome.gct))
@@ -75,19 +85,23 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   model_out_dir <- file.path(data_dir, "out", model_name)
   dir.create(model_out_dir, showWarnings = FALSE)
   
+  file_name <- ifelse(!is.null (output.prefix), output.prefix,
+                      unlist(strsplit(basename(ptm.gct), split = ".gct", fixed = TRUE))[1])
+  out_path <- file.path(model_out_dir, file_name)
+  
   # fits linear model and returns updated GCT
   if (norm_method == "global") {
-    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_global(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, out_path)
   } else if (norm_method == "per_ptm_site" | norm_method == "per_ptm_site") {
-    norm_vals <- normalize_per_ptm_site(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_per_ptm_site(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, out_path)
   } else if (norm_method == "per_protein") {
-    norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_per_protein(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, out_path)
   } else if (norm_method == "mixed_eff_protein") {
-    norm_vals <- normalize_mixed_eff_prot(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_mixed_eff_prot(comb_ptm_prot, groups_colname, min_n_values, out_path)
   } else if (norm_method == "mixed_eff_ptm_site") {
-    norm_vals <- normalize_mixed_eff_ptm(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_mixed_eff_ptm(comb_ptm_prot, groups_colname, min_n_values, out_path)
   } else if (norm_method == "mixed_eff_nested") {
-    norm_vals <- normalize_mixed_eff_nested(comb_ptm_prot, groups_colname, min_n_values, model_out_dir)
+    norm_vals <- normalize_mixed_eff_nested(comb_ptm_prot, groups_colname, min_n_values, out_path)
   } else if (norm_method == "subtract") {
     norm_vals <- normalize_subtract(comb_ptm_prot)
   }
@@ -95,10 +109,6 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
   print ("Success.")
   
   # writes and returns updated GCT
-  file_name <- ifelse(!is.null (output.prefix), output.prefix,
-                      unlist(strsplit(basename(ptm.gct), split = ".gct", fixed = TRUE))[1])
-  
-  out_path <- file.path(model_out_dir, file_name)
   write_gct(ptm.norm, paste0(out_path, ".gct"), 
             appenddim = FALSE, precision = ndigits)
   invisible (ptm.norm)
@@ -107,8 +117,21 @@ normalize_ptm <- function(proteome.gct, ptm.gct, output.prefix = NULL,
 }
 
 
-#' Applies linear regression to correct PTM levels for underlying protein levels
-normalize_global <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, save_dir = NULL) {
+#' @title Global normalization
+#' 
+#' @description Linear regression to correct PTM levels for underlying protein levels
+#' Uses all pairs of PTM level and cognate protein level across samples to build regression
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#' @param lm_method Method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
+#' @param lm_formula Formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
+#' @param loess Use local polynomial regression for non-linear fit (piece-wise)
+#' @param groups_colname NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+#' @param min_n_values Smallest number of samples must contain both non-NA PTM and protein values to build regression
+#' @param out_path Path to save the normalized PTM levels GCT 
+#'
+#' @return Long format site quant and cognate protein quant
+normalize_global <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, out_path) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -138,7 +161,7 @@ normalize_global <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups
         fitted_ptm_levels <- unlist(as.list(fitted(model)))
       } else {
         model <- lowess(samples$value.prot, samples$value)
-        fitted_ptm_levels <- model$y
+        fitted_ptm_levels <- spline(model$x, model$y, xout = samples$value.prot)$y
       }
       result$residuals <- samples$value - fitted_ptm_levels  # result$residuals <- residuals(model)
       
@@ -149,17 +172,26 @@ normalize_global <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups
   }
   
   print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
-  if (!is.null(save_dir)) {
-    regr_path <- file.path(save_dir, "regressions.RDS")
-    saveRDS(regr_store, regr_path)
-  }
+  saveRDS(regr_store, paste0(out_path, ".RDS"))
   return(all_results)
 }
 
 
-#' Applies linear regression to correct PTM levels for underlying protein levels
-#' for each PTM-protein pair across selected or all samples
-normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, save_dir = NULL) {
+#' @title Per PTM site normalization
+#' 
+#' @description Linear regression to correct PTM levels for underlying protein levels for each PTM site
+#' For each unique PTM site, get PTM levels and cognate protein levels across samples to build regression
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#' @param lm_method Method argument of `lmFit`, "ls" for least squares, "robust" for M-estimation
+#' @param lm_formula Formula for linear regression (MUST include value as predicted variable and value.prot as explanatory)
+#' @param loess Use local polynomial regression for non-linear fit (piece-wise)
+#' @param groups_colname NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+#' @param min_n_values Smallest number of samples must contain both non-NA PTM and protein values to build regression
+#' @param out_path Path to save the normalized PTM levels GCT 
+#'
+#' @return Long format site quant and cognate protein quant
+normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, out_path) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -222,14 +254,23 @@ normalize_per_ptm_site <- function(comb_ptm_prot, lm_method, lm_formula, loess, 
   
   print(paste0("Number of sites normalized: ", count_norm_ptm, "/", nrow(comb_ptm_prot)))
   print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
-  if (!is.null(save_dir)) {
-    regr_path <- file.path(save_dir, "regressions.RDS")
-    saveRDS(regr_store, regr_path)
-  }
+  saveRDS(regr_store, paste0(out_path, ".RDS"))
   return(all_results)
 }
 
-normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, save_dir = NULL) {
+
+#' @title Per protein normalization
+#' 
+#' @description Linear regression to correct PTM levels for underlying protein levels for each PTM site
+#' For each unique protein, get PTM levels on that protein and protein levels across samples to build regression
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#' @param groups_colname NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+#' @param min_n_values Smallest number of samples must contain both non-NA PTM and protein values to build regression
+#' @param out_path Path to save the normalized PTM levels GCT 
+#'
+#' @return Long format dataframe | id.x (PTM) | id.y (protein) | residual |
+normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, loess, groups_colname, min_n_values, out_path) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -292,13 +333,18 @@ normalize_per_protein <- function(comb_ptm_prot, lm_method, lm_formula, loess, g
   
   print(paste0("Number of PTMs normalized: ", count_norm_ptm, "/", nrow(comb_ptm_prot)))
   print(paste0("Regressions failed (values present < ", min_n_values, "): ", count_fail_regr))
-  if (!is.null(save_dir)) {
-    regr_path <- file.path(save_dir, "regressions.RDS")
-    saveRDS(regr_store, regr_path)
-  }
+  saveRDS(regr_store, paste0(out_path, ".RDS"))
   return(all_results)
 }
 
+#' @title Subtract normalization
+#' 
+#' @description Subtraction to correct PTM levels for underlying protein levels for each PTM site
+#' For each PTM site, subtract cognate protein level from site level
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#'
+#' @return Long format dataframe | id.x (PTM) | id.y (protein) | residual |
 normalize_subtract <- function(comb_ptm_prot) {
   all_results <- comb_ptm_prot[ , c("id.x", "id.y")]
   all_results$residuals <- comb_ptm_prot$value - comb_ptm_prot$value.prot
@@ -310,7 +356,19 @@ normalize_subtract <- function(comb_ptm_prot) {
   return(all_results)
 }
 
-normalize_mixed_eff_prot <- function(comb_ptm_prot, groups_colname, min_n_values, save_dir = NULL) {
+#' @title Mixed-effects per protein normalization
+#' 
+#' @description Mixed effects linear regression to correct PTM levels for underlying protein levels for each PTM site
+#' Fixed effect: For each protein, get PTM levels on protein and protein levels across samples to build regression
+#' Random effect: Each PTM site has its own random effect
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#' @param groups_colname NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+#' @param min_n_values Smallest number of samples must contain both non-NA PTM and protein values to build regression
+#' @param out_path Path to save the normalized PTM levels GCT 
+#'
+#' @return #' @return Long format dataframe | id.x (PTM) | id.y (protein) | residual |
+normalize_mixed_eff_prot <- function(comb_ptm_prot, groups_colname, min_n_values, out_path) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -336,10 +394,9 @@ normalize_mixed_eff_prot <- function(comb_ptm_prot, groups_colname, min_n_values
                     data = samples,
                     control = lmerControl(optimizer = 'Nelder_Mead'),
                     REML = T)
-      prot_slope <- coef(model)$accession_number[samples$accession_number, "value.prot"]
-      prot_intcp <- coef(model)$accession_number[samples$accession_number, 1]
+  
       result <- samples[ , c("id.x", "id.y")]
-      result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
+      result$residuals <- samples$value - fitted(model)
       
       all_results <- rbind(all_results, result)
       count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
@@ -348,14 +405,24 @@ normalize_mixed_eff_prot <- function(comb_ptm_prot, groups_colname, min_n_values
   }
   
   print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
-  if (!is.null(save_dir)) {
-    regr_path <- file.path(save_dir, "regressions.RDS")
-    saveRDS(regr_store, regr_path)
-  }
+  saveRDS(regr_store, paste0(out_path, ".RDS"))
   return(all_results)
 }
 
-normalize_mixed_eff_ptm <- function(comb_ptm_prot, groups_colname, min_n_values, save_dir = NULL) {
+
+#' @title Mixed-effects per protein normalization
+#' 
+#' @description Mixed effects linear regression to correct PTM levels for underlying protein levels for each PTM site
+#' Fixed effect: For each PTM site, get PTM levels and cognate protein levels across samples to build regression
+#' Random effect: Protein ID serves random effect
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#' @param groups_colname NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+#' @param min_n_values Smallest number of samples must contain both non-NA PTM and protein values to build regression
+#' @param out_path Path to save the normalized PTM levels GCT 
+#'
+#' @return Long format dataframe | id.x (PTM) | id.y (protein) | residual |
+normalize_mixed_eff_ptm <- function(comb_ptm_prot, groups_colname, min_n_values, out_path) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -382,10 +449,8 @@ normalize_mixed_eff_ptm <- function(comb_ptm_prot, groups_colname, min_n_values,
                     control = lmerControl(optimizer = 'bobyqa'),  # try different optimizer 
                     REML = T)
       
-      prot_slope <- coef(model)$id.x[samples$id.x, "value.prot"]
-      prot_intcp <- coef(model)$id.x[samples$id.x, 1]
       result <- samples[ , c("id.x", "id.y")]
-      result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
+      result$residuals <- samples$value - fitted(model)
       
       all_results <- rbind(all_results, result)
       count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
@@ -394,14 +459,24 @@ normalize_mixed_eff_ptm <- function(comb_ptm_prot, groups_colname, min_n_values,
   }
   
   print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
-  if (!is.null(save_dir)) {
-    regr_path <- file.path(save_dir, "regressions.RDS")
-    saveRDS(regr_store, regr_path)
-  }
+  saveRDS(regr_store, paste0(out_path, ".RDS"))
   return(all_results)
 }
 
-normalize_mixed_eff_nested <- function(comb_ptm_prot, groups_colname, min_n_values, save_dir = NULL) {
+
+#' @title Nested mixed-effects per PTM site
+#' 
+#' @description Mixed effects linear regression to correct PTM levels for underlying protein levels for each PTM site
+#' Fixed effect: For each PTM site, get PTM levels and cognate protein levels across samples to build regression
+#' Random effect: Protein ID serves random effect, and PTM site ID serves as random effect nested within protein random effect
+#'
+#' @param comb_ptm_prot Long format PTM site level and cognate protein level
+#' @param groups_colname NULL if want to use all samples, otherwise name of column indicating grouping (e.g., "pert_time")
+#' @param min_n_values Smallest number of samples must contain both non-NA PTM and protein values to build regression
+#' @param out_path Path to save the normalized PTM levels GCT 
+#'
+#' @return Long format dataframe | id.x (PTM) | id.y (protein) | residual |
+normalize_mixed_eff_nested <- function(comb_ptm_prot, groups_colname, min_n_values, out_path) {
   if (!is.null(groups_colname)) {  # if use all samples
     sample_groups <- unique(comb_ptm_prot[[groups_colname]])
   } else {
@@ -428,11 +503,9 @@ normalize_mixed_eff_nested <- function(comb_ptm_prot, groups_colname, min_n_valu
                     data = samples,
                     control = lmerControl(optimizer = 'Nelder_Mead'),
                     REML = T)
-      prot_slope <- coef(model)$accession_number[samples$accession_number, "value.prot"] + coef(model)$id.x[samples$id.x, "value.prot"]
-      prot_intcp <- coef(model)$accession_number[samples$accession_number, 1] + coef(model)$id.x[samples$id.x, 1]
       
       result <- samples[ , c("id.x", "id.y")]
-      result$residuals <- samples$value - samples$value.prot * prot_slope - prot_intcp
+      result$residuals <- samples$value - fitted(model)
       
       all_results <- rbind(all_results, result)
       count_fail_ptm <- count_fail_ptm + sum(is.na(result$residuals))
@@ -441,10 +514,7 @@ normalize_mixed_eff_nested <- function(comb_ptm_prot, groups_colname, min_n_valu
   }
   
   print(paste0("Number of sites normalized: ", nrow(comb_ptm_prot) - count_fail_ptm, "/", nrow(comb_ptm_prot)))
-  if (!is.null(save_dir)) {
-    regr_path <- file.path(save_dir, "regressions.RDS")
-    saveRDS(regr_store, regr_path)
-  }
+  saveRDS(regr_store, paste0(out_path, ".RDS"))
   return(all_results)
 }
 

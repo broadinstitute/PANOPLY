@@ -44,15 +44,15 @@ run_all_metrics <- function(
   
   # obtain across samples correlations for prot and PTM
   prot_ptm_unnorm_corr <- prot_ptm_corr_across_samples(prot_gct, ptm_gct, groups_colname, subset_cond, min_n_values, method)
-  colnames(prot_ptm_unnorm_corr) <- add_prefix_to_colnames("prot_ptm_unnorm", prot_ptm_unnorm_corr, except = "id.x")
+  colnames(prot_ptm_unnorm_corr) <- add_prefix_to_series("prot_ptm_unnorm", prot_ptm_unnorm_corr, except = "id.x")
 
   # obtain across samples correlations for prot and normalized PTM
   prot_ptm_norm_corr <- prot_ptm_corr_across_samples(prot_gct, ptm_norm_gct, groups_colname, subset_cond, min_n_values, method)
-  colnames(prot_ptm_norm_corr) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr, except = "id.x")
+  colnames(prot_ptm_norm_corr) <- add_prefix_to_series("prot_ptm_norm", colnames(prot_ptm_norm_corr), except = "id.x")
 
   # obtain across samples correlations for PTM and normalized PTM
   ptm_unnorm_ptm_norm_corr <- ptm_corr_across_samples(ptm_gct, ptm_norm_gct, groups_colname, subset_cond, min_n_values, method)
-  colnames(ptm_unnorm_ptm_norm_corr) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr, except = "id.x")
+  colnames(ptm_unnorm_ptm_norm_corr) <- add_prefix_to_series("ptm_unnorm_ptm_norm", colnames(ptm_unnorm_ptm_norm_corr), except = "id.x")
 
   comb_acr_corr <- merge(prot_ptm_unnorm_corr, prot_ptm_norm_corr, by = "id.x", all = TRUE)
   comb_acr_corr <- merge(comb_acr_corr, ptm_unnorm_ptm_norm_corr, by = "id.x", all = TRUE)
@@ -63,13 +63,13 @@ run_all_metrics <- function(
   print(paste0("Per PTM site, across sample correlations saved at: ", acr_corr_path))
   
   prot_ptm_unnorm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct, ptm_gct)
-  colnames(prot_ptm_unnorm_corr_in_sample) <- add_prefix_to_colnames("prot_ptm_unnorm", prot_ptm_unnorm_corr_in_sample, except = "id.y")
+  colnames(prot_ptm_unnorm_corr_in_sample) <- add_prefix_to_series("prot_ptm_unnorm", colnames(prot_ptm_unnorm_corr_in_sample), except = "id.y")
   
   prot_ptm_norm_corr_in_sample <- prot_ptm_corr_per_sample(prot_gct, ptm_norm_gct)
-  colnames(prot_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("prot_ptm_norm", prot_ptm_norm_corr_in_sample, except = "id.y")
+  colnames(prot_ptm_norm_corr_in_sample) <- add_prefix_to_series("prot_ptm_norm", colnames(prot_ptm_norm_corr_in_sample), except = "id.y")
   
   ptm_unnorm_ptm_norm_corr_in_sample <- ptm_corr_per_sample(ptm_gct, ptm_norm_gct)
-  colnames(ptm_unnorm_ptm_norm_corr_in_sample) <- add_prefix_to_colnames("ptm_unnorm_ptm_norm", ptm_unnorm_ptm_norm_corr_in_sample, except = "id.y")
+  colnames(ptm_unnorm_ptm_norm_corr_in_sample) <- add_prefix_to_series("ptm_unnorm_ptm_norm", colnames(ptm_unnorm_ptm_norm_corr_in_sample), except = "id.y")
 
   comb_in_corr <- merge(prot_ptm_unnorm_corr_in_sample, prot_ptm_norm_corr_in_sample, by = "id.y", all = TRUE)
   comb_in_corr <- merge(comb_in_corr, ptm_unnorm_ptm_norm_corr_in_sample, by = "id.y", all = TRUE)

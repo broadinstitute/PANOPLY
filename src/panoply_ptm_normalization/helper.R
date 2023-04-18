@@ -22,6 +22,7 @@ match_ptm_to_proteome <- function(ptm,
                                   proteome,
                                   accession_number = "accession_number",
                                   accession_numbers = "accession_numbers",
+                                  accession_sep = "|",
                                   try.all.accession.numbers = FALSE) {
   # Spectrum Mill specific (extensible to other search engines if function arguments are set appropriately):
   # if PTM accession number does not have match in the proteome, will try to match all accession numbers
@@ -45,12 +46,13 @@ swap_accession_numbers <- function(ptm.rdesc, prot.rdesc, accession_number,
 {
   # Matches ptm and proteome by accession number, and tries all possible ptm accession numbers if primary
   # accession number doesn't have proteome match
-  prot.rdesc.expanded <- prot.rdesc %>% separate_rows(!!as.name (accession_numbers), sep=accession_sep)
+  prot.rdesc.expanded <- prot.rdesc %>% separate_rows(!!as.name (accession_numbers), delim = accession_sep)
   
   for (row in c(1:nrow(ptm.rdesc))) {
     match <- which (prot.rdesc[,accession_number] == ptm.rdesc[row, accession_number])
     if(length(match) == 0){
       # first try to match ptm accession_numbers to protein primary ID
+      accession.numbers <- unlist(strsplit(PTM.rdesc[row,accession_numbers], accession_sep, fixed = TRUE))
       matches <- prot.rdesc[which(unlist (prot.rdesc[,accession_number]) %in% accession.numbers),]
       
       if (nrow(matches) >= 1) {
@@ -122,34 +124,17 @@ corr_df_from_list <- function(corr_store) {
   return(corr_df)
 }
 
-# TODO: replace with `add_prefix_to_series`
-add_prefix_to_colnames <- function(prefix, df, except = "") {
-  cols <- colnames(df)
-  new_cols <- c()
-  for (col in cols) {
-    if (col != except) {
-      new_col <- paste(prefix, col, sep = "-")
-    } else {
-      new_col <- col
-    }
-    new_cols <- c(new_cols, new_col)
-  }
-  
-  return(new_cols)
-}
-
 add_prefix_to_series <- function(prefix, series, except = "", sep = "-") {
-  rows <- series
-  new_rows <- c()
-  for (row in rows) {
-    if (row != except) {
-      new_row <- paste(prefix, row, sep = sep)
+  new_series <- c()
+  for (elem in series) {
+    if (elem != except) {
+      new_elem <- paste(prefix, elem, sep = sep)
     } else {
-      new_row <- row
+      new_elem <- elem
     }
-    new_rows <- c(new_rows, new_row)
+    new_series <- c(new_series, new_elem)
   }
   
-  return(new_rows)
+  return(new_series)
 }
 
