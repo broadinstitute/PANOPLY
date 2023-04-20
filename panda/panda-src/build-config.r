@@ -19,6 +19,7 @@
 
 ## Loading libraries needed to run this notebook
 library( cmapR );
+suppressMessages(library( dplyr )); # load quietly
 library( pacman );
 library( RColorBrewer )
 p_load( scales );
@@ -119,8 +120,7 @@ add_space <- function( arr ){
    return( arr )
 }
 
-trim <- function( x )
-  gsub( "^\\s+|\\s+$", "", x )
+trim <- function( x ) { gsub( "^\\s+|\\s+$", "", x ) }
 
 y2true <- function( prompt ) {
   # displays prompt and reads in y/n response
@@ -131,15 +131,56 @@ y2true <- function( prompt ) {
   return( flag )
 }
 
-printX <- function (type, line1, line2=NULL, line3=NULL) {
+### valid_choice() assesses whether an input (choice) is valid, according to default and a custom
+valid_choice <- function (choice, FUN=NULL, exit_commands = c("q", "Q", "quit", "QUIT", "exit", "EXIT"),
+                          allow_na=FALSE, allow_empty=FALSE, allow_zero=FALSE) {
+  flush.console() # automatically flush console
+  
+  if (is.null(FUN)) { # if no custom_function was provided
+    FUN = function(...) { return(TRUE)} # set FUN to automatically return TRUE
+  } else { FUN <- match.fun(FUN) } # coerce FUN input into function
+  
+  if (choice %in% exit_commands) return(1) # if quit command was triggered, return a NUMERIC true
+  else # otherwise, check that choice fulfils ALL of the following conditions:
+    return(all(!is.na(choice) || allow_na, # choice is not NA
+               choice!="" || allow_empty, # choice is not an empty string
+               if(!is.na(suppressWarnings(as.numeric(choice)))) {as.numeric(choice)!=0} || allow_zero, # if choice can be coerced into number, check if it's nonzero
+               FUN(choice))) # choice fulfills custom_condition function
+}
+
+
+# readline(), but only accepts valid inputs & recognizes exit-commands
+smart_readline <- function (prompt="$$ Input: ", trim_input=TRUE,
+                            custom_condition=NULL, custom_warning="Invalid input, try again.",
+                            exit_commands = c("q", "Q", "quit", "QUIT", "exit", "EXIT", "cancel", "CANCEL"),
+                            exit_message = "Quit condition triggered.", exit_function = NULL,
+                            allow_na=FALSE, allow_empty=FALSE, allow_zero=FALSE) {
+  if (!exists('trim')) { trim <- function( x ) { gsub( "^\\s+|\\s+$", "", x ) } } # define trim(), if missing
+  while (! valid_choice ( choice <- readline(prompt) %>% # prompt until the choice is valid
+                            { ifelse(trim_input, trim(.), . ) } , #trim choice, if toggled on
+                          FUN = custom_condition, # apply custom condition; this function should return a single TRUE/FALSE
+                          exit_commands = exit_commands,
+                          allow_na=allow_na, allow_empty=allow_empty, allow_zero=allow_zero)) { print(custom_warning) } 
+  if ( is.numeric(valid_choice(choice)) ) { # if we've triggered the quit condition
+    if (!is.null(exit_message)) { print(exit_message) } # print exit message
+    if (!is.null(exit_function)) { try(exit_function) } # run exit function
+    return(NULL) } # return NULL
+  
+  return(choice) # otherwise, return choice
+}
+
+printX <- function (type, line1, line2=NULL, line3=NULL, invisible=FALSE) {
   outX <- glue ("\n\n{sep}")
   outX <- glue ( "{outX}\n.. {type}. {line1}." )
   if (!is.null (line2)) outX <- glue ( "{outX}\n.. {type}. {line2}." )
   if (!is.null (line3)) outX <- glue ( "{outX}\n.. {type}. {line3}." )
   outX <- glue( "{outX}\n{sep}\n")
-  if (type != "ERROR") print (outX)
+  if (type != "ERROR" && !invisible) print (outX)
   invisible (outX)
 }
+
+stnd_custom_warning<-printX("ERROR", "Invalid input. Please try again") # standard exit message, for use with smart_readline()
+stnd_exit_message<-printX("CANCELLED","Quit condition triggered", invisible = TRUE) # standard exit message, for use with smart_readline()
 
 ### ====
 ### Section. Inputs
@@ -191,6 +232,7 @@ panda_initialize <- function (workspace.type) {
         break
       }
     }
+    
     if (ok) {
       printX ("INFO", glue("Previous {cfg} exists"),
               glue("Input file map, groups and colors restored"),
@@ -210,6 +252,17 @@ panda_initialize <- function (workspace.type) {
       }
       new.config <<- FALSE
     }
+    
+    if (!is.null(p$groups.colors)) { # if we have colors from the previous dataset
+      # printX ("INFO", glue ("Colorscheme found in previous {cfg}"))
+      # save old colors, in case they should be restored
+      groups.colors.old <<- list()
+      for ( group in names( p$groups.colors ) ) {
+        groups.colors.old[[group]] <<- list()
+        groups.colors.old[[group]]$vals <<- names (p$groups.colors[[group]])
+        groups.colors.old[[group]]$colors <<- unlist (p$groups.colors[[group]])
+      }
+    }
   }
   print (DONE)
 }
@@ -222,12 +275,16 @@ panda_datatypes <- function () {
 map_my_files <- function( ext ){
   mapped <- list()
   for ( file in ext ){
-    while (is.na (category <- as.numeric( readline( prompt = glue( ".. {file}: " ))))) {}
+    choice = smart_readline(prompt = glue( ".. {file}: " ), allow_zero=TRUE,
+                            custom_condition = function(category) { !is.na(as.numeric(category)) && between(as.numeric(category), 0, length(cat.map)) }, # check if input is numerical, and in the appropriate range
+                            custom_warning = printX("ERROR", glue("Invalid category index. Please enter an index in the range {paste(0, 'to', length(cat.map))}"), invisible = TRUE),
+                            exit_message = stnd_exit_message)
+    if (is.null(choice)) stop() # if we triggered a quit condition, stop
+    category <- as.numeric(choice)
     if ( category == 0 ){
       cat.map <- c( cat.map, readline( prompt = "\n$$ Enter category name:" ) )
       category <- length( cat.map )
-    } else if ( category < 0 || category > length(cat.map) )
-      stop( "\n\n{sep}\n.. ERROR. Invalid entry. Try again.." )
+    }
     mapped[[cat.map[category]]] <- file
   }
   return ( mapped )
@@ -236,13 +293,18 @@ map_my_files <- function( ext ){
 load_unzipped_files <- function(){
   setwd( home )
   ## locate uploaded file
-  input.zip.name <- readline(
-    prompt = "\n$$ Enter uploaded zip file name (test.zip): " )
-  input.zip <<- glue( "{google.bucket}/{input.zip.name}" )
-  zip.name <- tail( unlist( strsplit( input.zip, split = '/' ) ), 1 )
-  system( glue( "gsutil cp {input.zip} {home}/." ) )
-  if (!file.exists( zip.name )) 
-    stop ( printX ("ERROR", glue("Zip file {zip.name} not found in workspace bucket")) )
+  process_zip <- function(input.zip.name) {
+    input.zip <<- glue( "{google.bucket}/{input.zip.name}" )
+    system( glue( "gsutil cp {input.zip} {home}/." ) )
+    zip.name <- tail( unlist( strsplit( input.zip, split = '/' ) ), 1 )
+    return(zip.name)
+  }
+  input.zip.name <- smart_readline( prompt = "\n$$ Enter uploaded zip file name (test.zip): ",
+                                    custom_condition = function(input.zip.name) { file.exists( process_zip(input.zip.name) ) },
+                                    custom_warning = printX ("ERROR", glue("Zip file not found in workspace bucket")),
+                                    exit_message = stnd_exit_message) # ensure that zip file exists
+  if (is.null(input.zip.name)) stop() # if we triggered a quit condition, stop
+  zip.name = process_zip(input.zip.name)
   
   if( dir.exists( "input" ) )
     unlink( "input", recursive = T )
@@ -263,10 +325,6 @@ load_unzipped_files <- function(){
     typemap.gmt$ptmseaDB <<- process_file (defaults$ptmsea_db)
   if (is.null (typemap.gmt$gseaDB)) 
     typemap.gmt$gseaDB <<- process_file (defaults$gsea_db)
-  
-  # check if proteomics data should be normalized
-  normalize.prot <<- y2true ("Does proteomics data need normalization?")
-  filter.prot <<- y2true ("Does proteomics data need filtering?")
 }
 
 validate_annotation_table <- function (typemap.csv) {
@@ -338,6 +396,177 @@ panda_input <- function(){
   print( DONE )
 }
 
+
+### ====
+### Section. Validate Data Formatting and Toggle Preprocessing
+### ====
+
+validate_protein_id <- function(ome = 'proteome') {
+  suppressMessages(require(org.Hs.eg.db))
+  protein.id.col = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$protein_id_col
+  
+  gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  
+  if (!( protein.id.col %in% rdesc_names )) { # if the protein.id.col is missing
+    cat(printX("ERROR", glue("Protein ID column '{protein.id.col}' missing from {ome} GCT file '{typemap.gct[[ome]]}'
+                               ..        Please ensure that all proteomics datasets have a protein ID column in the row-description")))
+    stop() # quit
+  }
+  
+  # Print Valid Keytypes
+  keytype.opt <- AnnotationDbi::keytypes(org.Hs.eg.db)
+  cat(paste("VALID KEYTYPES:",
+            paste(glue( "{add_space( 1:length( keytype.opt ) )}: {keytype.opt}" ), collapse = '\n'),
+            sep, '\n',
+            sep = '\n'))
+  
+  # Prompt user for the Protein ID Keytype
+  valid_id = FALSE # initialize value
+  while (!valid_id) { # until we select a valid ID column
+    protein.id.type.index = smart_readline( prompt = glue("\n$$ Enter the keytype (from above) that corresponds to protein IDs in column '{protein.id.col}' (format '{rdesc[['id']][1]}'):"),
+                                            custom_condition = function(keytype) { keytype %in% 1:length(keytype.opt) },
+                                            custom_warning = printX ("ERROR", glue("Invalid keytype, please enter one of the keytypes above")),
+                                            exit_message = stnd_exit_message )
+    if(is.null(protein.id.type.index)) stop()
+    protein.id.type = keytype.opt[ as.numeric(protein.id.type.index) ]
+    
+    valid_id = TRUE # initialize value
+
+    tryCatch(
+      { keys = c( rdesc[[ protein.id.col ]] ,
+                  sub ("(.*?)\\..?", "\\1", rdesc[[ protein.id.col ]] ) );
+        suppressMessages(AnnotationDbi::select(org.Hs.eg.db, keys = keys, # check if they're valid symbols
+                                               keytype=protein.id.type, columns = "SYMBOL")) },
+      error = function(cond) {
+        cat(printX("ERROR", glue("Protein IDs in column '{protein.id.col}' are not valid {protein.id.type} IDs, please try again")))
+        valid_id <<- FALSE })
+  }
+  
+  printX("INFO", glue("Protein IDs in column '{protein.id.col}' are valid {protein.id.type} IDs"))
+  flush.console()
+  return(protein.id.type)
+}
+
+validate_flanking_sequence <- function() {
+  ome = 'phosphoproteome'
+  gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  cat(paste(glue("{toupper(ome)} COLUMNS:"),
+            paste( glue( "{add_space( 1:length( rdesc_names ) )}: {rdesc_names}" ), collapse = '\n'), 
+            sep, '\n',
+            sep = '\n'))
+  
+  valid_id = FALSE
+  while (!valid_id) { # until we select a valid flanking sequence column
+    flanking.seq.col.index = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} data that has Flanking Sequences:"),
+                                             custom_condition = function(column) { column %in% 1:length(rdesc_names) },
+                                             custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
+                                             exit_message = stnd_exit_message )
+    if( is.null(flanking.seq.col.index) ) stop()
+    flanking.seq.col = rdesc_names[ as.numeric(flanking.seq.col.index) ] # set global flanking.seq.col parameter
+    
+    # check if IDs are valid
+    if ( any( grepl("[A-z-]{7}[sty][A-z-]{7}", rdesc[[flanking.seq.col]]) ) ) { # check if ANY entries are valid flanking sequences
+      valid_id = TRUE
+    } else {
+      cat(printX("ERROR", glue("Entries in column '{flanking.seq.col}' are not valid flanking-sequences, please try again")))
+    }
+  }
+  
+  printX("INFO", glue("Valid flanking-sequences detected in '{flanking.seq.col}' column. PTM-SEA will be run"))
+  flush.console()
+  return(flanking.seq.col)
+}
+
+validate_gene_id <- function(ome) {
+  suppressMessages(require(org.Hs.eg.db))
+  gene.id.col.default = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$gene_id_col
+  
+  gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  
+  # Check for default gene.id.col
+  valid_id = TRUE # initialize value
+  if ( gene.id.col.default %in% rdesc_names ) { # if the default gene.id.col exists
+    printX("INFO", glue("Default Gene ID column '{gene.id.col.default}' detected in {toupper(ome)} data"))
+    tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col.default ]] , # check if they're valid symbols
+                                   keytype="SYMBOL", columns = "SYMBOL"),
+             error = function(cond) {
+               cat(printX("ERROR", glue("IDs in column '{gene.id.col.default}' are not valid HUGO Gene Symbols, please select a valid Gene ID column")))
+               valid_id <<- FALSE })
+  } else {
+    valid_id = FALSE
+  }
+  
+  # If the default wasn't found / wasn't valid, overwrite it
+  if ( !valid_id ) {
+    cat(paste0(sep, '\n'))
+    cat(paste(glue("{toupper(ome)} COLUMNS:"),
+              paste( glue( "{add_space( 1:length( rdesc_names ) )}: {rdesc_names}" ), collapse = '\n'), 
+              sep, '\n',
+              sep = '\n'))
+    
+    while ( !valid_id ) { # until we select a valid ID
+      gene.id.col.index = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} data that has HUGO Gene Symbols:"),
+                                          custom_condition = function(column) { column %in% 1:length(rdesc_names) },
+                                          custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
+                                          exit_message = stnd_exit_message )
+      if(is.null(gene.id.col.index)) stop()
+      gene.id.col = rdesc_names[[ as.numeric(gene.id.col.index) ]]
+      
+      # check if IDs are valid
+      valid_id = TRUE
+      tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col ]] ,
+                                     keytype="SYMBOL", columns = "SYMBOL"),
+               error = function(cond) {
+                 cat(printX("ERROR", glue("IDs in column '{gene.id.col}' are not valid HUGO Gene Symbols, please try again")))
+                 valid_id <<- FALSE }) # set valid to FALSE
+    }
+    
+    printX("INFO", glue("Using column '{gene.id.col}' as {gene.id.col.default} column for {toupper(ome)} data"))
+    gct@rdesc[[gene.id.col.default]] <- gct@rdesc[[ gene.id.col ]] # overwrite default gene.id.col with new gene.id.col
+    write.gct(gct, typemap.gct[[ome]], appenddim=FALSE) # overwrite RNA/CNA file
+  }
+  flush.console()
+  # nothing to return
+}
+
+panda_preprocessing <- function() {
+  new.config <<- TRUE
+  
+  ### check if proteomics data should be normalized / filtered
+  normalize.prot <<- y2true ("Does proteomics data need normalization?")
+  filter.prot <<- y2true ("Does proteomics data need filtering?")
+  
+  cat(paste0(sep, '\n'))
+  
+  ### Protein ID Type
+  protein.id.type <<- validate_protein_id()
+  
+  ### PTM-SEA / Flanking Sequence Column
+  if ( 'phosphoproteome' %in% names(typemap.gct) && !is.null(typemap.gmt) ) { # if we have phosphoproteome data
+    run.ptmsea <<- y2true("Phosphoproteome data detected. Should PTM-SEA be run?")
+    
+    if (run.ptmsea) 
+      flanking.seq.col <<- validate_flanking_sequence()
+  } else {
+    run.ptmsea <<- FALSE
+    flanking.seq.col <<- NULL
+  }
+  
+  
+  ### check for a HUGO Gene Symbol columns, in RNA and CNA
+  for (ome in intersect(c("rna", "cna"), names(typemap.gct)))
+    validate_gene_id(ome)
+  
+  print( DONE )
+}
+
+
 ### ====
 ### Section. Groups
 ### ====
@@ -360,7 +589,15 @@ select_groups_case <- function( all.groups ){
   groups.cols <- c()
   stmt <- glue( "\n$$ Enter comma separated indexes or ranges " )
   stmt <- glue( "{stmt}(1:2, 5, 9, 12:14): " )
-  selection <- readline( prompt = stmt )
+  
+  selection <- smart_readline( prompt = stmt,
+                               custom_condition = function(selection) {
+                                 unlist (strsplit (selection, split=',')) %>% trim() %>% # strsplit ranges and trim
+                                   grepl("^[0-9]+?(:[0-9]+?)?$", .) %>% all() }, # check that all ranges are in a valid format, i.e. number(s), or number(s):number(s)
+                               custom_warning = printX ("ERROR", glue("Invalid range formatting, please try again")),
+                               exit_message = stnd_exit_message) # ensure that zip file exists
+  if (is.null(selection)) stop() # if we triggered a quit condition, stop
+  
   for (s in unlist (strsplit (selection, split=','))) {
     range <- unlist (strsplit (s, split = ':' ))
     lwend <- as.numeric( range[1] )
@@ -393,7 +630,7 @@ verify_group_validity <- function( groups.cols, typemap.csv ){
   cont <- groups.cols.continuous <- c()
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
-    groups.vals <- unique( annot[[groups.cols[group.idx]]] )
+    groups.vals <- sort(unique( annot[[groups.cols[group.idx]]] ))
     if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
       # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
       # if column has > max.categories, drop from groups.cols, 
@@ -447,16 +684,22 @@ panda_groups <- function(){
       groups.cols <<- final.cols$groups.cols
       groups.cols.continuous <<- final.cols$groups.cols.continuous
     }
-  } 
-  
-  if (keep==FALSE) {
+  } else {
     all.groups  <<- display_all_groups( typemap.csv )
     flush.console ()  # without this, the display shows up after the next function
     panda_select_groups ()
   }
   
   display_validated_groups( groups.cols, groups.cols.continuous, groups=keep )
-  panda_colors_defaults (display=FALSE)  ## always set default colors automatically
+  
+  # set groups colors
+  if ( !is.null(groups.colors.old) && #old color scheme exists
+       y2true ("Color scheme found in previous config-file. Attempt to restore previous color scheme?") ) { #user would like to restore color scheme
+    groups.colors <<- restore_config_colors ( groups.colors.old, typemap.csv ) # restore old colors, to whatever extent is possible
+  } else {
+    groups.colors <<- set_default_colors( groups.cols, typemap.csv )  # set default colors automatically
+  }
+  
   print( DONE )
 }
 
@@ -465,7 +708,7 @@ panda_groups <- function(){
 ### Section. Colors
 ### ====
 
-display_default_colors <- function( groups.cols, groups.colors ){
+display_colors <- function( groups.cols, groups.colors ){
   par( cex.axis = 1.2 )
   par( mar = c( 0, 0, 0, 0 ) )
   par( pin = c( 3, 0.2 ) )
@@ -489,6 +732,14 @@ display_default_colors <- function( groups.cols, groups.colors ){
   }
 }
 
+panda_display_current_colors <- function() {
+  if (is.null(groups.colors)) {
+    printX ("WARNING", glue ("Color scheme is missing. Please run panda_set_default_colors() below, before running this block."))
+  } else {
+    display_colors( groups.cols, groups.colors )
+  }
+}
+
 set_default_colors <- function( groups.cols, typemap.csv ){
   annot <- read_annot()
   pair.colors <- brewer.pal( n = 12, name = "Paired" )
@@ -504,7 +755,7 @@ set_default_colors <- function( groups.cols, typemap.csv ){
   qual.count <- 1
   groups.colors <- list()
   for ( group in groups.cols  ) {
-    groups.vals <- unique( annot[[group]] )
+    groups.vals <- sort(unique( annot[[group]] ))
     groups.vals[is.na( groups.vals )] <- "NA"
     if( length( groups.vals ) == 2 || ( length( groups.vals ) == 3
                                         && "NA" %in% groups.vals ) ){
@@ -526,9 +777,32 @@ set_default_colors <- function( groups.cols, typemap.csv ){
   return( groups.colors )
 }
 
-panda_colors_defaults <- function(display=TRUE){
+restore_config_colors <- function( groups.colors.old, typemap.csv ){
+  annot <- read_annot() # read in annotations
+  
+  groups.colors <- list() # initialize groups.colors
+  for ( group in groups.cols ) {
+    groups.vals <- sort(unique( annot[[group]] )) # get / sort unique values
+    groups.vals[is.na( groups.vals )] <- "NA"
+    
+    # assign default colors to that group // initialize
+    groups.colors[[group]] <- set_default_colors( group , typemap.csv)[[group]]
+    
+    # if the group already existed, and some values already had colors assigned
+    if ( (group %in% names(groups.colors.old))  &&  any(groups.vals %in% groups.colors.old[[group]]$vals) ) {
+      # override those values 
+      ind = match(groups.vals, groups.colors.old[[group]]$vals) # indices of groups.colors.old values that appear in current data-- ordered as they should appear in the current data
+      groups.colors[[group]]$colors[ind] = unname(groups.colors.old[[group]]$colors[ind]) # use corresponding colors
+    }
+  }
+  
+  return( groups.colors )
+}
+
+
+panda_set_default_colors <- function(display=TRUE) {
   groups.colors <<- set_default_colors( groups.cols, typemap.csv )
-  if (display) display_default_colors( groups.cols, groups.colors )
+  if (display) display_colors( groups.cols, groups.colors )
 }
 
 panda_colors_edit_index <- function( groups.colors ){
@@ -540,34 +814,75 @@ panda_colors_edit_index <- function( groups.colors ){
   }
 }
 
-change_default_colors <- function( groups.cols, all.groups, groups.colors ){
+change_current_colors <- function( groups.cols, all.groups, groups.colors, byIndex = TRUE ){
+  color_exit_message = printX("CANCELLED","Prior changes have been saved", invisible = TRUE)
   new.config <<- TRUE
   groups.flag <- TRUE
   while ( groups.flag ){
-    stmt <- glue( "\n$$ Enter group index for color modification: " )
-    change.group <- groups.cols[as.numeric( readline( prompt = stmt ) )]
-    ## iterate over values for group
-    value.flag = T
-    while( value.flag ){
-      prompt.stmt <- glue( "\n$$ Enter value index: " )
-      change.value <- as.numeric( readline( prompt = prompt.stmt ) )
-      change.color <- trim( as.character(
-        readline( prompt = "\n$$ Enter color hex: " ) ) )
-      if ( substring( change.color, 1, 1 ) != '#'
-           || nchar( change.color ) != 7 )
-        stop( glue( "\n\n{sep}\n.. ERROR. Invalid color. Try Again.." ) )
-      groups.colors[[change.group]]$colors[change.value] <- change.color
-      value.flag <- y2true( glue("\n$$ Continue editing colors for {change.group}?") )
+    ### Prompt for Group Index
+    choice = smart_readline(prompt = "\n$$ Enter group index for color modification: ",
+                            custom_condition = function(choice) {!is.na(groups.cols[as.numeric(choice)])},  # check if valid group index
+                            custom_warning = printX("ERROR", glue("Invalid group index. Please enter an index in the range {paste(1, 'to', length(groups.colors))}")),
+                            exit_message = color_exit_message, exit_function = break)
+    change.group <- groups.cols[as.numeric(choice)] # set change.group according to choice
+
+    if (byIndex) { # if we are inputting colors by index
+      value.flag = T # initialize value.flag
+      while( value.flag ){
+        ### Prompt for Value Index
+        choice = smart_readline(prompt = "\n$$ Enter value index: ",
+                                custom_condition = function (choice) {!is.na(groups.colors[[change.group]]$colors[as.numeric(choice)])}, # check if valid value index, within change.group
+                                custom_warning = printX("ERROR", glue("Invalid value index for {change.group}. Please enter an index in the range {paste(1, 'to', length(groups.colors[[change.group]]))}")),
+                                exit_message = NULL, exit_function = break)
+        change.value <- as.numeric(choice)
+        
+        ### Prompt for Color Hexcode
+        choice = smart_readline(prompt = "\n$$ Enter color hex: ",
+                                custom_condition = function(choice) {grepl("^#?[A-Fa-f0-9]{6}$", choice)}, # check if entry is valid HEX code
+                                custom_warning = printX("ERROR", "Invalid hex color. Please try again"),
+                                exit_message = NULL, exit_function = break)
+        change.color <- choice
+        # if change.color is a valid hex code, but has no # symbol, add it.
+        if ( grepl("^[A-Fa-f0-9]{6}$", change.color ) )  { change.color <- paste0("#",change.color) }
+        
+        ### Modify Color
+        groups.colors[[change.group]]$colors[change.value] <- change.color 
+        
+        ### Check whether another value in this group should be changed
+        value.flag <- y2true( glue("\n$$ Continue editing colors for {change.group}?") )
+      }
+    } else {
+      ### Prompt for Color-Hexcode Vector
+      nvals = length(groups.colors[[change.group]]$colors) # number of elements required for groups.colors vector
+      rnd_hex_codes <- function(n) { # generates n random hex code. not important. only used to generate example-syntax for the custom_warning below
+        hexdigits = "abcdefABCDEF0123456789" %>% strsplit(., "") %>% unlist()
+        hexcodes = replicate(n, paste0("#", paste0(sample(hexdigits, 6), collapse="")))
+        return(hexcodes)
+      } 
+      choice = smart_readline(prompt = paste0("\n$$ ", glue("Updating all colors for {change.group}. Values are {paste(groups.colors[[change.group]]$vals, collapse=', ')}."),
+                                              "\n$$ ", glue("Enter {nvals} hex colors, separated by commas: " )),
+                              custom_condition = function(choice) {
+                                choice %>% gsub(" ","", .) %>% # remove whitespace
+                                  strsplit(., split=",") %>% .[[1]] %>% # split into vector
+                                  lapply(., function(ch) grepl("^#[A-Fa-f0-9]{6}$", ch)) %>% # every input is a valid hex code (must have #)
+                                  all(length(.)==nvals, .) },
+                              custom_warning = printX("ERROR", glue("Invalid formatting. Please enter {nvals} hex codes, separated by commas (e.g. {paste(rnd_hex_codes(nvals), collapse=', ')})")),
+                              exit_message = color_exit_message, exit_function = break)
+      change.color <- choice %>% gsub(" ","", .) %>% # remove whitespace
+        strsplit(., split=",") %>% .[[1]]
+      
+      groups.colors[[change.group]]$colors <- change.color
     }
     groups.flag <- y2true("\n$$ Continue modifying defaults for other groups?")
   }
-  display_default_colors( groups.cols, groups.colors )
+  
+  display_colors( groups.cols, groups.colors ) # display colors
   return( groups.colors )
 }
 
-panda_colors_edit <- function(){
-  groups.colors <<- change_default_colors(
-    groups.cols, all.groups, groups.colors )
+panda_colors_edit <- function( byIndex = TRUE ){
+  groups.colors <<- change_current_colors(
+    groups.cols, all.groups, groups.colors, byIndex = byIndex )
   print( DONE )
 }
 
@@ -697,7 +1012,7 @@ define_sample_sets <- function( all.groups, typemap.csv ){
   sample.sets <- list()
   sample.sets$all$fil_col <- "Type"
   sample.sets$all$fil_val <- glue(
-    "{paste0( unique( annot[[sample.sets$all$fil_col]] ), collapse = ';' )}" )
+    "{paste0( sort(unique( annot[[sample.sets$all$fil_col]] )), collapse = ';' )}" )
   # add pathway databases and parameters file as set-specific parameters
   for (x in names (typemap.gmt))  
     sample.sets$all[[x]] <- typemap.gmt[[x]]
@@ -710,20 +1025,39 @@ define_sample_sets <- function( all.groups, typemap.csv ){
   while( set.flag ){
     prompt.stmt <- glue( "{sep}\n$$ Enter set name: " )
     name <- as.character( readline( prompt = prompt.stmt ) )
-    fil_col <- as.character( readline(
-      prompt = "$$ Filter samples based on this column. Enter name: " ) )
-    if ( !( fil_col %in% all.groups ) )
-      stop( "\n\n{sep}\n.. ERROR. Invalid column entry. Try Again." )
-    values <- unique( annot[[fil_col]] )
+    
+    fil_col <- smart_readline(prompt = "$$ Filter samples based on this column. Enter name: ",
+                              custom_condition = function(fil_col) { ( fil_col %in% all.groups ) }, # check if input is a valid column
+                              custom_warning = printX("ERROR", glue("Invalid column entry, please try Again"), invisible = TRUE),
+                              exit_message = NULL,
+                              exit_function = ifelse(y2true("\n$$ Continue adding more sets?"),
+                                                     {flush.console(); next},
+                                                     {flush.console(); printX("QUITTING", "Prior changes have been saved"); break}) )
 
-    select.value.msg <- "$$ Enter one or more values from above."
+    # fil_col <- as.character( readline(
+    #   prompt = "$$ Filter samples based on this column. Enter name: " ) )
+    # if ( !( fil_col %in% all.groups ) )
+    #   stop( "\n\n{sep}\n.. ERROR. Invalid column entry. Try Again." )
+    values <- sort(unique( annot[[fil_col]] ))
+
+    select.value.msg <- "$$ Enter one or more values from above, separated by semicolons"
     prompt.stmt <- glue( "{paste0( values, collapse = ', ' )}" )
     prompt.stmt <- glue( ".. Values: {prompt.stmt}\n{select.value.msg}" )
-    prompt.stmt <- glue( "{prompt.stmt} (Tumor or LumA;LumB): " )
-    fil_val <- trim( as.character( readline( prompt = prompt.stmt ) ) )
+    prompt.stmt <- glue( "{prompt.stmt} (e.g. {sample(values,1)}")
+    prompt.stmt <- paste0(prompt.stmt, ifelse( length(values)>1 ,
+                                               paste0( ', or ', paste0(sample(values,2), collapse=';'), ")."),
+                                               ').')  )
+    
+    
+    fil_val <- smart_readline(prompt = prompt.stmt,
+                              custom_condition = function(fil_val) { unlist (strsplit (fil_val, split=';')) %in% values %>% all() }, # check if all fil_val are in values
+                              custom_warning = printX("ERROR", glue("Value entered is incorrect, please try again"), invisible = TRUE),
+                              exit_commands = c("quit","QUIT","exit","EXIT","exit","EXIT"), exit_message = NULL, # only
+                              exit_function = ifelse(y2true("\n$$ Continue adding more sets?"),
+                                                     {flush.console(); next},
+                                                     {flush.console(); printX("QUITTING", "Prior changes have been saved"); break}) )
     fil_val <- unlist (strsplit (fil_val, split=';'))
-    if ( !( all (fil_val %in% values) ) )
-      stop( glue( "\n\n{sep}\n.. ERROR. Value entered is incorrect." ) )
+    
     sample.sets[[name]]$fil_col <- fil_col
     sample.sets[[name]]$fil_val <- fil_val
 
@@ -769,6 +1103,8 @@ panda_finalize <- function (internal=FALSE) {
   # perform sanity checks (in case this function is called without going through other steps)
   if (!exists ("typemap.csv") || is.null (typemap.csv$annotation))
     stop( glue( "\n\n{sep}\n.. ERROR. Sample annotation file missing. Run panda_input().\n{sep}\n" ) )
+  if (!exists ("normalize.prot") || !exists ("filter.prot") || !exists ("run.ptmsea") || !exists ("protein.id.type") ) 
+    stop( glue( "\n\n{sep}\n.. ERROR. Data validation and preprocessing is incomplete. Run panda_preprocessing()." ) )
   if (!exists ("groups.cols") || length (groups.cols) == 0) 
     stop( glue( "\n\n{sep}\n.. ERROR. No groups selected. Run panda_groups()." ) )
   if (!exists ("sample.sets") || length (sample.sets) == 0) 
@@ -801,6 +1137,8 @@ panda_finalize <- function (internal=FALSE) {
   lines$sample.sets <- sample.sets
   lines$normalize.proteomics <- normalize.prot
   lines$filter.proteomics <- filter.prot
+  lines$run.ptmsea <- run.ptmsea # needs to be integrated ?
+  lines$flanking.seq.col <- flanking.seq.col # overwrite panoply_preprocess_gct:seqwin_column ?
   lines$cosmo.params <- cosmo.params
   
   # output config for panda and copy to google bucket
@@ -818,7 +1156,7 @@ panda_finalize <- function (internal=FALSE) {
   original.params <- glue ("{home}/input/{typemap.yml$parameters}.orig")
   params <- glue ("{home}/input/{typemap.yml$parameters}")
   if (! file.exists (original.params)) file.copy (params, original.params)
-  catcmd <- glue ("cat {cfg} {original.params} > {params}")
+  catcmd <- glue ("cat {cfg} {original.params} > {params}") # system command to concatenate config.yaml file, with typemap.yml$parameters file
   system (catcmd)
   if (!internal) print( DONE )
 }
