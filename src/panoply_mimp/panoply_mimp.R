@@ -1,17 +1,19 @@
-library(rmimp)
-library(seqinr)
-library(dplyr)
-library(tidyr)
-library(tibble)
-library(cmapR)
-library(readr)
-library(S4Vectors)
-library(data.table)
+library(pacman)
+
+p_load(rmimp)
+p_load(seqinr)
+p_load(dplyr)
+p_load(tidyr)
+p_load(tibble)
+p_load(cmapR)
+p_load(readr)
+p_load(S4Vectors)
+p_load(data.table)
 library(ComplexHeatmap)
-library(circlize)
-library(stringr)
-library(yaml)
-library(maftools)
+p_load(circlize)
+p_load(stringr)
+p_load(yaml)
+p_load(maftools)
 
 args <- commandArgs(TRUE)
 
@@ -21,7 +23,8 @@ args <- commandArgs(TRUE)
 #   "/Users/kpham/Desktop/mutation_ptm/luad-v1.3/luad-comb-v1.3-phosphoproteome-filtered-combined-bridging-batch-correct.gct",
 #   "/Users/kpham/Desktop/mutation_ptm/Gencode.v34.pc_translations_clean3nr.fasta",
 #   "/Users/kpham/Desktop/mutation_ptm/MIMP/ids.RData",
-#   "/Users/kpham/Desktop/mutation_ptm/MIMP/master-parameters-mimp.yaml"
+#   "/Users/kpham/Desktop/mutation_ptm/MIMP/master-parameters-activedriver-mimp.yaml",
+#   "/Library/Frameworks/R.framework/Versions/4.2/Resources/library/rmimp/extdata/kinase_individual_human_experimental_with_Cantley_kinome_normalized_zero.mimp"
 # )
 
 mut_data_path = as.character(args[1])
@@ -29,6 +32,13 @@ phospho_path = as.character(args[2])
 fasta_path = as.character(args[3])
 ids_path = as.character(args[4])
 yaml_file = as.character(args[5])
+if (length(args) >= 6) {
+  kinase_model_path = as.character(args[6])
+  print(paste("kinase_model_path:", kinase_model_path))
+} else {
+  kinase_model_path = NULL
+}
+
 
 yaml_params = read_yaml(yaml_file)
 groups_file_path = yaml_params$panoply_mimp$groups_file_path
@@ -73,10 +83,10 @@ if (search_engine == "SpectrumMill"){
 
 # TODO replace: source helper functions
 source("/prot/proteomics/Projects/PGDAC/src/mimp_helper_functions.R")
-# source("/Users/kpham/Desktop/PANOPLae/PANOPLY_activedriver_mimp/src/panoply_mimp/mimp_helper_functions.R")
+# source("/Users/kpham/Desktop/PANOPLae/PANOPLY_activedriver_mimp/hydrant/tasks/panoply_mimp/panoply_mimp/src/mimp_helper_functions.R")
 
 run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_mat, 
-                               phosphosite_col, mutation_AA_change_colname){
+                               phosphosite_col, mutation_AA_change_colname, kinase_model_path=NULL){
   
   # set up empty lists/data frames to save or concatenate loop output
   log_no_mut = "Samples with no mutations (MIMP not run): \n"
@@ -155,7 +165,12 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
       }
       
       # Run MIMP (sample-specific)
-      results_i = mimp(muts = df_mut, seqs = seqdata, psites = df_phospho, display.results = TRUE)
+      if (is.null(kinase_model_path)) {
+        results_i = mimp(muts = df_mut, seqs = seqdata, psites = df_phospho, display.results = TRUE)
+      } else {
+        results_i = mimp(muts = df_mut, seqs = seqdata, psites = df_phospho, display.results = TRUE, model.data = kinase_model_path)
+      }
+      
       
       if (!is.null(results_i)){
         
@@ -232,10 +247,10 @@ run_mimp_samplewise = function(phospho_cid, mut_data, seqdata, phos_rdesc, phos_
 
 run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
                     mut_data_path, ids_path, mutation_type_col, transcript_id_col, 
-                    phosphosite_col, mutation_AA_change_colname){
+                    phosphosite_col, mutation_AA_change_colname, kinase_model_path){
 
-  # TODO rm
-  # setwd("/Users/kpham/Desktop/mutation_ptm/MIMP")
+  # rm
+  # ("/Users/kpham/Desktop/mutation_ptm/MIMP")
   dir.create("mimp_results_dir")
   setwd("mimp_results_dir")
   dir.create("results_by_sample")
@@ -270,10 +285,11 @@ run_mimp = function(fasta_path, phospho_path, search_engine, protein_id_col,
 
   # prepare sample-wise mutation and phospho dfs, and then run mimp on each sample
   heatmap_df = run_mimp_samplewise(phos_cid, mut_data, seqdata, phos_rdesc, phos_mat,
-                                   phosphosite_col, mutation_AA_change_colname)
+                                   phosphosite_col, mutation_AA_change_colname, kinase_model_path)
 
   # create heatmap of predicted kinases results
   if(nrow(heatmap_df)>0){
+    print("if(nrow(heatmap_df)>0)")
     generate_mimp_heatmap(heatmap_df, groups_file_path, groups_file_SampleID_column)
   }
   
@@ -289,4 +305,5 @@ mimp_results = run_mimp(fasta_path = fasta_path,
                         mutation_type_col = mutation_type_col, 
                         transcript_id_col = transcript_id_col,
                         phosphosite_col = phosphosite_col, 
-                        mutation_AA_change_colname = mutation_AA_change_colname)
+                        mutation_AA_change_colname = mutation_AA_change_colname,
+                        kinase_model_path = kinase_model_path)

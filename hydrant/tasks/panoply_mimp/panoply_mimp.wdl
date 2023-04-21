@@ -1,4 +1,5 @@
 task panoply_mimp {
+    Int? num_cpus
     Float? ram_gb
     Int? local_disk_gb
     Int? num_preemptions
@@ -9,6 +10,7 @@ task panoply_mimp {
     File ids_file
     File master_yaml
     String output_prefix
+    File? kinase_model
 
     File? groups_file_path
 	String? search_engine
@@ -36,7 +38,7 @@ task panoply_mimp {
         ${"--mimp_sample_id_col " + sample_id_col} \
         ${"--mimp_transcript_id_col " + transcript_id_col}
 
-		/usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml"
+        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml" "${kinase_model}"
 
 		tar -czvf "${output_prefix}_mimp_output.tar" mimp_results_dir
 
@@ -47,7 +49,8 @@ task panoply_mimp {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_mimp:latest"
+        docker : "broadcptacdev/activedriver_mimp:latest"
+        cpu: "${if defined(num_cpus) then num_cpus else '8'}"
         memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"

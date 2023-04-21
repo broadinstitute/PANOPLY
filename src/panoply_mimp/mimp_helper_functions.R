@@ -272,12 +272,13 @@ mimp_heatmap_function = function(df, kinase_column, groups_file_path, groups_fil
     t()
   write.csv(heatmap_df, paste("kinase_rewiring_events_matrix", kinase_column, "level.csv", sep = "_"))
   
-  results.max = max(df$log_ratio, na.rm = TRUE)
-  results.min = min(df$log_ratio, na.rm = TRUE)
+  results.max = max(df$log_ratio[is.finite(df$log_ratio)], na.rm = TRUE)
+  results.min = min(df$log_ratio[is.finite(df$log_ratio)], na.rm = TRUE)
   
   color = colorRamp2(c(results.min, 0, results.max), c("blue", "white", "red"))
   
   if (is.null(groups_file_path)){
+    print("if (is.null(groups_file_path))")
     heatmap_all = Heatmap(heatmap_df, cluster_rows = FALSE, cluster_columns = FALSE, 
                           col = color, column_title = "Sample", row_title = kinase_column,
                           column_title_side = "bottom", column_title_gp = gpar(fontsize = 12),
@@ -309,7 +310,7 @@ mimp_heatmap_function = function(df, kinase_column, groups_file_path, groups_fil
                                      annotation_name_gp = gpar(fontsize=10))
     
     heatmap_all = Heatmap(heatmap_df, top_annotation=annotation, cluster_rows = FALSE, cluster_columns = FALSE, 
-                          col = color, column_title = "Sample", row_title = kinase_column,
+                          col = color, column_title = "Sample", row_title = kinase_column, 
                           column_title_side = "bottom", column_title_gp = gpar(fontsize = 12),
                           row_title_side = "left", row_title_gp = gpar(fontsize = 12),
                           row_names_side = "left", row_names_gp = gpar(fontsize=10),
@@ -355,6 +356,7 @@ generate_mimp_heatmap = function(full_results, groups_file_path, groups_file_Sam
     filter(!is.na(log_ratio)) %>%
     mutate(kinase_gene_mut = paste(kinase, protein_id, mutation, sep = "_"))
   if (nrow(full_results_edit)>0){
+    print("if (nrow(full_results_edit)>0)")
     #generate kinase-level heatmap
     mimp_heatmap_function(full_results_edit, "kinase", groups_file_path, groups_file_SampleID_column)
     

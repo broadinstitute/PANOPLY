@@ -10,7 +10,7 @@ task panoply_activedriver {
     File master_yaml
     String output_prefix
 
-	String? search_engine
+	String? search_engine  # TODO add these to parameter-manager
 	String? group_by_column
     String? residues
 	String? mutation_AA_change_colname
@@ -32,7 +32,7 @@ task panoply_activedriver {
     }
 
     runtime {
-        docker: "broadcptacdev/panoply_activedriver:latest"
+        docker: "broadcptacdev/activedriver:latest"
         cpu: "${if defined(num_cpus) then num_cpus else '8'}"
         memory: "${if defined(ram_gb) then ram_gb else '32'}GB"
         disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
