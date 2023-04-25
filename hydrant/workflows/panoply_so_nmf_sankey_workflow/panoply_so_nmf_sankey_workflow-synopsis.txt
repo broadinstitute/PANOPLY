@@ -1,1 +1,1 @@
-Creation of sankey diagrams and a report, based on single-ome NMF clustering and (optionally) multiomics clustering.
+Sankey diagram and report workflow, with so-nmf and (optionally) mo-nmf input

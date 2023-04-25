@@ -1,1 +1,1 @@
-Report generation method for comparing nmf clustering results between single-omes.
+Report generation method, comparing nmf clustering results between single-omes.
