@@ -77,7 +77,7 @@ task panoply_mo_nmf_pre {
 
 
         ## run balanace filter
-        if [ ${default="false" balance_omes} = false ];then
+        if [ ${default="false" balance_omes} = true ];then
         
                 /home/pgdac/src/filter-gcts-to-balance-omes.R -d . -t ${default="0.01" tol} -v ${default="0.9" var} -z ${default="rowcol" zscore_mode}
                
