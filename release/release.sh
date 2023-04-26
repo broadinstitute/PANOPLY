@@ -30,9 +30,9 @@ display_usage() {
 while getopts "v:fluh" opt; do
     case $opt in
         v) VER="$OPTARG";;
-        f) f_flag="true";;
-        l) l_flag="true";;
-        u) u_flag="true";;
+        f) f_flag=TRUE;;
+        l) l_flag=TRUE;;
+        u) u_flag=TRUE;;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
@@ -58,7 +58,7 @@ prod_all="PANOPLY_Production_Modules_v$VER"
 
 # Before beginning, check production workspaces do not exist
 if ! fissfc space_exists -w $prod_all -p $proj -q; then
-  if [[ $f_flag == "true" ]]; then
+  if [[ $f_flag ]]; then
     echo -e "$warn Workspace $prod_all exists. Existing methods will be replaced."
   else
     echo -e "$err Workspace $prod_all exists. Delete workspace or use -f option."
@@ -66,7 +66,7 @@ if ! fissfc space_exists -w $prod_all -p $proj -q; then
   fi
 fi
 if ! fissfc space_exists -w $prod -p $proj -q; then
-  if [[ $f_flag == "true" ]]; then
+  if [[ $f_flag ]]; then
     echo -e "$warn Workspace $prod exists. Existing methods will be replaced."
   else
     echo -e "$err Workspace $prod exists. Delete workspace or use -f option."
@@ -94,13 +94,17 @@ git push origin $rel_id
 ## ** Rebuild/update all docker images in $DEV
 # Build / update panoply_libs
 cd $panoply/hydrant
-if [[ $l_flag == "true" ]]; then
+if [[ $l_flag ]]; then
   ./setup.sh -t panoply_libs -n $DEV -y -b -u 
+else
+  echo -e "$not Docker for panoply_libs will not be rebuilt."
 fi
 
 # Build panoply_utils and panoply_common
-if [[ $u_flag == "true" ]]; then
+if [[ $u_flag || $l_flag ]]; then
   ./setup.sh -t panoply_utils -n $DEV -y -b -u 
+else
+  echo -e "$not Docker for panoply_utils will not be rebuilt."
 fi
 ./setup.sh -t panoply_common -n $DEV -y -b -u -x
 
