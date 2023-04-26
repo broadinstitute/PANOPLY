@@ -261,22 +261,6 @@ fi
 
 
 
-## DIRECTORY CREATION / CLEANUP
-release_dir=version-$release_tag
-release_ver=release-$release_tag
-snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
-
-if [[ -z $patch_flag ]]; then # during full release
-  mkdir -p $release_dir # create release directory
-  rm -f $snapshots # delete all snapshots
-  yes | docker system prune --all
-else # during patch-fix
-  for mod in "${modules[@]}"; do
-    sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
-    rm -r ./$release_dir/$mod # delete relevant version folders
-  done
-fi
-
 
 ## DOCKER HUB
 echo -e "$not Logging in to Docker Hub"
@@ -310,6 +294,23 @@ createWkSpace() {
 createWkSpace $wkspace_all 
 # workspace for pipelines only
 createWkSpace $wkspace_pipelines 
+
+
+## DIRECTORY CREATION / CLEANUP
+release_dir=version-$release_tag
+release_ver=release-$release_tag
+snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
+
+if [[ -z $patch_flag ]]; then # during full release
+  mkdir -p $release_dir # create release directory
+  rm -f $snapshots # delete all snapshots
+  yes | docker system prune --all
+else # during patch-fix
+  for mod in "${modules[@]}"; do
+    sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
+    rm -r ./$release_dir/$mod # delete relevant version folders
+  done
+fi
 
 
 ## TASKS
