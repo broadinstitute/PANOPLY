@@ -27,6 +27,8 @@ display_usage() {
   echo "-r | string | Workspace project id"
   echo "-w | string | Workspace to populate with all methods"
   echo "-y | string | Workspace to populate pipeline/workflow methods"
+  echo "-P | string | Patch flag. When toggled, only specified modules will be rebuilt."
+  echo "        [...] Trailing arguments will be interpretted as modules to patch-fix. Should only be used alongside -P flag."
   echo "-h | flag   | Print Usage"
   exit
 }
@@ -44,7 +46,7 @@ replaceDockerInWdl() {
   # sed -i '' "s|$wdl_dns/$task:$wdl_tag|$new_ns/$task:$new_tag|g" $task.wdl
   
   # need to handle WDLs where the docker name(s) do not match $task
-  sed -i -e "s|\(docker.*\)\"$old_ns/\(panoply_.*\):.*\"|\1\"$new_ns/\2:$new_tag\"|g" $task.wdl
+  sed -i'' -e "s|\(docker.*\)\"$old_ns/\(panoply_.*\):.*\"|\1\"$new_ns/\2:$new_tag\"|g" $task.wdl
   rm $task.wdl-e
 }
 
@@ -56,7 +58,7 @@ replaceWdlImports() {
   for mod in $modules
   do
     new_snap=$( grep ":$mod/" $repl )
-    sed -i -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
+    sed -i'' -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
   done
   rm $wdl_f-e
 }
@@ -192,7 +194,7 @@ installMethod() {
 }
 
 
-while getopts ":p:T:N:r:w:y:h" opt; do
+while getopts ":p:T:N:r:w:y:Ph" opt; do
     case $opt in
         p) pull_dns="$OPTARG";;
         T) release_tag="$OPTARG";;
@@ -200,6 +202,7 @@ while getopts ":p:T:N:r:w:y:h" opt; do
         r) project="$OPTARG";;
         w) wkspace_all="$OPTARG";;
         y) wkspace_pipelines="$OPTARG";;
+        P) patch_flag=TRUE;;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
@@ -232,6 +235,30 @@ fi
 if [[ -z $wkspace_pipelines ]]; then
   release_dns=$pull_dns
 fi
+
+if [[ -n $patch_flag ]]; then
+  # parse modules argument
+  shift "$(( OPTIND - 1 ))" # discard arguments parsed by getopts
+  modules=($@) # parse remaining arguments as modules
+  
+  #validate modules argument
+  if [[ -z $modules ]]; then
+    echo -e "$err No modules specified. Exiting.."
+    exit 1
+  fi
+  modules_all=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
+  for mod in "${modules[@]}"; do # check that all input modules are valid tasks
+    if ! [[ ${modules_all[@]} =~ $mod ]]; then
+      echo -e "$err Invalid module $mod. Module must match a task from ../hydrant/tasks"
+      exit 1
+    fi
+  done
+
+  echo -e "$not Patching module(s) ${modules[@]} for release-$release_tag."
+  echo -e "$not All workflows will be rebuilt."
+  echo -e "$not Documentation will not be rereleased."
+fi
+
 
 
 
@@ -269,16 +296,27 @@ createWkSpace $wkspace_all
 createWkSpace $wkspace_pipelines 
 
 
-## TASKS
+## DIRECTORY CREATION / CLEANUP
 release_dir=version-$release_tag
 release_ver=release-$release_tag
-modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) )
 snapshots="$panoply/release/$release_dir/snapshot-ids.txt"
 
-# create release directory and clean up
-mkdir -p $release_dir
-rm -f $snapshots
-yes | docker system prune --all
+if [[ -z $patch_flag ]]; then # during full release
+  mkdir -p $release_dir # create release directory
+  rm -f $snapshots # delete all snapshots
+  yes | docker system prune --all
+else # during patch-fix
+  for mod in "${modules[@]}"; do
+    sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
+    rm -r ./$release_dir/$mod # delete relevant version folders
+  done
+fi
+
+
+## TASKS
+if [[ -z $patch_flag ]]; then # if full release
+  modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) ) # rebuild all modules
+fi # otherwise, modules are pulled from trailing arguments ( see display_usage() )
 
 for mod in "${modules[@]}"
 do
@@ -319,9 +357,15 @@ done
 
 
 ## WORKFLOWS
-workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename ) )
+workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename |  grep -vE 'panoply_main|panoply_unified_workflow' ) ) # remove panoply_main and panoply_unified_workflow
+workflows+=( panoply_main panoply_unified_workflow ) # add to end of array, to ensure that these are built last
 for wk in "${workflows[@]}"
 do
+  if [[ -n $patch_flag ]]; then
+    sed -i'' -e "/:$wk\/versions/d" ./$release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
+    rm -r ./$release_dir/$wk # delete relevant version folders
+  fi
+
   echo -e "$not Processing workflow $wk"
 
   mkdir -p $release_dir/$wk
@@ -340,9 +384,10 @@ done
 
 
 ## DOCUMENTATION
-mkdir -p $release_dir/docs
-for f in $generic_docs
-do
-  cp $doc_dir/$f $release_dir/docs/$f
-done
-
+if [[ -z $patch_flag ]]; then # run during full release, NOT during patch fixes
+  mkdir -p $release_dir/docs
+  for f in $generic_docs
+  do
+    cp $doc_dir/$f $release_dir/docs/$f
+  done
+fi
