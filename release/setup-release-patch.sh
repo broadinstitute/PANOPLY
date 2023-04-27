@@ -15,7 +15,7 @@ modules_all=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) 
 
 ### This script is for PATCH FIXING a release
 ### It executes setup-release.sh with standard dev parameters and the -P patch-fix flag
-### NOTE: no analyses are performed WITHIN this script; it simply validates parameters and executes setup-release.sh
+### NOTE: no analyses are performed WITHIN this script; it JUST a wrapper for setup-release.sh
 
 display_usage() {
   echo "usage: ./setup-release-patch.sh -v <VER> [-h]"
