@@ -21,8 +21,6 @@ workflow panoply_so_nmf_sankey_workflow {
   ## generate report with sankey diagrams
   call so_nmf_report_wdl.panoply_so_nmf_sankey_report as nmf_sankey_report {
     input:
-      so_nmf_tar = so_nmf_tar,
-      mo_nmf_tar = mo_nmf_tar,
       sankey_tar = nmf_sankey.tar_out,
       label = label
   }
