@@ -1,0 +1,27 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.disk_space": "",
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.label": "",
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.memory": "",
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.mo_nmf_tar": "",
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.num_preemptions": "",
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.num_threads": "",
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.so_nmf_tar": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_so_nmf_sankey",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_so_nmf_sankey/3",
+    "methodVersion": 3,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_so_nmf_sankey",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_so_nmf_sankey_workflow.panoply_so_nmf_sankey.tar_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

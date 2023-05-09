@@ -1,0 +1,29 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_sampleqc_workflow.panoply_sampleqc.corThreshold": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.disk_space": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.memory": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.num_preemptions": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.num_threads": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.outFile": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.tarball": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.type": "",
+    "panoply_sampleqc_workflow.panoply_sampleqc.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_sampleqc",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_sampleqc/16",
+    "methodVersion": 16,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_sampleqc",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_sampleqc_workflow.panoply_sampleqc.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

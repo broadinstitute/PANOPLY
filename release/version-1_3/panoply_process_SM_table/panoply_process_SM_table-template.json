@@ -1,0 +1,49 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_process_SM_table.input_ssv": "",
+    "panoply_process_SM_table.job_identifier": "",
+    "panoply_process_SM_table.norm.altMethod": "",
+    "panoply_process_SM_table.norm.disk_space": "",
+    "panoply_process_SM_table.norm.memory": "",
+    "panoply_process_SM_table.norm.ndigits": "",
+    "panoply_process_SM_table.norm.normMethod": "",
+    "panoply_process_SM_table.norm.num_preemptions": "",
+    "panoply_process_SM_table.norm.num_threads": "",
+    "panoply_process_SM_table.norm.outTable": "",
+    "panoply_process_SM_table.norm.outTar": "",
+    "panoply_process_SM_table.ome_type": "",
+    "panoply_process_SM_table.parse.applyNumratioFilter": "",
+    "panoply_process_SM_table.parse.disk_space": "",
+    "panoply_process_SM_table.parse.labelType": "",
+    "panoply_process_SM_table.parse.memory": "",
+    "panoply_process_SM_table.parse.minNumratioFraction": "",
+    "panoply_process_SM_table.parse.ndigits": "",
+    "panoply_process_SM_table.parse.num_preemptions": "",
+    "panoply_process_SM_table.parse.num_threads": "",
+    "panoply_process_SM_table.parse.outFile": "",
+    "panoply_process_SM_table.parse.speciesFilter": "",
+    "panoply_process_SM_table.report.disk_space": "",
+    "panoply_process_SM_table.report.memory": "",
+    "panoply_process_SM_table.report.num_preemptions": "",
+    "panoply_process_SM_table.report.num_threads": "",
+    "panoply_process_SM_table.sample_annotation": "",
+    "panoply_process_SM_table.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_process_SM_table",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_process_SM_table/20",
+    "methodVersion": 20,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_process_SM_table",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_process_SM_table.output_report": "",
+    "panoply_process_SM_table.output_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

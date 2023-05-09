@@ -1,0 +1,27 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.disk_space": "",
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.input_tar": "",
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.memory": "",
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.num_preemptions": "",
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.num_threads": "",
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.output_prefix": "",
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.type": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_blacksheep_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_blacksheep_report/19",
+    "methodVersion": 19,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_blacksheep_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_blacksheep_report_workflow.panoply_blacksheep_report.report_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

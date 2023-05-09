@@ -1,0 +1,27 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.disk_space": "",
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.label": "",
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.memory": "",
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.num_preemptions": "",
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.num_threads": "",
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.ome": "",
+    "panoply_so_nmf_pre_wf.panoply_so_nmf_pre.ome_type": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_so_nmf_pre",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_so_nmf_pre/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_so_nmf_pre",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_so_nmf_pre_wf.nmf_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
