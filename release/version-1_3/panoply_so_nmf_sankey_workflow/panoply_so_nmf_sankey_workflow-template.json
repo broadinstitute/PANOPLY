@@ -1,0 +1,32 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_so_nmf_sankey_workflow.label": "",
+    "panoply_so_nmf_sankey_workflow.mo_nmf_tar": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey.disk_space": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey.memory": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey.num_preemptions": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey.num_threads": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey_report.disk_space": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey_report.memory": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey_report.num_preemptions": "",
+    "panoply_so_nmf_sankey_workflow.nmf_sankey_report.num_threads": "",
+    "panoply_so_nmf_sankey_workflow.so_nmf_tar": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_so_nmf_sankey_workflow",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_so_nmf_sankey_workflow/5",
+    "methodVersion": 5,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_so_nmf_sankey_workflow",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_so_nmf_sankey_workflow.sankey_report": "",
+    "panoply_so_nmf_sankey_workflow.sankey_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

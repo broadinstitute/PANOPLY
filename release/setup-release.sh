@@ -305,11 +305,6 @@ if [[ -z $patch_flag ]]; then # during full release
   mkdir -p $release_dir # create release directory
   rm -f $snapshots # delete all snapshots
   yes | docker system prune --all
-else # during patch-fix
-  for mod in "${modules[@]}"; do
-    sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
-    rm -r ./$release_dir/$mod # delete relevant version folders
-  done
 fi
 
 
@@ -321,6 +316,11 @@ fi # otherwise, modules are pulled from trailing arguments ( see display_usage()
 for mod in "${modules[@]}"
 do
   echo -e "$not Processing task $mod"
+
+  if [[ -n $patch_flag ]]; then # if we are patch-fixing
+    sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
+    rm -r ./$release_dir/$mod # delete relevant version folders
+  fi
 
   url=$base_url$pull_dns/$mod/tags
   lat=( $( curl -s -S "$url" | \
@@ -361,12 +361,12 @@ workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename 
 workflows+=( panoply_main panoply_unified_workflow ) # add to end of array, to ensure that these are built last
 for wk in "${workflows[@]}"
 do
-  if [[ -n $patch_flag ]]; then
+  echo -e "$not Processing workflow $wk"
+
+  if [[ -n $patch_flag ]]; then # if we are patch-fixing
     sed -i'' -e "/:$wk\/versions/d" ./$release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
     rm -r ./$release_dir/$wk # delete relevant version folders
   fi
-
-  echo -e "$not Processing workflow $wk"
 
   mkdir -p $release_dir/$wk
   cd $release_dir/$wk

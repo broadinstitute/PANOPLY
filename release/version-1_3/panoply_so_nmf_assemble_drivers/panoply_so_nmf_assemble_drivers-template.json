@@ -1,0 +1,26 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_so_nmf_assemble_drivers.disk_space": "",
+    "panoply_so_nmf_assemble_drivers.memory": "",
+    "panoply_so_nmf_assemble_drivers.nmf_tar": "",
+    "panoply_so_nmf_assemble_drivers.num_preemptions": "",
+    "panoply_so_nmf_assemble_drivers.num_threads": "",
+    "panoply_so_nmf_assemble_drivers.ome_type": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_so_nmf_assemble_drivers",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_so_nmf_assemble_drivers/3",
+    "methodVersion": 3,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_so_nmf_assemble_drivers",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_so_nmf_assemble_drivers.driver_pair": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

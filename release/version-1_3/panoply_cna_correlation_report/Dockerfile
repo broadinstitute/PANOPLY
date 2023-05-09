@@ -1,0 +1,1 @@
+FROM broadcptacdev/panoply_cna_correlation_report:latest

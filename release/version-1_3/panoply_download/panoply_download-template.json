@@ -1,0 +1,39 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_download_workflow.panoply_download.analysisDir": "",
+    "panoply_download_workflow.panoply_download.association_tar": "",
+    "panoply_download_workflow.panoply_download.cosmo_tar": "",
+    "panoply_download_workflow.panoply_download.disk_space": "",
+    "panoply_download_workflow.panoply_download.full_tar": "",
+    "panoply_download_workflow.panoply_download.memory": "",
+    "panoply_download_workflow.panoply_download.num_preemptions": "",
+    "panoply_download_workflow.panoply_download.num_threads": "",
+    "panoply_download_workflow.panoply_download.omicsev_tar": "",
+    "panoply_download_workflow.panoply_download.output_prefix": "",
+    "panoply_download_workflow.panoply_download.ptmsea": "",
+    "panoply_download_workflow.panoply_download.so_nmf_ssgsea_tar": "",
+    "panoply_download_workflow.panoply_download.so_nmf_tar": "",
+    "panoply_download_workflow.panoply_download.ssgsea_assoc_dir": "",
+    "panoply_download_workflow.panoply_download.ssgsea_assoc_tars": "",
+    "panoply_download_workflow.panoply_download.ssgsea_ome_tar": "",
+    "panoply_download_workflow.panoply_download.ssgsea_rna_tar": "",
+    "panoply_download_workflow.panoply_download.summary_tar": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_download",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_download/16",
+    "methodVersion": 16,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_download",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_download_workflow.panoply_download.full": "",
+    "panoply_download_workflow.panoply_download.summary": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

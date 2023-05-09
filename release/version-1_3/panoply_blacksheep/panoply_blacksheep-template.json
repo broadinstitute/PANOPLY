@@ -1,0 +1,32 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_blacksheep_workflow.panoply_blacksheep.apply_filtering": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.disk_space": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.fdr_value": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.fraction_samples_cutoff": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.groups_file": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.identifiers_file": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.input_gct": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.master_yaml": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.memory": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.num_preemptions": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.num_threads": "",
+    "panoply_blacksheep_workflow.panoply_blacksheep.output_prefix": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_blacksheep",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_blacksheep/24",
+    "methodVersion": 24,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_blacksheep",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_blacksheep_workflow.panoply_blacksheep.tar_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
