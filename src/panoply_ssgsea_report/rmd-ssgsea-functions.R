@@ -252,7 +252,8 @@ pw_hm <- function(output.prefix,
   plothm <- function(rdesc, mat, fdr.max, n.max, fn.out, cw, ch){
     
     ## fdr & score
-    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))]
+    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))] %>%
+      mutate_all(as.numeric) # enforce numeric data
     keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
      # cat(i)
       f=fdr[, i] ## fdr
@@ -264,12 +265,17 @@ pw_hm <- function(output.prefix,
     }, fdr, mat )
     keep.idx <- unique(unlist(keep.idx.list))
     
+    if (length(keep.idx)==0) {
+      warning(glue("No features found below fdr threshold of {fdr.max}. Heatmap was not created."))
+      return()
+    }
+    
     fdr.filt <- fdr[keep.idx, ]
     mat.filt <- mat[keep.idx, ]
     rdesc.filt <- rdesc[keep.idx,]
     
     ## add 'C' if column names are all numeric
-    if(sum( is.na(as.numeric(colnames(mat.filt))) ) == 0)
+    if(sum( is.na( suppressWarnings(as.numeric(colnames(mat.filt))) ) ) == 0)
       colnames(mat.filt) <- paste0('C', colnames(mat.filt))
     
     anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
