@@ -254,16 +254,23 @@ pw_hm <- function(output.prefix,
     ## fdr & score
     fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))] %>%
       mutate_all(as.numeric) # enforce numeric data
-    keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
-     # cat(i)
+    
+    sig.idx.list = list() # full list of significant features
+    keep.idx.list = list() # significant features which are being KEPT for plotting
+    for (i in 1:ncol(fdr)) {
       f=fdr[, i] ## fdr
       s=mat[, i] ## score
       idx=which(f < fdr.max)
-      if(length(idx) > 0 & !is.null(n.max))
-        idx=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]]
-      rownames(mat)[idx]
-    }, fdr, mat )
-    keep.idx <- unique(unlist(keep.idx.list))
+      idx.keep=idx # initialize idx.keep to be the full list
+      if(length(idx) > 0 & !is.null(n.max)) # if we are pruning our idx.keep list to n.max features
+        idx.keep=idx[order(abs(s[idx]), decreasing = T)[1:min(n.max, length(idx))]] # prune to top n.max significant features
+        # notedly, if there are >n.max equally significant features, this chooses n.max based on order-of-appearance !!!!! this should be fixed
+      sig.idx.list[[i]] = rownames(mat)[idx]
+      keep.idx.list[[i]] = rownames(mat)[idx.keep]
+    }
+    
+    keep.idx <- unique(unlist(keep.idx.list)) # rows that will appear in the plot
+    sig.idx.list <- lapply(sig.idx.list, function(sig.idx) {intersect(sig.idx, keep.idx)}) # subset each vec to features that will be rows in the plot
     
     if (length(keep.idx)==0) {
       warning(glue("No features found below fdr threshold of {fdr.max}. Heatmap was not created."))
@@ -280,7 +287,7 @@ pw_hm <- function(output.prefix,
     
     anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
     for(i in 1:ncol(mat.filt))
-      anno.row[keep.idx.list[[i]], i] <- '*'
+      anno.row[sig.idx.list[[i]], i] <- '*' # assign asterisk based on FULL LIST of significant idx features
     
     dist.row <- dist(mat.filt, method = 'euclidean')
 
