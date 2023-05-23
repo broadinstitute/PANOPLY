@@ -17,7 +17,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysi
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/19/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/26/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/3/plain-WDL/descriptor" as omicsev_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_gct/versions/5/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_gct/versions/8/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/16/plain-WDL/descriptor" as download_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cosmo/versions/2/plain-WDL/descriptor" as cosmo_wdl
 

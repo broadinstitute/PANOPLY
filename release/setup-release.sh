@@ -28,6 +28,7 @@ display_usage() {
   echo "-w | string | Workspace to populate with all methods"
   echo "-y | string | Workspace to populate pipeline/workflow methods"
   echo "-P | string | Patch flag. When toggled, only specified modules will be rebuilt."
+  echo "-R | string | Patch flag. When toggled, only specified modules will be rebuilt."
   echo "        [...] Trailing arguments will be interpretted as modules to patch-fix. Should only be used alongside -P flag."
   echo "-h | flag   | Print Usage"
   exit
@@ -194,7 +195,7 @@ installMethod() {
 }
 
 
-while getopts ":p:T:N:r:w:y:Ph" opt; do
+while getopts ":p:T:N:r:w:y:PRh" opt; do
     case $opt in
         p) pull_dns="$OPTARG";;
         T) release_tag="$OPTARG";;
@@ -203,6 +204,7 @@ while getopts ":p:T:N:r:w:y:Ph" opt; do
         w) wkspace_all="$OPTARG";;
         y) wkspace_pipelines="$OPTARG";;
         P) patch_flag=TRUE;;
+        R) rebuild_docker_flag=TRUE;;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
     esac
@@ -256,6 +258,9 @@ if [[ -n $patch_flag ]]; then
 
   echo -e "$not Patching module(s) ${modules[@]} for release-$release_tag."
   echo -e "$not All workflows will be rebuilt."
+  if [[ $rebuild_docker_flag ]]; then # if we are rebuilding dockers
+    echo -e "$not Dockers will be rebuilt."
+  fi
   echo -e "$not Documentation will not be rereleased."
 fi
 
@@ -276,7 +281,7 @@ createWkSpace() {
     echo -e "$not Creating workspace $ws"
     fissfc space_new -w $ws -p $project
   else
-      echo -e "$not Workspace $ws exisits. Updating permissions"
+    echo -e "$not Workspace $ws exisits. Updating permissions"
   fi
   # set permissions
   fissfc space_set_acl -w $ws -p $project -r OWNER --users ${proteomics_comp[@]}
@@ -320,6 +325,11 @@ do
   if [[ -n $patch_flag ]]; then # if we are patch-fixing
     sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
     rm -r ./$release_dir/$mod # delete relevant version folders
+  fi
+  
+  if [[ $rebuild_docker_flag ]]; then # if we are rebuilding dockers
+    ./setup.sh -t $mod -n $pull_dns -y -b -u -x # rebuild
+    ./setup.sh -t $mod -z    # cleanup
   fi
 
   url=$base_url$pull_dns/$mod/tags

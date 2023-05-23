@@ -503,8 +503,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_unified_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_unified_workflow/20",
-    "methodVersion": 20,
+    "methodUri": "agora://broadcptac/panoply_unified_workflow/23",
+    "methodVersion": 23,
     "sourceRepo": "agora"
   },
   "name": "panoply_unified_workflow",
