@@ -27,6 +27,8 @@ p_load( glue );
 p_load( yaml );
 p_load( ids );
 
+sink(); source('/prot/proteomics/Projects/R-utilities/map-to-genes.r')
+
 ### ====
 ### Section 0. Setting global parameters
 ### ====
@@ -90,7 +92,7 @@ if ( (panda <- Sys.getenv("PANDA")) == "" ) panda <- "/panda"
 Sys.setenv (PANDA=panda)   # set in env so that other scripts can find the code base
 defaults <- list()
 defaults$parameters <- glue ("{panda}/defaults/master-parameters.yaml")
-defaults$ptmsea_db <- glue ("{panda}/defaults/ptm.sig.db.all.uniprot.human.v1.9.0.gmt")
+defaults$ptmsea_db <- glue ("{panda}/defaults/ptm.sig.db.all.flanking.human.v1.9.0.gmt")
 defaults$gsea_db <- glue ("{panda}/defaults/h.all.v6.2.symbols.gmt")
 defaults$all_parameters_file_name <- "panoply-parameters.yaml"
 defaults$panda_parameters_file_name <- "config.yaml"
@@ -160,9 +162,9 @@ smart_readline <- function (prompt="$$ Input: ", trim_input=TRUE,
                             { ifelse(trim_input, trim(.), . ) } , #trim choice, if toggled on
                           FUN = custom_condition, # apply custom condition; this function should return a single TRUE/FALSE
                           exit_commands = exit_commands,
-                          allow_na=allow_na, allow_empty=allow_empty, allow_zero=allow_zero)) { print(custom_warning) } 
+                          allow_na=allow_na, allow_empty=allow_empty, allow_zero=allow_zero)) { cat(custom_warning) } 
   if ( is.numeric(valid_choice(choice)) ) { # if we've triggered the quit condition
-    if (!is.null(exit_message)) { print(exit_message) } # print exit message
+    if (!is.null(exit_message)) { cat(exit_message) } # print exit message
     if (!is.null(exit_function)) { try(exit_function) } # run exit function
     return(NULL) } # return NULL
   
@@ -180,7 +182,7 @@ printX <- function (type, line1, line2=NULL, line3=NULL, invisible=FALSE) {
 }
 
 stnd_custom_warning<-printX("ERROR", "Invalid input. Please try again") # standard exit message, for use with smart_readline()
-stnd_exit_message<-printX("CANCELLED","Quit condition triggered", invisible = TRUE) # standard exit message, for use with smart_readline()
+stnd_exit_message<-printX("CANCELLED","Previous inputs not saved", invisible = TRUE) # standard exit message, for use with smart_readline()
 
 ### ====
 ### Section. Inputs
@@ -341,20 +343,161 @@ validate_annotation_table <- function (typemap.csv) {
   return (annot$Sample.ID)
 }
 
-validate_data_table <- function (data.type, table.samples, sample.list) {
+validate_sample_id <- function (data.type, table.samples, sample.list) {
   common <- intersect (table.samples, sample.list)
   if (length(common) == 0) {
     # no common samples between data.type and annotation table
-    error <- printX ("ERROR", glue("No samples found in {data.type}"),
+    error <- printX ("ERROR", glue("No samples found in {toupper(data.type)}"),
                      glue("Harmonize samples names in annotation table and data tables"))
     stop( error )
   }
   if (length(common) < length(sample.list)/2) {
     # less than half of samples in annotation table found in data table
-    printX ("WARNING", glue("Only {length(common)} (out of {length(sample.list)}) found in {data.type}"))
+    printX ("WARNING", glue("Only {length(common)} (out of {length(sample.list)}) found in {toupper(data.type)}"))
   } else {
-    print( glue( "\n.. INFO. {data.type} successfully validated.\n" ) )
+    print( glue( "\n.. INFO. {toupper(data.type)} successfully validated.\n" ) )
   }
+  flush.console ()  # without this, the display shows up later
+}
+
+gene_id_column_select <- function(ome, gct, gene.id.col.default) {
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  #cat(paste0(sep, '\n'))
+  cat(paste0('\n'))
+  cat(paste(glue("{toupper(ome)} Annotation Columns:\t"),
+            paste(glue("{rdesc_names}" ), collapse = ', '), '\n'))
+  
+  # Prompt user for the relevant column
+  valid_id = FALSE # initialize
+  while ( !valid_id ) { # until we select a valid ID
+    gene.id.col = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} data that has HUGO Gene Symbols:"),
+                                  custom_condition = function(column) { column %in% rdesc_names },
+                                  custom_warning = printX ("ERROR", glue("Invalid column name, please try again")),
+                                  exit_message = "\n.. RETURNING\n" )
+    if(is.null(gene.id.col)) break() # go back to id.col.type prompt
+    
+    # check if IDs are valid
+    valid_id = TRUE
+    tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col ]] ,
+                                   keytype="SYMBOL", columns = "SYMBOL"),
+             error = function(cond) {
+               cat(printX("ERROR", glue("IDs in column '{gene.id.col}' are not valid HUGO Gene Symbols, please try again")))
+               valid_id <<- FALSE }) # set valid to FALSE
+  }
+  
+  # If we got a successful column selection
+  if (valid_id) { #select column w/ gene IDs
+    printX("INFO", glue("Using column '{gene.id.col}' as {gene.id.col.default} column for {toupper(ome)} data"))
+    gct@rdesc[[gene.id.col.default]] <- gct@rdesc[[ gene.id.col ]] # overwrite default gene.id.col with new gene.id.col
+    write.gct(gct, typemap.gct[[ome]], appenddim=FALSE) # overwrite GCT file
+  }
+  
+  flush.console()
+  return(valid_id)
+}
+
+gene_id_column_create <- function(ome, gct, gene.id.col.default, protein.id.col) {
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  # check that we have protein IDs at all
+  if (!( protein.id.col %in% rdesc_names )) { # if the protein.id.col is missing
+    cat(printX("ERROR", glue("Protein ID column '{protein.id.col}' missing from {ome} GCT file '{typemap.gct[[ome]]}'
+                               ..        Please ensure that all proteomics datasets have a protein ID column in the row-description")))
+    stop() # quit
+  }
+  # print valid protein ID types
+  # keytype.opt <- AnnotationDbi::keytypes(org.Hs.eg.db) # full list of ID types
+  keytype.opt <- c('ENSEMBLPROT', 'IPI', 'REFSEQ', 'PFAM', 'PROSITE', 'UNIPROT') # ONLY protein ID types
+  #cat(paste0(sep, '\n'))
+  cat(paste0('\n'))
+  cat(paste("Valid Protein Keytypes:",
+            paste(glue( "{add_space( 1:length( keytype.opt ) )}: {keytype.opt}" ), collapse = '\n'), '\n',
+            sep = '\n'))
+  
+  # Prompt user for the Protein ID Keytype
+  valid_id = FALSE # initialize value
+  while (!valid_id) { # until we select a valid ID column
+    protein.id.type.index = smart_readline( prompt = glue("\n$$ Enter the keytype (from above) that corresponds to protein IDs in column '{protein.id.col}' (format '{rdesc[['id']][1]}'):"),
+                                            custom_condition = function(keytype) { keytype %in% 1:length(keytype.opt) },
+                                            custom_warning = printX ("ERROR", glue("Invalid keytype index, please enter one of the keytypes indexes above")),
+                                            exit_message = "\n.. RETURNING\n" )
+    if(is.null(protein.id.type.index)) break()  # go back to id.col.type prompt
+    protein.id.type = keytype.opt[[as.numeric(protein.id.type.index)]]
+    
+    protein.ids = rdesc[[ protein.id.col ]]
+    if ( y2true("Should version numbers be trimmed?") ) {
+      protein.ids = sub ("(.*?)\\..*?$", "\\1", protein.ids) # assumes an ID with a version number will be of format <ID>.<version_number> (e.g. ENSP00000301740.8)
+      cat(glue("Format of trimmed IDs: '{protein.ids[[1]]}'\n"))
+    }
+    
+    
+    valid_id = TRUE # initialize value
+    gene.ids = tryCatch(
+      map_id(protein.ids, keytype_from = protein.id.type, keytype_to = "SYMBOL"), # attempt to map to symbols
+      error = function(cond) {
+        cat(printX("ERROR", glue("Protein IDs in column '{protein.id.col}' are not valid {protein.id.type} IDs, please try again")))
+        valid_id <<- FALSE })
+  }
+  
+  if (valid_id) { # convert protein IDs to gene IDs
+    printX("INFO", glue("Protein IDs in column '{protein.id.col}' was successfully converted from {protein.id.type} IDs to Hugo Gene Symbols for {toupper(ome)} data"))
+    gct@rdesc[[gene.id.col.default]] <- gene.ids # overwrite default gene.id.col with new gene.id.col
+    write.gct(gct, typemap.gct[[ome]], appenddim=FALSE) # overwrite GCT file
+  }
+  
+  flush.console()
+  return(valid_id)
+}
+
+validate_gene_id <- function(ome) {
+  suppressMessages(require(org.Hs.eg.db)) # read in org.Hs.eg.db, to let us check that gene id column has Hugo Gene Symbols
+  gene.id.col.default = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$gene_id_col
+  # gene.id.col.default = "testing"
+  protein.id.col = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$protein_id_col
+  
+  gct = suppressMessages (parse.gctx (typemap.gct[[ome]]))
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  
+  # Check for default gene.id.col
+  valid_id = TRUE # initialize value
+  if ( gene.id.col.default %in% rdesc_names ) { # if the default gene.id.col exists
+    print( glue( "\n.. INFO. Default Gene ID column '{gene.id.col.default}' detected in {toupper(ome)} data.\n" ) )
+    tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col.default ]] , # check if they're valid symbols
+                                   keytype="SYMBOL", columns = "SYMBOL"),
+             error = function(cond) {
+               cat(printX("WARNING", glue("IDs in column '{gene.id.col.default}' are not valid HUGO Gene Symbols")))
+               valid_id <<- FALSE })
+  } else {
+    printX("WARNING", glue("Default Gene ID column '{gene.id.col.default}' was NOT detected in {toupper(ome)} data"))
+    valid_id = FALSE
+  }
+  
+  # If the default gene.id.col wasn't found / wasn't valid
+  if ( !valid_id ) {
+    while ( !valid_id ) { # until we select a valid ID
+      # check whether user is inputting a gene.id.col, or a prot.id.col and prot.id.type
+      id.col.type = smart_readline( prompt = paste(glue("\n$$ To create a Gene ID column for {toupper(ome)}, please choose to either:"),
+                                                   "\t1) Select an existing annotation column with HUGO Gene Symbols",
+                                                   "\t2) Convert protein IDs to HUGO Gene Symbol \n",
+                                                   sep = "\n"),
+                                    custom_condition = function(input) { input %in% c(1,2) },
+                                    custom_warning = stnd_custom_warning,
+                                    exit_message = stnd_exit_message )
+      if(is.null(id.col.type)) stop()
+      
+      # attempt to create Gene ID Column
+      if (id.col.type==1)
+        valid_id = gene_id_column_select(ome, gct, gene.id.col.default) #select column w/ gene IDs
+      else if (id.col.type==2) 
+        valid_id = gene_id_column_create(ome, gct, gene.id.col.default, protein.id.col) # convert protein IDs to gene IDs
+      else { printX("ERROR", "This shouldn't have happened!"); stop() }
+    }
+  }
+    
+  flush.console()
+  # nothing to return
 }
 
 validate_input <- function () {
@@ -374,18 +517,27 @@ validate_input <- function () {
     if ( ! all (required.genomics.types %in% names (typemap.gct)) )
       stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
   }
-  print( glue( "\n.. INFO. Validating sample IDs in other files ..\n" ) )
+
+  printX ("INFO", "Validating sample IDs in all files")
   flush.console ()  # without this, the display shows up later
-  sapply (names (typemap.gct),   # gct files
+  sapply (names (typemap.gct),   # gct filenames
           function (n) {
             d <- suppressMessages (parse.gctx (typemap.gct[[n]]))
-            validate_data_table (n, d@cid, samples)
+            validate_sample_id (n, d@cid, samples)
           })
   sapply (setdiff (names (typemap.csv), c('annotation', 'groups')),   # csv files
           function (n) {
             d <- read.csv (typemap.csv[[n]], header = T,
                            stringsAsFactors = F, quote = '"')
-            validate_data_table (n, d$Sample.ID, samples)
+            validate_sample_id (n, d$Sample.ID, samples)
+          })
+  
+  # check for gene id columns in all GCT files
+  printX ("INFO", "Validating gene IDs in GCT files")
+  flush.console ()  # without this, the display shows up later
+  sapply (names (typemap.gct),   # gct filenames
+          function (ome) {
+            validate_gene_id (ome)
           })
 }
 
@@ -398,141 +550,70 @@ panda_input <- function(){
 
 
 ### ====
-### Section. Validate Data Formatting and Toggle Preprocessing
+### Section. Toggle Processing
 ### ====
 
-validate_protein_id <- function(ome = 'proteome') {
-  suppressMessages(require(org.Hs.eg.db))
-  protein.id.col = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$protein_id_col
-  
-  gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
-  rdesc = gct@rdesc
-  rdesc_names = names(rdesc)
-  
-  if (!( protein.id.col %in% rdesc_names )) { # if the protein.id.col is missing
-    cat(printX("ERROR", glue("Protein ID column '{protein.id.col}' missing from {ome} GCT file '{typemap.gct[[ome]]}'
-                               ..        Please ensure that all proteomics datasets have a protein ID column in the row-description")))
-    stop() # quit
-  }
-  
-  # Print Valid Keytypes
-  keytype.opt <- AnnotationDbi::keytypes(org.Hs.eg.db)
-  cat(paste("VALID KEYTYPES:",
-            paste(glue( "{add_space( 1:length( keytype.opt ) )}: {keytype.opt}" ), collapse = '\n'),
-            sep, '\n',
-            sep = '\n'))
-  
-  # Prompt user for the Protein ID Keytype
-  valid_id = FALSE # initialize value
-  while (!valid_id) { # until we select a valid ID column
-    protein.id.type.index = smart_readline( prompt = glue("\n$$ Enter the keytype (from above) that corresponds to protein IDs in column '{protein.id.col}' (format '{rdesc[['id']][1]}'):"),
-                                            custom_condition = function(keytype) { keytype %in% 1:length(keytype.opt) },
-                                            custom_warning = printX ("ERROR", glue("Invalid keytype, please enter one of the keytypes above")),
-                                            exit_message = stnd_exit_message )
-    if(is.null(protein.id.type.index)) stop()
-    protein.id.type = keytype.opt[ as.numeric(protein.id.type.index) ]
-    
-    valid_id = TRUE # initialize value
-
-    tryCatch(
-      { keys = c( rdesc[[ protein.id.col ]] ,
-                  sub ("(.*?)\\..?", "\\1", rdesc[[ protein.id.col ]] ) );
-        suppressMessages(AnnotationDbi::select(org.Hs.eg.db, keys = keys, # check if they're valid symbols
-                                               keytype=protein.id.type, columns = "SYMBOL")) },
-      error = function(cond) {
-        cat(printX("ERROR", glue("Protein IDs in column '{protein.id.col}' are not valid {protein.id.type} IDs, please try again")))
-        valid_id <<- FALSE })
-  }
-  
-  printX("INFO", glue("Protein IDs in column '{protein.id.col}' are valid {protein.id.type} IDs"))
-  flush.console()
-  return(protein.id.type)
-}
-
 validate_flanking_sequence <- function() {
-  ome = 'phosphoproteome'
-  gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
-  rdesc = gct@rdesc
-  rdesc_names = names(rdesc)
-  cat(paste(glue("{toupper(ome)} COLUMNS:"),
-            paste( glue( "{add_space( 1:length( rdesc_names ) )}: {rdesc_names}" ), collapse = '\n'), 
-            sep, '\n',
-            sep = '\n'))
-  
-  valid_id = FALSE
-  while (!valid_id) { # until we select a valid flanking sequence column
-    flanking.seq.col.index = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} data that has Flanking Sequences:"),
-                                             custom_condition = function(column) { column %in% 1:length(rdesc_names) },
-                                             custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
-                                             exit_message = stnd_exit_message )
-    if( is.null(flanking.seq.col.index) ) stop()
-    flanking.seq.col = rdesc_names[ as.numeric(flanking.seq.col.index) ] # set global flanking.seq.col parameter
-    
-    # check if IDs are valid
-    if ( any( grepl("[A-z-]{7}[sty][A-z-]{7}", rdesc[[flanking.seq.col]]) ) ) { # check if ANY entries are valid flanking sequences
-      valid_id = TRUE
-    } else {
-      cat(printX("ERROR", glue("Entries in column '{flanking.seq.col}' are not valid flanking-sequences, please try again")))
-    }
-  }
-  
-  printX("INFO", glue("Valid flanking-sequences detected in '{flanking.seq.col}' column. PTM-SEA will be run"))
   flush.console()
-  return(flanking.seq.col)
-}
-
-validate_gene_id <- function(ome) {
-  suppressMessages(require(org.Hs.eg.db))
-  gene.id.col.default = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$gene_id_col
+  ome = 'phosphoproteome'
+  valid_sequence_pattern="[A-z-]{7}[sty][A-z-]{7}"
   
   gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
   rdesc = gct@rdesc
   rdesc_names = names(rdesc)
+  
+  flanking.seq.col.default = read_yaml(typemap.yml$parameters)$panoply_preprocess_gct$seqwin_column
+  # flanking.seq.col.default = "testing"
+  
   
   # Check for default gene.id.col
   valid_id = TRUE # initialize value
-  if ( gene.id.col.default %in% rdesc_names ) { # if the default gene.id.col exists
-    printX("INFO", glue("Default Gene ID column '{gene.id.col.default}' detected in {toupper(ome)} data"))
-    tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col.default ]] , # check if they're valid symbols
-                                   keytype="SYMBOL", columns = "SYMBOL"),
-             error = function(cond) {
-               cat(printX("ERROR", glue("IDs in column '{gene.id.col.default}' are not valid HUGO Gene Symbols, please select a valid Gene ID column")))
-               valid_id <<- FALSE })
+  if ( flanking.seq.col.default %in% rdesc_names ) { # if the default flanking.seq.col.default exists
+    print( glue( "\n.. INFO. Default Flanking Sequence column '{flanking.seq.col.default}' detected in {toupper(ome)} data.\n" ) )
+    if ( ! any( grepl(valid_sequence_pattern, rdesc[[flanking.seq.col.default]]) ) ) { # check that it has valid flanking sequences
+      printX("WARNING", glue("IDs in column '{flanking.seq.col.default}' are not valid Flanking Sequences"))
+      valid_id = FALSE
+    } 
   } else {
+    printX("WARNING", glue("Default Flanking Sequence column '{flanking.seq.col.default}' was NOT detected in {toupper(ome)} data"))
     valid_id = FALSE
   }
+  flush.console()
   
-  # If the default wasn't found / wasn't valid, overwrite it
-  if ( !valid_id ) {
-    cat(paste0(sep, '\n'))
+  if (!valid_id) {
+    # print column options
     cat(paste(glue("{toupper(ome)} COLUMNS:"),
               paste( glue( "{add_space( 1:length( rdesc_names ) )}: {rdesc_names}" ), collapse = '\n'), 
               sep, '\n',
               sep = '\n'))
     
-    while ( !valid_id ) { # until we select a valid ID
-      gene.id.col.index = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} data that has HUGO Gene Symbols:"),
-                                          custom_condition = function(column) { column %in% 1:length(rdesc_names) },
-                                          custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
-                                          exit_message = stnd_exit_message )
-      if(is.null(gene.id.col.index)) stop()
-      gene.id.col = rdesc_names[[ as.numeric(gene.id.col.index) ]]
+    while (!valid_id) { # until we select a valid flanking sequence column
+      flush.console()
+      flanking.seq.col.index = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} data that has Flanking Sequences:"),
+                                               custom_condition = function(column) { column %in% 1:length(rdesc_names) },
+                                               custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
+                                               exit_message = stnd_exit_message )
+      if( is.null(flanking.seq.col.index) ) stop()
+      flanking.seq.col = rdesc_names[ as.numeric(flanking.seq.col.index) ] # set global flanking.seq.col parameter
       
       # check if IDs are valid
-      valid_id = TRUE
-      tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col ]] ,
-                                     keytype="SYMBOL", columns = "SYMBOL"),
-               error = function(cond) {
-                 cat(printX("ERROR", glue("IDs in column '{gene.id.col}' are not valid HUGO Gene Symbols, please try again")))
-                 valid_id <<- FALSE }) # set valid to FALSE
+      if ( any( grepl(valid_sequence_pattern, rdesc[[flanking.seq.col]]) ) ) { # check if ANY entries are valid flanking sequences
+        valid_id = TRUE
+      } else {
+        cat(printX("ERROR", glue("Entries in column '{flanking.seq.col}' are not valid flanking-sequences, please try again")))
+      }
     }
     
-    printX("INFO", glue("Using column '{gene.id.col}' as {gene.id.col.default} column for {toupper(ome)} data"))
-    gct@rdesc[[gene.id.col.default]] <- gct@rdesc[[ gene.id.col ]] # overwrite default gene.id.col with new gene.id.col
-    write.gct(gct, typemap.gct[[ome]], appenddim=FALSE) # overwrite RNA/CNA file
+    # If we got a successful column selection
+    if (valid_id) { #select column w/ gene IDs
+      printX("INFO", glue("Using column '{flanking.seq.col}' as {flanking.seq.col.default} column for {toupper(ome)} data"))
+      gct@rdesc[[flanking.seq.col.default]] <- gct@rdesc[[ flanking.seq.col ]] # overwrite default gene.id.col with new gene.id.col
+      write.gct(gct, typemap.gct[[ome]], appenddim=FALSE) # overwrite GCT file
+    } else { stop(printX("ERROR", "Something has gone terribly wrong.")) }
+    
   }
+  
   flush.console()
-  # nothing to return
 }
 
 panda_preprocessing <- function() {
@@ -544,24 +625,13 @@ panda_preprocessing <- function() {
   
   cat(paste0(sep, '\n'))
   
-  ### Protein ID Type
-  protein.id.type <<- validate_protein_id()
-  
   ### PTM-SEA / Flanking Sequence Column
   if ( 'phosphoproteome' %in% names(typemap.gct) && !is.null(typemap.gmt) ) { # if we have phosphoproteome data
     run.ptmsea <<- y2true("Phosphoproteome data detected. Should PTM-SEA be run?")
     
-    if (run.ptmsea) 
-      flanking.seq.col <<- validate_flanking_sequence()
-  } else {
-    run.ptmsea <<- FALSE
-    flanking.seq.col <<- NULL
+    if (run.ptmsea) validate_flanking_sequence()
+    else run.ptmsea <<- FALSE
   }
-  
-  
-  ### check for a HUGO Gene Symbol columns, in RNA and CNA
-  for (ome in intersect(c("rna", "cna"), names(typemap.gct)))
-    validate_gene_id(ome)
   
   print( DONE )
 }
@@ -693,7 +763,7 @@ panda_groups <- function(){
   display_validated_groups( groups.cols, groups.cols.continuous, groups=keep )
   
   # set groups colors
-  if ( !is.null(groups.colors.old) && #old color scheme exists
+  if ( exists("groups.colors.old") && #old color scheme exists
        y2true ("Color scheme found in previous config-file. Attempt to restore previous color scheme?") ) { #user would like to restore color scheme
     groups.colors <<- restore_config_colors ( groups.colors.old, typemap.csv ) # restore old colors, to whatever extent is possible
   } else {
@@ -1103,8 +1173,8 @@ panda_finalize <- function (internal=FALSE) {
   # perform sanity checks (in case this function is called without going through other steps)
   if (!exists ("typemap.csv") || is.null (typemap.csv$annotation))
     stop( glue( "\n\n{sep}\n.. ERROR. Sample annotation file missing. Run panda_input().\n{sep}\n" ) )
-  if (!exists ("normalize.prot") || !exists ("filter.prot") || !exists ("run.ptmsea") || !exists ("protein.id.type") ) 
-    stop( glue( "\n\n{sep}\n.. ERROR. Data validation and preprocessing is incomplete. Run panda_preprocessing()." ) )
+  if (!exists ("normalize.prot") || !exists ("filter.prot") || !exists ("run.ptmsea") ) 
+    stop( glue( "\n\n{sep}\n.. ERROR. Preprocessing has not been selected. Run panda_preprocessing()." ) )
   if (!exists ("groups.cols") || length (groups.cols) == 0) 
     stop( glue( "\n\n{sep}\n.. ERROR. No groups selected. Run panda_groups()." ) )
   if (!exists ("sample.sets") || length (sample.sets) == 0) 
@@ -1138,7 +1208,6 @@ panda_finalize <- function (internal=FALSE) {
   lines$normalize.proteomics <- normalize.prot
   lines$filter.proteomics <- filter.prot
   lines$run.ptmsea <- run.ptmsea # needs to be integrated ?
-  lines$flanking.seq.col <- flanking.seq.col # overwrite panoply_preprocess_gct:seqwin_column ?
   lines$cosmo.params <- cosmo.params
   
   # output config for panda and copy to google bucket

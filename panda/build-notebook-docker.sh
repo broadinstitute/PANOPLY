@@ -55,13 +55,17 @@ fi
 # base docker
 if [[ $a_flag == "true" ]]; then
   cd $panoply/panda
+  # copy panoply-Rutil repository
+  git clone https://github.com/broadinstitute/proteomics-Rutil.git
+  mv proteomics-Rutil R-utilities
   base_docker1="$docker_ns/panda_config_libs:$docker_tag"
   base_docker2="$docker_ns/panda_config_libs:latest"
   docker build --rm --no-cache -t $base_docker1 -t $base_docker2 .
+  rm -rf R-utilities # cleanup
 fi
 
 # final docker
-cp $panoply/src/panoply_common/master-parameters.yaml $panoply/panda/panda-src/defaults/.
+cp $panoply/src/panoply_common/master-parameters.yaml $panoply/panda/panda-src/defaults/. # copy in code
 cd $panoply/panda/panda-src
 final_docker1="$docker_ns/panda:$docker_tag"
 final_docker2="$docker_ns/panda:latest"
