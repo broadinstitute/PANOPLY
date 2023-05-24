@@ -812,35 +812,71 @@ panda_display_current_colors <- function() {
 
 set_default_colors <- function( groups.cols, typemap.csv ){
   annot <- read_annot()
-  pair.colors <- brewer.pal( n = 12, name = "Paired" )
-  qual.pals <- c( "Set1", "Dark2", "Set2", "Set3" )
-  qual.maxc <- c( 9, 8, 8, 12 )
-  qual.colors <- c()
-  for ( pal.idx in 1:length( qual.pals ) ) {
-    qual.colors <- c( qual.colors,
-                      brewer.pal( n = qual.maxc[pal.idx],
-                                  name = qual.pals[pal.idx] ) )
+  
+  # utility function, allows pseudorandom choice based on a provided string, which is used as a temporary seed
+  eval_with_seed <- function(expression, seed_string, ...) {
+    old_seed = .Random.seed # pull current seed
+    on.exit({.Random.seed <<- old_seed}) # reset seed back to normal on exit
+    
+    set.seed( sum(as.numeric(charToRaw(seed_string))) ) # set seed, based on string passed in
+    eval( expression ) # match function
   }
-  pair.count <- 0
-  qual.count <- 1
+  
+  # Paul Tol Color Palattes-- colorblind safe! (https://personal.sron.nl/~pault/)
+  qual.pals <- list("Bright" = c('#4477AA', '#66CCEE', '#27B13E', '#CCBB44', '#EE6677', '#AA3377'), # green (originally '#228833') was modified to be more distinct from blue under tritanopia colorblindness
+                    "Vibrant" = c('#0077BB', '#33BBEE', '#009988', '#EE7733', '#CC3311', '#EE3377'),
+                    "Muted" = c( '#332288', '#88CCEE', '#44AA99', '#117733', '#999933', '#DDCC77', '#CC6677', '#882255', '#AA4499'),
+                    "HighContrast" = c('#004488', '#DDAA33', '#BB5566'))
+
+  # if adding a new palate, please add LIGHTER colors SECOND, to ensure consistent formatting
+  pair.pals <- list("BrightPaired" = c('#4477AA', "#A8DBFF", '#66CCEE', "#CAFFFF", '#27B13E', "#8BFFA2", '#CCBB44', "#FFFFA8", '#EE6677', "#FFCADB", '#AA3377', "#FF97DB"),
+                    "VibrantPaired" = c('#0077BB', "#64DBFF", '#009988', "#64FDEC", '#EE7733', "#FFDB97", '#EE3377', "#FF97DB" ),
+                    "HighContrastPaired" = c('#004488', '#6699CC', '#997700', '#EECC66', '#994455', '#EE99AA'))
+  pair.pals <- eval_with_seed( { lapply(pair.pals, # for each palate
+                                        function(color_vec) {
+                                          reorder_index = rep(sample( 1:(length(color_vec)/2) *2) , each=2) + rep(c(-1,0), length(color_vec)/2) # shuffle the pairs (TOGEHTER)
+                                          color_vec[reorder_index]} ) } , # shuffle palate
+                               seed_string = "paultolcolorblindsafe")
+  pair.colors = unlist(pair.pals) # unlist, to allow for easy color-selection
+  
+  pair.count <- 0 # indexed at 0 bc pairs
+  qual.count <- 1 # indexed at 1 bc singles
   groups.colors <- list()
   for ( group in groups.cols  ) {
-    groups.vals <- sort(unique( annot[[group]] ))
-    groups.vals[is.na( groups.vals )] <- "NA"
-    if( length( groups.vals ) == 2 || ( length( groups.vals ) == 3
+    groups.vals <- sort(unique( annot[[group]] )) # sort unique annotations (sorting prevents different color assignments based on order-of-appearanace)
+    groups.vals[is.na( groups.vals )] <- "NA" # set NA to a string
+    # groups.vals[groups.vals=="n.a." | groups.vals=="na"] <- "NA" # set n.a. or na to a NA (this would... probably mess with annot values. leaving alone for now)
+    
+    if( length( groups.vals ) == 2 || ( length( groups.vals ) == 3 # if we have a pair, or a group of three with an NA val
                                         && "NA" %in% groups.vals ) ){
-      pair.idx <- ( pair.count * 2 ) + 1
-      colors <- pair.colors[ c( pair.idx, pair.idx + 1 ) ]
-      pair.count <- ( pair.count + 1 ) %% 6
-      if ( length( groups.vals ) == 3 ){
-        groups.vals <- c( groups.vals[-which( groups.vals == "NA" )], "NA" )
-        colors <- c( colors, "#EEEEEE" )
+      pair.idx <- ( pair.count * 2 ) + 1 # choose color-pair index
+      colors <- pair.colors[ c( pair.idx, pair.idx + 1 ) ] # assign colors
+      pair.count <- ( pair.count + 1 ) %% length(pair.colors) # increment pair.count, or restart if we've exhausted the pairs list
+      
+      # Assign "normal" annotations the lighter color
+      normal_annots = c("nat", "wt", "unmut","normal","0") # possible "normal" annotations (not case sensitive)
+      norm_index = unlist(sapply(normal_annots, function(annot) { grep(annot, groups.vals, ignore.case=TRUE, fixed = TRUE) }, USE.NAMES = FALSE)) # identify index of groups.vals that is "normal"
+      if ( length(norm_index)!=0 ) { # if any of the "normal" annots can be found
+        groups.vals <- c( groups.vals[-norm_index], groups.vals[norm_index]) # move norm value to end. this will assign it the lighter color.
       }
-    } else{
-      upend <- qual.count + length( groups.vals ) - 1
-      colors <- qual.colors[qual.count:upend]
-      qual.count <- ( upend %% length( qual.colors ) ) + 1
+      
+    } else { # pick a qualitative colorscheme
+      qual.colors = qual.pals[[qual.count]] # choose color palate
+      n_colors = ifelse("NA" %in% groups.vals, length(groups.vals)-1, length(groups.vals)) # choose n-1 or n colors, depending on whether there were / were not NA vals
+      
+      while ( n_colors > length(qual.colors) ) # if there aren't enough colors in this palate
+        qual.colors = c(qual.colors, qual.pals[[qual.count+1]]) # keep tacking on new palates until we have enough colors. 
+        # NOTE: if someone had a ridiculously large number of annotations, this WILL recycle colors. but dear god I hope someone doesn't try to run an annot with 28+ values....
+      
+      colors <- eval_with_seed( { sample(qual.colors, n_colors) } , seed_string = group);  # sample colors pseudo-randomly (using group name as seed, to make sure we always choose the "same" random colors)
+      qual.count <- qual.count + 1 %% length(qual.pals) # increment qual.count, or restart if we've exhausted the pairs list
     }
+    
+    if ( "NA" %in% groups.vals ){ # if there was an NA value
+      groups.vals <- c( groups.vals[-which( groups.vals == "NA" )], "NA" ) # move NA to end
+      colors <- c( colors, "#BBBBBB" ) # set color to grey
+    }
+    
     groups.colors[[group]]$vals <- groups.vals
     groups.colors[[group]]$colors <- colors
   }
