@@ -814,7 +814,7 @@ set_default_colors <- function( groups.cols, typemap.csv ){
   annot <- read_annot()
   
   # utility function, allows pseudorandom choice based on a provided string, which is used as a temporary seed
-  eval_with_seed <- function(expression, seed_string, ...) {
+  eval_with_seed <- function(expression, seed_string="randomstring") {
     old_seed = .Random.seed # pull current seed
     on.exit({.Random.seed <<- old_seed}) # reset seed back to normal on exit
     
@@ -835,7 +835,7 @@ set_default_colors <- function( groups.cols, typemap.csv ){
   pair.pals <- eval_with_seed( { lapply(pair.pals, # for each palate
                                         function(color_vec) {
                                           reorder_index = rep(sample( 1:(length(color_vec)/2) *2) , each=2) + rep(c(-1,0), length(color_vec)/2) # shuffle the pairs (TOGEHTER)
-                                          color_vec[reorder_index]} ) } , # shuffle palate
+                                          color_vec[reorder_index]} ) } , # reorder palate to be shuffled
                                seed_string = "paultolcolorblindsafe")
   pair.colors = unlist(pair.pals) # unlist, to allow for easy color-selection
   
@@ -847,6 +847,7 @@ set_default_colors <- function( groups.cols, typemap.csv ){
     groups.vals[is.na( groups.vals )] <- "NA" # set NA to a string
     # groups.vals[groups.vals=="n.a." | groups.vals=="na"] <- "NA" # set n.a. or na to a NA (this would... probably mess with annot values. leaving alone for now)
     
+    # assign paired or qualitative colors, depending on vector length
     if( length( groups.vals ) == 2 || ( length( groups.vals ) == 3 # if we have a pair, or a group of three with an NA val
                                         && "NA" %in% groups.vals ) ){
       pair.idx <- ( pair.count * 2 ) + 1 # choose color-pair index
@@ -872,6 +873,7 @@ set_default_colors <- function( groups.cols, typemap.csv ){
       qual.count <- qual.count + 1 %% length(qual.pals) # increment qual.count, or restart if we've exhausted the pairs list
     }
     
+    # assign NA values grey
     if ( "NA" %in% groups.vals ){ # if there was an NA value
       groups.vals <- c( groups.vals[-which( groups.vals == "NA" )], "NA" ) # move NA to end
       colors <- c( colors, "#BBBBBB" ) # set color to grey
