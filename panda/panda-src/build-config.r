@@ -815,8 +815,12 @@ set_default_colors <- function( groups.cols, typemap.csv ){
   
   # utility function, allows pseudorandom choice based on a provided string, which is used as a temporary seed
   eval_with_seed <- function(expression, seed_string="randomstring") {
-    old_seed = .Random.seed # pull current seed
-    on.exit({.Random.seed <<- old_seed}) # reset seed back to normal on exit
+    if (exists(".Random.seed")) {
+      old_seed = .Random.seed # pull current seed
+      on.exit({.Random.seed <<- old_seed}) # reset seed back to normal on exit
+    } else {
+      on.exit({set.seed(Sys.time())}) # randomize seed on exit
+    }
     
     set.seed( sum(as.numeric(charToRaw(seed_string))) ) # set seed, based on string passed in
     eval( expression ) # match function
