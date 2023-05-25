@@ -831,56 +831,79 @@ set_default_colors <- function( groups.cols, typemap.csv ){
                     "Vibrant" = c('#0077BB', '#33BBEE', '#009988', '#EE7733', '#CC3311', '#EE3377'),
                     "Muted" = c( '#332288', '#88CCEE', '#44AA99', '#117733', '#999933', '#DDCC77', '#CC6677', '#882255', '#AA4499'),
                     "HighContrast" = c('#004488', '#DDAA33', '#BB5566'))
-
-  # if adding a new palate, please add LIGHTER colors SECOND, to ensure consistent formatting
+  
+  # if adding a new palette, please add LIGHTER colors SECOND, to ensure consistent formatting
   pair.pals <- list("BrightPaired" = c('#4477AA', "#A8DBFF", '#66CCEE', "#CAFFFF", '#27B13E', "#8BFFA2", '#CCBB44', "#FFFFA8", '#EE6677', "#FFCADB", '#AA3377', "#FF97DB"),
                     "VibrantPaired" = c('#0077BB', "#64DBFF", '#009988', "#64FDEC", '#EE7733', "#FFDB97", '#EE3377', "#FF97DB" ),
                     "HighContrastPaired" = c('#004488', '#6699CC', '#997700', '#EECC66', '#994455', '#EE99AA'))
-  pair.pals <- eval_with_seed( { lapply(pair.pals, # for each palate
-                                        function(color_vec) {
-                                          reorder_index = rep(sample( 1:(length(color_vec)/2) *2) , each=2) + rep(c(-1,0), length(color_vec)/2) # shuffle the pairs (TOGEHTER)
-                                          color_vec[reorder_index]} ) } , # reorder palate to be shuffled
-                               seed_string = "paultolcolorblindsafe")
-  pair.colors = unlist(pair.pals) # unlist, to allow for easy color-selection
+  pair.colors <- unlist(pair.pals) # unlist palates
+  pair.colors <- eval_with_seed( lapply(sample( 1:(length(pair.colors)/2) *2)-1, # shuffle
+                                        function(i) { c(pair.colors[i], pair.colors[i+1]) }), # organize pairs into a list
+                                 seed_string = "paultolcolorblindsafe") # evaluate shuffling with seed for consistency
+  # sequential palates
+  seq.pals <- list("YlOrBr" = c('#FFFFE5', '#FFF7BC', '#FEE391', '#FEC44F', '#FB9A29', '#EC7014', '#CC4C02', '#993404', '#662506'),
+                   "Iridescent" = c('#FEFBE9', '#FCF7D5', '#F5F3C1', '#EAF0B5', '#DDECBF', '#D0E7CA', '#C2E3D2', '#B5DDD8', '#A8D8DC', '#9BD2E1', '#8DCBE4', '#81C4E7', '#7BBCE7', '#7EB2E4', '#88A5DD', '#9398D2', '#9B8AC4', '#9D7DB2', '#9A709E', '#906388', '#805770', '#684957', '#46353A'),
+                   "Incandescent" = c('#CEFFFF', '#C6F7D6', '#A2F49B', '#BBE453', '#D5CE04', '#E7B503', '#F19903', '#F6790B', '#F94902', '#E40515', '#A80003'))
   
-  pair.count <- 0 # indexed at 0 bc pairs
-  qual.count <- 1 # indexed at 1 bc singles
+  
+  
+  # annotations that should be assigned SPECIFIC colors / have a SPECIFIC order
+  normal_annots = c("^nat$", "^wt$", "^unmut$","^normal$","^0$") # possible "normal" annotations (not case sensitive)
+  na_annots = c("^na$", "^n.a.$", "^n/a$", "^$") # possible "NA" annotations (not case sensitive)
+  
+  pair.index <- 0 # indexed at 0 for modulo operator
+  seq.index <- 0 # indexed at 0 for modulo operator
+  qual.index <- 0 # indexed at 0 for modulo operator
   groups.colors <- list()
   for ( group in groups.cols  ) {
     groups.vals <- sort(unique( annot[[group]] )) # sort unique annotations (sorting prevents different color assignments based on order-of-appearanace)
     groups.vals[is.na( groups.vals )] <- "NA" # set NA to a string
     # groups.vals[groups.vals=="n.a." | groups.vals=="na"] <- "NA" # set n.a. or na to a NA (this would... probably mess with annot values. leaving alone for now)
     
-    # assign paired or qualitative colors, depending on vector length
+    # Assign paired or qualitative colors, depending on vector length
     if( length( groups.vals ) == 2 || ( length( groups.vals ) == 3 # if we have a pair, or a group of three with an NA val
                                         && "NA" %in% groups.vals ) ){
-      pair.idx <- ( pair.count * 2 ) + 1 # choose color-pair index
-      colors <- pair.colors[ c( pair.idx, pair.idx + 1 ) ] # assign colors
-      pair.count <- ( pair.count + 1 ) %% length(pair.colors) # increment pair.count, or restart if we've exhausted the pairs list
+      pair.count=pair.index+1 # re-index starting at 1 for.... everything other than the modulo operator
+      colors <- pair.colors[[pair.count]] # assign colors
+      
+      pair.index <- ( pair.index + 1 ) %% length(pair.colors) # increment pair.index, or restart if we've exhausted the pairs palette list
       
       # Assign "normal" annotations the lighter color
-      normal_annots = c("nat", "wt", "unmut","normal","0") # possible "normal" annotations (not case sensitive)
-      norm_index = unlist(sapply(normal_annots, function(annot) { grep(annot, groups.vals, ignore.case=TRUE, fixed = TRUE) }, USE.NAMES = FALSE)) # identify index of groups.vals that is "normal"
+      norm_index = unlist(sapply(normal_annots, function(annot) { grep(annot, groups.vals, ignore.case=TRUE) }, USE.NAMES = FALSE)) # identify index of groups.vals that is "normal"
       if ( length(norm_index)!=0 ) { # if any of the "normal" annots can be found
         groups.vals <- c( groups.vals[-norm_index], groups.vals[norm_index]) # move norm value to end. this will assign it the lighter color.
+        norm_index=numeric(0) # reset norm_index
       }
       
-    } else { # pick a qualitative colorscheme
-      qual.colors = qual.pals[[qual.count]] # choose color palate
-      n_colors = ifelse("NA" %in% groups.vals, length(groups.vals)-1, length(groups.vals)) # choose n-1 or n colors, depending on whether there were / were not NA vals
+    } else { # pick a sequential or qualitative colorscheme
+      na_index = unlist(sapply(na_annots, function(annot) { grep(annot, groups.vals, ignore.case=TRUE) }, USE.NAMES = FALSE)) # identify NA indices
+      n_colors = ifelse(length(na_index)!=0, length(groups.vals)-length(na_index), length(groups.vals)) # choose n-1 or n colors, depending on whether there were / were not NA vals
       
-      while ( n_colors > length(qual.colors) ) # if there aren't enough colors in this palate
-        qual.colors = c(qual.colors, qual.pals[[qual.count+1]]) # keep tacking on new palates until we have enough colors. 
+      if (sum(!grepl("^[0-9]+$", groups.vals), na.rm=TRUE) <= length(na_index)) { # if we have SEQUENTIAL data (i.e. its JUST digits)
+        seq.count=seq.index+1 # re-index starting at 1 for.... everything other than the modulo operator
+        colors = grDevices::colorRampPalatte(seq.pals[[seq.count]])(n_colors) # choose color palette
+        seq.index <- (seq.index+1) %% length(seq.pals) # increment seq.index, or restart if we've exhausted the sequential palette list
+        
+      } else { # if we have QUALITATIVE data
+        qual.count=qual.index+1 # re-index starting at 1 for.... everything other than the modulo operator
+        
+        qual.colors = qual.pals[[qual.count]] # choose color palette
+        while ( n_colors > length(qual.colors) ) # if there aren't enough colors in this palette
+          qual.colors = c(qual.colors, qual.pals[[((qual.index+1) %% length(qual.pals))+1]]) # keep tacking on new palates until we have enough colors. reminder that qual.ind is indexed at zero (for modulo operator), but R indexing starts at 1 (thus the annoying math)
         # NOTE: if someone had a ridiculously large number of annotations, this WILL recycle colors. but dear god I hope someone doesn't try to run an annot with 28+ values....
-      
-      colors <- eval_with_seed( { sample(qual.colors, n_colors) } , seed_string = group);  # sample colors pseudo-randomly (using group name as seed, to make sure we always choose the "same" random colors)
-      qual.count <- qual.count + 1 %% length(qual.pals) # increment qual.count, or restart if we've exhausted the pairs list
+        
+        # assign colors, shuffled pseudo-randomly (using group name as seed, to make sure we always choose the "same" random colors)
+        colors <- eval_with_seed( { sample(qual.colors, n_colors) } , seed_string = group)
+        
+        qual.index <- (qual.index+1) %% length(qual.pals) # increment qual.index, or restart if we've exhausted the qualitative palette list
+      }
     }
     
-    # assign NA values grey
-    if ( "NA" %in% groups.vals ){ # if there was an NA value
-      groups.vals <- c( groups.vals[-which( groups.vals == "NA" )], "NA" ) # move NA to end
-      colors <- c( colors, "#BBBBBB" ) # set color to grey
+    # Assign "NA" annotations grey
+    if ( length(na_index)!=0 ) { # if any of the "normal" annots can be found
+      groups.vals <- c( groups.vals[-na_index], groups.vals[na_index]) # move na values to end. these will assigned grey
+      colors <- c( colors, rep("#BBBBBB", length(na_index)) ) # set color to grey
+      na_index=numeric(0) # reset na_index
     }
     
     groups.colors[[group]]$vals <- groups.vals
