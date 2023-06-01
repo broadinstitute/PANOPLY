@@ -29,7 +29,7 @@ panda-init:
 #? 
 #? ** panda-samples
 #?     . splits input files into per-sample files
-#?     . uploads them on Googke Bucket
+#?     . uploads them on Google Bucket
 #?     . links them to the Terra Data Model 
 .PHONY: panda-samples
 panda-samples:

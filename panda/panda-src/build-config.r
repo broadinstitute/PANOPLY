@@ -1224,7 +1224,8 @@ run_panda <- function(){
   flush.console()  # without this, the display shows up later
   system( glue( "make groups" ) )
   system( glue( "make terrainit" ) )
-  system( glue( "make panda-samples" ) )  # always call -- will upload only missing samples
+  ### No longer creating Participant entities for terra, due to the associated time sink 
+  # system( glue( "make panda-samples" ) )  # always call -- will upload only missing samples
   system( glue( "make panda-sets" ) )
   print( DONE )
 }
