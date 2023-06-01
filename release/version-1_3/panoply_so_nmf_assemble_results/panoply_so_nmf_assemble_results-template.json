@@ -1,0 +1,31 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.disk_space": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.memory": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.num_preemptions": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.num_threads": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.output_reports_tar": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.output_results_tar": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.so_nmf_report": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.so_nmf_ssgsea_report": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.so_nmf_ssgsea_tar": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.so_nmf_tar": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_so_nmf_assemble_results",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_so_nmf_assemble_results/3",
+    "methodVersion": 3,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_so_nmf_assemble_results",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.nmf_reports": "",
+    "panoply_so_nmf_assemble_results_workflow.panoply_so_nmf_assemble_results.nmf_results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

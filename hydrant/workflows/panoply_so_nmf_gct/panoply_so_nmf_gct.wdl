@@ -19,19 +19,11 @@ workflow panoply_so_nmf_gct_workflow {
   File ome
   String ome_type
 
-  Float? tol
-  Float? var
-  String? zscore_mode
-
 	call panoply_so_nmf_pre_wdl.panoply_so_nmf_pre {
 		input:
 			label=label,
             ome=ome,
-            ome_type=ome_type,
-            
-            tol=tol,
-            var=var,
-            zscore_mode=zscore_mode
+            ome_type=ome_type
 	}
 
 	call panoply_mo_nmf_wdl.panoply_mo_nmf {

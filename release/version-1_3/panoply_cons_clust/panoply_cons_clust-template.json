@@ -1,0 +1,33 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_cons_clust_workflow.panoply_cons_clust.analysisDir": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.clustering_na_threshold": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.clustering_sd_threshold": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.disk_space": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.groupsFile": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.inputData": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.memory": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.num_preemptions": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.num_threads": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.outFile": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.standalone": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.type": "",
+    "panoply_cons_clust_workflow.panoply_cons_clust.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_cons_clust",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_cons_clust/22",
+    "methodVersion": 22,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_cons_clust",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_cons_clust_workflow.panoply_cons_clust.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

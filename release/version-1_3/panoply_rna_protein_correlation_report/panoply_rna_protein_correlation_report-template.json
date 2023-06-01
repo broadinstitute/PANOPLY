@@ -1,0 +1,29 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.config_yaml": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.disk_space": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.label": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.memory": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.num_preemptions": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.num_threads": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.tarball": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.tmpDir": "",
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.type": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_rna_protein_correlation_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_rna_protein_correlation_report/15",
+    "methodVersion": 15,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_rna_protein_correlation_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_rna_protein_correlation_report_workflow.panoply_rna_protein_correlation_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
