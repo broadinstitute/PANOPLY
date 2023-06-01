@@ -28,6 +28,7 @@ p_load( yaml );
 p_load( ids );
 
 sink(); source('/prot/proteomics/Projects/R-utilities/map-to-genes.r')
+sink(); source('/prot/proteomics/Projects/R-utilities/color-mod-utils.r')
 
 ### ====
 ### Section 0. Setting global parameters
@@ -762,13 +763,11 @@ panda_groups <- function(){
   
   display_validated_groups( groups.cols, groups.cols.continuous, groups=keep )
   
-  # set groups colors
-  if ( exists("groups.colors.old") && #old color scheme exists
-       y2true ("Color scheme found in previous config-file. Attempt to restore previous color scheme?") ) { #user would like to restore color scheme
-    groups.colors <<- restore_config_colors ( groups.colors.old, typemap.csv ) # restore old colors, to whatever extent is possible
-  } else {
-    groups.colors <<- set_default_colors( groups.cols, typemap.csv )  # set default colors automatically
-  }
+  # set default colors automatically
+  groups.colors <<- set_annot_colors( read_annot()[groups.cols] )
+  if ( exists("groups.colors.old") && #if old color scheme exists
+       y2true ("Color scheme found in previous config-file. Attempt to restore previous color scheme?") ) # and user would like to restore color scheme
+    groups.colors <<- restore_config_colors ( groups.colors, groups.colors.old ) # restore old colors, to whatever extent is possible
   
   print( DONE )
 }
@@ -810,121 +809,12 @@ panda_display_current_colors <- function() {
   }
 }
 
-set_default_colors <- function( groups.cols, typemap.csv ){
-  annot <- read_annot()
-  
-  # utility function, allows pseudorandom choice based on a provided string, which is used as a temporary seed
-  eval_with_seed <- function(expression, seed_string="randomstring") {
-    if (exists(".Random.seed")) {
-      old_seed = .Random.seed # pull current seed
-      on.exit({.Random.seed <<- old_seed}) # reset seed back to normal on exit
-    } else {
-      on.exit({set.seed(Sys.time())}) # randomize seed on exit
-    }
-    
-    set.seed( sum(as.numeric(charToRaw(seed_string))) ) # set seed, based on string passed in
-    eval( expression ) # match function
-  }
-  
-  # Paul Tol Color Palattes-- colorblind safe! (https://personal.sron.nl/~pault/)
-  qual.pals <- list("Bright" = c('#4477AA', '#66CCEE', '#27B13E', '#CCBB44', '#EE6677', '#AA3377'), # green (originally '#228833') was modified to be more distinct from blue under tritanopia colorblindness
-                    "Vibrant" = c('#0077BB', '#33BBEE', '#009988', '#EE7733', '#CC3311', '#EE3377'),
-                    "Muted" = c( '#332288', '#88CCEE', '#44AA99', '#117733', '#999933', '#DDCC77', '#CC6677', '#882255', '#AA4499'),
-                    "HighContrast" = c('#004488', '#DDAA33', '#BB5566'))
-  
-  # if adding a new palette, please add LIGHTER colors SECOND, to ensure consistent formatting
-  pair.pals <- list("BrightPaired" = c('#4477AA', "#A8DBFF", '#66CCEE', "#CAFFFF", '#27B13E', "#8BFFA2", '#CCBB44', "#FFFFA8", '#EE6677', "#FFCADB", '#AA3377', "#FF97DB"),
-                    "VibrantPaired" = c('#0077BB', "#64DBFF", '#009988', "#64FDEC", '#EE7733', "#FFDB97", '#EE3377', "#FF97DB" ),
-                    "HighContrastPaired" = c('#004488', '#6699CC', '#997700', '#EECC66', '#994455', '#EE99AA'))
-  pair.colors <- unlist(pair.pals) # unlist palates
-  pair.colors <- eval_with_seed( lapply(sample( 1:(length(pair.colors)/2) *2)-1, # shuffle
-                                        function(i) { c(pair.colors[i], pair.colors[i+1]) }), # organize pairs into a list
-                                 seed_string = "paultolcolorblindsafe") # evaluate shuffling with seed for consistency
-  # sequential palates
-  seq.pals <- list("YlOrBr" = c('#FFFFE5', '#FFF7BC', '#FEE391', '#FEC44F', '#FB9A29', '#EC7014', '#CC4C02', '#993404', '#662506'),
-                   "Iridescent" = c('#FEFBE9', '#FCF7D5', '#F5F3C1', '#EAF0B5', '#DDECBF', '#D0E7CA', '#C2E3D2', '#B5DDD8', '#A8D8DC', '#9BD2E1', '#8DCBE4', '#81C4E7', '#7BBCE7', '#7EB2E4', '#88A5DD', '#9398D2', '#9B8AC4', '#9D7DB2', '#9A709E', '#906388', '#805770', '#684957', '#46353A'),
-                   "Incandescent" = c('#CEFFFF', '#C6F7D6', '#A2F49B', '#BBE453', '#D5CE04', '#E7B503', '#F19903', '#F6790B', '#F94902', '#E40515', '#A80003'))
-  
-  
-  
-  # annotations that should be assigned SPECIFIC colors / have a SPECIFIC order
-  normal_annots = c("^nat$", "^wt$", "^unmut$","^normal$","^0$") # possible "normal" annotations (not case sensitive)
-  na_annots = c("^na$", "^n.a.$", "^n/a$", "^$") # possible "NA" annotations (not case sensitive)
-  
-  pair.index <- 0 # indexed at 0 for modulo operator
-  seq.index <- 0 # indexed at 0 for modulo operator
-  qual.index <- 0 # indexed at 0 for modulo operator
-  groups.colors <- list()
-  for ( group in groups.cols  ) {
-    groups.vals <- sort(unique( annot[[group]] )) # sort unique annotations (sorting prevents different color assignments based on order-of-appearanace)
-    groups.vals[is.na( groups.vals )] <- "NA" # set NA to a string
-    # groups.vals[groups.vals=="n.a." | groups.vals=="na"] <- "NA" # set n.a. or na to a NA (this would... probably mess with annot values. leaving alone for now)
-    
-    # Assign paired or qualitative colors, depending on vector length
-    if( length( groups.vals ) == 2 || ( length( groups.vals ) == 3 # if we have a pair, or a group of three with an NA val
-                                        && "NA" %in% groups.vals ) ){
-      pair.count=pair.index+1 # re-index starting at 1 for.... everything other than the modulo operator
-      colors <- pair.colors[[pair.count]] # assign colors
-      
-      pair.index <- ( pair.index + 1 ) %% length(pair.colors) # increment pair.index, or restart if we've exhausted the pairs palette list
-      
-      # Assign "normal" annotations the lighter color
-      norm_index = unlist(sapply(normal_annots, function(annot) { grep(annot, groups.vals, ignore.case=TRUE) }, USE.NAMES = FALSE)) # identify index of groups.vals that is "normal"
-      if ( length(norm_index)!=0 ) { # if any of the "normal" annots can be found
-        groups.vals <- c( groups.vals[-norm_index], groups.vals[norm_index]) # move norm value to end. this will assign it the lighter color.
-        norm_index=numeric(0) # reset norm_index
-      }
-      
-    } else { # pick a sequential or qualitative colorscheme
-      na_index = unlist(sapply(na_annots, function(annot) { grep(annot, groups.vals, ignore.case=TRUE) }, USE.NAMES = FALSE)) # identify NA indices
-      n_colors = ifelse(length(na_index)!=0, length(groups.vals)-length(na_index), length(groups.vals)) # choose n-1 or n colors, depending on whether there were / were not NA vals
-      
-      if (sum(!grepl("^[0-9]+$", groups.vals), na.rm=TRUE) <= length(na_index)) { # if we have SEQUENTIAL data (i.e. its JUST digits)
-        seq.count=seq.index+1 # re-index starting at 1 for.... everything other than the modulo operator
-        colors = grDevices::colorRampPalatte(seq.pals[[seq.count]])(n_colors) # choose color palette
-        seq.index <- (seq.index+1) %% length(seq.pals) # increment seq.index, or restart if we've exhausted the sequential palette list
-        
-      } else { # if we have QUALITATIVE data
-        qual.count=qual.index+1 # re-index starting at 1 for.... everything other than the modulo operator
-        
-        qual.colors = qual.pals[[qual.count]] # choose color palette
-        while ( n_colors > length(qual.colors) ) # if there aren't enough colors in this palette
-          qual.colors = c(qual.colors, qual.pals[[((qual.index+1) %% length(qual.pals))+1]]) # keep tacking on new palates until we have enough colors. reminder that qual.ind is indexed at zero (for modulo operator), but R indexing starts at 1 (thus the annoying math)
-        # NOTE: if someone had a ridiculously large number of annotations, this WILL recycle colors. but dear god I hope someone doesn't try to run an annot with 28+ values....
-        
-        # assign colors, shuffled pseudo-randomly (using group name as seed, to make sure we always choose the "same" random colors)
-        colors <- eval_with_seed( { sample(qual.colors, n_colors) } , seed_string = group)
-        
-        qual.index <- (qual.index+1) %% length(qual.pals) # increment qual.index, or restart if we've exhausted the qualitative palette list
-      }
-    }
-    
-    # Assign "NA" annotations grey
-    if ( length(na_index)!=0 ) { # if any of the "normal" annots can be found
-      groups.vals <- c( groups.vals[-na_index], groups.vals[na_index]) # move na values to end. these will assigned grey
-      colors <- c( colors, rep("#BBBBBB", length(na_index)) ) # set color to grey
-      na_index=numeric(0) # reset na_index
-    }
-    
-    groups.colors[[group]]$vals <- groups.vals
-    groups.colors[[group]]$colors <- colors
-  }
-  return( groups.colors )
-}
-
-restore_config_colors <- function( groups.colors.old, typemap.csv ){
-  annot <- read_annot() # read in annotations
-  
-  groups.colors <- list() # initialize groups.colors
+restore_config_colors <- function( groups.colors, groups.colors.old ){
+  groups.cols = names(groups.colors)
+  # for each annotation, check if it existed and overwrite
   for ( group in groups.cols ) {
-    groups.vals <- sort(unique( annot[[group]] )) # get / sort unique values
-    groups.vals[is.na( groups.vals )] <- "NA"
-    
-    # assign default colors to that group // initialize
-    groups.colors[[group]] <- set_default_colors( group , typemap.csv)[[group]]
-    
-    # if the group already existed, and some values already had colors assigned
-    if ( (group %in% names(groups.colors.old))  &&  any(groups.vals %in% groups.colors.old[[group]]$vals) ) {
+    if ( (group %in% names(groups.colors.old))  && # if the group already exists
+         any(groups.vals %in% groups.colors.old[[group]]$vals) ) { # and at least some values are shared
       # override those values 
       ind = match(groups.vals, groups.colors.old[[group]]$vals) # indices of groups.colors.old values that appear in current data-- ordered as they should appear in the current data
       groups.colors[[group]]$colors[ind] = unname(groups.colors.old[[group]]$colors[ind]) # use corresponding colors
@@ -934,9 +824,8 @@ restore_config_colors <- function( groups.colors.old, typemap.csv ){
   return( groups.colors )
 }
 
-
 panda_set_default_colors <- function(display=TRUE) {
-  groups.colors <<- set_default_colors( groups.cols, typemap.csv )
+  groups.colors <<- set_annot_colors( read_annot()[groups.cols] ) # r-utilities color setting function; takes annotation table subset to annots of interest
   if (display) display_colors( groups.cols, groups.colors )
 }
 
