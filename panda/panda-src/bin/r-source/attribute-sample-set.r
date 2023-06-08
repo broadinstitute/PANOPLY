@@ -84,12 +84,12 @@ process_other_attributes <- function( set ){
     locl.file.name <- tail( unlist( strsplit( buck.file.name,
                                               split = '/' ) ), 1 )
     file.copy( from = glue( "pipeline-input/{buck.file.name}" ),
-               to = glue( "aggregates/{set}/{locl.file.name}" ) )
+               to = glue( "subsets/{set}/{locl.file.name}" ) )
   }
 
-  ## use gsutil to copy all the aggregates and sample-set
+  ## use gsutil to copy all the subsets and sample-set
   ## related data files to the google bucket
-  bucket.cp <- glue( 'gsutil -m cp aggregates/{set}/* ',
+  bucket.cp <- glue( 'gsutil -m cp subsets/{set}/* ',
                      'gs://{opt$bucket}/sample_sets/{set}/' )
   system( bucket.cp )
 
@@ -140,7 +140,7 @@ process_additional_parameters <- function( set ){
 
 process_types <- function( set ){
   ## use gsutil to copy files to the google bucket
-  bucket.cp <- glue( 'gsutil -m cp aggregates/{set}/* ',
+  bucket.cp <- glue( 'gsutil -m cp subsets/{set}/* ',
                      'gs://{opt$bucket}/sample_sets/{set}/' )
   system( bucket.cp )
   
@@ -152,23 +152,11 @@ process_types <- function( set ){
     attr.name <- glue( "{type}_{opt$agg.suffix}" )
     if ( type %in% opt$gct.types ) ext <- 'gct' else ext <- 'csv'
 
-    if ( type == "rna" )
-    {
-      attr.set  <- glue(
-        'fissfc -V -y attr_set -w {opt$wk.space} ',
-        '-p {opt$project} ',
-        '-a {type}_{opt$agg.suffix} ',
-        '-v gs://{opt$bucket}/sample_sets/{set}/{type}-v2-aggregate.{ext} ',
-        '-t sample_set -e {set}' )
-      system( attr.set )
-      attr.name <- glue( "{type}_v3_{opt$agg.suffix}")
-    }
-
     attr.set <- glue(
       'fissfc -V -y attr_set -w {opt$wk.space} ',
       '-p {opt$project} ',
       '-a {attr.name} ',
-      '-v gs://{opt$bucket}/sample_sets/{set}/{type}-aggregate.{ext} ',
+      '-v gs://{opt$bucket}/sample_sets/{set}/{type}-subset.{ext} ',
       '-t sample_set -e {set}' )
     system( attr.set )
   }

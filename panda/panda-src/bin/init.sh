@@ -40,5 +40,4 @@ fi
 mkdir -p $inp
 mkdir -p sample-set-members
 mkdir -p additional-params
-mkdir -p split-data
 mkdir -p other-attributes
