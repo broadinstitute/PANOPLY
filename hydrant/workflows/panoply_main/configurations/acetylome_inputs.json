@@ -22,7 +22,6 @@
 "panoply_main.input_cna":"${this.cna_ss}",
 "panoply_main.input_pome":"${this.acetylome_ss}",
 "panoply_main.input_rna":"${this.rna_ss}",
-"panoply_main.input_rna_v3":"${this.rna_v3_ss}",
 "panoply_main.job_identifier":"${}",
 "panoply_main.ome_type":"acetylome",
 "panoply_main.panoply_association.analysisDir":"${}",

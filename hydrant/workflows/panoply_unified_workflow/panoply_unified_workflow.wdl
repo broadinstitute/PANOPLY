@@ -87,7 +87,7 @@ workflow panoply_unified_workflow {
             run_cmap = "${run_cmap}",
             run_nmf = "false",
             input_cna="${cna_data}",
-            input_rna_v3="${rna_data}",
+            input_rna="${rna_data}",
             sample_annotation="${sample_annotation}",
             yaml="${yaml}"
         }

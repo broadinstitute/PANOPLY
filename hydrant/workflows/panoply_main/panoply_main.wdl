@@ -34,7 +34,7 @@ workflow panoply_main {
 
   ## inputs
   File input_pome
-  File input_rna_v3
+  File input_rna
   File input_cna
   File yaml
 
@@ -68,7 +68,7 @@ workflow panoply_main {
     input:
       inputData = input_pome,
       type = ome_type,
-      rnaExpr = input_rna_v3,
+      rnaExpr = input_rna,
       analysisDir = job_identifier,
       standalone = "true",
       yaml = yaml
@@ -76,7 +76,7 @@ workflow panoply_main {
 
   call ssgsea_wdl.panoply_ssgsea as ssgsea_rna {
     input:
-      input_ds = input_rna_v3,
+      input_ds = input_rna,
       gene_set_database = geneset_db,
       output_prefix = job_identifier,
       level = "gc",
@@ -129,7 +129,7 @@ workflow panoply_main {
   call harmonize_wdl.panoply_harmonize {
     input:
       inputData = panoply_rna_protein_correlation.outputs,
-      rnaExpr = input_rna_v3,
+      rnaExpr = input_rna,
       cnaExpr = input_cna,
       standalone = standalone,
       type = ome_type,
