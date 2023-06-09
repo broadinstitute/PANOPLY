@@ -5,16 +5,17 @@
 
 echo -e "\n---------------------------"
 echo -e "Creating, uploading, linking-"
-echo -e "sample set aggregates -------"
+echo -e "sample set subsets -------"
 echo -e "---------------------------\n"
 
 source config.sh
 source $src/tedmint-lib.sh
 
-mkdir -p aggregates
-Rscript --verbose $src/r-source/create-aggregates.r \
+mkdir -p subsets
+Rscript --verbose $src/r-source/create-subsets.r \
   -a $csv_types \
   -b $gct_types \
+  -i $inp \
   -o $dst \
   -w $wkspace
 

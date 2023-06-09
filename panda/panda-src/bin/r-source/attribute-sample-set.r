@@ -5,7 +5,7 @@ if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
 p_load( optparse )
 p_load( glue )
 
-sample.set.member <- "sample_set_membership.tsv"
+sample.set.member.file <- "sample_set_membership.tsv"
 opt <- list()
 acc.patterns <- '\\.csv|\\.gct'
 
@@ -45,20 +45,20 @@ set_arguments <- function() {
   opt$agg.suffix <<- "ss"
 }
 
-read_sets <- function()
-{
-  meta <- read.delim( sample.set.member, header = T, sep = '\t',
-                      stringsAsFactors = F )
-  sets <- list()
-  for ( rIdx in 1:nrow( meta ) )
-  {
-    set_id <- meta$membership.sample_set_id[rIdx]
-    if ( set_id %in% names( sets ) )
-      sets[[set_id]] <- make.names( c( sets[[set_id]], meta$sample[rIdx] ) )
-    else sets[[set_id]] <- make.names( c( meta$sample[rIdx] ) )
-  }
-  return( sets )
+read_sets <- function( sample.set.member.file ){
+  
+  meta.file <- read.csv(glue( "{sample.set.member.file}" ), sep="\t") # sample-set membership file
+  set.names = unique(meta.file[[1]]) # get list of sets from the first column
+  
+  #  convert the meta.file into a list
+  sets_list = sapply( set.names, function(set) {
+    set.members = meta.file[meta.file[[1]]==set,2] #for each set, return a vector listing the samples in that set
+    return(make.names(set.members)) # return make.names() version of Sample.IDs
+  } )
+  
+  return( sets_list )
 }
+
 
 process_other_attributes <- function( set ){
   ## Read other attributes for the sample sets such that
@@ -84,12 +84,12 @@ process_other_attributes <- function( set ){
     locl.file.name <- tail( unlist( strsplit( buck.file.name,
                                               split = '/' ) ), 1 )
     file.copy( from = glue( "pipeline-input/{buck.file.name}" ),
-               to = glue( "aggregates/{set}/{locl.file.name}" ) )
+               to = glue( "subsets/{set}/{locl.file.name}" ) )
   }
 
-  ## use gsutil to copy all the aggregates and sample-set
+  ## use gsutil to copy all the subsets and sample-set
   ## related data files to the google bucket
-  bucket.cp <- glue( 'gsutil -m cp aggregates/{set}/* ',
+  bucket.cp <- glue( 'gsutil -m cp subsets/{set}/* ',
                      'gs://{opt$bucket}/sample_sets/{set}/' )
   system( bucket.cp )
 
@@ -140,7 +140,7 @@ process_additional_parameters <- function( set ){
 
 process_types <- function( set ){
   ## use gsutil to copy files to the google bucket
-  bucket.cp <- glue( 'gsutil -m cp aggregates/{set}/* ',
+  bucket.cp <- glue( 'gsutil -m cp subsets/{set}/* ',
                      'gs://{opt$bucket}/sample_sets/{set}/' )
   system( bucket.cp )
   
@@ -152,23 +152,11 @@ process_types <- function( set ){
     attr.name <- glue( "{type}_{opt$agg.suffix}" )
     if ( type %in% opt$gct.types ) ext <- 'gct' else ext <- 'csv'
 
-    if ( type == "rna" )
-    {
-      attr.set  <- glue(
-        'fissfc -V -y attr_set -w {opt$wk.space} ',
-        '-p {opt$project} ',
-        '-a {type}_{opt$agg.suffix} ',
-        '-v gs://{opt$bucket}/sample_sets/{set}/{type}-v2-aggregate.{ext} ',
-        '-t sample_set -e {set}' )
-      system( attr.set )
-      attr.name <- glue( "{type}_v3_{opt$agg.suffix}")
-    }
-
     attr.set <- glue(
       'fissfc -V -y attr_set -w {opt$wk.space} ',
       '-p {opt$project} ',
       '-a {attr.name} ',
-      '-v gs://{opt$bucket}/sample_sets/{set}/{type}-aggregate.{ext} ',
+      '-v gs://{opt$bucket}/sample_sets/{set}/{type}-subset.{ext} ',
       '-t sample_set -e {set}' )
     system( attr.set )
   }
@@ -186,9 +174,9 @@ process_gmts <- function( set ){
   system( attr.set )
 }
 
-sample_set_attr <- function()
+sample_set_attr <- function( sample.set.member.file )
 {
-  sets <- read_sets()
+  sets <- read_sets( sample.set.member.file )
   for ( set in names( sets ) )
   {
     process_other_attributes( set )
@@ -204,7 +192,7 @@ main <- function()
   set_arguments()
   opt$csv.types <<- unlist( strsplit( opt$csv.types, split = ';' ) )
   opt$gct.types <<- unlist( strsplit( opt$gct.types, split = ';' ) )
-  sample_set_attr()
+  sample_set_attr( sample.set.member.file )
 }
 
 if ( !interactive() )
