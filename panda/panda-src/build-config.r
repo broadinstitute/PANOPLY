@@ -28,11 +28,11 @@ p_load( yaml );
 p_load( ids );
 
 sink(); source('/prot/proteomics/Projects/R-utilities/map-to-genes.r')
-sink(); source('/prot/proteomics/Projects/R-utilities/color-mod-utils.r')
+source('/prot/proteomics/Projects/R-utilities/color-mod-utils.r')
 
-### ====
+### ===
 ### Section 0. Setting global parameters
-### ====
+### ===
 options (warn=-1)
 
 ### separators
@@ -185,9 +185,9 @@ printX <- function (type, line1, line2=NULL, line3=NULL, invisible=FALSE) {
 stnd_custom_warning<-printX("ERROR", "Invalid input. Please try again") # standard exit message, for use with smart_readline()
 stnd_exit_message<-printX("CANCELLED","Previous inputs not saved", invisible = TRUE) # standard exit message, for use with smart_readline()
 
-### ====
+### ===
 ### Section. Inputs
-### ====
+### ===
 
 panda_initialize <- function (workspace.type) {
   # identiry workspace type ('modules' or 'pipelines')
@@ -550,9 +550,9 @@ panda_input <- function(){
 }
 
 
-### ====
+### ===
 ### Section. Toggle Processing
-### ====
+### ===
 
 validate_flanking_sequence <- function() {
   flush.console()
@@ -638,9 +638,9 @@ panda_preprocessing <- function() {
 }
 
 
-### ====
+### ===
 ### Section. Groups
-### ====
+### ===
 
 get_all_groups <- function( typemap.csv ){
   annot <- read_annot()
@@ -773,9 +773,9 @@ panda_groups <- function(){
 }
 
 
-### ====
+### ===
 ### Section. Colors
-### ====
+### ===
 
 display_colors <- function( groups.cols, groups.colors ){
   par( cex.axis = 1.2 )
@@ -813,6 +813,7 @@ restore_config_colors <- function( groups.colors, groups.colors.old ){
   groups.cols = names(groups.colors)
   # for each annotation, check if it existed and overwrite
   for ( group in groups.cols ) {
+    groups.vals <- groups.colors[[group]]$vals # pull in annot values from CURRENT dataset
     if ( (group %in% names(groups.colors.old))  && # if the group already exists
          any(groups.vals %in% groups.colors.old[[group]]$vals) ) { # and at least some values are shared
       # override those values 

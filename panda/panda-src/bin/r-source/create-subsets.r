@@ -12,8 +12,8 @@ opt <- list()
 set_arguments <- function(){
   optionList <- list(
     make_option(
-      c( "-a", "--csv.files"  ),
-      dest = "cvs.files",
+      c( "-a", "--csv.types"  ),
+      dest = "csv.types",
       action = "store",
       type = 'character'),
 
@@ -44,13 +44,13 @@ set_arguments <- function(){
     )
 
   opt <<- parse_args( OptionParser( option_list=optionList ) )
-  opt$meta.file <<- glue( "{opt$location}/sample_set.membership.tsv" )
+  opt$meta.file <<- glue( "{opt$location}/sample_set_membership.tsv" )
 }
 
 
 read_sets <- function( location ){
   
-  meta.file <- read.csv(glue( "{location}/sample_set.membership.tsv" ), sep="\t") # sample-set membership file
+  meta.file <- read.csv(glue( "{location}/sample_set_membership.tsv" ), sep="\t") # sample-set membership file
   set.names = unique(meta.file[[1]]) # get list of sets from the first column
   
   #  convert the meta.file into a list
@@ -62,7 +62,7 @@ read_sets <- function( location ){
   return( sets_list )
 }
 
-load_files <- function( gct.types, cvs.types, inputs.dir, wkspace ){
+load_files <- function( gct.types, csv.types, inputs.dir, wkspace ){
   #initialize lists, to house the three file-types
   data <- list(gcts=list(),
                csvs=list(),
@@ -96,8 +96,8 @@ set_subset_csv <- function( csv, type, set.name, set.members, set.path ){
 
 
 subset_all_files <- function( gct.types, csv.types, location, inputs.dir, wkspace ){
-  sets <- read_sets( location ) # read in sets, using the sample_set.membership.tsv file in opt$location
-  data <- load_files( gct.types, cvs.files, inputs.dir, wkspace ) # read in GCT/CSV/group data
+  sets <- read_sets( location ) # read in sets, using the sample_set_membership.tsv file in opt$location
+  data <- load_files( gct.types, csv.types, inputs.dir, wkspace ) # read in GCT/CSV/group data
   
   for ( set.name in names( sets ) ){ # for each set
     set.members = sets[[set.name]]
