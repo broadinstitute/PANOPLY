@@ -22,9 +22,9 @@ workflow panoply_unified_workflow {
   File? sample_annotation
   File yaml
   String job_id
-  String run_ptmsea
   String run_cmap
   String run_nmf #'true' or 'false'
+  String? run_ptmsea
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"

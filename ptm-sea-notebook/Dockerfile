@@ -1,7 +1,7 @@
 FROM us.gcr.io/broad-dsp-gcr-public/terra-jupyter-r:2.1.9
 USER root
 
-RUN R -e 'install.packages(c("pacman", "optparse", "gtools", "verification", "doParallel", "foreach", "magrittr", "yaml", "glue", "dplyr"))'
+RUN R -e 'install.packages(c("pacman", "optparse", "gtools", "verification", "doParallel", "foreach", "magrittr", "yaml", "glue", "dplyr", "tidyr"))'
 RUN R -e 'BiocManager::install(c("rhdf5", "cmapR", "Biostrings"))'
 
 RUN apt-get update && apt-get install -y dos2unix && apt-get install -y nano

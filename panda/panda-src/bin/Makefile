@@ -26,17 +26,6 @@ panda-init:
 	@make groups
 	@make terrainit
 
-#? 
-#? ** panda-samples
-#?     . splits input files into per-sample files
-#?     . uploads them on Googke Bucket
-#?     . links them to the Terra Data Model 
-.PHONY: panda-samples
-panda-samples:
-	@make sp-split-gct
-	@make sp-split-csv
-	@make sp-link
-
 #?
 #? ** panda-sets
 #?     . creates sample sets
@@ -46,7 +35,7 @@ panda-samples:
 panda-sets:
 	@make ss-create
 	@make ss-model
-	@make ss-aggregates
+	@make ss-subsets
 
 #? 
 #? ** panda-run
@@ -54,10 +43,9 @@ panda-sets:
 .PHONY: panda-run
 panda-run:
 	@make panda-init
-	@make panda-samples
 	@make ss-create
 	@make ss-model
-	@make ss-aggregates
+	@make ss-subsets
 
 #?
 #? =====================================================
@@ -108,42 +96,6 @@ terrainit:
 #? =====================================================
 
 #?
-#? ** sp-split-gct
-#?     . splits GCT input files into per-sample GCTs
-.PHONY: sp-split-gct
-sp-split-gct: $(GCT_FLOGS)
-split-log-%.txt: pipeline-input/%.gct
-	@echo -e "* Splitting .GCT files.."
-	@$(SHELL) $(TEDMINT)/split.sh -e "gct" -i $< > $@ 2>&1;
-	@echo -e "* Copying them to Terra.."
-	@$(SHELL) $(TEDMINT)/terra-copy.sh -e "gct" -i $< >> $@ 2>&1;
-
-#?
-#? ** sp-split-csv
-#?     . splits CSV input files into per-sample CSVs
-.PHONY: sp-split-csv
-sp-split-csv: $(CSV_FLOGS)
-split-log-%.txt: pipeline-input/%.csv
-	@echo -e "* Splitting .CSV files.."
-	@$(SHELL) $(TEDMINT)/split.sh -e "csv" -i $< > $@ 2>&1;
-	@echo -e "* Copying them to Terra.."
-	@$(SHELL) $(TEDMINT)/terra-copy.sh -e "csv" -i $< >> $@ 2>&1;
-
-#?
-#? ** sp-link
-#?     . uploads samples to the Terra Data Model
-#?     . links them to Google Bucket Files
-.PHONY: sp-link
-sp-link:
-	@echo -e "* Adding sample data model to Terra.."
-	@$(SHELL) $(TEDMINT)/terra-add-samples.sh $(LOGm_EXE)
-	@echo -e "* Setting links up for samples data"
-	@$(SHELL) $(TEDMINT)/terra-set-links.sh $(LOGm_EXE)
-
-#?
-#? =====================================================
-
-#?
 #? ** ss-create
 #?     . creates sample set memberships
 .PHONY: ss-create
@@ -157,20 +109,18 @@ ss-create:
 .PHONY: ss-model
 ss-model:
 	@echo -e "* Updating sample set TSVs.."
-	@$(SHELL) $(TEDMINT)/terra-add-ss.sh
+	@$(SHELL) $(TEDMINT)/terra-add-ss.sh $(LOGm_EXE)
 
 #?
-#? ** ss-aggregates
-#?     . creates aggregates 
+#? ** ss-subsets
+#?     . creates subsets 
 #?     . uploads them to the Google Bucket
 #?     . uploads Other attributes and Additional Params
 #?     . links all to the Terra Data model
-.PHONY: ss-aggregates
-ss-aggregates:
-	@echo -e "* Getting GCB addresses for split files.."
-	@$(SHELL) $(TEDMINT)/get_split_samples.sh $(LOGm_EXE)
-	@echo -e "* Creating aggregates.."
-	@$(SHELL) $(TEDMINT)/process-aggregates.sh $(LOGm_EXE)
+.PHONY: ss-subsets
+ss-subsets:
+	@echo -e "* Creating subsets.."
+	@$(SHELL) $(TEDMINT)/process-subsets.sh $(LOGm_EXE)
 
 #?
 #? =====================================================

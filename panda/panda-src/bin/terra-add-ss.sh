@@ -30,5 +30,5 @@ Rscript --verbose $src/r-source/populate_sample_set.r \
 
 mkdir -p sample-set-members-store
 mv sample-set-members/* sample-set-members-store/.
-fissfc entity_import -w $wkspace -p $project -f sample_set_membership.tsv
+#fissfc entity_import -w $wkspace -p $project -f sample_set_membership.tsv # no longer uploading membership info-- no single-sample entities
 fissfc entity_import -w $wkspace -p $project -f sample_set_entity.tsv
