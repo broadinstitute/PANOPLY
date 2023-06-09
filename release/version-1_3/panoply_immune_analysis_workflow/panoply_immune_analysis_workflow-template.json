@@ -25,8 +25,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_immune_analysis_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_immune_analysis_workflow/18",
-    "methodVersion": 18,
+    "methodUri": "agora://broadcptac/panoply_immune_analysis_workflow/20",
+    "methodVersion": 20,
     "sourceRepo": "agora"
   },
   "name": "panoply_immune_analysis_workflow",

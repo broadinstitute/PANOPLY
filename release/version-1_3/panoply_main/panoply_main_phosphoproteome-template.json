@@ -323,8 +323,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_main",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_main/18",
-    "methodVersion": 18,
+    "methodUri": "agora://broadcptac/panoply_main/19",
+    "methodVersion": 19,
     "sourceRepo": "agora"
   },
   "name": "panoply_main_phosphoproteome",

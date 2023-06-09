@@ -91,7 +91,7 @@ configure_primary_workflow() {
     cat $wf-template.json |  \
       jq '.inputs."panoply_main.yaml" = $val' --arg val "this.parameters" |  \
       jq '.inputs."panoply_main.input_cna" = $val' --arg val "this.cna_ss" |  \
-      jq '.inputs."panoply_main.input_rna_v3" = $val' --arg val "this.rna_v3_ss" |  \
+      jq '.inputs."panoply_main.input_rna" = $val' --arg val "this.rna_ss" |  \
       jq '.inputs."panoply_main.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_main.run_cmap" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_main.run_ptmsea" = $val' --arg val "\"false\"" |  \
@@ -120,7 +120,7 @@ configure_primary_workflow() {
     cat $wf-template.json |  \
       jq '.inputs."panoply_unified_workflow.yaml" = $val' --arg val "this.parameters" |  \
       jq '.inputs."panoply_unified_workflow.cna_data" = $val' --arg val "this.cna_ss" |  \
-      jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_v3_ss" |  \
+      jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_ss" |  \
       jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.run_nmf" = $val' --arg val "\"true\"" |  \

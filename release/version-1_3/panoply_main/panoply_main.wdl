@@ -13,11 +13,12 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/17/plain-WDL/descriptor" as cna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/16/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/16/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/2/plain-WDL/descriptor" as check_yaml_default_wdl
 
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/19/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/26/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/3/plain-WDL/descriptor" as omicsev_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_gct/versions/8/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_gct/versions/10/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/16/plain-WDL/descriptor" as download_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cosmo/versions/2/plain-WDL/descriptor" as cosmo_wdl
 
@@ -26,7 +27,7 @@ workflow panoply_main {
 
   String job_identifier
   String ome_type
-  String run_ptmsea # "true" or "false"
+  String? run_ptmsea # "true" or "false"
   File sample_annotation
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
@@ -91,8 +92,19 @@ workflow panoply_main {
       yaml_file = yaml
   }
   
-  if ( run_ptmsea == "true" ){
-    if ( ome_type == "phosphoproteome" ){
+
+  # PTMSEA
+  if ( ome_type == "phosphoproteome" ){
+
+    # check yaml default for run.ptmsea (Terra param takes precedence)
+    call check_yaml_default_wdl.panoply_check_yaml_default as check_ptmsea_default {
+      input:
+        param = run_ptmsea,
+        yaml = yaml,
+        param_lookup = "run.ptmsea"
+    }
+
+    if ( check_ptmsea_default.param_boolean ){
       call ssgsea_wdl.panoply_ssgsea as ptmsea_ome {
         input:
           input_ds = input_pome,
@@ -103,6 +115,7 @@ workflow panoply_main {
       }
     }
   } 
+  
 
   call rna_corr_report_wdl.panoply_rna_protein_correlation_report {
     input:

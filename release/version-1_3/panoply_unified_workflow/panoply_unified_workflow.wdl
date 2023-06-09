@@ -1,15 +1,15 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/8/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/18/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/18/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_workflow/versions/8/plain-WDL/descriptor" as so_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/34/plain-WDL/descriptor" as mo_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_immune_analysis_workflow/versions/18/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_make_pairs_workflow/versions/18/plain-WDL/descriptor" as make_pairs_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/10/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/19/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/20/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_workflow/versions/10/plain-WDL/descriptor" as so_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_gct/versions/36/plain-WDL/descriptor" as mo_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_immune_analysis_workflow/versions/20/plain-WDL/descriptor" as immune_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_make_pairs_workflow/versions/20/plain-WDL/descriptor" as make_pairs_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_assemble_results/versions/10/plain-WDL/descriptor" as assemble_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey_workflow/versions/8/plain-WDL/descriptor" as so_nmf_sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey_workflow/versions/10/plain-WDL/descriptor" as so_nmf_sankey_wdl
 
 
 workflow panoply_unified_workflow {
@@ -22,9 +22,9 @@ workflow panoply_unified_workflow {
   File? sample_annotation
   File yaml
   String job_id
-  String run_ptmsea
   String run_cmap
   String run_nmf #'true' or 'false'
+  String? run_ptmsea
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
