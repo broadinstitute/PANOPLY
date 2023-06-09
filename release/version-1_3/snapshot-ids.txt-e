@@ -38,6 +38,7 @@ https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versio
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_assemble_results/versions/10/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey/versions/3/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep/versions/27/plain-WDL/descriptor
+https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_workflow/versions/24/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_ms_data/versions/25/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/20/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/2/plain-WDL/descriptor
@@ -51,4 +52,3 @@ https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_gct/versions/
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey_workflow/versions/10/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_workflow/versions/10/plain-WDL/descriptor
 https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/19/plain-WDL/descriptor
-https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_workflow/versions/25/plain-WDL/descriptor

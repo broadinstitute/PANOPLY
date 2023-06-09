@@ -33,12 +33,6 @@ task panoply_normalize_ms_data {
       ${"--norm_method " + normMethod} \
       ${"--alt_method " + altMethod} \
       ${"--ndigits " + ndigits} \
-
-    # Find the flag for normalize.proteomics in the yaml:
-    cfg='final_output_params.yaml'
-    echo "library(yaml);yaml=read_yaml('$cfg');norm=yaml[['normalize.proteomics']];writeLines(as.character(norm), con='norm.txt')" > cmd.r
-    Rscript cmd.r
-    norm=`cat norm.txt`
     
     if [[ ${standalone} = false ]]; then
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh normalize \
