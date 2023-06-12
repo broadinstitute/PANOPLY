@@ -38,7 +38,7 @@ workflow panoply_unified_workflow {
   call make_pairs_wdl.panoply_make_pairs_workflow as type_pairs {
     input:
       files = data,
-      suffix = "-aggregate.gct"
+      suffix = "-subset.gct"
 
   }
 
@@ -46,7 +46,7 @@ workflow panoply_unified_workflow {
   call make_pairs_wdl.panoply_make_pairs_workflow as ome_pairs {
     input:
       files = omes,
-      suffix = "-aggregate.gct"
+      suffix = "-subset.gct"
 
   }
 

@@ -39,7 +39,7 @@ workflow panoply_main {
   File yaml
 
   File? cna_groups
-  File? association_groups
+  File association_groups
 
   ## cmap inputs
   Int cmap_n_permutations = 10
