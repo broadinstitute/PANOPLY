@@ -2,7 +2,7 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey/versions/3/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey_report/versions/2/plain-WDL/descriptor" as so_nmf_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_sankey_report/versions/4/plain-WDL/descriptor" as so_nmf_report_wdl
 
 
 workflow panoply_so_nmf_sankey_workflow {

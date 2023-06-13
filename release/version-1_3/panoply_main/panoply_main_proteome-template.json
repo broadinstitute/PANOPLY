@@ -18,7 +18,7 @@
     "panoply_main.geneset_db": "this.gseaDB",
     "panoply_main.input_cna": "this.cna_ss",
     "panoply_main.input_pome": "this.proteome_ss",
-    "panoply_main.input_rna_v3": "this.rna_v3_ss",
+    "panoply_main.input_rna": "this.rna_ss",
     "panoply_main.job_identifier": "",
     "panoply_main.min_numratio_fraction": "",
     "panoply_main.na_max": "",
@@ -323,8 +323,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_main",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_main/19",
-    "methodVersion": 19,
+    "methodUri": "agora://broadcptac/panoply_main/22",
+    "methodVersion": 22,
     "sourceRepo": "agora"
   },
   "name": "panoply_main_proteome",

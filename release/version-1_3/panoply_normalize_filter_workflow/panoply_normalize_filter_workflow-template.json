@@ -39,8 +39,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_normalize_filter_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_normalize_filter_workflow/10",
-    "methodVersion": 10,
+    "methodUri": "agora://broadcptac/panoply_normalize_filter_workflow/13",
+    "methodVersion": 13,
     "sourceRepo": "agora"
   },
   "name": "panoply_normalize_filter_workflow",
