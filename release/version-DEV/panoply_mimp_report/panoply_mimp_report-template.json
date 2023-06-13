@@ -11,8 +11,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mimp_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_mimp_report/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptacdev/panoply_mimp_report/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_mimp_report",

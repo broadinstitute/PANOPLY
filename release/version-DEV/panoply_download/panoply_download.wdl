@@ -3,18 +3,20 @@
 #
 task panoply_download
 {
-  File cons_clust_tar
+  File association_tar
   File ssgsea_ome_tar
   File ssgsea_rna_tar
   File? ptmsea
+  File? so_nmf_tar
+  File? so_nmf_ssgsea_tar
+  File? omicsev_tar
+  File? cosmo_tar
   String output_prefix
   String analysisDir
   String summary_tar = "panoply_main_summary.tar"
   String full_tar = "panoply_main_full.tar"
   Array[File] ssgsea_assoc_tars
-  Array[File] ssgsea_clust_tars
   String ssgsea_assoc_dir = "ssgsea_assoc"
-  String ssgsea_clust_dir = "ssgsea_clust"
 
   Int? memory
   Int? disk_space
@@ -28,10 +30,6 @@ task panoply_download
       mkdir ${ssgsea_assoc_dir}
     fi
 
-    if [ ! -d ${ssgsea_clust_dir} ]; then
-      mkdir ${ssgsea_clust_dir}
-    fi
-
     index=0
     for file in ${sep=' ' ssgsea_assoc_tars} ; do
       basefilename=$(basename $file)
@@ -39,21 +37,18 @@ task panoply_download
       cp $file ${ssgsea_assoc_dir}/$basefilename-$index.tar;
     done
 
-    index=0
-    for file in ${sep=' ' ssgsea_clust_tars} ; do
-      basefilename=$(basename $file)
-      index=$((index+1))
-      cp $file ${ssgsea_clust_dir}/$basefilename-$index.tar;
-    done
 
     /prot/proteomics/Projects/PGDAC/src/download.sh \
-        -c ${cons_clust_tar} \
+        -t ${association_tar} \
         -o ${ssgsea_ome_tar} \
         -r ${ssgsea_rna_tar} \
         -a ${analysisDir} \
         -s ${ssgsea_assoc_dir} \
-        -l ${ssgsea_clust_dir} \
-        ${"-p" + ptmsea};
+        ${"-p" + ptmsea} \
+        ${"-n" + so_nmf_tar} \
+        ${"-m" + so_nmf_ssgsea_tar} \
+        ${"-e" + omicsev_tar} \
+        ${"-c" + cosmo_tar};
     mv ${summary_tar} ${output_prefix}-${summary_tar}
     mv ${full_tar} ${output_prefix}-${full_tar}
   }

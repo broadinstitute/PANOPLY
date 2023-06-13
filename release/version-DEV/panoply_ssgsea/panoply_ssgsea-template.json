@@ -8,6 +8,7 @@
     "panoply_ssgsea_workflow.panoply_ssgsea.gene_col": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.gene_set_database": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.global_fdr": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.humanize_gene": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.id_type": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.id_type_out": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.input_ds": "",
@@ -34,8 +35,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_ssgsea",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_ssgsea/3",
-    "methodVersion": 3,
+    "methodUri": "agora://broadcptacdev/panoply_ssgsea/6",
+    "methodVersion": 6,
     "sourceRepo": "agora"
   },
   "name": "panoply_ssgsea",

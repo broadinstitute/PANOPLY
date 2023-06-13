@@ -14,8 +14,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_sampleqc_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_sampleqc_report/3",
-    "methodVersion": 3,
+    "methodUri": "agora://broadcptacdev/panoply_sampleqc_report/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_sampleqc_report",

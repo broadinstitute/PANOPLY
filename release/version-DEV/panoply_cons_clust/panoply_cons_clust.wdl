@@ -2,7 +2,7 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_cons_clust {
-  File inputData   # output from panoply_harmonize or panoply_normalize_ms_data
+  File inputData   # output from panoply_harmonize or panoply_filter
   String type
   File? groupsFile
   File yaml

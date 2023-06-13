@@ -1,0 +1,38 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_omicsev_workflow.panoply_omicsev.STANDALONE": "",
+    "panoply_omicsev_workflow.panoply_omicsev.batch_column_name": "",
+    "panoply_omicsev_workflow.panoply_omicsev.class_column_name": "",
+    "panoply_omicsev_workflow.panoply_omicsev.cpu": "",
+    "panoply_omicsev_workflow.panoply_omicsev.data_files": "",
+    "panoply_omicsev_workflow.panoply_omicsev.data_log_transformed": "",
+    "panoply_omicsev_workflow.panoply_omicsev.do_function_prediction": "",
+    "panoply_omicsev_workflow.panoply_omicsev.label": "",
+    "panoply_omicsev_workflow.panoply_omicsev.local_disk_gb": "",
+    "panoply_omicsev_workflow.panoply_omicsev.memory": "",
+    "panoply_omicsev_workflow.panoply_omicsev.num_preemptions": "",
+    "panoply_omicsev_workflow.panoply_omicsev.ome_type": "",
+    "panoply_omicsev_workflow.panoply_omicsev.panoply_harmonize_tar_file": "",
+    "panoply_omicsev_workflow.panoply_omicsev.rna_file": "",
+    "panoply_omicsev_workflow.panoply_omicsev.rna_log_transformed": "",
+    "panoply_omicsev_workflow.panoply_omicsev.sample_anno_file": "",
+    "panoply_omicsev_workflow.panoply_omicsev.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_omicsev",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_omicsev/21",
+    "methodVersion": 21,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_omicsev",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_omicsev_workflow.panoply_omicsev.outputs": "",
+    "panoply_omicsev_workflow.panoply_omicsev.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

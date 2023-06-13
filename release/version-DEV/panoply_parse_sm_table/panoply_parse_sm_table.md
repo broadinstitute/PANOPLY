@@ -21,6 +21,10 @@ Optional inputs:
   - `TMT11` (TMT-11 with 131C channel as common reference) 
   - `TMT10.126` (TMT-10 with 126 channel as common reference)
   - `iTRAQ4` (iTRAQ 4-plex with 117 as common reference)
+* ```applyNumratioFilter```: (String, default = TRUE) flag for applying numRatio based filter
+* ```minNumratioProteome```: (Int, default = 2 for protome) minimum number of ratios that need to be observed for each protein/PTM site in order to retain in the filtered table
+* ```minNumratioPTMs```: (Int, default = 1 for PTMs) minimum number of ratios that need to be observed for each protein/PTM site in order to retain in the filtered table
+* ```minNumratioFraction```: (Float, default = 0.25) fraction of samples in which `minNumratio` should be present to retain protein/PTM site
 * ```speciesFilter```: (String, default = TRUE) enable species filtering to retain only human proteins
 * ```ndigits```: (Int, default = 5) number of decimal digits to use in output `gct` tables
 * ```outFile```: (String, default = "panoply_parse_sm_table-output.tar") output `.tar` file name

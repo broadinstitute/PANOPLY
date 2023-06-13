@@ -13,6 +13,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/1/plain-WDL/descriptor" as check_yaml_default_wdl
 
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/3/plain-WDL/descriptor" as assoc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as ssgsea_wdl
@@ -26,19 +27,19 @@ workflow panoply_main {
 
   String job_identifier
   String ome_type
-  String run_ptmsea # "true" or "false"
+  String? run_ptmsea # "true" or "false"
   File sample_annotation
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
 
   ## inputs
   File input_pome
-  File input_rna_v3
+  File input_rna
   File input_cna
   File yaml
 
   File? cna_groups
-  File? association_groups
+  File association_groups
 
   ## cmap inputs
   Int cmap_n_permutations = 10
@@ -67,7 +68,7 @@ workflow panoply_main {
     input:
       inputData = input_pome,
       type = ome_type,
-      rnaExpr = input_rna_v3,
+      rnaExpr = input_rna,
       analysisDir = job_identifier,
       standalone = "true",
       yaml = yaml
@@ -75,7 +76,7 @@ workflow panoply_main {
 
   call ssgsea_wdl.panoply_ssgsea as ssgsea_rna {
     input:
-      input_ds = input_rna_v3,
+      input_ds = input_rna,
       gene_set_database = geneset_db,
       output_prefix = job_identifier,
       level = "gc",
@@ -91,8 +92,19 @@ workflow panoply_main {
       yaml_file = yaml
   }
   
-  if ( run_ptmsea == "true" ){
-    if ( ome_type == "phosphoproteome" ){
+
+  # PTMSEA
+  if ( ome_type == "phosphoproteome" ){
+
+    # check yaml default for run.ptmsea (Terra param takes precedence)
+    call check_yaml_default_wdl.panoply_check_yaml_default as check_ptmsea_default {
+      input:
+        param = run_ptmsea,
+        yaml = yaml,
+        param_lookup = "run.ptmsea"
+    }
+
+    if ( check_ptmsea_default.param_boolean ){
       call ssgsea_wdl.panoply_ssgsea as ptmsea_ome {
         input:
           input_ds = input_pome,
@@ -103,6 +115,7 @@ workflow panoply_main {
       }
     }
   } 
+  
 
   call rna_corr_report_wdl.panoply_rna_protein_correlation_report {
     input:
@@ -116,7 +129,7 @@ workflow panoply_main {
   call harmonize_wdl.panoply_harmonize {
     input:
       inputData = panoply_rna_protein_correlation.outputs,
-      rnaExpr = input_rna_v3,
+      rnaExpr = input_rna,
       cnaExpr = input_cna,
       standalone = standalone,
       type = ome_type,

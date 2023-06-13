@@ -14,6 +14,7 @@
     "panoply_mimp_workflow.panoply_mimp.phospho_file": "",
     "panoply_mimp_workflow.panoply_mimp.phosphosite_col": "",
     "panoply_mimp_workflow.panoply_mimp.protein_id_col": "",
+    "panoply_mimp_workflow.panoply_mimp.protein_id_type": "",
     "panoply_mimp_workflow.panoply_mimp.ram_gb": "",
     "panoply_mimp_workflow.panoply_mimp.sample_id_col": "",
     "panoply_mimp_workflow.panoply_mimp.search_engine": "",
@@ -23,8 +24,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mimp",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_mimp/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptacdev/panoply_mimp/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_mimp",

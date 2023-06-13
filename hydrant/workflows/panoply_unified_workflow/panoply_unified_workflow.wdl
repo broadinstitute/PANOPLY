@@ -22,9 +22,9 @@ workflow panoply_unified_workflow {
   File? sample_annotation
   File yaml
   String job_id
-  String run_ptmsea
   String run_cmap
   String run_nmf #'true' or 'false'
+  String? run_ptmsea
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
@@ -38,7 +38,7 @@ workflow panoply_unified_workflow {
   call make_pairs_wdl.panoply_make_pairs_workflow as type_pairs {
     input:
       files = data,
-      suffix = "-aggregate.gct"
+      suffix = "-subset.gct"
 
   }
 
@@ -46,7 +46,7 @@ workflow panoply_unified_workflow {
   call make_pairs_wdl.panoply_make_pairs_workflow as ome_pairs {
     input:
       files = omes,
-      suffix = "-aggregate.gct"
+      suffix = "-subset.gct"
 
   }
 
@@ -87,7 +87,7 @@ workflow panoply_unified_workflow {
             run_cmap = "${run_cmap}",
             run_nmf = "false",
             input_cna="${cna_data}",
-            input_rna_v3="${rna_data}",
+            input_rna="${rna_data}",
             sample_annotation="${sample_annotation}",
             yaml="${yaml}"
         }

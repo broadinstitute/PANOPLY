@@ -36,6 +36,7 @@
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.disk_space": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.gene_col": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.global_fdr": "",
+    "panoply_mo_nmf_gct_workflow.panoply_ssgsea.humanize_gene": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.id_type": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.id_type_out": "",
     "panoply_mo_nmf_gct_workflow.panoply_ssgsea.level": "",
@@ -66,8 +67,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_mo_nmf_gct",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_mo_nmf_gct/5",
-    "methodVersion": 5,
+    "methodUri": "agora://broadcptacdev/panoply_mo_nmf_gct/9",
+    "methodVersion": 9,
     "sourceRepo": "agora"
   },
   "name": "panoply_mo_nmf_gct",
