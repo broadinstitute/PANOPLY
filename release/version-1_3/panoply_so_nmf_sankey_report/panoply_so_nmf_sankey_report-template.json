@@ -12,8 +12,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_so_nmf_sankey_report",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_so_nmf_sankey_report/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptac/panoply_so_nmf_sankey_report/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_so_nmf_sankey_report",

@@ -86,8 +86,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_so_nmf_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_so_nmf_workflow/10",
-    "methodVersion": 10,
+    "methodUri": "agora://broadcptac/panoply_so_nmf_workflow/12",
+    "methodVersion": 12,
     "sourceRepo": "agora"
   },
   "name": "panoply_so_nmf_workflow",

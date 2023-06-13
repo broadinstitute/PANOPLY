@@ -420,7 +420,7 @@
     "panoply_unified_workflow.pome.subset_bucket": "",
     "panoply_unified_workflow.pome.subset_list_file": "",
     "panoply_unified_workflow.prote_ome": "this.proteome_ss",
-    "panoply_unified_workflow.rna_data": "this.rna_v3_ss",
+    "panoply_unified_workflow.rna_data": "this.rna_ss",
     "panoply_unified_workflow.run_cmap": "\"false\"",
     "panoply_unified_workflow.run_nmf": "\"true\"",
     "panoply_unified_workflow.run_ptmsea": "\"false\"",
@@ -503,8 +503,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_unified_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_unified_workflow/25",
-    "methodVersion": 25,
+    "methodUri": "agora://broadcptac/panoply_unified_workflow/27",
+    "methodVersion": 27,
     "sourceRepo": "agora"
   },
   "name": "panoply_unified_workflow",
