@@ -62,14 +62,21 @@ for mod in "${modules[@]}"; do
 done
 
 
-### Run ./setup-release.sh with Patch-Flag, for these parameters
+### Run ./setup-release.sh with patch-fix flag, for these parameters
 
 # default development and release namespaces (copied from ./release.sh)
 DEV=broadcptacdev
-REL=broadcptac
 proj=broad-firecloud-cptac
-prod="PANOPLY_Production_Pipelines_v$VER"
-prod_all="PANOPLY_Production_Modules_v$VER"
+
+if [[ $VER == "DEV" ]]; then # use dev namespaces
+  REL=broadcptacdev
+  prod=PANOPLY_Modules_DEV
+  prod_all=PANOPLY_Pipelines_DEV
+else
+  REL=broadcptac
+  prod="PANOPLY_Production_Pipelines_v$VER"
+  prod_all="PANOPLY_Production_Modules_v$VER"
+fi
 
 ./setup-release.sh -p $DEV -N $REL -T $VER -r $proj -w $prod_all -y $prod -P ${rebuild_dockers} ${modules[@]}
 
