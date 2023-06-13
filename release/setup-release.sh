@@ -28,7 +28,7 @@ display_usage() {
   echo "-w | string | Workspace to populate with all methods"
   echo "-y | string | Workspace to populate pipeline/workflow methods"
   echo "-P | string | Patch flag. When toggled, only specified modules will be rebuilt."
-  echo "-R | string | Patch flag. When toggled, only specified modules will be rebuilt."
+  echo "-R | string | Patch flag. When toggled, dockers will be rebuilt for specified modules."
   echo "        [...] Trailing arguments will be interpretted as modules to patch-fix. Should only be used alongside -P flag."
   echo "-h | flag   | Print Usage"
   exit
