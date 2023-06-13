@@ -62,7 +62,8 @@ workflow panoply_normalize_filter_workflow {
   	}
 
   	output {
-  		File filtered_data_table = panoply_filter.outputs
+  		String output_ome_type = ome_type
+        File filtered_data_table = panoply_filter.outputs
   		File filtered_tar = panoply_filter.output_tar
   		File normalize_report = panoply_normalize_ms_data_report.report
 

@@ -7,7 +7,6 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blackshee
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/24/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_gct/versions/5/plain-WDL/descriptor" as mo_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/3/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_make_pairs_workflow/versions/3/plain-WDL/descriptor" as make_pairs_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/18/plain-WDL/descriptor" as assemble_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/4/plain-WDL/descriptor" as so_nmf_sankey_wdl
 
@@ -30,29 +29,21 @@ workflow panoply_unified_workflow {
   String? normalizeProteomics # "true" or "false"
   String? filterProteomics # "true" or "false"
 
-  
-  Array[File] omes = ["${prote_ome}", "${phospho_ome}", "${acetyl_ome}", "${ubiquityl_ome}"]
-  Array[File] data = ["${rna_data}", "${cna_data}"]
-  
-  # Turn the type data (RNA+CNA) into an array of pairs:
-  call make_pairs_wdl.panoply_make_pairs_workflow as type_pairs {
-    input:
-      files = data,
-      suffix = "-subset.gct"
+  # Organize omics data into pairs
 
-  }
+  Array[Pair[String?, File?]] ome_pairs =
+    [ ("proteome", "${prote_ome}"),
+      ("phosphoproteome", "${phospho_ome}"),
+      ("acetylome", "${acetyl_ome}"),
+      ("ubiquitylome", "${ubiquityl_ome}") ]
 
-  # Make the array of ome pairs to input into normalize:
-  call make_pairs_wdl.panoply_make_pairs_workflow as ome_pairs {
-    input:
-      files = omes,
-      suffix = "-subset.gct"
-
-  }
+  Array[Pair[String?, File?]] geneome_pairs =
+    [ ("rna", "${rna_data}"),
+      ("cna", "${cna_data}") ]
 
   ### NORMALIZE:
   ### Normalize the data first so downstream modules (NMF etc) can run in parallel to main:
-  scatter (pair in ome_pairs.zipped) {
+  scatter (pair in ome_pairs) {
     if ("${pair.right}" != "") {
       call norm_filt_wdl.panoply_normalize_filter_workflow as norm_filt {
         input:
@@ -65,17 +56,13 @@ workflow panoply_unified_workflow {
       }
     }
   }
+  
+  # Zip Normalization / Filter Output into a labelled Array 
+  Array[Pair[String?,File?]] ome_pairs_norm_filt = zip(norm_filt.output_ome_type , norm_filt.filtered_data_table)
 
-  # Make an array of pairs from the normalized data for input to main and other modules:
-  call make_pairs_wdl.panoply_make_pairs_workflow as norm_filt_pairs {
-    input:
-      files = norm_filt.filtered_data_table,
-      suffix = "-filtered_table-output.gct"
-
-  }
 
   ### MAIN:
-  scatter (pair in norm_filt_pairs.zipped) {
+  scatter (pair in ome_pairs_norm_filt) {
     if ("${pair.right}" != "") {
         call main_wdl.panoply_main as pome {
           input:
@@ -96,9 +83,8 @@ workflow panoply_unified_workflow {
     }
   }
   
-
   # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for Blacksheep use:
-  Array[Pair[String?,File?]] all_pairs = flatten([norm_filt_pairs.zipped,type_pairs.zipped])
+  Array[Pair[String?,File?]] all_pairs = flatten([ome_pairs_norm_filt,geneome_pairs])
   
   ### BLACKSHEEP:
   scatter (pair in all_pairs) {
