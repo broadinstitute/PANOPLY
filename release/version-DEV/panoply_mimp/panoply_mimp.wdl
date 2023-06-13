@@ -13,7 +13,8 @@ task panoply_mimp {
     File? groups_file_path
 	String? search_engine
 	String? phosphosite_col
-	String? protein_id_col
+    String? protein_id_col
+    String? protein_id_type
 	String? mutation_AA_change_colname
 	String? mutation_type_col
 	String? sample_id_col 
@@ -29,6 +30,7 @@ task panoply_mimp {
         ${"--mimp_search_engine " + search_engine} \
         ${"--mimp_phosphosite_col " + phosphosite_col} \
         ${"--mimp_protein_id_col " + protein_id_col} \
+        ${"--mimp_protein_id_type " + protein_id_type} \
         ${"--mimp_mutation_AA_change_colname " + mutation_AA_change_colname} \
         ${"--mimp_mutation_type_col " + mutation_type_col} \
         ${"--mimp_sample_id_col " + sample_id_col} \

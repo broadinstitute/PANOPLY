@@ -9,9 +9,9 @@ This PANOPLY tutorial provides a tour of how to use the PANOPLY proteogenomic da
 2. Once you have an account, you need to create a [cloud billing account and project](https://support.terra.bio/hc/en-us/articles/360026182251-How-to-set-up-billing-in-Terra). Here, you will find step-by-step instructions to set up billing, including a free credits program for new users to try out Terra with $300 in Google Cloud credits.
 
 ## 2. Clone PANOPLY production workspace
-Clone the Terra production workspace at [PANOPLY_Production_Pipelines_v1_0](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_0).
+Clone the Terra production workspace at [PANOPLY_Production_Pipelines_v1_2](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_2).
 
-1. Navigate to [workspace](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_0). Click the circle with 3 dots at the top right and clone the workspace. When naming the new workspace, avoid special characters or spaces, and use *only* letters, numbers and underscores.
+1. Navigate to [workspace](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_2). Click the circle with 3 dots at the top right and clone the workspace. When naming the new workspace, avoid special characters or spaces, and use *only* letters, numbers and underscores.
 
 ![*Figure 1.* Cloning the production workspace](https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/tutorial/images/clone-workspace.png)
 

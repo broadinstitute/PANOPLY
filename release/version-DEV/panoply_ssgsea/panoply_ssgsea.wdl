@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+# Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_ssgsea {
 
@@ -15,6 +15,7 @@ task panoply_ssgsea {
 	String? acc_type
 	String? seqwin_col
 	String? gene_col
+	Boolean? humanize_gene
 	String? SGT_col
 	Boolean? loc
 	String? mode
@@ -43,7 +44,7 @@ task panoply_ssgsea {
 		set -euo pipefail
 		
 		# prepare GCT file
-		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${default=NA level} -t ${default=NA id_type} -o ${default=NA id_type_out} -a ${default=NA acc_type} -s ${default=NA seqwin_col} --gene_symbol ${default=NA gene_col} -v ${default=NA SGT_col} -d ${default=NA loc} -m ${default=NA mode} -r "${default=NA mod_res}" -p '${default=NA mod_type}' -u ${default=NA preprocess_gct} -z /home/pgdac/src
+		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${default=NA level} -t ${default=NA id_type} -o ${default=NA id_type_out} -a ${default=NA acc_type} -s ${default=NA seqwin_col} --gene_symbol_column ${default=NA gene_col} -k ${default=NA humanize_gene}  -v ${default=NA SGT_col} -d ${default=NA loc} -m ${default=NA mode} -r "${default=NA mod_res}" -p '${default=NA mod_type}' -u ${default=NA preprocess_gct} -z /home/pgdac/src
 		
 		# update path to input_ds
 		input_ds_proc=`cat fn.out`
