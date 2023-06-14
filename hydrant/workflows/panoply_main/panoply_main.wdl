@@ -38,12 +38,13 @@ workflow panoply_main {
   File input_cna
   File yaml
 
-  File? cna_groups
-  File association_groups
+  File groups_file
+  File? groups_file_cna
+  File? groups_file_association
+  File? groups_file_cmap_enrichment
 
   ## cmap inputs
   Int cmap_n_permutations = 10
-  File? cmap_enrichment_groups
   File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt"
   File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx"
   File? annotation_pathway_db #this.gseaDB
@@ -176,7 +177,7 @@ workflow panoply_main {
   call cna_setup_wdl.panoply_cna_setup {
     input:
       tarball = panoply_sampleqc.outputs,
-      groupsFile = cna_groups,
+      groupsFile = ${if defined(groups_file_cna) then groups_file_cna else groups_file},
       type = ome_type,
       yaml = yaml
   }
@@ -200,7 +201,7 @@ workflow panoply_main {
   call assoc_wdl.panoply_association {
     input: 
       inputData = panoply_cna_correlation.outputs, 
-      groupsFile = association_groups,
+      groupsFile = ${if defined(groups_file_association) then groups_file_association else groups_file},
       type = ome_type,
       standalone = standalone,
       yaml = yaml,
@@ -238,7 +239,7 @@ workflow panoply_main {
           annotation_pathway_db = annotation_pathway_db, 
           subset_bucket = subset_bucket,
           n_permutations = cmap_n_permutations,
-            cmap_enrichment_groups = cmap_enrichment_groups,
+            cmap_enrichment_groups = ${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file},
             yaml = yaml
         
       }
