@@ -39,7 +39,7 @@ setup.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'r
   
   # defaults for cls and groups
   if (is.null (groups)) {
-    subgroup.table <- data.frame (all=rep ('all', ncol(pome.data)-1))
+    subgroup.table <- data.frame (all=rep ('all', ncol(pome.data)-1)) # by default, look at all samples together
     cls.list <- c ('all')
   } else {
     # groups file specified
@@ -60,7 +60,8 @@ setup.corr.calcs <- function (groups=NULL, rna.file=file.path (harmonize.dir, 'r
     groups <- setdiff (unique (cls), 'ignore')
     for (x in groups) {
       subsamp <- cls == x
-      if (sum (subsamp) >= min.cna.N) {
+      subsamp[is.na(subsamp)] <- FALSE # overwrite NA with FALSE
+      if (sum (subsamp, na.rm=TRUE) >= min.cna.N) {
         # run only if there are enough samples
         create.subset (rna.data, subsamp, paste (x, '-rna-matrix.csv', sep=''))
         create.subset (cna.data, subsamp, paste (x, '-cna-matrix.csv', sep=''))
