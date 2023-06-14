@@ -93,7 +93,7 @@ workflow panoply_unified_workflow {
             input_cna="${cna_data}",
             input_rna="${rna_data}",
             sample_annotation="${sample_annotation}",
-            groups_file="${groups_file}"
+            groups_file="${groups_file}",
             yaml="${yaml}"
         }
         
@@ -114,7 +114,7 @@ workflow panoply_unified_workflow {
           master_yaml = "${yaml}",
           output_prefix = "${pair.left}",
           type = "${pair.left}",
-          groups_file=${if defined(groups_file_blacksheep) then groups_file_blacksheep else groups_file}
+          groups_file="${if defined(groups_file_blacksheep) then groups_file_blacksheep else groups_file}"
       }
     }
   }
@@ -163,7 +163,7 @@ workflow panoply_unified_workflow {
           yaml=yaml,
           analysisDir=job_id,
           label=job_id,
-          groupsFile=${if defined(groups_file_immune) then groups_file_immune else groups_file}
+          groupsFile="${if defined(groups_file_immune) then groups_file_immune else groups_file}"
     }
   }
   

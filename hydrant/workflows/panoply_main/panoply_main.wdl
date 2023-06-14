@@ -177,7 +177,7 @@ workflow panoply_main {
   call cna_setup_wdl.panoply_cna_setup {
     input:
       tarball = panoply_sampleqc.outputs,
-      groupsFile = ${if defined(groups_file_cna) then groups_file_cna else groups_file},
+      groupsFile = "${if defined(groups_file_cna) then groups_file_cna else groups_file}",
       type = ome_type,
       yaml = yaml
   }
@@ -201,7 +201,7 @@ workflow panoply_main {
   call assoc_wdl.panoply_association {
     input: 
       inputData = panoply_cna_correlation.outputs, 
-      groupsFile = ${if defined(groups_file_association) then groups_file_association else groups_file},
+      groupsFile = "${if defined(groups_file_association) then groups_file_association else groups_file}",
       type = ome_type,
       standalone = standalone,
       yaml = yaml,
@@ -239,7 +239,7 @@ workflow panoply_main {
           annotation_pathway_db = annotation_pathway_db, 
           subset_bucket = subset_bucket,
           n_permutations = cmap_n_permutations,
-            cmap_enrichment_groups = ${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file},
+            cmap_enrichment_groups = "${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file}",
             yaml = yaml
         
       }
