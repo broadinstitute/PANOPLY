@@ -332,7 +332,7 @@ do
     cd $panoply/hydrant # change dir to location of setup.sh
     ./setup.sh -t $mod -n $pull_dns -y -b -u -x # rebuild
     ./setup.sh -t $mod -z    # cleanup
-    cd wd # change back to og dir
+    cd $wd # change back to og dir
   fi
 
   url=$base_url$pull_dns/$mod/tags
