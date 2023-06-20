@@ -12,6 +12,7 @@ not="${grn}====>>${reg}" ## notification
 
 ## users (for method permissions)
 proteomics_comp=(manidr@broadinstitute.org kpham@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org svartany@broadinstitute.org)
+proteomics_cptac=(GROUP_Broad_CPTAC@firecloud.org)
 
 ## documentation location (assumes wiki repo is available in path)
 doc_dir="$panoply/../PANOPLY.wiki"
@@ -287,6 +288,7 @@ createWkSpace() {
   fissfc space_set_acl -w $ws -p $project -r OWNER --users ${proteomics_comp[@]}
   # setting workspace to PUBLIC is currently not functional -- need to contact Terra support
   # fissfc space_set_acl -w $ws -p $project -r READER --users public
+  fissfc space_set_acl -w $ws -p $project -r READER --users ${proteomics_cptac[@]}
   
   # set workspace public using FireCloud API -- eg
   # curl -X POST "https://api.firecloud.org/api/methods/broadcptac/panoply_main_copy/1/permissions" \
