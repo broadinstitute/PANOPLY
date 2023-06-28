@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_mo_nmf_report {
+task panoply_nmf_report {
 
     File tarball
     String label
@@ -21,7 +21,7 @@ task panoply_mo_nmf_report {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_mo_nmf_report:latest"
+        docker : "broadcptacdev/panoply_nmf_report:latest"
         memory: select_first ([memory, 2]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
         cpu : select_first ([num_threads, 1]) + ""
@@ -34,7 +34,6 @@ task panoply_mo_nmf_report {
     }
 }
 
-workflow panoply_mo_nmf_report_workflow {
-
-    call panoply_mo_nmf_report
+workflow panoply_nmf_report_workflow {
+    call panoply_nmf_report
 }

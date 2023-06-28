@@ -2,13 +2,13 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-######################################
-## NMF
-task panoply_mo_nmf {
+task panoply_nmf {
 
 	#Inputs defined here
-	File tar_file
-	File yaml_file
+	Array[File]+ ome_gcts
+	File? yaml_file # mostly for colors
+	File? groups_file # for enrichment analysis
+
 	String output_prefix="results_nmf"
 	
 	Int? kmin
@@ -50,7 +50,7 @@ task panoply_mo_nmf {
 		}
 
 	runtime {
-		docker : "broadcptacdev/panoply_mo_nmf:latest"
+		docker : "broadcptacdev/panoply_nmf:latest"
 		memory : select_first ([memory, 64]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 20]) + " HDD"
 		cpu : select_first ([num_threads, 32]) + ""
@@ -66,18 +66,6 @@ task panoply_mo_nmf {
 
 ################################################
 ##  workflow: mo-nmf
-workflow panoply_mo_nmf_workflow {
-	
-	File tar_file
-	File yaml_file
-	
-	call panoply_mo_nmf {
-		input:
-			tar_file=tar_file,
-			yaml_file=yaml_file
-	}
-
-	output {
-		File nmf_clust=panoply_mo_nmf.results
-		}
+workflow panoply_nmf_workflow {
+	call panoply_nmf
 }

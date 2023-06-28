@@ -10,7 +10,8 @@ suppressPackageStartupMessages(library("optparse"))
 
 # specify command line arguments
 option_list <- list(
-  make_option( c("-d", "--dir"), action='store', type='character',  dest='txt_dir', help='folder where the .txt files below are located.'),
+  make_option( c("-f", "--filenames"), action='store', type='character',  dest='ome_gcts_string', help='string of gct filenames, semicolon-separated'),
+  make_option( c("-l", "--labels"), action='store', type='character',  dest='ome_labels_string', help='string of gct filenames, semicolon-separated'),
   make_option( c("-v", "--var"), action='store', type='numeric',  dest='var_pca_expl', help='Explained variance by PCA. Used to extract the number of PCs explaining the specified fraction of variance in the multiomics data matrix.', default = 0.9),
   make_option( c("-t", "--tol"), action='store', type='numeric',  dest='perc_tol', help='Tolerance specifying the maximal accepted difference (as a fraction of total variance) between contributions from different data types. Used as stopping criterion to end optimization.', default = 0.05),
   make_option( c("-z", "--z_score_mode"), action='store', type='character', dest='z_score_mode', help='z-scoring mode: row, col, rowcol', default='rowcol')
@@ -43,36 +44,22 @@ p_load(magrittr)
 ########################################
 ## import
 ## wdl-compatible
-import_gct_in_wdl <- function(
-  txt_dir = '.',              ## folder where the txt files below are located     
-  txt_list = list(
-    prot='prote_ome.txt',     ## text file containing the absolute file path to PROTEOME GCT file
-    pSTY='phospho_ome.txt',   ## text file containing the absolute file path to PHOSPHO GCT file
-    acK='acetyl_ome.txt',     ## text file containing the absolute file path to ACETYL GCT file
-    ubK='ubiquityl_ome.txt',  ## text file containing the absolute file path to UBIQUITYL GCT file
-    glyco="glyco_ome.txt",    ## text file containing the absolute file path to GLYCO GCT file
-    RNA='rna_ome.txt',        ## text file containing the absolute file path to RNA GCT file
-    CNV='cna_ome.txt'         ## text file containing the absolute file path to CNV GCT file
-  )
-){
+import_gct_in_wdl <- function( ome_gcts_string, ome_labels_string ){
   
-    txt_list <- lapply( txt_list, function(x) file.path( txt_dir, x))
-      
-    ## non-empty files
-    keep_idx <- which(sapply(txt_list, function(x) ifelse(nchar(readLines(x)) > 0, TRUE, FALSE)) > 0 )
-    txt_list <- txt_list[ keep_idx ]
-
-    ## file paths
-    file_list <- sapply(txt_list, readLines)
-    
-    ## import
-    gct <- lapply(file_list, parse_gctx)
-    gct_str <- file_list
-    names(gct) <-  names(gct_str) <- names(txt_list)
-    
-    out <- list(gct=gct, gct_str=gct_str)
-    
-    return(out)
+  # parse strings into vectors
+  ome_gcts = unlist(strsplit(ome_gcts_string, ","))
+  ome_labels = unlist(strsplit(ome_labels_string, ","))
+  # ome_labels = sapply(ome_gcts, USE.NAMES = FALSE, function(filepath) { basename(filepath) %>% gsub(".gct","", .) }) # assume that file-name is ome-label
+  
+  if (length(ome_gcts)!=length(ome_labels)) stop("Different number of GCT files and ome-labels detected. Please check your inputs.")
+  
+  ## import
+  gct <- lapply(ome_gcts, parse_gctx)
+  names(gct) <- ome_labels
+  
+  out <- list(gct=gct, gct_str=ome_labels)
+  
+  return(out)
 }
 
 #####################################################
@@ -284,7 +271,7 @@ balance_omes <- function(   contrib,           ## numeric, vector of contributio
 #####################################
 ## import GCT files
 ##gct <- lapply(gct_str, parse_gctx)
-gct_imp <- import_gct_in_wdl( opt_cmd$txt_dir )
+gct_imp <- import_gct_in_wdl( opt_cmd$ome_gcts_string, opt_cmd$ome_labels_string )
 gct <- gct_imp$gct
 gct_str <- gct_imp$gct_str
 
