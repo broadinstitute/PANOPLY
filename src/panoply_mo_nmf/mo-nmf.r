@@ -83,7 +83,7 @@ parse_yaml_mo_nmf <- function(cmd_option_list,
     ## parse colors
     tmp <- opt_yaml_all[[yaml_colors]]
     #colors.tmp <- sapply(opt_yaml[["cat_colors"]], function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
-    colors.tmp <- sapply(tmp, function(x) paste( unlist(paste(names(x), x, sep  =':')), collapse = ';' ))
+    colors.tmp <- sapply(tmp, function(x) paste( unlist(paste(names(x), x, sep  ='::')), collapse = ';;' ))
     opt_yaml_colors <- list()
     opt_yaml_colors[['cat_colors']] <- paste(paste(names(colors.tmp), colors.tmp, sep='='), collapse='|')
     
