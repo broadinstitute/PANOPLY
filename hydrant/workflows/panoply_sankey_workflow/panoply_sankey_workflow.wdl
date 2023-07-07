@@ -13,7 +13,7 @@ workflow panoply_sankey_workflow {
   String? annot_label_primary       # corresponding label
 
   String annot_of_comparison        # annotation column which should be used for sankey comparisons (e.g. "NMF.consensus")
-  String annot_prefix               # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C2, instead of 1 2 3)
+  String annot_prefix               # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
 
 
   String label

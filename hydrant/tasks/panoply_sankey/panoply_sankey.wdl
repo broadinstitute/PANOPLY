@@ -11,7 +11,7 @@ task panoply_sankey {
     Array[String]+ annot_file_labels  # datatype(s) / label(s) for the provided annotation file(s)
 
     String annot_column               # annotation column which should be used for sankey comparisons (e.g. "NMF.consensus")
-    String annot_prefix               # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C2, instead of 1 2 3)
+    String annot_prefix               # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
 
     File? annot_file_primary          # annotation file which should be centered / highlighted in comparisons
     String? annot_label_primary       # corresponding label

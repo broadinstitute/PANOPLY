@@ -69,8 +69,15 @@ workflow panoply_nmf_workflow {
 		call sankey_wdl.panoply_nmf_sankey_workflow as nmf_sankey {
 			input:
 				label = label,
-				so_nmf_membership = so_nmf.membership, # array
-				mo_nmf_membership = mo_nmf.membership, # single file
+
+				annot_files = so_nmf.membership,		# array of so-NMF results
+				annot_file_labels = ,					# array of ome labels
+
+				annot_file_primary = mo_nmf.membership, # single file with mo-NMF results
+				annot_label_primary = "Multiomic",		# label for mo-NMF data
+
+				annot_of_comparison="NMF.consensus",	# column for analysis
+				annot_prefix="C"						# prefix to append to cluster values (e.g. 'C1' 'C2' 'C3')
 		}
 	}
 
