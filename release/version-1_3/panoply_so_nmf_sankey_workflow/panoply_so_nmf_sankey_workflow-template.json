@@ -17,8 +17,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_so_nmf_sankey_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_so_nmf_sankey_workflow/13",
-    "methodVersion": 13,
+    "methodUri": "agora://broadcptac/panoply_so_nmf_sankey_workflow/14",
+    "methodVersion": 14,
     "sourceRepo": "agora"
   },
   "name": "panoply_so_nmf_sankey_workflow",
