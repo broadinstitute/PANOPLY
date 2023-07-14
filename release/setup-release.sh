@@ -12,6 +12,7 @@ not="${grn}====>>${reg}" ## notification
 
 ## users (for method permissions)
 proteomics_comp=(manidr@broadinstitute.org kpham@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org svartany@broadinstitute.org)
+proteomics_cptac=(GROUP_Broad_CPTAC@firecloud.org)
 
 ## documentation location (assumes wiki repo is available in path)
 doc_dir="$panoply/../PANOPLY.wiki"
@@ -28,7 +29,7 @@ display_usage() {
   echo "-w | string | Workspace to populate with all methods"
   echo "-y | string | Workspace to populate pipeline/workflow methods"
   echo "-P | string | Patch flag. When toggled, only specified modules will be rebuilt."
-  echo "-R | string | Patch flag. When toggled, only specified modules will be rebuilt."
+  echo "-R | string | Patch flag. When toggled, dockers will be rebuilt for specified modules."
   echo "        [...] Trailing arguments will be interpretted as modules to patch-fix. Should only be used alongside -P flag."
   echo "-h | flag   | Print Usage"
   exit
@@ -287,6 +288,7 @@ createWkSpace() {
   fissfc space_set_acl -w $ws -p $project -r OWNER --users ${proteomics_comp[@]}
   # setting workspace to PUBLIC is currently not functional -- need to contact Terra support
   # fissfc space_set_acl -w $ws -p $project -r READER --users public
+  fissfc space_set_acl -w $ws -p $project -r READER --users ${proteomics_cptac[@]}
   
   # set workspace public using FireCloud API -- eg
   # curl -X POST "https://api.firecloud.org/api/methods/broadcptac/panoply_main_copy/1/permissions" \
@@ -328,8 +330,11 @@ do
   fi
   
   if [[ $rebuild_docker_flag ]]; then # if we are rebuilding dockers
+    wd=`pwd` # record og dir
+    cd $panoply/hydrant # change dir to location of setup.sh
     ./setup.sh -t $mod -n $pull_dns -y -b -u -x # rebuild
     ./setup.sh -t $mod -z    # cleanup
+    cd $wd # change back to og dir
   fi
 
   url=$base_url$pull_dns/$mod/tags

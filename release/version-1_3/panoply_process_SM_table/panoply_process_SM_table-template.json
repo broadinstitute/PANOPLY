@@ -34,8 +34,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_process_SM_table",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_process_SM_table/28",
-    "methodVersion": 28,
+    "methodUri": "agora://broadcptac/panoply_process_SM_table/29",
+    "methodVersion": 29,
     "sourceRepo": "agora"
   },
   "name": "panoply_process_SM_table",
