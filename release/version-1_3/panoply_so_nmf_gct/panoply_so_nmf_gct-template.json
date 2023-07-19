@@ -65,8 +65,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_so_nmf_gct",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_so_nmf_gct/14",
-    "methodVersion": 14,
+    "methodUri": "agora://broadcptac/panoply_so_nmf_gct/15",
+    "methodVersion": 15,
     "sourceRepo": "agora"
   },
   "name": "panoply_so_nmf_gct",
