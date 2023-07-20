@@ -1,7 +1,7 @@
 script.dir <<- "/ptm-sea"  # needed for ssGSEA2.0
 
 source("/ptm-sea/src/ssGSEA2.0.R")
-source("/ptm-sea/src/preprocess_gct.R")
+source("/ptm-sea/src/panoply_ptmsea_functions.R")
 
 
 MAIN_WD <- getwd()
