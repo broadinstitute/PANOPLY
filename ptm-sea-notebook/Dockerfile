@@ -9,7 +9,7 @@ RUN mkdir -p /ptm-sea/src
 RUN mkdir -p /ptm-sea/db/ptmsigdb
 RUN dos2unix /ptm-sea/src
 
-ADD ../src/panoply_ssgsea/panoply_ptmsea_functions.R /ptm-sea/src/panoply_ptmsea_functions.R
+ADD src/panoply_ptmsea_functions.R /ptm-sea/src/panoply_ptmsea_functions.R
 
 RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/src/io.R && dos2unix io.R && mv io.R /ptm-sea/src
 RUN wget https://raw.githubusercontent.com/broadinstitute/ssGSEA2.0/master/src/utils.R && dos2unix utils.R && mv utils.R /ptm-sea/src
