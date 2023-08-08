@@ -58,7 +58,7 @@ s.ids <- annot.data$Sample.ID
 set_fval <- unlist( strsplit( set_fval, split = ';' ) )
 set.list  <- c()
 for ( value in set_fval ){
-  set.list <- c( set.list,  s.ids[which( annot.data[, set_fcol] == value )] )
+  set.list <- c( set.list,  unique(s.ids[which( annot.data[, set_fcol] == value )]) ) # only record a Sample.ID once
 }
 
 set.list <- data.frame( paste( set.list, collapse = '\n' ) )
