@@ -55,10 +55,11 @@ annot.file <- glue( "{annot.file}/{opt$wkspace}-annotation.csv" )
 annot.data <- read.csv( annot.file, header = T, stringsAsFactors = F )
 
 s.ids <- annot.data$Sample.ID
+if( length(s.ids)!=length(unique(s.ids)) ) { stop("Sample.IDs are not unique in Sample Annotations file. Please ensure that Sample.IDs are unique.") }
 set_fval <- unlist( strsplit( set_fval, split = ';' ) )
 set.list  <- c()
 for ( value in set_fval ){
-  set.list <- c( set.list,  unique(s.ids[which( annot.data[, set_fcol] == value )]) ) # only record a Sample.ID once
+  set.list <- c( set.list,  s.ids[which( annot.data[, set_fcol] == value )] )
 }
 
 set.list <- data.frame( paste( set.list, collapse = '\n' ) )
