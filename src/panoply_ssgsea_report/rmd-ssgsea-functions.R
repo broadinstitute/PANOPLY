@@ -252,8 +252,10 @@ pw_hm <- function(output.prefix,
   plothm <- function(rdesc, mat, fdr.max, n.max, fn.out, cw, ch){
     
     ## fdr & score
-    fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc))] %>%
-      mutate_all(as.numeric) # enforce numeric data
+    fdr_rownames = rownames(rdesc)
+    fdr <- select(rdesc, grep('^fdr.pvalue', colnames(rdesc))) %>% # using dplyr select() instead of base R, for single-column edge case
+      mutate(across(.cols=everything(), as.numeric)) # enforce numeric data
+    rownames(fdr) = fdr_rownames # add rownames back
     
     sig.idx.list = list() # full list of significant features
     keep.idx.list = list() # significant features which are being KEPT for plotting
@@ -277,9 +279,10 @@ pw_hm <- function(output.prefix,
       return()
     }
     
-    fdr.filt <- fdr[keep.idx, ]
-    mat.filt <- mat[keep.idx, ]
-    rdesc.filt <- rdesc[keep.idx,]
+    # using filter() instead of base R, for single-column edge case
+    fdr.filt <- filter(fdr, rownames(fdr) %in% keep.idx)
+    mat.filt <- filter(as.data.frame(mat), rownames(mat) %in% keep.idx) %>% as.matrix
+    rdesc.filt <- filter(rdesc, rownames(rdesc) %in% keep.idx)
     
     ## add 'C' if column names are all numeric
     if(sum( is.na( suppressWarnings(as.numeric(colnames(mat.filt))) ) ) == 0)
@@ -290,7 +293,7 @@ pw_hm <- function(output.prefix,
       anno.row[sig.idx.list[[i]], i] <- '*' # assign asterisk based on FULL LIST of significant idx features
     
     dist.row <- dist(mat.filt, method = 'euclidean')
-
+    
     max.val = ceiling( max( abs(mat.filt), na.rm=T) )
     min.val = -max.val
     
@@ -305,11 +308,11 @@ pw_hm <- function(output.prefix,
       dist.row <- seriate(dist.row, method = ser.meth)
       ord.idx <- get_order(dist.row)
     }
-    mat.filt <- mat.filt[ord.idx, ]
-    anno.row <- anno.row[ord.idx,]
+    mat.filt <- slice(as.data.frame(mat.filt), ord.idx) %>% as.matrix
+    anno.row <- slice(as.data.frame(anno.row), ord.idx) %>% as.matrix
     
     if('process_category' %in% colnames(rdesc.filt)){
-      rdesc.filt <- rdesc.filt[ord.idx, ]
+      rdesc.filt <- slice(rdesc.filt, ord.idx)
       annotation_row <- matrix(rdesc.filt$process_category, ncol=1, dimnames = list(rownames(rdesc.filt), c('cat')))
       annotation_row <- data.frame(annotation_row)
       annotation_colors <- list(cat=c('signaling'='skyblue2', 'immune'='coral2', 'development'='peachpuff', 
