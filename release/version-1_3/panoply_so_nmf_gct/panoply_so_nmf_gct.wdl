@@ -6,7 +6,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf/versi
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_so_nmf_assemble_drivers/versions/3/plain-WDL/descriptor" as panoply_so_nmf_assemble_drivers
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_mo_nmf_report/versions/11/plain-WDL/descriptor" as panoply_mo_nmf_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/27/plain-WDL/descriptor" as panoply_ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/19/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/20/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
 ################################################
 ##  workflow: so_nmf_pre + mo_nmf + mo_nmf_report + ssgsea + ssgsea_report
