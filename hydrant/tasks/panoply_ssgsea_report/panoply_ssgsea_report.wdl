@@ -5,6 +5,7 @@ task panoply_ssgsea_report {
 
   File tarball
   File cfg_yaml
+  Boolean is_ptmsigdb
   String label
 
   Int? memory
@@ -14,7 +15,7 @@ task panoply_ssgsea_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-ssgsea.r -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/
+    Rscript /home/pgdac/src/rmd-ssgsea.r -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/ -p ${default=FALSE is_ptmsigdb}
   }
 
   output {
@@ -22,7 +23,7 @@ task panoply_ssgsea_report {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_ssgsea_report:latest"
+    docker : "broadcptacdev/panoply_ssgsea_report:test"
     memory : select_first ([memory, 8]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
