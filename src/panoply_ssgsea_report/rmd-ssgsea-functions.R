@@ -276,8 +276,6 @@ pw_hm <- function(output.prefix,
     for(i in 1:ncol(mat.filt))
       anno.row[keep.idx.list[[i]], i] <- '*'
     
-    dist.row <- dist(mat.filt, method = 'euclidean')
-
     max.val = ceiling( max( abs(mat.filt), na.rm=T) )
     min.val = -max.val
     
@@ -289,8 +287,14 @@ pw_hm <- function(output.prefix,
     if('process_category' %in% colnames(rdesc.filt)){
       ord.idx <- order(rdesc.filt$process_category)
     } else {
-      dist.row <- seriate(dist.row, method = ser.meth)
-      ord.idx <- get_order(dist.row)
+      ord.idx = tryCatch({
+        dist.row <- dist(mat.filt, method = 'euclidean') %>% # find distances
+          seriate(dist.row, method = ser.meth) # compute order
+        get_order(dist.row) # sort by that order
+      }, error = function(e) { # if that fails
+        message ("Could not cluster data-base signatures; heatmap rows will be left unsorted.\n")
+        return (rownames(mat.filt))
+      })
     }
     mat.filt <- mat.filt[ord.idx, , drop=F]
     anno.row <- anno.row[ord.idx, , drop=F]
