@@ -23,7 +23,7 @@ task panoply_ssgsea_report {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_ssgsea_report:test"
+    docker : "broadcptacdev/panoply_ssgsea_report:latest"
     memory : select_first ([memory, 8]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
