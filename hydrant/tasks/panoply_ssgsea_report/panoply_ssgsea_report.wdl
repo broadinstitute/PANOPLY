@@ -5,7 +5,7 @@ task panoply_ssgsea_report {
 
   File tarball
   File cfg_yaml
-  Boolean is_ptmsigdb
+  Boolean? is_ptmsigdb
   String label
 
   Int? memory
