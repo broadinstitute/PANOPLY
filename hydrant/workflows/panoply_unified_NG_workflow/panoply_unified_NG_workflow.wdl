@@ -2,7 +2,7 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/14/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_NG/versions/1/plain-WDL/descriptor" as main_NG_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_NG/versions/9/plain-WDL/descriptor" as main_NG_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/13/plain-WDL/descriptor" as blacksheep_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/33/plain-WDL/descriptor" as so_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_gct/versions/13/plain-WDL/descriptor" as mo_nmf_wdl
@@ -28,10 +28,10 @@ workflow panoply_unified_NG_workflow {
   # Organize omics data into pairs
 
   Array[Pair[String?, File?]] ome_pairs =
-    [ ("proteome", "${prote_ome}"),
-      ("phosphoproteome", "${phospho_ome}"),
-      ("acetylome", "${acetyl_ome}"),
-      ("ubiquitylome", "${ubiquityl_ome}") ]
+    [ ("proteome", prote_ome),
+      ("phosphoproteome", phospho_ome),
+      ("acetylome", acetyl_ome),
+      ("ubiquitylome", ubiquityl_ome) ]
 
   ### NORMALIZE:
   ### Normalize the data first so downstream modules (NMF etc) can run in parallel to main:
@@ -115,7 +115,7 @@ workflow panoply_unified_NG_workflow {
   }
   
   output {
-    Array[File?] main_association_results = pome.association_results
+    Array[File?] main_association_contrasts = pome.association_contrasts
     Array[File?] main_association_reports = pome.association_report
     
     Array[File?] main_ssgsea_results = pome.ssgsea_results

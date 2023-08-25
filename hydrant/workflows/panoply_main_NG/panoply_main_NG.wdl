@@ -3,14 +3,11 @@
 #
 
 # association analysis
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/9/plain-WDL/descriptor" as assoc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/6/plain-WDL/descriptor" as assoc_report_wdl
-
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/8/plain-WDL/descriptor" as accum_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_workflow/versions/1/plain-WDL/descriptor" as assoc_workflow_wdl
 
 # ssgsea and ptmsea
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/6/plain-WDL/descriptor" as ssgsea_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/8/plain-WDL/descriptor" as ssgsea_report_wdl
 
 # nmf
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/17/plain-WDL/descriptor" as so_nmf_wdl
@@ -53,49 +50,19 @@ workflow panoply_main_NG {
 
 
   ### Association Analysis
-
-  call assoc_wdl.panoply_association as assoc {
+  call assoc_workflow_wdl.panoply_association_workflow as assoc {
     input: 
-      inputData = input_pome, 
-      groupsFile = association_groups,
-      type = ome_type,
-      standalone = standalone,
-      analysisDir = job_identifier,
+      input_pome = input_pome, 
+      association_groups = association_groups,
+      geneset_db=geneset_db,
+      ome_type = ome_type,
+      job_identifier = job_identifier,
       yaml = yaml,
       sample_na_max=sample_na_max,
       nmiss_factor=nmiss_factor,
       duplicate_gene_policy=duplicate_gene_policy,
       gene_id_col=gene_id_col
   }
-  
-  call assoc_report_wdl.panoply_association_report as assoc_report {
-    input:
-      input_tar = assoc.outputs,
-      master_yaml = yaml,
-      label = "${job_identifier}-full-results",
-      type = ome_type
-  }
-
-
-#  # Accumulate Association / Run GSEA
-#  call accum_wdl.panoply_accumulate as accumulate_assoc {
-#    input:
-#      input_tar = panoply_association.outputs,
-#      module = "association"
-#  } 
-#
-#  Array[File] list_gct_assoc = accumulate_assoc.list_gct
-#  scatter (f in list_gct_assoc){
-#    call ssgsea_wdl.panoply_ssgsea as ssgsea_assoc {
-#      input:
-#        input_ds = "${f}",
-#        gene_set_database = geneset_db,
-#        output_prefix = job_identifier,
-#        level = "gc",
-#        yaml_file = yaml
-#    }
-#  }
-
 
 
 
@@ -138,15 +105,15 @@ workflow panoply_main_NG {
           level = "ssc",
           yaml_file = yaml
       }
+      call ssgsea_report_wdl.panoply_ssgsea_report as ptmsea_report {
+        input:
+          tarball = ptmsea.results,
+          cfg_yaml = yaml,
+          label = job_identifier,
+          is_ptmsigdb = true # set ptmsea to true to use ptmsigdb signatures in heatmaps
+      }
     }
-    call ssgsea_report_wdl.panoply_ssgsea_report as ptmsea_report {
-      input:
-        tarball = ptmsea.results,
-        cfg_yaml = yaml,
-        label = job_identifier,
-        is_ptmsigdb = "true" # set ptmsea to true to use ptmsigdb signatures in heatmaps
-    }
-  } 
+  }
 
 
 
@@ -186,8 +153,8 @@ workflow panoply_main_NG {
 #  }
 
   output {
-    File association_results = assoc.outputs
-    File association_report = assoc_report.report_out
+    File association_contrasts = assoc.contrasts
+    File association_report = assoc.report
     
     File ssgsea_results = ssgsea_ome.results
     File ssgsea_report = ssgsea_ome_report.report
