@@ -33,10 +33,10 @@ workflow panoply_unified_workflow {
   # Organize omics data into pairs
 
   Array[Pair[String?, File?]] ome_pairs =
-    [ ("proteome", "${prote_ome}"),
-      ("phosphoproteome", "${phospho_ome}"),
-      ("acetylome", "${acetyl_ome}"),
-      ("ubiquitylome", "${ubiquityl_ome}") ]
+    [ ("proteome", prote_ome),
+      ("phosphoproteome", phospho_ome),
+      ("acetylome", acetyl_ome),
+      ("ubiquitylome", ubiquityl_ome) ]
 
   Array[Pair[String?, File?]] geneome_pairs =
     [ ("rna", "${rna_data}"),
