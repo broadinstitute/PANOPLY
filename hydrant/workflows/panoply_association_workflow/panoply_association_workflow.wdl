@@ -2,13 +2,13 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/9/plain-WDL/descriptor" as assoc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/8/plain-WDL/descriptor" as  accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as panoply_ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/6/plain-WDL/descriptor" as 	assoc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/8/plain-WDL/descriptor" as accum_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/7/plain-WDL/descriptor" as 	assoc_report_wdl
 
 ################################################
-##  workflow: mo_nmf_pre + mo_nmf + mo_nmf_report + ssgsea + ssgsea_report
-workflow panoply_mo_nmf_gct_workflow {
+##  workflow: panoply_association + panoply_accumulate + panoply_ssgsea + panoply_association_report
+workflow panoply_association_workflow {
 
   	String job_identifier
   	String ome_type
@@ -16,6 +16,7 @@ workflow panoply_mo_nmf_gct_workflow {
 	## inputs
 	File input_pome
 	File yaml
+	File association_groups
 
 	Float? sample_na_max
 	Float? nmiss_factor
@@ -25,13 +26,14 @@ workflow panoply_mo_nmf_gct_workflow {
 	String geneset_db
 
 
-	call assoc_wdl.panoply_association {
+	call assoc_wdl.panoply_association as assoc {
     input: 
-    	inputData = ome,
+    	inputData = input_pome,
     	groupsFile = association_groups,
     	type = ome_type,
     	standalone = "true",
-    	yaml = yaml_file,
+    	analysisDir = job_identifier,
+    	yaml = yaml,
     	sample_na_max=sample_na_max,
     	nmiss_factor=nmiss_factor,
     	duplicate_gene_policy=duplicate_gene_policy,
@@ -40,7 +42,7 @@ workflow panoply_mo_nmf_gct_workflow {
 
 	call accum_wdl.panoply_accumulate as accumulate_assoc {
 	input:
-		input_tar = panoply_association.outputs,
+		input_tar = assoc.outputs,
 		module = "association"
 	}
 
@@ -57,21 +59,17 @@ workflow panoply_mo_nmf_gct_workflow {
 	}
 
 
-
-
-	call assoc_report_wdl.panoply_association_report {
+	call assoc_report_wdl.panoply_association_report as assoc_report {
 	input:
-		input_tar = panoply_download.full,
+		ssgsea_assoc_tars = ssgsea_assoc.results,
 	  	master_yaml = yaml,
   		label = "${job_identifier}-full-results",
   		type = ome_type
 	}
 
 	output {
-		File nmf_clust=panoply_mo_nmf.results
-		File nmf_clust_report=panoply_mo_nmf_report.report
-		File nmf_ssgsea=panoply_ssgsea.results
-		File nmf_ssgsea_report=panoply_ssgsea_report.report
-		File nmf_balance_filter=panoply_mo_nmf_pre.pdf
+		File contrasts=accumulate_assoc.outputs
+		Array[File] ssgsea_assoc_tars=ssgsea_assoc.results
+		File report=assoc_report.report_out
 	}
 }
