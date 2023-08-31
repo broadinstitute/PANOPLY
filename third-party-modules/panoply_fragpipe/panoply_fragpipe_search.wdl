@@ -46,10 +46,10 @@ task fragpipe {
     File? fragpipe_manifest
     Boolean try_one_file
 
-    Int? num_preemptions
-    Int? num_cpus
-    Int? ram_gb
-    Int? local_disk_gb
+    Int num_preemptions=0
+    Int num_cpus=32
+    Int ram_gb=128
+    Int local_disk_gb=2000
   }
   Array[File] files = if defined(file_of_files) then read_lines(select_first([file_of_files])) else []
 
@@ -113,11 +113,11 @@ task fragpipe {
 
   runtime {
     docker: "broadcptacdev/panoply_fragpipe:latest"
-    memory: "${if defined(ram_gb) then ram_gb else '128'}GB"
+    memory: "${ram_gb}GB"
     bootDiskSizeGb: 512
-    disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '2000'} HDD"
-    preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
-    cpu: "${if defined(num_cpus) then num_cpus else '32'}"
+    disks : "local-disk ${local_disk_gb} HDD"
+    preemptible : num_preemptions
+    cpu: num_cpus
   }
 
   meta {
