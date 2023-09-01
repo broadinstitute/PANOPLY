@@ -1,8 +1,8 @@
 script.dir <<- "/ptm-sea"  # needed for ssGSEA2.0
-src.dir <- "/ptm-sea/src"
+src.dir <<- "/ptm-sea/src"
 
-source(glue("{src.dir}/ssGSEA2.0.R"))
-source(glue("{src.dir}/panoply_ptmsea_functions.R"))
+source(paste0(src.dir,"/ssGSEA2.0.R"))
+source(paste0(src.dir,"/panoply_ptmsea_functions.R"))
 
 
 MAIN_WD <- getwd()
