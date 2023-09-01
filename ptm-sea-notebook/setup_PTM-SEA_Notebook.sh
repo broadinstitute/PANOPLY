@@ -61,6 +61,8 @@ docker login
 # build, tag, and push docker
 mkdir src # make temporary src/ directory
 cp ../src/panoply_ssgsea/panoply_ptmsea_functions.R src/panoply_ptmsea_functions.R # copy files into /src 
+cp ../src/panoply_ssgsea_report/rmd-ssgsea-functions.R src/rmd-ssgsea-functions.R # copy files into /src  
+cp ../src/panoply_ssgsea_report/rmd-ssgsea.r src/rmd-ssgsea.r # copy files into /src 
 docker build . ${C:+--no-cache} -t "broadcptac/ptm-sea:$VER"
 rm -r src # remove temporary src/ directory
 docker tag broadcptac/ptm-sea:$VER gcr.io/broadcptac/ptm-sea:$VER # tag as gcr.io/

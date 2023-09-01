@@ -1,7 +1,8 @@
 script.dir <<- "/ptm-sea"  # needed for ssGSEA2.0
+src.dir <- "/ptm-sea/src"
 
-source("/ptm-sea/src/ssGSEA2.0.R")
-source("/ptm-sea/src/panoply_ptmsea_functions.R")
+source(glue("{src.dir}/ssGSEA2.0.R"))
+source(glue("{src.dir}/panoply_ptmsea_functions.R"))
 
 
 MAIN_WD <- getwd()
@@ -19,12 +20,14 @@ init_project_dir <- function(name = NULL) {
     project_dir <<- file.path(data_dir, project_name)
     project_input <<- file.path(project_dir, "input")
     project_output <<- file.path(project_dir, "output")
+    project_report <<- file.path(project_dir, "report")
 
     dir.create(data_dir, showWarnings = FALSE)
     dir.create(file.path(data_dir, project_name), showWarnings = FALSE)
 
     dir.create(project_input, showWarnings = FALSE)
     dir.create(project_output, showWarnings = FALSE)
+    dir.create(project_report, showWarnings = FALSE)
 }
 
 get_run_name <- function(name = NULL) {
@@ -162,4 +165,26 @@ save_results_to_bucket <- function(name = NULL) {
 
     print(sys_out)
     setwd(MAIN_WD)  # change to normal work directory
+}
+
+#' @title Runs rmd-ssgsea.r to create PTM-SEA Report
+generate_report <- function(name = NULL) {
+  setwd(project_report) 
+  
+  if (!is.null(name)) { label <- name } else { label <- project_name }
+  
+  # tar output for ssGSEA Report
+  system(glue("tar -C {project_output} -czf {label}.tar.gz ."), intern = TRUE, ignore.stdout = TRUE)
+  # generate ssGSEA Report
+  system(paste(glue("Rscript {src.dir}/rmd-ssgsea.r"),
+               glue("-t {label}.tar.gz"),
+               glue("-l {label}"),
+               glue("-z {src.dir}"), glue("-p TRUE"),
+               glue("-f {max_fdr}"), glue("-n {top_n}")),
+         intern = TRUE, ignore.stdout = TRUE)
+  
+  output_html <- glue("report_{label}.html")
+  system(paste("gsutil cp", output_html, file.path(bucket, output_html)),
+         intern = TRUE, ignore.stdout = TRUE)
+  print(paste("Output zip copied to the bucket:", output_html))
 }
