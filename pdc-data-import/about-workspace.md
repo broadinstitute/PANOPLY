@@ -6,7 +6,7 @@ The **Proteomic Data Commons** ([PDC](https://proteomic.datacommons.cancer.gov/p
 1. Start by navigating to the [PDC](https://proteomic.datacommons.cancer.gov/pdc/). 
 2. Browse through the proteomics raw data available there and select files to import and process on Terra. Analyzing TMT or iTRAQ raw data using `FragPipe` requires `mzML` files. On the PDC, `mzML` files are listed in the `Processed Mass Spectra (Open Standard)` data category.
 3. Export file manifest for the chosen files using the `PFB` button. This will connect to Terra and prompt for a workspace to put locate the `file` manifest table.
-4. Copy the `PDC_Direct_Data_Import` notebook to the workspace with the `file` manifest table and run all the code blocks in sequence. Running the code blocks will:
+4. Copy the `PDC_Direct_Data_Import` notebook to the workspace with the `file` manifest table and run all the code blocks in sequence, using a Jupyter Cloud Environment. Running the code blocks will:
     1. Download all the files listed in the table to the `fragpipe` directory in the workspace bucket.
     2. Organize files into subdirectories--one subdirectory for each TMT/iTRAQ plex, including all fractions for that plex.
     3. Create annotation files for each TMT/iTRAQ plex to provide sample IDs.
