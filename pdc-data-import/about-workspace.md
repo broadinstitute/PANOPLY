@@ -1,6 +1,6 @@
 ### Workspace for direct import and streamlined processing of raw data files from the Proteomic Data Commons
 
-The **Proteomic Data Commons** ([PDC](https://proteomic.datacommons.cancer.gov/pdc/)) is a data repository within the [NCI Cancer Research Data Commons (CRDC)](https://datacommons.cancer.gov/) and provides access to curated and standardized *proteomic data* along with biospecimen and clinical metadata. The goal of this notebook is to faciliate *automated data download and streamlined analysis* of raw proteomic data imported from the PDC using the [`FragPipe`](https://fragpipe.nesvilab.org/) proteomics pipeline.
+The **Proteomic Data Commons** ([PDC](https://proteomic.datacommons.cancer.gov/pdc/)) is a data repository within the [NCI Cancer Research Data Commons (CRDC)](https://datacommons.cancer.gov/) and provides access to curated and standardized *proteomic data* along with biospecimen and clinical metadata. The goal of this workspace (notebook+workflow) is to faciliate *automated data download and streamlined analysis* of raw proteomic data imported from the PDC using the [`FragPipe`](https://fragpipe.nesvilab.org/) proteomics pipeline.
 
 **Step-by-step** process for importing and processing raw proteomics data files:
 1. Start by navigating to the [PDC](https://proteomic.datacommons.cancer.gov/pdc/). 
