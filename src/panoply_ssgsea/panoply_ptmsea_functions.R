@@ -600,7 +600,7 @@ preprocessGCT <- function(
       rid <- rid[ idx ]
       names(rid) <- names(map.idx)
       rdesc <- rdesc[idx, ]
-      VMsitesAll <- sapply(map.idx, function(x) paste(names(all.sites)[x], collapse='|'))
+      VMsitesAll <- sapply(map.idx, function(x) paste(names(all.sites)[names(all.sites)==x], collapse='|'))
       rdesc <- data.frame(rdesc, VMsitesAll)
       
       #create site ids-----

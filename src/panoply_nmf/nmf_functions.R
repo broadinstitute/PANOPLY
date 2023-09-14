@@ -234,7 +234,7 @@ parse.colors <- function(opt, cdesc, blank='N/A', blank.col='white'){
               cdesc.levels[ nchar(as.character(cdesc.levels)) == 0 | is.na(cdesc.levels) ] <- blank
       
               ## extract colors specified for levels of cdesc.column
-              color.tmp <- color.all[i] %>% strsplit(., ';') %>% unlist %>% strsplit(. , ':')
+              color.tmp <- color.all[i] %>% strsplit(., ';;') %>% unlist %>% strsplit(. , '::')
               color.names <- sapply(color.tmp, function(x)x[1])
               color.tmp <- sapply(color.tmp, function(x)x[2])
            

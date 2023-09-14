@@ -120,7 +120,7 @@ add_space <- function( arr ){
   for ( id in 1:length( arr ) )
     if ( id < 10 )
       arr[id] <- glue( " {as.character( arr[id] )}" )
-   return( arr )
+  return( arr )
 }
 
 trim <- function( x ) { gsub( "^\\s+|\\s+$", "", x ) }
@@ -131,7 +131,7 @@ y2true <- function( prompt ) {
   while (! valid_choice (choice <- readline (prompt = glue ("{prompt} (y/n): "))) ) {}
   if ( choice == "y" || choice == "Y")
     flag <- TRUE else flag <- FALSE
-  return( flag )
+    return( flag )
 }
 
 ### valid_choice() assesses whether an input (choice) is valid, according to default and a custom
@@ -160,7 +160,7 @@ smart_readline <- function (prompt="$$ Input: ", trim_input=TRUE,
                             allow_na=FALSE, allow_empty=FALSE, allow_zero=FALSE) {
   if (!exists('trim')) { trim <- function( x ) { gsub( "^\\s+|\\s+$", "", x ) } } # define trim(), if missing
   while (! valid_choice ( choice <- readline(prompt) %>% # prompt until the choice is valid
-                            { ifelse(trim_input, trim(.), . ) } , #trim choice, if toggled on
+                          { ifelse(trim_input, trim(.), . ) } , #trim choice, if toggled on
                           FUN = custom_condition, # apply custom condition; this function should return a single TRUE/FALSE
                           exit_commands = exit_commands,
                           allow_na=allow_na, allow_empty=allow_empty, allow_zero=allow_zero)) { cat(custom_warning) } 
@@ -197,7 +197,7 @@ panda_initialize <- function (workspace.type) {
   terra.wkspace <<- Sys.getenv( 'WORKSPACE_NAME' )
   google.bucket <<- Sys.getenv( 'WORKSPACE_BUCKET' )
   globals$project <<- Sys.getenv( 'WORKSPACE_NAMESPACE' )
-
+  
   # check to make sure workspace does not have spaces or other special characters
   if (grepl ( '[^[:alnum:]|_|-]', terra.wkspace )) {
     error <- printX ("ERROR", "Invalid Workspace name", 
@@ -240,7 +240,7 @@ panda_initialize <- function (workspace.type) {
       printX ("INFO", glue("Previous {cfg} exists"),
               glue("Input file map, groups and colors restored"),
               glue("Modify using appropriate Sections"))
-
+      
       typemap.gct <<- p$typemap.gct
       typemap.csv <<- p$typemap.csv
       typemap.gmt <<- p$typemap.gmt
@@ -496,7 +496,7 @@ validate_gene_id <- function(ome) {
       else { printX("ERROR", "This shouldn't have happened!"); stop() }
     }
   }
-    
+  
   flush.console()
   # nothing to return
 }
@@ -518,7 +518,7 @@ validate_input <- function () {
     if ( ! all (required.genomics.types %in% names (typemap.gct)) )
       stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
   }
-
+  
   printX ("INFO", "Validating sample IDs in all files")
   flush.console ()  # without this, the display shows up later
   sapply (names (typemap.gct),   # gct filenames
@@ -850,7 +850,7 @@ change_current_colors <- function( groups.cols, all.groups, groups.colors, byInd
                             custom_warning = printX("ERROR", glue("Invalid group index. Please enter an index in the range {paste(1, 'to', length(groups.colors))}")),
                             exit_message = color_exit_message, exit_function = break)
     change.group <- groups.cols[as.numeric(choice)] # set change.group according to choice
-
+    
     if (byIndex) { # if we are inputting colors by index
       value.flag = T # initialize value.flag
       while( value.flag ){
@@ -924,6 +924,28 @@ select_COSMO_attributes <- function() {
   # initialize again in case user runs cell multiple times
   cosmo.params <<- list(run_cosmo = FALSE)
   
+  # ask user if they want to run cosmo
+  user_run_cosmo <- ""
+  while(!(user_run_cosmo %in% c("y", "n"))) {
+    user_run_cosmo <- readline("Run COSMO? (y/n): ")
+  }
+  
+  # set cosmo.params
+  cosmo.params <<- list(run_cosmo = (user_run_cosmo == "y"))
+  
+  # ask if the user wants to select attributes anyways
+  if (user_run_cosmo == "n") {
+    user_select_attributes <- ""
+    while(!(user_select_attributes %in% c("y", "n"))) {
+      user_select_attributes <- readline("Select COSMO attributes anyways to run COSMO later? (y/n): ")
+    }
+    
+    # return if user doesn't want to select COSMO attributes
+    if (user_select_attributes == "n") return(cat(DONE))
+    
+    cat(sep, '\n')
+  }
+  
   annot <- read_annot()
   potential_cols <- setdiff(names(annot), ignore.cols)
   
@@ -947,7 +969,8 @@ select_COSMO_attributes <- function() {
   
   # make prompt
   if (length(valid_columns > 0)) {
-    prompt <- paste("VALID ATTRIBUTES:",
+    prompt <- paste(sep,
+                    "VALID ATTRIBUTES:",
                     paste(paste(' *', valid_columns), collapse = '\n'), 
                     sep,
                     "Select sample label column(s) for COSMO: ",
@@ -976,10 +999,15 @@ select_COSMO_attributes <- function() {
   
   if (length(valid_user_columns) > 0) {
     cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
+  } else {
+    cat("NO ATTRIBUTES SELECTED.\n")
+  }
+  
+  if (length(valid_user_columns) > 0 & user_run_cosmo == "y") {
     cat("\n\nCOSMO WILL BE RUN.\n")
     run_cosmo <- TRUE
   } else {
-    cat("NO ATTRIBUTES SELECTED. COSMO will not be run.\n")
+    cat("\n\nCOSMO will not be run.\n")
     run_cosmo <- FALSE
   }
   
@@ -1000,7 +1028,7 @@ sample_set_sanity_check <- function( sample.sets ){
   # delete the 'all' sample set so that it can be re-created with updated parameters
   # but don't delete yet, in case sample set definition is aborted
   delete.all <- ifelse ("all" %in% exist.ss, TRUE, FALSE)
-    
+  
   exist.ss <- setdiff (exist.ss, 'all')  # always include 'all' -- keeps samples synchronized
   if ( !( identical( character(), exist.ss ) ) ){
     overlap.flags <- names( sample.sets ) %in% exist.ss
@@ -1058,13 +1086,13 @@ define_sample_sets <- function( all.groups, typemap.csv ){
                               exit_function = ifelse(y2true("\n$$ Continue adding more sets?"),
                                                      {flush.console(); next},
                                                      {flush.console(); printX("QUITTING", "Prior changes have been saved"); break}) )
-
+    
     # fil_col <- as.character( readline(
     #   prompt = "$$ Filter samples based on this column. Enter name: " ) )
     # if ( !( fil_col %in% all.groups ) )
     #   stop( "\n\n{sep}\n.. ERROR. Invalid column entry. Try Again." )
     values <- sort(unique( annot[[fil_col]] ))
-
+    
     select.value.msg <- "$$ Enter one or more values from above, separated by semicolons"
     prompt.stmt <- glue( "{paste0( values, collapse = ', ' )}" )
     prompt.stmt <- glue( ".. Values: {prompt.stmt}\n{select.value.msg}" )
@@ -1085,14 +1113,14 @@ define_sample_sets <- function( all.groups, typemap.csv ){
     
     sample.sets[[name]]$fil_col <- fil_col
     sample.sets[[name]]$fil_val <- fil_val
-
+    
     # add pathway databases and parameters as set-specific parameters for every set
     for (x in names (typemap.gmt))  
       sample.sets[[name]][[x]] <- typemap.gmt[[x]]
     # this will be the concatenated parameter file
     for (x in names (typemap.yml))  
       sample.sets[[name]][[x]] <- typemap.yml[[x]]
-
+    
     # add.param.flag <- y2true("$$ Add set-specific parameters?")
     # while( add.param.flag ){
     #   param.name <- as.character( readline(
@@ -1110,7 +1138,7 @@ define_sample_sets <- function( all.groups, typemap.csv ){
       print(
         glue( "\n{sep}\n.. Sample sets to be added to Terra Workspace: " ) )
       print( glue( "\n.. {paste0( names( sample.sets ), collapse = ', ' )}" ) )
-  }
+    }
   return( sample.sets )
 }
 
@@ -1134,7 +1162,7 @@ panda_finalize <- function (internal=FALSE) {
     stop( glue( "\n\n{sep}\n.. ERROR. No groups selected. Run panda_groups()." ) )
   if (!exists ("sample.sets") || length (sample.sets) == 0) 
     stop( glue( "\n\n{sep}\n.. ERROR. No sample subsets. Run panda_sample_subsets()." ) )
-
+  
   # write panda config file
   # also creates a combined parameter file for use in the PANOPLY pipeline
   # created yaml files are transferred to the workspace google bucket

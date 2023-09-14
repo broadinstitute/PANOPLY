@@ -5,6 +5,7 @@ task panoply_ssgsea_report {
 
   File tarball
   File cfg_yaml
+  Boolean? is_ptmsigdb
   String label
 
   Int? memory
@@ -14,7 +15,7 @@ task panoply_ssgsea_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/rmd-ssgsea.r -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/
+    Rscript /home/pgdac/src/rmd-ssgsea.r -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/ -p ${default=FALSE is_ptmsigdb}
   }
 
   output {

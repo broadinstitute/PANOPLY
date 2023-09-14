@@ -23,6 +23,7 @@ workflow panoply_unified_workflow {
   String job_id
   String run_cmap
   String run_nmf #'true' or 'false'
+  Boolean run_so_nmf #'true' or 'false'
   String? run_ptmsea
 
   # Normalize specific optional params:
@@ -32,10 +33,10 @@ workflow panoply_unified_workflow {
   # Organize omics data into pairs
 
   Array[Pair[String?, File?]] ome_pairs =
-    [ ("proteome", "${prote_ome}"),
-      ("phosphoproteome", "${phospho_ome}"),
-      ("acetylome", "${acetyl_ome}"),
-      ("ubiquitylome", "${ubiquityl_ome}") ]
+    [ ("proteome", prote_ome),
+      ("phosphoproteome", phospho_ome),
+      ("acetylome", acetyl_ome),
+      ("ubiquitylome", ubiquityl_ome) ]
 
   Array[Pair[String?, File?]] geneome_pairs =
     [ ("rna", "${rna_data}"),
@@ -126,11 +127,13 @@ workflow panoply_unified_workflow {
   }
   
   ### NMF Sankey Diagrams (SO and MO nmf)
-  call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as all_nmf_sankey {
-  input:
-    so_nmf_tar = so_nmf.nmf_results,
-    mo_nmf_tar = mo_nmf.nmf_clust, #will exist if mo_nmf was run
-    label = job_id
+  if ( run_so_nmf ){
+    call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as all_nmf_sankey {
+    input:
+      so_nmf_tar = so_nmf.nmf_results,
+      mo_nmf_tar = mo_nmf.nmf_clust, #will exist if mo_nmf was run
+      label = job_id
+    }
   }
   
   ### IMMUNE:
