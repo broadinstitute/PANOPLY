@@ -99,6 +99,14 @@ defaults$all_parameters_file_name <- "panoply-parameters.yaml"
 defaults$panda_parameters_file_name <- "config.yaml"
 
 ### small global functions
+system_withError <- function(...) {
+  exit_status <- system(...)
+  if (exit_status != 0) { # capture exit status
+    stop(paste0("An error occurred.")) # error if exit status had a failure
+  }
+  return(exit_status)
+} # system() but it errors if the internal function errored
+
 process_file <- function (f) {
   # copy f to current directory and return name of file
   name <- basename(f)
@@ -222,7 +230,7 @@ panda_initialize <- function (workspace.type) {
   check.cfg <- system (glue ("gsutil -q stat {google.bucket}/{cfg}"))
   if ( check.cfg==0 ) {
     # get config file
-    system( glue( "gsutil cp {google.bucket}/{cfg} {cfg}" ) )
+    system_withError( glue( "gsutil cp {google.bucket}/{cfg} {cfg}" ) )
     # read and set parameter values
     p <- read_yaml (cfg)
     # check working directory for files
@@ -298,7 +306,7 @@ load_unzipped_files <- function(){
   ## locate uploaded file
   process_zip <- function(input.zip.name) {
     input.zip <<- glue( "{google.bucket}/{input.zip.name}" )
-    system( glue( "gsutil cp {input.zip} {home}/." ) )
+    system_withError( glue( "gsutil cp {input.zip} {home}/." ) )
     zip.name <- tail( unlist( strsplit( input.zip, split = '/' ) ), 1 )
     return(zip.name)
   }
@@ -312,7 +320,7 @@ load_unzipped_files <- function(){
   if( dir.exists( "input" ) )
     unlink( "input", recursive = T )
   dir.create( "input" )
-  system( glue( "unzip -j {zip.name} -d input/" ) )
+  system_withError( glue( "unzip -j {zip.name} -d input/" ) )
   setwd( glue( "{home}/input" ) )
   gcts <- list.files( pattern = "*.gct" )
   csvs <- list.files( pattern = "*.csv" )
@@ -1202,7 +1210,7 @@ panda_finalize <- function (internal=FALSE) {
                 class (result) <- "verbatim"
                 return (result)
               }))
-  system( glue( "gsutil cp {home}/{cfg} {google.bucket}/{cfg}" ) )
+  system_withError( glue( "gsutil cp {home}/{cfg} {google.bucket}/{cfg}" ) )
   new.config <<- FALSE
   # concatenate master parameter (or input parameter) file -- will be included in sample_set
   original.params <- glue ("{home}/input/{typemap.yml$parameters}.orig")
@@ -1232,30 +1240,30 @@ run_panda <- function(){
   dir.create( runspace )
   invisible( file.copy( glue ("{panda}/bin/Makefile"), glue( "{runspace}/Makefile" ) ) )
   config.addr <- glue( "{google.bucket}/config.yaml" )
-  system( glue( "gsutil cp {config.addr} {runspace}/." ) )
+  system_withError( glue( "gsutil cp {config.addr} {runspace}/." ) )
   setwd( "runspace" )
-  system( glue( "make restart && make init" ) )
+  system_withError( glue( "make restart && make init" ) )
   setwd( "pipeline-input" )
   for ( type in names( typemap.gct ) ) {
-    system( glue(
+    system_withError( glue(
       "ln -s ../../input/{typemap.gct[[type]]} {terra.wkspace}-{type}.gct" ) )
   }
   for ( type in names( typemap.csv ) ) {
-    system( glue(
+    system_withError( glue(
       "ln -s ../../input/{typemap.csv[[type]]} {terra.wkspace}-{type}.csv" ) )
   }
   for ( f in c (typemap.yml, typemap.gmt) ) {
-    system( glue (
+    system_withError( glue (
       "ln -s ../../input/{f} {f}" ))
   }
   setwd( "../" )
   print( WAIT )
   flush.console()  # without this, the display shows up later
-  system( glue( "make groups" ) )
-  system( glue( "make terrainit" ) )
+  system_withError( glue( "make groups" ) )
+  system_withError( glue( "make terrainit" ) )
   ### No longer creating Participant entities for terra, due to the associated time sink 
-  # system( glue( "make panda-samples" ) )  # always call -- will upload only missing samples
-  system( glue( "make panda-sets" ) )
+  # system_withError( glue( "make panda-samples" ) )  # always call -- will upload only missing samples
+  system_withError( glue( "make panda-sets" ) )
   print( DONE )
 }
 
