@@ -2,7 +2,7 @@
 **Version**: Spectronaut v18, cloud enabled
 
 ## Description
-This workflow invokes the Spectronaut CLI interface. All of the settings can be configured in Spectronaut UI and saved as a `.prop` file to be uploaded to this workflow. The settings can also be edited using a text editor. More detailed documentation can be found in the Spectronaut 18 User Manual
+This workflow invokes the Spectronaut CLI interface. All of the settings can be configured in Spectronaut UI and saved as a `.prop` file to be uploaded to this workflow. The settings can also be edited using a text editor. More detailed documentation can be found in the [Spectronaut 18 User Manual](https://github.com/broadinstitute/PANOPLY/blob/dev/third-party-modules/panoply_spectronaut/Spectronaut18_UserManual.pdf)
 
 ## `panoply_spectronaut` — workflow to run Spectronaut on the cloud
 ### Inputs
