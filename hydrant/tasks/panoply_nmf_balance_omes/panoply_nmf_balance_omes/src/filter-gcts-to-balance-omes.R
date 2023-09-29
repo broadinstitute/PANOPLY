@@ -47,17 +47,17 @@ p_load(magrittr)
 import_gct_in_wdl <- function( ome_gcts_string, ome_labels_string ){
   
   # parse strings into vectors
-  ome_gcts = unlist(strsplit(ome_gcts_string, ","))
+  ome_gct_str = unlist(strsplit(ome_gcts_string, ","))
   ome_labels = unlist(strsplit(ome_labels_string, ","))
-  # ome_labels = sapply(ome_gcts, USE.NAMES = FALSE, function(filepath) { basename(filepath) %>% gsub(".gct","", .) }) # assume that file-name is ome-label
+  # ome_labels = sapply(ome_gct_str, USE.NAMES = FALSE, function(filepath) { basename(filepath) %>% gsub(".gct","", .) }) # assume that file-name is ome-label
   
-  if (length(ome_gcts)!=length(ome_labels)) stop("Different number of GCT files and ome-labels detected. Please check your inputs.")
+  if (length(ome_gct_str)!=length(ome_labels)) stop("Different number of GCT files and ome-labels detected. Please check your inputs.")
   
   ## import
-  gct <- lapply(ome_gcts, parse_gctx)
-  names(gct) <- ome_labels
+  ome_gcts <- lapply(ome_gct_str, parse_gctx)
+  names(ome_gcts) <- ome_labels
   
-  out <- list(gct=gct, gct_str=ome_labels)
+  out <- list(ome_gcts=ome_gcts, ome_labels=ome_labels)
   
   return(out)
 }
@@ -270,13 +270,13 @@ balance_omes <- function(   contrib,           ## numeric, vector of contributio
 
 #####################################
 ## import GCT files
-##gct <- lapply(gct_str, parse_gctx)
+##ome_gcts <- lapply(ome_labels, parse_gctx)
 gct_imp <- import_gct_in_wdl( opt_cmd$ome_gcts_string, opt_cmd$ome_labels_string )
-gct <- gct_imp$gct
-gct_str <- gct_imp$gct_str
+ome_gcts <- gct_imp$ome_gcts
+ome_labels <- gct_imp$ome_labels
 
 ## extract data matrices
-gct_mat <- lapply(gct, function(x) x@mat)
+gct_mat <- lapply(ome_gcts, function(x) x@mat)
 
 ## remove features with missing values
 gct_mat_fullquant <- lapply(gct_mat, function(m){
@@ -342,18 +342,18 @@ features_balanced <- balance_omes(var.contrib.filt.perc, rdesc$ome, perc_tol = p
 #################################
 ## filter tables
 for(o in names(features_balanced)){
-  
-  gct_org <- gct[[o]]
+  index = which(ome_labels==o) # get the proper index for this file, so that WDL's glob() function pulls files in the right order
+  gct_org <- ome_gcts[[o]]
   feat_filt <- features_balanced[[o]] %>% names
   
   ## filter gct
   gct_filt <- subset_gct(gct_org, rid=feat_filt)
   
   ## export
-  fn <- gct_str[o] %>%
-    sub('.*/', '', .) %>%
-    sub('\\.gct$', '-balanced-contrib.gct', .)
-  
+  fn <- paste0(sprintf("%02d", index), "-", # prepend padded-index to filename, to ensure that glob() pulls files in the correct order
+               o, # use label in file-name
+               '-balanced-contrib.gct') # append balanced-contrib.gct
+
   fn <- file.path(tempdir(), fn)
   write_gct(gct_filt, ofile = fn, appenddim = F)
   file.copy(fn, '.', overwrite = T)

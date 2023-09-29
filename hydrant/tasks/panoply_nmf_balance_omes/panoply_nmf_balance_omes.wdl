@@ -4,6 +4,7 @@
 task panoply_nmf_balance_omes {
 
     String label
+    
     Array[File]+ ome_gcts
     Array[String]+ ome_labels
 
@@ -25,12 +26,12 @@ task panoply_nmf_balance_omes {
     }
 
     output {
-       Array[File]+ omes_balanced=ome_gcts
+       Array[Pair[String?,File?]] ome_pairs_balanced = zip(ome_labels, glob("*-balanced-contrib.gct"))
        File pdf="balance-omes.pdf"
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_nmf_balance_omes:test"
+        docker : "broadcptacdev/panoply_nmf_balance_omes:latest"
         memory: select_first ([memory, 16]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""
@@ -45,6 +46,18 @@ task panoply_nmf_balance_omes {
 
 ## workflow
 workflow panoply_nmf_balance_omes_workflow {
-    call panoply_nmf_balance_omes
+    Array[Pair[String,File]]+ ome_pairs
+
+    # get array of labels and GCTs
+    scatter (pairs in ome_pairs) {
+        String ome_labels = pairs.left
+        File ome_gcts = pairs.right
+    }
+
+    call panoply_nmf_balance_omes {
+        input:
+            ome_gcts=ome_gcts,
+            ome_labels=ome_labels,
+    }
 }
 

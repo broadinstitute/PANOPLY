@@ -3,7 +3,7 @@
 #
 
 ################################################
-task panoply_so_nmf_assemble_drivers {
+task panoply_nmf_postprocessing {
 
   File nmf_tar
   String ome_type
@@ -22,7 +22,7 @@ task panoply_so_nmf_assemble_drivers {
   }
   
   runtime {
-    docker : "broadcptacdev/panoply_so_nmf_assemble_drivers:latest"
+    docker : "broadcptacdev/panoply_nmf_postprocessing:latest"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 32]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
