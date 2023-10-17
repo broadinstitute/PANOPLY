@@ -1,3 +1,45 @@
+#load packages
+library(optparse)
+library(cmapR)
+library(stringr)
+library(dplyr)
+library(cluster)
+library(randomForest)
+library(doParallel)
+
+## handle command line arguments
+cat("\n\nExtracting command line arguments...\n")
+
+parser <- OptionParser()
+parser <- add_option(parser, c("--prefix"), type = 'character', dest = 'prefix')
+parser <- add_option(parser, c("--pome.gct.file"), type = 'character', dest = 'pome.gct.file')
+parser <- add_option(parser, c("--mrna.gct.file"), type = 'character', dest = 'mrna.gct.file')
+parser <- add_option(parser, c("--TF.file"), type = 'character', dest = "TF.file")
+parser <- add_option(parser, c("--dir.name"), type = 'character', dest = "dir.name",default="exp")
+parser <- add_option(parser, c("--type"), type = 'character', dest = "type",default="SM")
+parser <- add_option(parser, c("--weightthreshold"), type = 'double', dest = "weightthreshold",default=0)
+parser <- add_option(parser, c("--num.cores"), type = 'integer', dest = "num.cores",default=1)
+parser <- add_option(parser, c("--verbose"), type = 'logical', dest = "verbose",default=F)
+parser <- add_option(parser, c("--libdir"), type = 'character', dest = "libdir")
+options <- parse_args(parser)
+
+prefix <- options$prefix
+pome.gct.file <- options$pome.gct.file
+mrna.gct.file <- options$mrna.gct.file
+TF.file <- options$TF.file
+dir.name <- options$dir.name
+type <- options$type
+weightthreshold <- options$weightthreshold
+num.cores <- options$num.cores
+verbose <- options$verbose
+libdir <- options$libdir
+
+# Source the files that we need
+source(file.path(libdir,"scion_data_processing.R")) #pre-processing data tables
+source(file.path(libdir,"kmeans_clustering.R")) #clustering
+source(file.path(libdir,"RS.Get.Weight.Matrix.parallel.R")) #network inference
+
+
 #' SCION implementation to run on Terra. Combines preprocessing and network inference into one function
 #' @author Natalie M Clark
 #' @param prefix ome type of the regulator (proteome, phosphoproteome, acetylome, ubiquitylome)
@@ -16,19 +58,6 @@
 #' @param connect.hubs boolean to connect the hubs between clusters. this parameter is ignored if clustering is not performed. default TRUE
 #' @param verbose boolean to display detailed output. default FALSE
 SCION <- function (prefix, pome.gct.file, mrna.gct.file, TF.file, permute=NULL, dim="col", na.max=0, cluster=T,dir.name="exp",type="SM", weightthreshold=0, normalize=FALSE,num.cores=1,connect.hubs=T,verbose=F) {
-  
-  # Source the files that we need
-  source("scion_data_processing.R") #pre-processing data tables
-  source("kmeans_clustering.R") #clustering
-  source("RS.Get.Weight.Matrix.parallel.R") #network inference
-  
-  #load packages
-  library(cmapR)
-  library(stringr)
-  library(dplyr)
-  library(cluster)
-  library(randomForest)
-  library(doParallel)
   
   #create directory to save results
   if(!is.null(permute)){
@@ -210,3 +239,14 @@ SCION <- function (prefix, pome.gct.file, mrna.gct.file, TF.file, permute=NULL, 
   SCION_infer(mytargetdata,myregdata,clusterresults,weightthreshold,prefix,permute,normalize,verbose)
   cat("Done\n")
 }
+
+#run SCION
+SCION(prefix=prefix,
+      pome.gct.file=pome.gct.file,
+      mrna.gct.file=mrna.gct.file, 
+      TF.file=TF.file,
+      dir.name=dir.name,
+      type=type,
+      weightthreshold=weightthreshold,
+      num.cores=num.cores,
+      verbose=verbose)

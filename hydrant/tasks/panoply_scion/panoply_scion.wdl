@@ -1,41 +1,59 @@
-task panoply_scion {
-    Float? ram_gb
-    Int? local_disk_gb
-    Int? num_preemptions
+workflow panoply_scion_workflow {
+    call panoply_scion
+}
 
-    #**Define additional inputs here**
+task panoply_scion {
+    String ome
+    File pome_gct_file
+    File mrna_gct_file
+    File TF_file
+
+    String? dir_name
+    String? type
+    Float? weight_threshold
+    Int? num_cores
+    Boolean? verbose
+
+    Int? memory
+    Int? disk_space
+    Int? num_preemptions
 
     command {
         set -euo pipefail
 
-        #**Command goes here**
+        output_dir="$(pwd)/scion_output"
+  	mkdir -p $output_dir
+  	cd $output_dir
+
+        Rscript /prot/proteomics/Projects/PGDAC/src/scion/SCION.R \
+        --prefix ${ome} \
+        --pome.gct.file ${pome_gct_file} \
+        --mrna.gct.file ${mrna_gct_file} \
+        --TF.file ${TF_file} \
+        --dir.name ${default=exp dir_name} \
+        --type ${default=SM type} \
+        --weightthreshold ${default=0 weight_threshold} \
+        --num.cores ${default=1 num_cores} \
+        --verbose + ${default=F verbose} \
+        --libdir /prot/proteomics/Projects/PGDAC/src/scion
+
+        tar -czvf "panoply_scion_output.tar" $(basename $out_dir)
     }
 
     output {
-        #** Define outputs here**
+        File scion_tar = "panoply_scion_output.tar"
     }
 
     runtime {
-        docker : "<namespace>/panoply_scion:1"
-        memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+        docker : "broadcptacdev/panoply_scion:latest"
+        memory : select_first ([memory, 32]) + "GB"
+        disks : "local-disk " + select_first ([disk_space, 50]) + " SSD"
+        cpu : select_first ([num_cores, 1]) + ""
+        preemptible : select_first ([num_preemptions, 0])
     }
 
     meta {
         author : "Natalie Clark"
         email : "nclark@broadinstitute.org"
-    }
-}
-
-workflow panoply_scion {
-
-    call panoply_scion {
-        input: #**Define call inputs for panoply_scion here**
-    }
-
-    output {
-        #**Define workflow outputs here. If defined, these will be the only
-        #  outputs available in the Method Configuration**
     }
 }
