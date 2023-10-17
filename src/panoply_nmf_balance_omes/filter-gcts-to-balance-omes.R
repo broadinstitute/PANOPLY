@@ -44,7 +44,7 @@ p_load(magrittr)
 ########################################
 ## import
 ## wdl-compatible
-import_gct_in_wdl <- function( ome_gcts_string, ome_labels_string ){
+import_gct_from_wdl <- function( ome_gcts_string, ome_labels_string ){
   
   # parse strings into vectors
   ome_gct_str = unlist(strsplit(ome_gcts_string, ","))
@@ -271,7 +271,7 @@ balance_omes <- function(   contrib,           ## numeric, vector of contributio
 #####################################
 ## import GCT files
 ##ome_gcts <- lapply(ome_labels, parse_gctx)
-gct_imp <- import_gct_in_wdl( opt_cmd$ome_gcts_string, opt_cmd$ome_labels_string )
+gct_imp <- import_gct_from_wdl( opt_cmd$ome_gcts_string, opt_cmd$ome_labels_string )
 ome_gcts <- gct_imp$ome_gcts
 ome_labels <- gct_imp$ome_labels
 
