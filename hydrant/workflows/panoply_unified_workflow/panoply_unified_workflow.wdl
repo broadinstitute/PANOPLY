@@ -99,20 +99,6 @@ workflow panoply_unified_workflow {
       }
     }
   }
-  
-  ### Single-ome NMF
-  call so_nmf_wdl.panoply_so_nmf_workflow as so_nmf {
-    input:
-      yaml = yaml,
-      job_id = job_id,
-      prote_ome = norm_filt.filtered_data_table[0],
-      phospho_ome = norm_filt.filtered_data_table[1],
-      acetyl_ome = norm_filt.filtered_data_table[2],
-      ubiquityl_ome = norm_filt.filtered_data_table[3],
-      rna_data = rna_data,
-      cna_data = cna_data,
-      run_sankey = "false" # run sankey_workflow separately
-  }
 
   ### Multi-omics NMF:
   if ( run_nmf == "true" ){
@@ -126,8 +112,22 @@ workflow panoply_unified_workflow {
     }
   }
   
-  ### NMF Sankey Diagrams (SO and MO nmf)
   if ( run_so_nmf ){
+    ### Single-ome NMF
+    call so_nmf_wdl.panoply_so_nmf_workflow as so_nmf {
+      input:
+        yaml = yaml,
+        job_id = job_id,
+        prote_ome = norm_filt.filtered_data_table[0],
+        phospho_ome = norm_filt.filtered_data_table[1],
+        acetyl_ome = norm_filt.filtered_data_table[2],
+        ubiquityl_ome = norm_filt.filtered_data_table[3],
+        rna_data = rna_data,
+        cna_data = cna_data,
+        run_sankey = "false" # run sankey_workflow separately
+    }
+
+    ### NMF Sankey Diagrams (SO and MO nmf)
     call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as all_nmf_sankey {
     input:
       so_nmf_tar = so_nmf.nmf_results,
