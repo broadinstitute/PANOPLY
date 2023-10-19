@@ -1,32 +1,25 @@
 #
-# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+# Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 
 task panoply_nmf {
-
-	#Inputs defined here
-	Array[File]+ ome_gcts
-	File? yaml_file # mostly for colors
-	File? groups_file # for enrichment analysis
+    Array[File]+ ome_gcts
+    Array[String]+ ome_labels
 
 	String output_prefix="results_nmf"
+	File? yaml_file
+
+	Float? sd_filt_min
+	String? sd_filt_mode
+	String? z_score_mode
+	String? gene_column
 	
 	Int? kmin
 	Int? kmax
 	Int? nrun
-	
+	# Boolean? bayesian
+	String? nmf_method # in the YAML
 	String? seed
-	
-	String? gene_column
- 
-	Boolean? no_plot
-	Boolean? z_score
-	Boolean? impute
-
-	Boolean? exclude_2
-	
-	String? filt_mode
-	Float? sd_min
 
 	Int? memory
 	Int? disk_space
@@ -35,19 +28,16 @@ task panoply_nmf {
 	
 	command {
 		set -euo pipefail
-		#Command goes here
-		Rscript /home/pgdac/src/mo-nmf.r --tar ${tar_file} --yaml ${yaml_file} --lowrank ${default=NA kmin} --maxrank ${default=NA kmax} --nrun ${default=NA nrun} --seed ${default=NA seed} --runonly ${default=false no_plot} --sdfilter ${default=NA sd_min} --filt_mode ${default=NA filt_mode} --z_score ${default=NA z_score} --impute ${default=NA impute} --gene_column ${default=NA gene_column} --exclude_2 ${default=NA exclude_2} --libdir /home/pgdac/src/
-
-		find * -type d -name "[0-9]*" -print0 | tar -czvf ${output_prefix}.tar --null -T -
 		
-		find . -name "matrix_W_combined_signed.gct" | xargs cp -t .
-		}
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-v " + z_score_mode} ${"-a " + gene_column}  ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+	}
 
 	output {
-		#Outputs defined here
-		File results="${output_prefix}.tar"
-		File feature_matrix_w="matrix_W_combined_signed.gct"
-		}
+		File results="nmf_res.Rdata"
+		File gct_comb=select_first(glob("${output_prefix}_combined_n*.gct")) # select first/only match of array-length-1
+		File gct_comb_nn=select_first(glob("${output_prefix}_combinedNonNegative*.gct")) # select first/only match of array-length-1
+		Int nclust=read_int("nmf_best_rank.txt")
+	}
 
 	runtime {
 		docker : "broadcptacdev/panoply_nmf:latest"

@@ -43,8 +43,18 @@ workflow panoply_nmf_internal_workflow {
 			ome_pairs="${if defined(panoply_nmf_balance_omes.ome_pairs)
 						 then panoply_nmf_balance_omes.ome_pairs
 						 else ome_pairs}",
-			yaml_file=yaml_file,
-			groups_file=groups_file
+			output_prefix=label,
+			yaml_file=yaml_file
+	}
+	call panoply_nmf_wdl.panoply_nmf_postprocessing {
+		input:
+			nmf_results=panoply_nmf.results,
+			nclust=panoply_nmf.nclust,
+			expr_comb=panoply_nmf.gct_comb,
+			expr_comb_nn=panoply_nmf.gct_comb_nn,
+			output_prefix=label,
+			groups_file=groups_file,
+			yaml_file=yaml_file
 	}
 
 	call panoply_nmf_report_wdl.panoply_nmf_report {
@@ -75,7 +85,7 @@ workflow panoply_nmf_internal_workflow {
 	output {
 		File nmf_tar=panoply_nmf.results # full output tar
 		File nmf_membership=panoply_nmf.membership # .txt with membership results
-		Int  nmf_n_clust=panoply_nmf.n_clust # number of membershipers
+		Int  nmf_nclust=panoply_nmf.nclust # number of membershipers
 		File nmf_report=panoply_nmf_report.report
 
 		File nmf_ssgsea_tar=panoply_ssgsea.results
