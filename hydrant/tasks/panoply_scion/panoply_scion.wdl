@@ -7,7 +7,7 @@ task panoply_scion {
     File pome_gct_file
     File mrna_gct_file
     File TF_file
-
+    
     String? dir_name
     String? type
     Float? weight_threshold
@@ -25,7 +25,7 @@ task panoply_scion {
   	mkdir -p $output_dir
   	cd $output_dir
 
-        Rscript /prot/proteomics/Projects/PGDAC/src/scion/SCION.R \
+        Rscript /prot/proteomics/Projects/PGDAC/src/SCION.R \
         --prefix ${ome} \
         --pome.gct.file ${pome_gct_file} \
         --mrna.gct.file ${mrna_gct_file} \
@@ -34,10 +34,12 @@ task panoply_scion {
         --type ${default=SM type} \
         --weightthreshold ${default=0 weight_threshold} \
         --num.cores ${default=1 num_cores} \
-        --verbose + ${default=F verbose} \
-        --libdir /prot/proteomics/Projects/PGDAC/src/scion
+        --verbose ${default=F verbose} \
+        --libdir /prot/proteomics/Projects/PGDAC/src
 
-        tar -czvf "panoply_scion_output.tar" $(basename $out_dir)
+        cd ..
+
+        tar -czvf "panoply_scion_output.tar" $(basename $output_dir)
     }
 
     output {

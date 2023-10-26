@@ -1,5 +1,5 @@
 #####################################################################################
-kmeans_clustering<-function(clustering_data, kmid) {
+kmeans_clustering<-function(clustering_data, kmid, kalt) {
   
   set.seed(2020)
   #center and scale expression matrices
@@ -11,7 +11,7 @@ kmeans_clustering<-function(clustering_data, kmid) {
   threshold <- NULL
   s.index <- NULL
   row <- 1
-  for (k in seq(kmid-40,kmid+40,by=20)){
+  for (k in seq(kmid-kalt,kmid+kalt,by=floor(kalt/2))){
     #cat("Testing k=",k,"\n",sep="")
     #k-means clustering
     km.all <- suppressWarnings(kmeans(normmatrix, k,  nstart=5, iter.max=20))

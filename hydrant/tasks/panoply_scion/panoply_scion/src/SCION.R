@@ -3,6 +3,7 @@ library(optparse)
 library(cmapR)
 library(stringr)
 library(dplyr)
+library(tibble)
 library(cluster)
 library(randomForest)
 library(doParallel)
@@ -19,7 +20,7 @@ parser <- add_option(parser, c("--dir.name"), type = 'character', dest = "dir.na
 parser <- add_option(parser, c("--type"), type = 'character', dest = "type",default="SM")
 parser <- add_option(parser, c("--weightthreshold"), type = 'double', dest = "weightthreshold",default=0)
 parser <- add_option(parser, c("--num.cores"), type = 'integer', dest = "num.cores",default=1)
-parser <- add_option(parser, c("--verbose"), type = 'logical', dest = "verbose",default=F)
+parser <- add_option(parser, c("--verbose"), type = 'logical', dest = "verbose",default=FALSE)
 parser <- add_option(parser, c("--libdir"), type = 'character', dest = "libdir")
 options <- parse_args(parser)
 
@@ -98,7 +99,7 @@ SCION <- function (prefix, pome.gct.file, mrna.gct.file, TF.file, permute=NULL, 
       #otherwise scale k based on the smallest dimension (regulators or samples)
       kmid <- min(dim(myregdata)[1],dim(myregdata)[2])
     }
-    clusterresults <- kmeans_clustering(myclustdata, kmid)
+    clusterresults <- kmeans_clustering(myclustdata, kmid, kalt=max(floor(kmid/10),5))
     
     #save the results
     write.csv(clusterresults,paste(my.dir,"/clusters.csv",sep=""))
