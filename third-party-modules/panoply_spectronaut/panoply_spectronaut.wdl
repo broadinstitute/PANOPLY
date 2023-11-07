@@ -5,7 +5,7 @@ workflow panoply_spectronaut {
 
 task spectronaut {
   input {
-    String license_key="7f120d6b-a1cc-4624-a84e-a7663f36e1bf"
+    String license_key="b233d39d-b28c-47b9-8e41-e16a9ba923ad"
 
     String experiment_name
     File? analysis_settings
