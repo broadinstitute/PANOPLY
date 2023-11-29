@@ -95,10 +95,12 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( GlobalOptions); \
 	p_install( GetoptLong ); \
         p_install( coda ); \
-        p_install( rjags );' > /tmp/packages.R  && Rscript /tmp/packages.R
+        p_install( rjags ); \
+        p_install( WriteXLS );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
 # Install devtools directly from crane, NOT from mirror repository
 RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
+RUN R -e 'devtools::install_version('khroma', version='1.11.0', repos = 'https://packagemanager.posit.co/cran/2023-11-01')' # install NEWER version of khroma (color-management) so that palettes can be loaded automatically
 
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \

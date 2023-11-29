@@ -13,6 +13,7 @@ task panoply_nmf {
 	String? sd_filt_mode
 	String? z_score_mode
 	String? gene_column
+	String? organism_id # can be 'Hs', 'Mm', or 'Rn'
 	
 	Int? kmin
 	Int? kmax
@@ -29,13 +30,14 @@ task panoply_nmf {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-v " + z_score_mode} ${"-a " + gene_column}  ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-v " + z_score_mode} ${"-a " + gene_column} ${"-i " + organism_id} ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 	}
 
 	output {
 		File results="nmf_res.Rdata"
 		File gct_comb=select_first(glob("${output_prefix}_combined_n*.gct")) # select first/only match of array-length-1
 		File gct_comb_nn=select_first(glob("${output_prefix}_combinedNonNegative*.gct")) # select first/only match of array-length-1
+		File? sd_filt_results=select_first(glob("${output_prefix}_*_filteringResults.pdf")) # select first/only match of sd-filter results (if it was applied)
 		Int nclust=read_int("nmf_best_rank.txt")
 	}
 
