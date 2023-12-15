@@ -34,6 +34,7 @@ workflow panoply_fragpipe_search {
   }
 }
 
+
 task fragpipe {
   input {
     File fragpipe_workflow
@@ -76,7 +77,7 @@ task fragpipe {
       mv $(basename ~{files_folder}) data
     else
       mkdir data
-      cp ~{sep(' ', files)} data
+      cp ~{sep(' ', files)} data 
     fi
 
     echo "database.db-path=~{basename(database)}" >> $frag_workflow
@@ -96,7 +97,7 @@ task fragpipe {
       frag_manifest=$(basename ${fragpipe_manifest})
     fi
     
-    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.7/MSFragger-3.7.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.8.10/IonQuant-1.8.10.jar --config-python /opt/conda/envs/fragpipe/bin/python
+    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.8/MSFragger-3.8.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.9.8/IonQuant-1.9.8.jar --config-python /opt/conda/envs/fragpipe/bin/python
 
     cd ..
     zip -r $out_zip $projdir/out -x \*.zip
@@ -113,6 +114,7 @@ task fragpipe {
 
   runtime {
     docker: "broadcptacdev/panoply_fragpipe:latest"
+    cpuPlatform : "AMD Rome"
     memory: "${ram_gb}GB"
     bootDiskSizeGb: 512
     disks : "local-disk ${local_disk_gb} HDD"

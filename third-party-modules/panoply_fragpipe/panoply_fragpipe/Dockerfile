@@ -29,28 +29,29 @@ RUN pip install lxml
 
 RUN set -ex \
     && mkdir ThermoRawFileParser && cd ThermoRawFileParser \
-    && curl -LOk https://github.com/compomics/ThermoRawFileParser/releases/download/v1.4.1/ThermoRawFileParser1.4.1.zip \
-    && unzip ThermoRawFileParser1.4.1.zip \
-    && rm ThermoRawFileParser1.4.1.zip && cd -
+    && curl -LOk https://github.com/compomics/ThermoRawFileParser/releases/download/v1.4.3/ThermoRawFileParser1.4.3.zip \
+    && unzip ThermoRawFileParser1.4.3.zip \
+    && rm ThermoRawFileParser1.4.3.zip && cd -
 
-ADD src/FragPipe-19.1.zip /
-RUN unzip FragPipe-19.1.zip \
-    && rm FragPipe-19.1.zip \
+ADD src/FragPipe-20.0.zip /
+RUN unzip FragPipe-20.0.zip \
+    && rm FragPipe-20.0.zip \
     && chmod 755 /fragpipe/bin/fragpipe
 
 RUN set -ex \
     && cd /usr/local/bin \
-    && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v4.8.0/philosopher_v4.8.0_linux_amd64.zip \
-    && unzip philosopher_v4.8.0_linux_amd64.zip && rm philosopher_v4.8.0_linux_amd64.zip \
+    && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v5.0.0/philosopher_v5.0.0_linux_amd64.zip \
+    && unzip philosopher_v5.0.0_linux_amd64.zip && rm philosopher_v5.0.0_linux_amd64.zip \
     && chmod 755 philosopher \
     && cd -
 
-ADD src/IonQuant-1.8.10.zip /
-RUN unzip IonQuant-1.8.10.zip && rm IonQuant-1.8.10.zip && chmod 755 /IonQuant-1.8.10/IonQuant-1.8.10.jar
+ADD src/IonQuant-1.9.8.zip /
+RUN unzip IonQuant-1.9.8.zip && rm IonQuant-1.9.8.zip && chmod 755 /IonQuant-1.9.8/IonQuant-1.9.8.jar
  
-ADD src/MSFragger-3.7.zip /
-RUN unzip MSFragger-3.7.zip && rm MSFragger-3.7.zip && chmod 755 /MSFragger-3.7/MSFragger-3.7.jar
+ADD src/MSFragger-3.8.zip /
+RUN unzip MSFragger-3.8.zip && rm MSFragger-3.8.zip && chmod 755 /MSFragger-3.8/MSFragger-3.8.jar
 
+ADD src/
 COPY src/collect_psm.sh /usr/local/bin/
 COPY src/package.sh /usr/local/bin/
 COPY src/mv.sh /etc/profile.d/
