@@ -8,12 +8,15 @@ task panoply_nmf_postprocess {
     File expr_comb # expression matrix GCT file
     File expr_comb_nn # non-negative expression matrix GCT file
 
-	String output_prefix="results_nmf"
-	File? yaml_file # mostly for colors
+	String? gene_column
 	File? groups_file # for enrichment analysis
 
-	String? gene_column
 	Float? pval_signif
+	Int? max_annot_levels # max number of annotation-levels to allow for discrete variables
+	Int? top_n_features # max number of driver features (per cluster) to create expression-boxplots for 
+
+	String output_prefix="output"
+	File? yaml_file
 
 	Int? memory
 	Int? disk_space
@@ -23,13 +26,12 @@ task panoply_nmf_postprocess {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} --expr_comb ${expr_comb} --expr_comb_nn ${expr_comb_nn} ${"-g " + groups_file} ${"-a " + gene_column} ${"-p " + pval_signif} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} --expr_comb ${expr_comb} --expr_comb_nn ${expr_comb_nn} ${"-g " + groups_file} ${"-a " + gene_column} ${"-p " + pval_signif} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 
-		tar -czvf nmf_results.tar ${output_prefix}_K${nclust}_* # tar all files with 
 	}
 
 	output {
-		File results="nmf_results.tar"
+		File results="NMF_results.tar.gz"
 		File membership="${output_prefix}_K${nclust}_clusterMembership.csv"
 	}
 
