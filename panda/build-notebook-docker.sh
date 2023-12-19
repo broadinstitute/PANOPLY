@@ -58,8 +58,8 @@ if [[ $a_flag == "true" ]]; then
   # copy panoply-Rutil repository
   git clone https://github.com/broadinstitute/proteomics-Rutil.git
   mv proteomics-Rutil R-utilities
-  base_docker1="$docker_ns/panda_config_libs:$docker_tag"
-  base_docker2="$docker_ns/panda_config_libs:latest"
+  base_docker1="broadcptacdev/panda_config_libs:$docker_tag" # panda Dockerfile references broadcptacdev namespace explicitly
+  base_docker2="broadcptacdev/panda_config_libs:latest"  # panda Dockerfile references broadcptacdev namespace explicitly
   docker build --rm --no-cache -t $base_docker1 -t $base_docker2 .
   rm -rf R-utilities # cleanup
 fi
@@ -77,13 +77,13 @@ if [[ $u_flag == "true" ]]; then
   docker login
   echo -e "Pushing images to dockerhub...";
   if [[ $a_flag == "true" ]]; then
-    docker push $docker_ns/panda_config_libs:$docker_tag
-    docker push $docker_ns/panda_config_libs:latest
+    docker push broadcptacdev/panda_config_libs:$docker_tag # panda Dockerfile references broadcptacdev namespace explicitly
+    docker push broadcptacdev/panda_config_libs:latest # panda Dockerfile references broadcptacdev namespace explicitly
   fi
   docker push $docker_ns/panda:$docker_tag
   docker push $docker_ns/panda:latest
   
   # also push to gcr.io
-  docker tag $docker_ns/panda:$docker_tag gcr.io/$docker_ns/panda:$docker_tag
-  docker push gcr.io/$docker_ns/panda:$docker_tag
+  docker tag $docker_ns/panda:$docker_tag gcr.io/broadcptac/panda:$docker_tag # push to broadcptac, there is no broadcptacdev on gcr.io
+  docker push gcr.io/broadcptac/panda:$docker_tag # push to broadcptac, there is no broadcptacdev on gcr.io
 fi

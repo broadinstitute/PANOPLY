@@ -13,12 +13,13 @@ gct.file <- file.path (filt.dir, paste (master.prefix, '.gct', sep=''))
 run.marker.selection <- function (input.gct.file, input.cls.file, prefix, run.1vAll=FALSE) {
   # runs marker selection on input data for given class vector in input.cls
   tryCatch (marker.selection.and.classification (input.gct.file, input.cls.file, paste (prefix, '-analysis', sep=''), 
-                                                 gene.id.col=gene.id.col, id.col=id.col, desc.col=desc.col, gsea=TRUE,
+                                                 gene.id.col=gene.id.col, id.col=id.col, desc.col=desc.col, gsea=FALSE,
                                                  id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                                  duplicate.gene.policy=duplicate.gene.policy,
                                                  impute.colmax=sample.na.max,
                                                  official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
-                                                 fdr=assoc.fdr),
+                                                 fdr=assoc.fdr,
+                                                 models=c("pls","rf","glmnet")),
             error = function(cond) {
               message(paste("Failed to complete marker selection for ", prefix))
               message(cond)
@@ -35,12 +36,13 @@ run.marker.selection <- function (input.gct.file, input.cls.file, prefix, run.1v
         new.clsf <- paste (prefix.1vA, '.cls', sep='')
         write.cls (cls.1vAll[,i], new.clsf)
         marker.selection.and.classification (input.gct.file, new.clsf, paste (prefix.1vA, '-analysis', sep=''),
-                                             gene.id.col=gene.id.col, id.col=id.col, desc.col=desc.col, gsea=TRUE,
+                                             gene.id.col=gene.id.col, id.col=id.col, desc.col=desc.col, gsea=FALSE,
                                              id.to.gene.map=NULL,   # GeneSymbol already present in GCT v1.3 input
                                              duplicate.gene.policy=duplicate.gene.policy,
                                              impute.colmax=sample.na.max,
                                              official.genenames=file.path ('..', 'data', 'gene-symbol-map.csv'),
-                                             fdr=assoc.fdr)
+                                             fdr=assoc.fdr,
+                                             models=c("pls","rf","glmnet"))
       }
     }
   }
@@ -64,8 +66,12 @@ if (! exists ("assoc.subgroups")) {
   
   if (length (cls.list) > 0) {
     for (g in cls.list) {
-      group <- make.names (subgroup.table [ sample.order, g ])  # use make.names to convert text to proper class labels
-      subsamp <- group != 'ignore'
+      #replace "" with NA, otherwise it gets kept
+      group <- subgroup.table[sample.order, g]
+      group[group==""]=NA
+      group <- make.names (group)  # use make.names to convert text to proper class labels
+      #REMOVE NAs!
+      subsamp <- !group%in%c('ignore',"NA.")
       # write subsamples dataset and class labels
       f <- paste (type, '-', g, sep='')
       ds.g <- col.subset.gct (ds, subsamp)

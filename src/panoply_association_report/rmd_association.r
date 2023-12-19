@@ -189,19 +189,19 @@ output:
 This report summarizes the results of the Association module for ', type, ' at FDR < ', fdr_value, '. The association module runs several marker selection algorithms on each comparison pair to assign a combined score identifying the best markers. ssGSEA is then run on these marker results to identify significantly enriched pathways. Detailed documentation for the association analysis module can be found [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_association) and for the ssGSEA module [here](https://github.com/broadinstitute/PANOPLY/wiki/Analysis-Modules%3A-panoply_ssgsea). 
               ')
   
-  if (dir.exists(file.path(label, gsea_dir))){
+  if (dir.exists(file.path(gsea_dir))){
     rmd = paste(rmd, '\n## ssGSEA Association Results
 Please note that all volcano plots are interactive; hover mouse over a given point to see which pathway it corresponds to.
                 ')
     
-    for (in_dir in list.dirs(file.path(label, gsea_dir), full.names = FALSE, recursive = FALSE)){
+    for (in_dir in list.dirs(file.path(gsea_dir), full.names = FALSE, recursive = FALSE)){
       category = gsub(paste0("^ssgsea-", type, "-"), "", in_dir)
       category = gsub("-contrast_gc$", "", category)
       category_filename = gsub("\\.", "_", category)
       category = gsub("\\.", " ", category)
       rmd = paste(rmd, '\n###', category)
       
-      combined_file = grep("combined", list.files(file.path(label, gsea_dir, in_dir), full.names = TRUE), value = TRUE)
+      combined_file = grep("combined", list.files(file.path(gsea_dir, in_dir), full.names = TRUE), value = TRUE)
       file = parse.gctx(combined_file)
       
       # if there is only one comparison in GCT, make volcano plot
