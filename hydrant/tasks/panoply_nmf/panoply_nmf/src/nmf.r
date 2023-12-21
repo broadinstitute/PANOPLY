@@ -56,6 +56,7 @@ opt = opt_cmd
 library(cmapR)
 library(NMF)
 library(tidyverse)
+library(glue)
 
 library(parallel) # for detectCores()
 
@@ -71,7 +72,7 @@ library(parallel) # for detectCores()
 ##               Import Data
 ###################################################
 
-import_gct_from_wdl <- function( ome_gcts_string, ome_labels_string ){
+import.gct.from.wdl <- function( ome_gcts_string, ome_labels_string ){
   
   # parse strings into vectors
   ome_gct_str = unlist(strsplit(ome_gcts_string, ","))
@@ -89,7 +90,7 @@ import_gct_from_wdl <- function( ome_gcts_string, ome_labels_string ){
   return(out)
 }
 
-gct_imp = import_gct_from_wdl( opt$ome_gcts_string, opt$ome_labels_string)
+gct_imp = import.gct.from.wdl( opt$ome_gcts_string, opt$ome_labels_string)
 ome_gcts <- gct_imp$ome_gcts # list of GCT objects
 ome_labels <- gct_imp$ome_labels # names associated with those GCTs
 
@@ -164,19 +165,25 @@ if( !is.null(opt$gene_col) & !is.null(opt$org_id) ){ # if we have the required i
 comb_mat = comb_mat_raw  # initialize from unprocessed-combined-matrix
 
 #### remove features with missing values ####
+cat("\n####################\nFilter Missing Values\n")
 keep_idx <- which(apply(comb_mat, 1, function(x) sum(is.na(x)))==0) # identify features that have no missing values
+# print results & overwrite comb_mat
+cat(glue("\nRemoved {dim(comb_mat)[1]-length(keep_idx)} (of {dim(comb_mat)[1]}) features with missing values, leaving {length(keep_idx)} fully-quantified features.\n\n"))
 comb_mat <- comb_mat[keep_idx,] # subset matrix to fully quantified features
 
 #### apply SD filter ####
 mat_s = comb_mat # initialize
 if(!is_null(opt$sd_filt_mode)){
+  cat("\n####################\nFilter Standard Deviation\n")
   #### sd-filter utility function ####
   sd_filter_featwise <- function(mat_s, sd_filt_min) { # features-wise filter to sd_filt_min percentile
+    if (sd_filt_min==0) return(mat_s) # don't filer if sd_filt_min is 0
+    
     feat_sd <- apply(mat_s, 1, sd) # calculate SD across all features in matrix
     sd_cutoff <- quantile(feat_sd, c(sd_filt_min)) # determine value for quantile-cutoff
-    keep.idx <- which( feat_sd > sd_cutoff) # get ID of features to keep
+    idx.keep <- which( feat_sd > sd_cutoff) # get ID of features to keep
     
-    return(mat_s[keep.idx,]) # filter matrix to features that are above SD threshold
+    return(mat_s[idx.keep,]) # filter matrix to features that are above SD threshold
   }
   
   #### apply sd-filter ####
@@ -189,7 +196,7 @@ if(!is_null(opt$sd_filt_mode)){
     for (ome in unique(comb_rdesc$ome_type)) {
       feat_byOme = filter(comb_rdesc, ome_type==ome)$id # get features-ids that correspond to this ome
       mat_tmp = mat_s[intersect(feat_byOme,rownames(mat_s)),] # subset expression-matrix to these features
-      idx.keep = c(idx.keep, rownames(sd_filter_featwise(mat_tmp, opt$sd_filt_min))) # append features to keep.idx
+      idx.keep = c(idx.keep, rownames(sd_filter_featwise(mat_tmp, opt$sd_filt_min))) # append features to idx.keep
     }
     mat_s = mat_s[idx.keep, ] # subset expression matrix to idx.keep-features
   } else if (opt$sd_filt_mode == 'equal') { # filter each ome individually
@@ -199,7 +206,7 @@ if(!is_null(opt$sd_filt_mode)){
     #### determine size of smallest ome ####
     size_smallest_ome = filter(comb_rdesc, id %in% rownames(mat_s))$ome %>% # filter rdesc to mat_s
       table() %>% # sum remaining features
-      min(na.rm=TRUE) # get size of smallets ome
+      min(na.rm=TRUE) # get size of smallest ome (post filtering)
     
     #### apply separate filters, to ensure equal-sized omes ####
     idx.keep = c() # initialize vector for features to keep
@@ -209,7 +216,7 @@ if(!is_null(opt$sd_filt_mode)){
       # get percentile-equivalent for size_smallest_ome
       sd_filt_equal = 1-size_smallest_ome/dim(mat_tmp)[1] # percentile to filter (1 - number of features / current size)
       # re-filter
-      idx.keep = c(idx.keep, rownames(sd_filter_featwise(mat_tmp, sd_filt_equal))) # append features to keep.idx
+      idx.keep = c(idx.keep, rownames(sd_filter_featwise(mat_tmp, sd_filt_equal))) # append features to idx.keep
     }
     mat_s = mat_s[idx.keep, ] # subset expression matrix to idx.keep-features
     
@@ -219,6 +226,8 @@ if(!is_null(opt$sd_filt_mode)){
   }
   
   #### print-out post-filtering results ####
+  # print results & overwrite comb_mat
+  cat(glue("\nRemoved {dim(comb_mat)[1]-dim(mat_s)[1]} (of {dim(comb_mat)[1]}) features with standard-deviation below threshold ({opt$sd_filt_mode} filtering), leaving {dim(mat_s)[1]} fully-quantified features.\n\n"))
   ## filter data
   filter.df = data.frame(Status = factor( c(rep("Unfiltered", dim(comb_mat)[1]), # unfiltered vs filtered label
                                             rep("Filtered", dim(mat_s)[1])),
@@ -229,7 +238,7 @@ if(!is_null(opt$sd_filt_mode)){
                                  apply(mat_s, 1, sd))) %>%
     mutate( ome_type = comb_rdesc[match(id, comb_rdesc$id), "ome_type"]) # pull ome-type from rdesc
   ## print to boxplot
-  pdf(paste0(opt$output_prefix,'_boxplots_SD',opt$sd_filt_mode,'_filteringResults.pdf')) # open PDF
+  pdf(paste0(opt$output_prefix,'_boxplots_SDfilter_',opt$sd_filt_mode,'.pdf')) # open PDF
   p = ggplot(filter.df, aes(x=ome_type, y=sd, fill=Status)) +
     geom_boxplot() + # boxplot 
     stat_summary(fun.data = function(x){ c(y = ceiling(max(filter.df$sd)), label = length(x)) }, # n_features labels
@@ -244,11 +253,24 @@ comb_mat = mat_s # overwrite with (optionally) sd-filtered matrix
 #### z-score multi-omic data matrix ####
 mat_z = comb_mat # initialize
 if(!is_null(opt$z_score_mode)){
-  if(z_score_mode %in% c("row", "rowcol")) # if we are row-normalizing
+  cat(glue("\n####################\nApplying Z-Scoring {opt$z_score_mode}\n"))
+  if(opt$z_score_mode %in% c("row", "rowcol")) # if we are row-normalizing
     mat_z <- apply(mat_z, 1, function(x) (x-mean(x))/sd(x)) %>% # z-score rows
       t() # untransform matrix
-  if(z_score_mode %in% c("col", "rowcol")) # if we are column normalizing
+  if(opt$z_score_mode %in% c("col", "rowcol")) # if we are column normalizing
     mat_z <- apply(mat_z, 2, function(x) (x-mean(x))/sd(x)) # z-score cols (do samples AFTER feature-wise z-score)
+  
+  # if an invalid method of zscoring was provided, complain
+  if(! opt$z_score_mode %in% c("row", "col", "rowcol")) {
+    #### print error if incorrect filter selected ####
+    stop(paste0("Z-score mode '", opt$z_score_mode,"' not found. Please select either 'row', 'col', or 'rowcol'"))
+  }
+  
+  # PDF with outliers
+  pdf(paste0(opt$output_prefix,'_boxplots_zscore_',opt$z_score_mode,'.pdf'))
+  boxplot(comb_mat, cex=0.5, main='before z-scoring') # create boxplot object
+  boxplot(mat_z, cex=0.5, main=glue('after z-scoring ({opt$z_score_mode})'))#, outline=F)
+  dev.off()
 }
 comb_mat = mat_z # overwrite with (optionally) z-scored matrix
 
@@ -324,25 +346,36 @@ if (length(ranks) > 1) { # if we have more than one rank
   rank.sil <- lapply(res.rank[ranks], silhouette)
   rank.sil.avg <- lapply(rank.sil, function(x) tapply( x[,3], x[, 1], mean))
   
-  ## cophenetic
+  ## cophenetic correlation
+  # measure of clustering stability -- range [0,1] perfect  = 1
   rank.coph <- sapply(res.rank[ranks], cophcor)
   
   ## dispersion of consensus matrix
+  # measure of clustering reproducibility -- range [0,1] perfect = 1
   rank.disp <- sapply(res.rank[ranks], dispersion)
   
-  ## combine
+  ## combine coph & disp
+  # range [0,1] perfect = 1
   rank.coph.disp <- rank.disp^(1-rank.coph)
   
+  
   #### Determine Best Rank ####
+  # helper function to determine index of best score
+  get.best.score.index <- function(scores, # vector of scores, where higher score = better score
+                                   inc_thresh = 1e-6 # percent-increase threshold before a new score is considered "better" than the previous top score
+  ) {
+    top.i = 1 # initialize best score-index at 1
+    for (i in 2:length(scores)) { # for every other score
+      rel_inc = (scores[i] - scores[top.i]) / abs(scores[top.i]) # calculate relative increase (or possibly decrease)
+      if ( rel_inc > inc_thresh ) # if the new score surpasses old score by a certain % increase
+        top.i = i # record this index as the new top-score
+    }
+    return(top.i) # return the best score-index
+  }
+  # calculate top.rank (i.e. best cluster assignment)
+  top.rank = get.best.score.index(scores = rank.coph.disp) %>% # determine index of best cluster-score
+    ranks[.] # pull out cluster-rank corresponding to the best cluster-score
   
-  # it looks like we want the lowest number of clusters
-  # so we say "if the next clustering is better, keep going"
-  # else if it's the same or greater
-  # # if it's within the relative increase threshold, keep going
-  # # else declare current best our top rank
-  
-  # todo: figure out if I want to get rank a more.... elegant? way?
-  top.rank = ranks[[which.min(rank.coph.disp)]] # for now literally just take the min
 
 } else {top.rank = ranks}
 
@@ -350,3 +383,15 @@ if (length(ranks) > 1) { # if we have more than one rank
 #### Save NMF Object / Top Rank ####
 save(file = "nmf_res.Rdata", res.rank)
 write.table(top.rank, file = "nmf_best_rank.txt", quote = FALSE, col.names = FALSE, row.names = FALSE)
+
+
+
+###########################################################
+##         Tar PDF Files
+###########################################################
+
+output.files = list.files(pattern=paste0(opt$output_prefix,".+.pdf"), full.names = T)
+tar('NMF_preprocessing_figures.tar.gz',
+    files = output.files, compression = "gzip", tar="tar")
+
+

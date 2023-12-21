@@ -37,7 +37,7 @@ task panoply_nmf {
 		File results="nmf_res.Rdata"
 		File gct_comb=select_first(glob("${output_prefix}_combined_n*.gct")) # select first/only match of array-length-1
 		File gct_comb_nn=select_first(glob("${output_prefix}_combinedNonNegative*.gct")) # select first/only match of array-length-1
-		File? sd_filt_results=select_first(glob("${output_prefix}_*_filteringResults.pdf")) # select first/only match of sd-filter results (if it was applied)
+		File? preprocess_figs="NMF_preprocessing_figures.tar.gz"
 		Int nclust=read_int("nmf_best_rank.txt")
 	}
 

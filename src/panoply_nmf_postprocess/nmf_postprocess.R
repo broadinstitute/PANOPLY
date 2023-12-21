@@ -80,13 +80,15 @@ MyComplexHeatmap <- function(matrix, heatmap_col, annot_df, annot_colors, na_col
                              cluster_columns = FALSE, cluster_rows=TRUE,
                              show_column_names = FALSE, show_row_names = FALSE,
                              column_title_rot = 0, row_title_rot = 0,
+                             show_annotation_legend = TRUE,
                              show_heatmap_legend = FALSE,
                              row_split=NULL, 
                              column_split_annotCol="NMF.consensus",
                              show_annot = TRUE, ...){
   # create column-annotations separately
   if (show_annot) {
-    ha <- HeatmapAnnotation(df=annot_df, col=annot_colors, na_col=na_color)
+    ha <- HeatmapAnnotation(df=annot_df, col=annot_colors, na_col=na_color,
+                            show_legend=show_annotation_legend)
   } else {ha=NULL}
   
   # Heatmap arguments
@@ -236,7 +238,8 @@ groups.core = filter(groups.full, NMF.core.member) # get just core
 gct.H <- new('GCT')
 gct.H@mat <- coef.mat[, match(rownames(NMF.annots), colnames(coef.mat))] # un-normalized H-matrix (sorted by cluster-membership, i.e. as they appear in NMF.annots object))
 gct.H@cdesc <- groups.full[match(colnames(gct.H@mat), rownames(groups.full)), ] # append full cdesc (sorted to match matrix)
-gct.H@rid <- paste0('C',1:nrow(gct.H@mat))
+gct.H@rid <- paste0('C',1:nrow(gct.H@mat)) # use C# format for rid
+rownames(gct.H@mat) = gct.H@rid # overwrite rownames with rid
 gct.H@cid <- colnames(gct.H@mat)
 write_gct(gct.H, ofile=paste0(prefix, 'H')) # write H to GCT
 ## normalized H-matrix
@@ -247,15 +250,23 @@ write_gct(gct.H.norm, ofile=paste0(prefix, 'H_normToMax')) # write H-norm to GCT
 #### plot H.norm heatmap, with and without clustering ####
 for (cluster_cols in c(TRUE,FALSE)) {
   pdf(paste0(prefix, 'heatmap_coeficientMatrixNorm', # save to PDF
-             ifelse(cluster_cols, '_clustered', ''),'.pdf'), 20,8)
+             ifelse(cluster_cols, '_clustered', ''),'.pdf'), 16,8)
+  # pdf('/opt/input/tmp.pdf', 12,8)
   MyComplexHeatmap(gct.H.norm@mat, # plot normalized heatmap
                    heatmap_col = colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), # colorscale for heatmap
                    show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
                    select(gct.H.norm@cdesc, -c(annots.excluded)), # with all annotations
                    c(colors, colors.NMF), show_annot=T, # using appropriate annotation colors
+                   show_annotation_legend = F, # hide annotations
+                   show_row_names = T, row_names_side = "left", # show row name
+                   cluster_rows = F, # don't cluster rows
+                   name = "Normalized Coefficient Value",
+                   column_title = "NMF Coefficient Matrix (Normalized Sample-wise)", column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
+                   column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                    cluster_columns = cluster_cols, #optionally cluster columns
-                   cluster_rows = F) %>%
-    draw(., annotation_legend_side='right')
+                   heatmap_legend_param = list(direction = "horizontal")) %>%
+    draw(., heatmap_legend_side='bottom', # put heatmap legend at bottom so it doesn't overlap annots
+         padding = unit(c(2, 2, 2, 2), "mm")) # add padding so annotations render properly
   dev.off()
   
   # obselete pheatmap code
@@ -368,7 +379,9 @@ if ( length(annots.is_continuous) > 0 ) {
     p = ggplot(groups.core, aes(x=NMF.consensus, y=!!sym(annot), # compare the values across clusters
                                 color = NMF.consensus)) + scale_color_manual(values = colors.full.NMF$NMF.consensus$colors) +
       geom_boxplot() + # make a boxplot
-      ggtitle(annot) +
+      ggtitle(paste0("Values of ",annot," by Cluster")) +
+      theme_minimal() + # give consistent theme
+      theme(plot.title = element_text(face="bold")) + # increase title fontsize / bold 
       ggpubr::stat_compare_means(comparisons=combn(1:opt$rank_top,2,simplify = FALSE)) # add wilcox.test comparison between each cluster
     plot(p) # plot as a PDF page
   }
@@ -564,6 +577,8 @@ for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster 
                                   row_split = data.frame(ome_type = gct_expr_driver@rdesc$ome_type), # split rows by ome-type
                                   # row_title = "%s_%s",
                                   # show_row_names = T, row_names_side = "left",
+                                  column_title = "Expression of Significant Driver Features", column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
+                                  column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                                   name = clust,
                                   cluster_rows = T) # cluster rows/features
   } else { # otherwise
@@ -582,7 +597,7 @@ for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster 
 
 #### draw Heatmap to Files ####
 pdf(paste0(prefix, "driverFeatures_complexHeatmap.pdf"), 12, 12)
-# pdf('/opt/input/outputs/tmp.pdf', 12, 12)
+# pdf('/opt/input/outputs/tmp.pdf', 12, 12) # for local testing
 draw(hm.concat, heatmap_legend_side='right',
      ht_gap = unit(5, "mm")) #row_title = "Driver Features (grouped by Cluster)")
 dev.off()
@@ -591,7 +606,7 @@ png(paste0(prefix, "driverFeatures_complexHeatmap.png"), width=12, height=12, un
 draw(hm.concat, heatmap_legend_side='right')
 dev.off()
 
-# todo: fix legend
+#### draw Annotation Legend (standalone) to file ####
 pdf(paste0(prefix, "annotationLegend.pdf"), 8, 8)
 legend = lapply(get_color_mapping_list(hm.concat@ht_list[[1]]@top_annotation), # get the color mapping for the annotations
                   color_mapping_legend) %>% # turn them into a list of legends
@@ -635,12 +650,19 @@ write.csv(pivot_wider(ft_countByOme, id_cols=ome_type, # pivot ft_countByOme wid
 #### plot Barplot of Significant Features per Ome ####
 p <- ggplot(ft_countByOme, aes(x = cluster, y = n_feat, fill=ome_type)) +
   geom_bar(position="dodge", stat="identity") + # grouped barplot with n_feat per clut per ome
+  facet_grid(~ cluster, space="free_x", scales="free_x", switch="x") + # facet by cluster to make the deliniation clearer
+  scale_x_discrete(labels=NULL) + # remove x-axis labels so they aren't double-plotted
   geom_text(aes(label = n_feat), # add labels with number of features
             position = position_dodge(width = 0.9), vjust = -0.5, size = 3) + # position label above each column
   labs(x = "NMF Basis", y = "Number of Features") + # x axis and y axis labels
-  ggtitle('Proteogenomic Features by Cluster') + # add title
-  theme_minimal() + theme(panel.grid.major.x = element_blank()) # adjust formatting
+  ggtitle('Significant Driver-Features by Ome-Type') + # add title
+  theme_minimal() +  # adjust formatting
+  theme(panel.grid.major.x = element_blank(),  # remove x-axis gridlines
+        plot.title = element_text(face="bold"), # increase title fontsize / bold
+        strip.background = element_rect(fill=NA,colour="grey80")) # add border around cluster-label
 
+ggsave('/opt/input/tmp.pdf',
+       plot = p, device="pdf") # plot as PDF
 ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.pdf"),
        plot = p, device="pdf") # plot as PDF
 ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.png"),
@@ -651,9 +673,10 @@ ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.png"),
 
 
 ###########################################################
-#### create Barplots of Top Driver Features by cluster 
+#### create Barplots of Top Driver-Features Expression by Cluster 
 ###########################################################
 
+#### subset driver-features to top N features ####
 driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant driver-features
   group_by(cluster) %>% # group by cluster
   slice_min(order_by = bh.pval, # order by p-value
@@ -661,36 +684,93 @@ driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant d
   ungroup() # ungroup
 
 
-# make a PDF for each cluster, with driver-feature expression
+#### make a PDF for each cluster. ####
 for (cluster in unique(driver.features.topNFeat$cluster)) {
   pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
+  # pdf(glue("/opt/input/tmp_{cluster}.pdf"))
   driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
   for (ft in driverFeats) {
-    # collect the info we need for our boxplot
+    #### collect the info we need for our boxplot ####
     expr.df = data.frame(ft.expression = gct_expr_comb@mat[ft,], # get expression data
                          # sample.id = gct_expr_comb@cid, # get corresponding sample name (unnecessary but convenient)
                          cluster = NMF.annots[gct_expr_comb@cid, # in the order of the samples
                                               'NMF.consensus']) #get cluster membership
     annot.df = filter(driver.features.sigFeatOnly, id==ft) # filter annotations to relevant driver-feature
     
+    # boxplot title
     if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
       boxplot.title = glue('Expression of {annot.df[[opt$gene_col]]} in {annot.df$ome_type} ({annot.df$id_og})')
     } else { # otherwise just use the feature ID
       boxplot.title = glue('Expression of feature {annot.df$id_og} ({annot.df$ome_type})')
     }
     
+    # boxplot colors
     boxplot.colors = rep('black', opt$rank_top) #initialize color-scheme with all black
     names(boxplot.colors) = paste0("C", 1:opt$rank_top) # name vector w/ clusters
     boxplot.colors[[annot.df$cluster]] = "red" # color the expression red in the cluster the driver feature drives
     
+    #### create boxplot ####
     p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
-      geom_boxplot(color = boxplot.colors) + # boxplots of expression data
+      geom_boxplot(color = boxplot.colors, # boxplots of expression data
+                   width = 0.5) + 
       geom_hline(yintercept = 0, color='grey', linetype='dashed') + # add dashed line at 0
       labs(x = "NMF Basis", y = "Feature Expression", # x axis and y axis labels
            title = boxplot.title, # add title
            subtitle = glue("Driver Feature in {annot.df$cluster}\nFeature Score: {signif(annot.df$feature.scores, 3)}\nAdj-P-Val: {signif(annot.df$bh.pval, 3)}")) +
-      theme_minimal() + theme(panel.grid.major.x = element_blank()) # adjust formatting
+      stat_summary(fun.data = function(y) {c(y = max(y), # add label slightly above box plot
+                                             label = length(y))}, # label with the number of observations
+                   geom = "text", vjust = -1,
+                   position = position_dodge(width = 0.75)) +
+      theme_minimal() + # adjust formatting
+      theme(panel.grid.major.x = element_blank(), # remove lines
+            plot.title = element_text(face="bold")) # increase title fontsize / bold
     plot(p) # plot as PDF page
+  }
+  dev.off()
+}
+
+
+
+###########################################################
+#### create Heatmaps of Top Driver-Feature Expression by Cluster
+###########################################################
+
+#### make a PDF for each cluster ####
+for (cluster in unique(driver.features.topNFeat$cluster)) {
+  driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
+  
+  if (!is.null(opt$gene_col)) { # if we have the gene column
+    goi = filter(driver.features.sigFeatOnly, id %in% driverFeats) %>%
+      .[[opt$gene_col]] %>% unique() # and identify unique genes
+    ft_list = lapply(goi, function(gene) {
+      filter(driver.features.sigFeatOnly, !!as.name(opt$gene_col)==gene) %>% # filter for any significant drivers from the gene-of-interest
+        .$id}) # get feature ID
+  } else { # otherwise
+    goi = NULL
+    ft_list = as.list(driverFeats) # just use the driverFeats as is
+  }
+  
+  
+  pdf(paste0(prefix, "driverFeatures_expressionHeatmaps_", cluster,".pdf"), 12,8)
+  # pdf('/opt/input/tmp.pdf', 12,8)
+  for (i in 1:length(ft_list)) {
+    fts = ft_list[[i]]
+    
+    if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
+      hm.title = glue('Expression of Driver Features for Gene {goi[i]}')
+    } else { # otherwise just use the feature ID
+      hm.title = glue('Expression of Driver Feature {fts}')
+    }
+    
+    hm = MyComplexHeatmap(gct_expr_comb@mat[fts,,drop=F], NULL, # plot expression of drivers, using default color-palette
+                          select(groups.full[colnames(gct_expr_comb@mat), , drop = FALSE],
+                                 -c(annots.excluded)), # with all annotations
+                          c(colors, colors.NMF), # with custom annot-colors
+                          show_annot=TRUE, show_annotation_legend = F,
+                          show_row_names = TRUE, row_names_side = "right",
+                          column_title = hm.title, column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
+                          column_title_gp = gpar(fontsize = 16, fontface = "bold")) # format column title as if its a header
+    draw(hm, padding = unit(c(2, 2, 2, 2), "mm"))
   }
   dev.off()
 }
@@ -727,9 +807,10 @@ if (!class(tsne_s) == 'try-error') { # assuming tSNE ran properly
     geom_point() +
     scale_color_manual(values = colors.NMF$NMF.consensus) + # color by NMF scheme
     labs(title = "tSNE Clustering on Core NMF Samples", # title
-         subtitle = "Clustered on all features") + # subtitle, describing the dataset
+         subtitle = "Clustered across all features") + # subtitle, describing the dataset
     geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + # plot 0,0 axes in black
-    theme_minimal()
+    theme_minimal() +
+    theme(plot.title = element_text(face="bold")) # increase title fontsize / bold
   # ggsave("/opt/input/tmp.png", plot=p, device="png") # for manual docker testing
   ggsave(paste0(prefix, "tSNE_coreSamples.pdf"),
          plot=p, device = "pdf") # saveas pdf
@@ -770,7 +851,8 @@ if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
     labs(title = "tSNE Clustering on significant Driver Features", # title
          subtitle = "Clustered across all samples") + # subtitle, describing the dataset
     geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + # plot 0,0 axes in black
-    theme_minimal()
+    theme_minimal() +
+    theme(plot.title = element_text(face="bold")) # increase title fontsize / bold
   # ggsave("/opt/input/tmp.png", plot=p, device="png") # for manual docker testing
   ggsave(paste0(prefix, "tSNE_driverFeatures.pdf"),
          plot=p, device = "pdf") # saveas pdf
