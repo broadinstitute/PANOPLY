@@ -88,12 +88,20 @@ if ( !is.null(opt$yaml_file) ) {
   if (is.null(opt$sd_filt_mode)) opt$sd_filt_mode = yaml_nmf$filt_mode
   if (is.null(opt$z_score)) opt$z_score = yaml_nmf$z_score
   if (is.null(opt$z_score_mode)) opt$z_score_mode = yaml_nmf$z_score_mode
-} 
+} else { # if no YAML was provieded
+  # check if any necessary parameters are missing
+  if( any(sapply(list(opt$kmin, opt$kmax,
+                      opt$seed, opt$nmf_method, opt$nrun,
+                      opt$z_score), 
+                 is.null)) ) { # if we have at least one missing parameter
+    stop("Master Parameter yaml-file is missing. Please either provide a master-parameters file, or manually provide all NMF parameters.") # error and stop
+  }
+}
 
 # print parameters
-cat("### NMF PARAMETERS ###\n")
+cat("\n####################\nNMF PARAMETERS\n\n")
 print(opt)
-cat("\n#####\n")
+cat("####################\n")
 
 ###########################################################
 ##
@@ -214,6 +222,7 @@ comb_mat <- comb_mat[keep_idx,] # subset matrix to fully quantified features
 mat_s = comb_mat # initialize
 if(!is_null(opt$sd_filt_mode)){
   cat("\n####################\nFilter Standard Deviation\n")
+  if (is.null(opt$sd_filt_min)) stop("Standard Deviation Filter-Mode selected, but sd-filter minimum threshold (sd_filt_min) is missing.")
   #### sd-filter utility function ####
   sd_filter_featwise <- function(mat_s, sd_filt_min) { # features-wise filter to sd_filt_min percentile
     if (sd_filt_min==0) return(mat_s) # don't filer if sd_filt_min is 0
@@ -286,12 +295,13 @@ if(!is_null(opt$sd_filt_mode)){
     scale_fill_manual(values=c("#4477AA", "#66CCEE")) + theme_minimal() # color formatting
   plot(p)
   dev.off() # close PDF
-}
+} else cat("\n####################\nNo Standard Deviation Filter Applied\n")
 comb_mat = mat_s # overwrite with (optionally) sd-filtered matrix
 
 #### z-score multi-omic data matrix ####
 mat_z = comb_mat # initialize
-if(!is_null(opt$z_score_mode)){
+if(opt$z_score){
+  if (is.null(opt$z_score_mode)) stop("Z-scoring is turned on, but z-score method is missing.")
   cat(glue("\n####################\nApplying Z-Scoring {opt$z_score_mode}\n"))
   if(opt$z_score_mode %in% c("row", "rowcol")) # if we are row-normalizing
     mat_z <- apply(mat_z, 1, function(x) (x-mean(x))/sd(x)) %>% # z-score rows
@@ -310,7 +320,7 @@ if(!is_null(opt$z_score_mode)){
   boxplot(comb_mat, cex=0.5, main='before z-scoring') # create boxplot object
   boxplot(mat_z, cex=0.5, main=glue('after z-scoring ({opt$z_score_mode})'))#, outline=F)
   dev.off()
-}
+} else cat("\n####################\nNo Z-Scoring Applied\n")
 comb_mat = mat_z # overwrite with (optionally) z-scored matrix
 
 ###################################################
