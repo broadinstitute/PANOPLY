@@ -21,7 +21,7 @@ task panoply_sankey {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r "${label}" "${sep="," annot_files}" "${sep="," annot_file_labels}" "${annot_column}" "${annot_prefix}" "${annot_file_primary}" "${annot_label_primary}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r "${label}" "${sep="," annot_files}" "${sep="," annot_file_labels}" "${annot_column}" "${annot_prefix}" "${annot_file_primary}" "${annot_label_primary}"
 
         tar -czvf "${label}_sankey_diagrams.tar" sankey-*html
     }

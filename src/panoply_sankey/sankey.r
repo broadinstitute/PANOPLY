@@ -44,10 +44,10 @@ p_load('networkD3') # needed for sankeyNetwork()
 source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
 # NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded
 
-# For NMF-related stuff (I think)
-source('https://raw.githubusercontent.com/karstenkrug/R-code/main/my_plots.r')
-#source('c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/nmf_functions.R')
-source('https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panoply_mo_nmf/nmf_functions.R')
+# # For NMF-related stuff (I think)
+# source('https://raw.githubusercontent.com/karstenkrug/R-code/main/my_plots.r')
+# #source('c:/Users/karsten/Dropbox/Devel/PANOPLY/src/panoply_mo_nmf/nmf_functions.R')
+# source('https://raw.githubusercontent.com/broadinstitute/PANOPLY/dev/src/panoply_mo_nmf/nmf_functions.R')
 
 
 

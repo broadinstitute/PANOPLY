@@ -32,7 +32,7 @@ task panoply_nmf_postprocess {
 
 	output {
 		File results="NMF_results.tar.gz"
-		File membership="${output_prefix}_K${nclust}_clusterMembership.csv"
+		File membership="${output_prefix}_K${nclust}_clusterMembership.tsv"
 	}
 
 	runtime {

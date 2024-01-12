@@ -80,6 +80,7 @@ MyComplexHeatmap <- function(matrix, heatmap_col, annot_df, annot_colors, na_col
                              cluster_columns = FALSE, cluster_rows=TRUE,
                              show_column_names = FALSE, show_row_names = FALSE,
                              column_title_rot = 0, row_title_rot = 0,
+                             row_dend_side = 'right',
                              show_annotation_legend = TRUE,
                              show_heatmap_legend = FALSE,
                              row_split=NULL, 
@@ -96,7 +97,7 @@ MyComplexHeatmap <- function(matrix, heatmap_col, annot_df, annot_colors, na_col
                    top_annotation = ha,
                    row_split = row_split, # class vector with groupings for rows
                    column_split = annot_df[[column_split_annotCol]], # class vector with grouping from columns; taken from provided annot_df
-                   row_dend_side = 'right',
+                   row_dend_side = row_dend_side,
                    cluster_columns = cluster_columns, cluster_rows=cluster_rows,
                    show_column_names = show_column_names, show_row_names = show_row_names,
                    column_title_rot = column_title_rot, row_title_rot = column_title_rot,
@@ -213,8 +214,8 @@ NMF.annots = data.frame(row.names = colnames(coef.mat),
   arrange(NMF.consensus, desc(NMF.core.member), # sort by cluster (low->high) & core-membership (core->noncore)
           desc(NMF.cluster.membership)) # then by cluster-membership (high->low)
 #### save NMF membership info to CSV ####
-write.csv(NMF.annots, # sorted by cluster-membership
-          paste0(prefix, "clusterMembership.csv"))
+write.table(NMF.annots, sep = "\t", # sorted by cluster-membership
+            paste0(prefix, "clusterMembership.tsv"))
 
 #### add NMF.annots to groups-file ####
 groups.full = merge(groups, NMF.annots, by='row.names') %>% # append NMF.annots to groups file / cdesc
@@ -249,13 +250,20 @@ write_gct(gct.H.norm, ofile=paste0(prefix, 'H_normToMax')) # write H-norm to GCT
 
 #### plot H.norm heatmap, with and without clustering ####
 for (cluster_cols in c(TRUE,FALSE)) {
+  # get heatmap dimensions
+  dim_rows = dim(gct.H.norm@mat)[1] + # get the number of rows in our heatmap
+    dim(select(gct.H.norm@cdesc, -all_of(annots.excluded)))[2]  # get number of annotation rows in our heatmap
+  dim_cols = dim(gct.H.norm@mat)[2] # get the number of columns in our heatmap
+  # open PDF to write heatmap to
   pdf(paste0(prefix, 'heatmap_coeficientMatrixNorm', # save to PDF
-             ifelse(cluster_cols, '_clustered', ''),'.pdf'), 16,8)
-  # pdf('/opt/input/tmp.pdf', 12,8)
+             ifelse(cluster_cols, '_clustered', ''),'.pdf'),
+      max(dim_cols/10, 8), # set width equal to # columns / 10 (w/ minimum width, to prevent title cutoff)
+      dim_rows/10*2.5 + 1.5) # set height equal to n_rows/10; scale rows to be 2.5x size of columns & add padding for header/footer
+  # pdf('/opt/input/tmp.pdf', 12,8) # for manual docker testing
   MyComplexHeatmap(gct.H.norm@mat, # plot normalized heatmap
                    heatmap_col = colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), # colorscale for heatmap
                    show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
-                   select(gct.H.norm@cdesc, -c(annots.excluded)), # with all annotations
+                   select(gct.H.norm@cdesc, -all_of(annots.excluded)), # with all annotations
                    c(colors, colors.NMF), show_annot=T, # using appropriate annotation colors
                    show_annotation_legend = F, # hide annotations
                    show_row_names = T, row_names_side = "left", # show row name
@@ -271,7 +279,7 @@ for (cluster_cols in c(TRUE,FALSE)) {
   
   # obselete pheatmap code
   # pheatmap::pheatmap(gct.H.norm@mat, color = colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), # plot normalized coefficient matrix
-  #                    annotation_col = select(gct.H.norm@cdesc, -c(annots.excluded, "NMF.core.member")), # add all annotations
+  #                    annotation_col = select(gct.H.norm@cdesc, -c(all_of(annots.excluded), "NMF.core.member")), # add all annotations
   #                    # consider: binary NMF.core.member column seems to break pheatmap...
   #                    annotation_colors = c(colors, colors.NMF), # add all annotation colors
   #                    show_rownames = TRUE,
@@ -570,9 +578,13 @@ for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster 
                                           clust)) # write to GCT
   ##### append signficant features to heatmap ####
   if (clust == unique(driver.features.sigFeatOnly$cluster)[1]) { # if we're on the first cluster-heatmap 
+    # initialize heatmap dimensions
+    dim_rows = dim(gct_expr_driver@mat)[1]/5 + # set row dimensions to the number of driver features (scaled down so rows take up less space)
+      dim(select(gct_expr_driver@cdesc, -all_of(annots.excluded)))[2]  # add rows for the number of annotation rows
+    dim_cols = dim(gct_expr_comb@mat)[2] # set column dimensions to the number of samples
     # initialize hm.concat
     hm.concat <- MyComplexHeatmap(gct_expr_driver@mat, NULL, # plot expression of drivers, using default color-palette
-                                  select(gct_expr_driver@cdesc, -c(annots.excluded)), # with all annotations
+                                  select(gct_expr_driver@cdesc, -all_of(annots.excluded)), # with all annotations
                                   c(colors, colors.NMF), # with custom annot-colors
                                   row_split = data.frame(ome_type = gct_expr_driver@rdesc$ome_type), # split rows by ome-type
                                   # row_title = "%s_%s",
@@ -582,9 +594,12 @@ for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster 
                                   name = clust,
                                   cluster_rows = T) # cluster rows/features
   } else { # otherwise
+    # update heatmap dimensions
+    dim_rows = dim_rows + dim(gct_expr_driver@mat)[1]/5 # add n_driver_feature rows (scaled down so rows take up less space)
+    # append new heatmap to hm.concat
     hm.concat <- hm.concat %v% # append heatmaps vertically
       MyComplexHeatmap(gct_expr_driver@mat, NULL, # plot expression of drivers, using default color-palette
-                       select(gct_expr_driver@cdesc, -c(annots.excluded)), # with all annotations
+                       select(gct_expr_driver@cdesc, -all_of(annots.excluded)), # with all annotations
                        c(colors, colors.NMF), # with custom annot-colors
                        show_annot=FALSE, # don't re-plot annotations
                        row_split = data.frame(ome_type = gct_expr_driver@rdesc$ome_type), # split rows by ome-type
@@ -596,22 +611,33 @@ for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster 
 }
 
 #### draw Heatmap to Files ####
-pdf(paste0(prefix, "driverFeatures_complexHeatmap.pdf"), 12, 12)
-# pdf('/opt/input/outputs/tmp.pdf', 12, 12) # for local testing
-draw(hm.concat, heatmap_legend_side='right',
+# open PDF to write heatmap to
+pdf(paste0(prefix, "driverFeatures_complexHeatmap.pdf"),
+    min(max(dim_cols/10, # set width equal to # columns / 10
+            (dim_rows/10+1)*2), # enforce a minimum width of at least half the height of the figure
+        16), # limit  width to at most 16 inches
+    min(dim_rows/10+1, 32)) # set height equal to # rows / 10
+# pdf('/opt/input/outputs/tmp.pdf', 12, 12) # for manual docker testing
+draw(hm.concat, #heatmap_legend_side='right',
+     show_heatmap_legend = FALSE,
      ht_gap = unit(5, "mm")) #row_title = "Driver Features (grouped by Cluster)")
 dev.off()
 
-png(paste0(prefix, "driverFeatures_complexHeatmap.png"), width=12, height=12, units = 'in', res=100)
+png(paste0(prefix, "driverFeatures_complexHeatmap.png"),
+    width = min(max(dim_cols/10, # set width equal to # columns / 10
+                    (dim_rows/10+1)*2), # enforce a minimum width of at least half the height of the figure
+                16), # limit  width to at most 16 inches
+    height = min(dim_rows/10+1, 32), # set height equal to # rows / 10
+    units="in", res=300)
 draw(hm.concat, heatmap_legend_side='right')
 dev.off()
 
 #### draw Annotation Legend (standalone) to file ####
-pdf(paste0(prefix, "annotationLegend.pdf"), 8, 8)
+pdf(paste0(prefix, "annotationLegend.pdf"), 16, 16)
 legend = lapply(get_color_mapping_list(hm.concat@ht_list[[1]]@top_annotation), # get the color mapping for the annotations
                   color_mapping_legend) %>% # turn them into a list of legends
   packLegend(list = ., # and then pack them into a legend
-             max_height = unit(7.5, "in"), # max height
+             max_height = unit(15, "in"), # max height
              column_gap = unit(0.25, "in")) # gap between columns
 draw(legend)
 dev.off()
@@ -661,8 +687,8 @@ p <- ggplot(ft_countByOme, aes(x = cluster, y = n_feat, fill=ome_type)) +
         plot.title = element_text(face="bold"), # increase title fontsize / bold
         strip.background = element_rect(fill=NA,colour="grey80")) # add border around cluster-label
 
-ggsave('/opt/input/tmp.pdf',
-       plot = p, device="pdf") # plot as PDF
+# ggsave('/opt/input/tmp.pdf', # for manual docker testing
+#        plot = p, device="pdf") # plot as PDF
 ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.pdf"),
        plot = p, device="pdf") # plot as PDF
 ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.png"),
@@ -687,7 +713,7 @@ driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant d
 #### make a PDF for each cluster. ####
 for (cluster in unique(driver.features.topNFeat$cluster)) {
   pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
-  # pdf(glue("/opt/input/tmp_{cluster}.pdf"))
+  # pdf(glue("/opt/input/tmp_{cluster}.pdf")) # for manual docker testing
   driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
   for (ft in driverFeats) {
     #### collect the info we need for our boxplot ####
@@ -707,7 +733,7 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
     # boxplot colors
     boxplot.colors = rep('black', opt$rank_top) #initialize color-scheme with all black
     names(boxplot.colors) = paste0("C", 1:opt$rank_top) # name vector w/ clusters
-    boxplot.colors[[annot.df$cluster]] = "red" # color the expression red in the cluster the driver feature drives
+    boxplot.colors[[cluster]] = "red" # color the expression red in the cluster the driver feature drives
     
     #### create boxplot ####
     p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
@@ -750,9 +776,15 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
     ft_list = as.list(driverFeats) # just use the driverFeats as is
   }
   
-  
-  pdf(paste0(prefix, "driverFeatures_expressionHeatmaps_", cluster,".pdf"), 12,8)
-  # pdf('/opt/input/tmp.pdf', 12,8)
+  # calculate heatmap dimensions
+  dim_rows = 2 + # add space for 2 extra rows per dataset, as an estimate
+    dim(select(groups.full[colnames(gct_expr_comb@mat), , drop = FALSE], -all_of(annots.excluded)))[2]  # add rows for the number of annotation rows
+  dim_cols = dim(gct_expr_comb@mat)[2] # set column dimensions to the number of samples
+  # open PDF to draw heatmap
+  pdf(paste0(prefix, "driverFeatures_expressionHeatmaps_", cluster,".pdf"),
+      max(dim_cols/10, 8), # set width equal to # columns / 10 (w/ minimum width, to prevent title cutoff)
+      dim_rows/10*2.5 + 1.5) # set height equal to # rows / 10; scale rows to be 2.5x size of columns & add padding for header/footer
+  # pdf('/opt/input/tmp.pdf', 12,8) # for manual docker testing
   for (i in 1:length(ft_list)) {
     fts = ft_list[[i]]
     
@@ -764,9 +796,10 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
     
     hm = MyComplexHeatmap(gct_expr_comb@mat[fts,,drop=F], NULL, # plot expression of drivers, using default color-palette
                           select(groups.full[colnames(gct_expr_comb@mat), , drop = FALSE],
-                                 -c(annots.excluded)), # with all annotations
+                                 -all_of(annots.excluded)), # with all annotations
                           c(colors, colors.NMF), # with custom annot-colors
                           show_annot=TRUE, show_annotation_legend = F,
+                          row_dend_side = 'left',
                           show_row_names = TRUE, row_names_side = "right",
                           column_title = hm.title, column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
                           column_title_gp = gpar(fontsize = 16, fontface = "bold")) # format column title as if its a header

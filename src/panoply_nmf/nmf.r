@@ -146,7 +146,7 @@ if( !is.null(opt$gene_col) & !is.null(opt$org_id) ){ # if we have the required i
       #### add cytoband annotations ####
       if (opt$org_id=="Hs") { # if we're working humans
         ## add cytoband ID
-        map <- as.list(org.Hs.egMAP[mappedkeys(org.Hs.egMAP)]) # create maping between entrez ID and cytoband ID
+        map <- unlist(as.list(org.Hs.egMAP[mappedkeys(org.Hs.egMAP)])) # get maping between entrez ID and cytoband ID; convert from S4 to vector by unlist(as.list()) 
         gene_annot_df$CYTOBAND <- map[ gene_annot_df$ENTREZID ] # map entrez ID onto cytoband map
         # consider: may need to have support for NULL entrez.id values
       }
