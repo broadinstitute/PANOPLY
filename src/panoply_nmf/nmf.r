@@ -90,8 +90,10 @@ if ( !is.null(opt$yaml_file) ) {
   if (is.null(opt$z_score_mode)) opt$z_score_mode = yaml_nmf$z_score_mode
 } 
 
-
-
+# print parameters
+cat("### NMF PARAMETERS ###\n")
+print(opt)
+cat("\n#####\n")
 
 ###########################################################
 ##
