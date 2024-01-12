@@ -15,9 +15,10 @@ option_list <- list(
   #### Pre-process Parameters ####
   make_option( c("-f", "--sd_filt_min"), action='store', type='numeric', dest='sd_filt_min', help='Lowest standard deviation across columns percentile to remove from the data. 0 means all data will be used, 0.1 means 10 percent of the data with lowest sd will be removed. Will be applied before z-scoring (optional)') , ## default=0),
   make_option( c("-g", "--sd_filt_mode"), action='store', type='character', dest='sd_filt_mode', help='Determines how the low variable features (paramater "sd_filt_mode") will be removed from the dataset. "global": the filter will be applied to the entrire datasets. "separate": the will be applied separately to each data type (e.g. proteome, RNA, etc.). "equal": all data tables of different data types (e.g. proteome, RNA) will be filtered down to have the same number of features and ths is limited by the data type with the smallest number of features "N_feat". The data tables of other data types are filtered to retain the "N_feat" highest variable features.  Only relevant for multi-omics data.'), 
+  make_option( c("-u", "--z_score"), action='store', type='logical', dest='z_score', help='Should the data be z-scored?'), # default=TRUE),
   make_option( c("-v", "--z_score_mode"), action='store', type='character', dest='z_score_mode', help='z-scoring mode: row, col, rowcol'), # default=TRUE),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
-  make_option( c("-i", "--org_id"), action='store', type='character', dest='org_id', help='Organism ID, used for gene-mapping if gene_col is provided. Support for \'Hs\' (human), \'Mm\' (mouse), or \'Rn\' (rat).'), # default='Hs'),
+  make_option( c("-i", "--org_id"), action='store', type='character', dest='organism', help='Organism type, used for gene-mapping if gene_col is provided. Support for \'human\' (Hs), \'mouse\' (Mm), or \'rat\' (Rn).'), # default='human'),
   #### NMF Parameters ####
   make_option( c("--kmin"), action='store', type='numeric',  dest='kmin', help='Minimal factorization rank.'),  # default = 2),
   make_option( c("--kmax"), action='store', type='numeric',  dest='kmax', help='Maximal factorization rank.'), # default = 4),
@@ -28,7 +29,7 @@ option_list <- list(
   # make_option( c("-e", "--exclude_2"), action="store", dest='exclude_2', type="logical", help="If TRUE, a '2' will be excluded from calculation of the optimal rank."), #default=TRUE),
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
-  make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters.", default=NA),
+  make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters."),
   make_option( c("-z", "--libdir"), action="store", dest='lib_dir', type="character", help="the src directory.")
   #### ####
 )
@@ -36,20 +37,13 @@ option_list <- list(
 
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
-                       # # for testing arguments
-                       # args = c('-d',"/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/tests/odg/proteome-filtered_table-output.gct,/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/tests/odg/phosphoproteome-filtered_table-output.gct,/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/tests/odg/acetylome-filtered_table-output.gct,/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/tests/odg/ubiquitylome-filtered_table-output.gct",
-                       #          '-o',"prot,pSTY,acK,ubK",
-                       #          '-a',"geneSymbol",
-                       #          '-f',"0.05",'-g',"global",
-                       #          '-n','50', '-m','lee',
-                       #          '--kmin','3', '--kmax','5',
-                       #          '-x',"LSCC_GCP")
+                       # for testing arguments
+                       # args = c('-d',"/opt/input/acetylome-filtered_table-output.gct,/opt/input/phosphoproteome-filtered_table-output.gct,/opt/input/proteome-filtered_table-output.gct,/opt/input/ubiquitylome-filtered_table-output.gct",
+                       #          '-o',"acK,pSTY,prot,ubK",
+                       #          '-y','/opt/input/master-parameters.yaml',
+                       #          '-x',"odg_test")
                        )
 
-#### Parse YAML Arguments ####
-library(yaml)
-# todo: read in YAML, instead of just using opt_cmd
-opt = opt_cmd
 
 
 #### Load Libraries ####
@@ -59,6 +53,43 @@ library(tidyverse)
 library(glue)
 
 library(parallel) # for detectCores()
+
+
+
+#### Parse YAML Arguments ####
+opt = opt_cmd # initialize options with command line options
+if ( !is.null(opt$yaml_file) ) {
+  #### read in yaml ####
+  library(yaml)
+  yaml_out <- read_yaml(opt$yaml_file)
+  #### locate the NMF parameters section ####
+  if ( !is.null(yaml_out$panoply_nmf) ) { # if we have an NMF parameters section
+    yaml_nmf =  yaml_out$panoply_nmf # read in those parameters
+  } else { # if the section is missing
+    if ( !is.null(yaml_out$panoply_mo_nmf) ) { # check for the deprecated mo_nmf section
+      warning(glue("The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
+      yaml_nmf =  yaml_out$panoply_mo_nmf # read in those parameters
+    } else { # otherwise, stop
+      stop(glue("The parameter file '{opt$yaml_file}' does not contain an NMF parameters section. Please check that the yaml file contains the appropraite 'panoply_nmf' section."))
+    }
+  }
+  #### overwrite the command-line parameters ####
+  # global parameters
+  if (is.null(opt$gene_col)) opt$gene_col = yaml_out$global_parameters$gene_mapping$gene_id_col
+  if (is.null(opt$organism)) opt$organism = yaml_out$global_parameters$organism
+  # nmf parameters
+  if (is.null(opt$kmin)) opt$kmin = yaml_nmf$kmin
+  if (is.null(opt$kmax)) opt$kmax = yaml_nmf$kmax
+  if (is.null(opt$seed)) opt$seed = yaml_nmf$seed
+  if (is.null(opt$nmf_method)) opt$nmf_method = yaml_nmf$method
+  # if (is.null(opt$exclude_2)) opt$exclude_2 = yaml_nmf$exclude_2
+  if (is.null(opt$nrun)) opt$nrun = yaml_nmf$nrun
+  if (is.null(opt$sd_filt_min)) opt$sd_filt_min = yaml_nmf$sd_filt
+  if (is.null(opt$sd_filt_mode)) opt$sd_filt_mode = yaml_nmf$filt_mode
+  if (is.null(opt$z_score)) opt$z_score = yaml_nmf$z_score
+  if (is.null(opt$z_score_mode)) opt$z_score_mode = yaml_nmf$z_score_mode
+} 
+
 
 
 
@@ -128,23 +159,29 @@ for (ome in ome_labels) {
   }
 }
 #### Add Gene Annotations to rdesc (requires gene column & organism-ID) ####
-if( !is.null(opt$gene_col) & !is.null(opt$org_id) ){ # if we have the required info to add gene-annotations
+if( !is.null(opt$gene_col) & !is.null(opt$organism) ){ # if we have the required info to add gene-annotations
+  # convert opt$organism to org_id
+  org_id = recode(opt$organism,
+                  "human" = "Hs",
+                  "mouse" = "Mm",
+                  "rat" = "Rn")
+  # add annotations
   if ( is.null(comb_rdesc[[opt$gene_col]]) ) { # sanity check that gene-column is IN the rdesc
     warning(paste0("Gene Symbol Column '", opt$gene_col,
                    "' was not found in the rdesc. Gene-annotations cannot be added."))
     } else {  # if the gene_column is in the rdesc
       # load AnnotationDBI & organism package
       library(AnnotationDbi)
-      library(paste0("org.",opt$org_id,".eg.db"), character.only = TRUE) # load appropraite organism database
+      library(paste0("org.",org_id,".eg.db"), character.only = TRUE) # load appropraite organism database
       #### add description and enzyme codes ####
       genes = unique(comb_rdesc[[opt$gene_col]]) # get unique gene-symbols to annotate
-      gene_annot_df <- AnnotationDbi::select(eval(sym(paste0("org.",opt$org_id,".eg.db"))),
+      gene_annot_df <- AnnotationDbi::select(eval(sym(paste0("org.",org_id,".eg.db"))),
                                              keys=genes, keytype='SYMBOL',
                                              column=c( 'GENENAME',  'ENZYME', 'ENTREZID'),
                                              multiVals='first')
       
       #### add cytoband annotations ####
-      if (opt$org_id=="Hs") { # if we're working humans
+      if (org_id=="Hs") { # if we're working humans
         ## add cytoband ID
         map <- unlist(as.list(org.Hs.egMAP[mappedkeys(org.Hs.egMAP)])) # get maping between entrez ID and cytoband ID; convert from S4 to vector by unlist(as.list()) 
         gene_annot_df$CYTOBAND <- map[ gene_annot_df$ENTREZID ] # map entrez ID onto cytoband map
