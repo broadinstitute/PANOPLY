@@ -2,9 +2,18 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_nmf_report {
-
-    File tarball
     String label
+
+    # inputs from panoply_nmf
+    File nmf_results                ## Rdata file containing results of nmf()
+    Int nclust                      ## best clustering assignment
+    File expr_comb                  ## combined expression GCT file
+    File expr_comb_nn               ## combined expression GCT file (non negative)
+    File nmf_parameters             ## Rdata file containing parameters list-object (opt) from panoply_nmf
+
+    # inputs from panoply_nmf_postprocess
+    File postprocess_tarball        ## tarball containing all figures and outputs from panply_nmf_postprocess
+    File postprocess_parameters     ## Rdata file containing parameters list-object (opt) from panoply_nmf_postprocess
 
     Int? memory
     Int? disk_space
@@ -13,11 +22,11 @@ task panoply_nmf_report {
 
     command {
         set -euo pipefail
-	Rscript /home/pgdac/src/rmd-mo-nmf.R ${tarball} ${label}
+        Rscript /prot/proteomics/Projects/PGDAC/src/nmf-renderRMD.R ${"-n " + nmf_results} ${"-r " + nclust} ${"-e " + expr_comb} ${"-f " + expr_comb_nn} ${"-p " + nmf_parameters} ${"-q " + postprocess_parameters} ${"-x " + label} ${"-t " + postprocess_tarball}
     }
 
     output {
-	File report = "mo-nmf-report-" + label + ".html"
+	File report = label + "_nmf_report.html"
     }
 
     runtime {

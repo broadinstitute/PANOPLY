@@ -11,7 +11,8 @@ task panoply_nmf_postprocess {
 	String? gene_column
 	File? groups_file # for enrichment analysis
 
-	Float? pval_signif
+	Float? pval_signif # significant p-value for cluster-enrichement
+	Float? feature_fdr # fdr threshold for driver-feature t-test
 	Int? max_annot_levels # max number of annotation-levels to allow for discrete variables
 	Int? top_n_features # max number of driver features (per cluster) to create expression-boxplots for 
 
@@ -26,13 +27,14 @@ task panoply_nmf_postprocess {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} --expr_comb ${expr_comb} --expr_comb_nn ${expr_comb_nn} ${"-g " + groups_file} ${"-a " + gene_column} ${"-p " + pval_signif} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} --expr_comb ${expr_comb} --expr_comb_nn ${expr_comb_nn} ${"-g " + groups_file} ${"-a " + gene_column} ${"-p " + pval_signif} ${"-q " + feature_fdr} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 
 	}
 
 	output {
 		File results="NMF_results.tar.gz"
 		File membership="${output_prefix}_K${nclust}_clusterMembership.tsv"
+		File parameters="nmf_postprocess_opt.Rdata"
 	}
 
 	runtime {

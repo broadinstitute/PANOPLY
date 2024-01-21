@@ -17,12 +17,13 @@ option_list <- list(
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest. If not provided, all annotations in the cdesc will be analyzed.'),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
   #### Post-Processing Parameters ####
-  make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), # default='geneSymbol'),
+  make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
+  make_option( c("-q", "--feature_fdr"), action='store', type='numeric', dest='feature_fdr', help='Max FDR threshold for feature-selection 2-sample T-test.'),
   make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='geneSymbol'),
   make_option( c("-t", "--top_n_features"), action='store', type='numeric', dest='top_n_features', help='Number of driver-features to create expression-boxplots of, per cluster.'), # default='geneSymbol'),
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
-  make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters.", default=NA),
+  make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters."),
   make_option( c("-z", "--libdir"), action="store", dest='lib_dir', type="character", help="the src directory.", default='/prot/proteomics/Projects/PGDAC/src')
   #### ####
 )
@@ -30,21 +31,14 @@ option_list <- list(
 
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
-                       # # for testing arguments
-                       # args = c('--nmf_results',"/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/latest/outputs/panoply_nmf_workflow/4d729ec7-03f2-4abd-a01a-ef0c6c782e76/call-panoply_nmf/execution/nmf_res.Rdata",
-                       #          '--rank_top',"6",
-                       #          '--expr_comb',"/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/latest/outputs/panoply_nmf_workflow/4d729ec7-03f2-4abd-a01a-ef0c6c782e76/call-panoply_nmf/execution/glob-6bb1c1bc65aa92bfed4e9e23a70e6646/odg_test_combined_n61x26574.gct",
-                       #          '--expr_comb_nn',"/Users/wcorinne/Git/panoply-sandbox/hydrant/tasks/panoply_nmf/latest/outputs/panoply_nmf_workflow/4d729ec7-03f2-4abd-a01a-ef0c6c782e76/call-panoply_nmf/execution/glob-5d28d7ac052751ffcd4ef752ba1f0fbf/odg_test_combinedNonNegative_n61x53147.gct",
-                       #          '-g',"/Users/wcorinne/Downloads/groups-subset.csv",
-                       #          '-a',"geneSymbol",
-                       #          '-p',"0.01",
+                       # for testing arguments
+                       # args = c('--nmf_results',"/opt/input/nmf_res.Rdata",
+                       #          '--rank_top',"3",
+                       #          '--expr_comb',"/opt/input/odg_test_combined_n61x26574.gct",
+                       #          '--expr_comb_nn',"/opt/input/odg_test_combinedNonNegative_n61x53147.gct",
+                       #          '-y',"/opt/input/master-parameters.yaml",
                        #          '-x',"odg_test")
 )
-
-#### Parse YAML Arguments ####
-library(yaml)
-# todo: read in YAML, instead of just using opt_cmd
-opt = opt_cmd
 
 
 #### Load Libraries ####
@@ -62,6 +56,49 @@ library(ggplot2)
 library(ComplexHeatmap)
 library(UpSetR)
 library(Rtsne)
+
+
+#### Parse YAML Arguments ####
+opt = opt_cmd # initialize options with command line options
+if ( !is.null(opt$yaml_file) ) {
+  #### read in yaml ####
+  library(yaml)
+  yaml_out <- read_yaml(opt$yaml_file)
+  #### locate the NMF-postprocessing parameters section ####
+  if ( !is.null(yaml_out$panoply_nmf_postprocess) ) { # if we have an NMF parameters section
+    yaml_nmf =  yaml_out$panoply_nmf_postprocess # read in those parameters
+  } else { # if the section is missing
+    if ( !is.null(yaml_out$panoply_mo_nmf) ) { # check for the deprecated mo_nmf section
+      warning(glue("The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocessing' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
+      yaml_nmf =  yaml_out$panoply_mo_nmf # read in those parameters
+      if (is.null(opt$top_n_features)) opt$top_n_features = 25 # manually provide default for top_n_features, since this parameter previously did not exist
+    } else { # otherwise, stop
+      stop(glue("The parameter file '{opt$yaml_file}' does not contain an NMF parameters section. Please check that the yaml file contains the appropraite 'panoply_nmf' section."))
+    }
+  }
+  #### overwrite the command-line parameters ####
+  # global parameters
+  if (is.null(opt$gene_col)) opt$gene_col = yaml_out$global_parameters$gene_mapping$gene_id_col
+  # postprocessing parameters
+  if (is.null(opt$pval_signif)) opt$pval_signif = yaml_nmf$ora_pval
+  if (is.null(opt$feature_fdr)) opt$feature_fdr = yaml_nmf$feature_fdr
+  if (is.null(opt$max_annot_levels)) opt$max_annot_levels = yaml_nmf$ora_max_categories
+  if (is.null(opt$top_n_features)) opt$top_n_features = yaml_nmf$top_n_features
+} else { # if no YAML was provieded
+  # check if any necessary parameters are missing
+  if( any(sapply(list(opt$pval_signif, opt$feature_fdr,
+                      opt$max_annot_levels, opt$top_n_features), 
+                 is.null)) ) { # if we have at least one missing parameter
+    stop("Master Parameter yaml-file is missing. Please either provide a master-parameters file, or manually provide all NMF parameters.") # error and stop
+  }
+}
+
+# print parameters
+cat("\n\n####################\nNMF POST-PROCESSING PARAMETERS\n\n")
+print(opt)
+save(file = "nmf_postprocess_opt.Rdata", opt)
+cat("####################\n\n")
+
 
 
 source("/prot/proteomics/Projects/PGDAC/src/modT.r")
@@ -116,9 +153,11 @@ MyComplexHeatmap <- function(matrix, heatmap_col, annot_df, annot_colors, na_col
 ##         Data Import / Parameter Setup
 ###########################################################
 
+cat("\n\n####################\nData Import\n\n")
+
 prefix = paste0(opt$output_prefix,"_K", opt$rank_top, "_") # prefix for filenames
 # cw=10; ch=cw # pheatmap cell size
-id_col = "Sample.ID" # id column used in groups file
+sample_id_col = "Sample.ID" # id column used in groups file
 
 #### NMF-Input Dataset Import ####
 gct_expr_comb = parse_gctx(opt$expr_comb)
@@ -128,11 +167,12 @@ gct_expr_comb_nn = parse_gctx(opt$expr_comb_nn)
 if (!is.null(opt$groups_file)) { # if we have a groups file
   #### import groups file ####
   groups = read_csv(opt$groups_file) %>% # import groups file
-    column_to_rownames(id_col) # set id column to rownames
+    column_to_rownames(sample_id_col) # set id column to rownames
   #### ensure that groups file contains all of our samples ####
   if ( length(setdiff(gct_expr_comb_nn@cid, rownames(groups))) > 0  ) { # if there are Sample.IDs that are not in our groups file
-    stop(paste0("Invalid groups file; the following ",id_col," are missing from groups file:\n", # throw an error
-                setdiff(gct_expr_comb_nn@cid, rownames(groups)))) # and print the missing samples
+    stop(paste0("Invalid groups file; the following ",sample_id_col," are missing from groups file:\n\n", # throw an error
+                paste(setdiff(gct_expr_comb_nn@cid, rownames(groups)),
+                      collapse = ", "))) # and print the missing samples
   }
 } else { # otherwise
   groups = gct_expr_comb@cdesc # otherwise use full cdesc
@@ -140,24 +180,19 @@ if (!is.null(opt$groups_file)) { # if we have a groups file
 }
 
 #### Annotation Color Values ####
-if (FALSE) {
-  # todo: assign colors from YAML
-  colors = NULL
-  idx.is_discrete = NULL # determine which annotations are discrete'
-  # continuous may be separate
-} else {
-  # assign colors
-  colors.full = set_annot_colors(groups, continuous.return_function = TRUE)
-  # pull out the color vectors, named with values
-  # consider: this should probably happen in set_annot_color()
-  colors = sapply(colors.full, function(annot) { # wrangle list of lists into a list of:
-    annot_colors = annot$colors # vectors with colors
-    names(annot_colors) = annot$vals # where each color is named for its corresponding annotation value
-    return(annot_colors)
-  })
-  # create vector with discrete/non-discrete TRUE/FALSE values, for each annotation
-  idx.is_discrete = sapply(colors.full, function(annot) {annot$is_discrete}) 
-}
+
+# automatically assign colors
+colors.full = set_annot_colors(groups, continuous.return_function = TRUE)
+# pull out the color vectors, named with values
+# consider: this should probably happen in set_annot_color()
+colors = sapply(colors.full, function(annot) { # wrangle list of lists into a list of:
+  annot_colors = annot$colors # vectors with colors
+  names(annot_colors) = annot$vals # where each color is named for its corresponding annotation value
+  return(annot_colors)
+})
+
+# create vector with discrete/non-discrete TRUE/FALSE values, for each annotation
+idx.is_discrete = sapply(colors.full, function(annot) {annot$is_discrete})
 # pull out discrete vs continuous annots
 annots.is_discrete.full = names(idx.is_discrete[which(idx.is_discrete)])
 annots.is_continuous = names(idx.is_discrete[which(!idx.is_discrete)])
@@ -166,10 +201,21 @@ annots.excluded = sapply(annots.is_discrete.full, function(annot) {
   length(unique(groups[[annot]])) > opt$max_annot_levels # determine which discrete annotaitons have too many values
 }) %>% which() %>% names() # convert named TRUE/FALSE vector to vector of names
 if (length(annots.excluded) > 0) {
-  cat(paste(glue("The following {length(annots.excluded)} annotations have more than {opt$max_annot_levels} discrete levels, and will be excluded from analysis & figures:"), "\n",
-            paste(annots.excluded, collapse = ", "), "\n"))
+  cat(paste(glue("The following {length(annots.excluded)} annotations have more than {opt$max_annot_levels} discrete levels, and will be excluded from analysis & figures:"), "\n\n",
+            paste(annots.excluded, collapse = ", "), "\n\n"))
 }
 annots.is_discrete = setdiff(annots.is_discrete.full, annots.excluded) # remove that annotation from annot.is_discrete
+
+
+# overwrite automatic colors with YAML-file colors, if applicable
+if (!is.null(opt$yaml_file)) {
+  yaml_colors = yaml_out$groups.colors # get colors from YAML
+  for (annot in annots.is_discrete) { # for each discrete-annotation we intend to plot
+    if (!is.null( yaml_colors[[annot]] )) { # if the annotation has colors assigned in the YAML file
+      colors[[annot]] <- unlist(yaml_colors[[annot]]) # overwrite the automatic values with the YAML values
+    }
+  }
+}
 
 
 #### Load NMF Results ####
@@ -183,8 +229,9 @@ nmf_fit = res@fit
 NMF.basis = predict(res)
 NMF.consensus = predict(res, 'consensus') %>% # predict results
   names() %>% NMF.basis[.] # map back onto basis matrix
-#consider: only valid for non-bayesian!! also, could this be made with the H-vector data?
+cat("\n\n####################\nCluster Membership-- Consensus Mapping\n\n")
 consensusmap(res, filename = paste0(prefix, "consensusMap.pdf")) # idk what makes this meaningful compared to a different way of determining cluster membership but
+consensusmap(res, filename = paste0(prefix, "consensusMap.png")) # idk what makes this meaningful compared to a different way of determining cluster membership but
 
 basis.mat = nmf_fit@W
 coef.mat = nmf_fit@H
@@ -194,6 +241,8 @@ coef.mat = nmf_fit@H
 ##         H-Matrix Analysis / cluster membership
 ###########################################################
 
+cat("\n\n####################\nCluster Membership-- H-Matrix Analysis\n\n")
+
 #### determine cluster membership ####
 coef_norm  <- apply(coef.mat, 2, function(x) x/sum(x)) # normalize each column to sum of column
 coef_consensus <- apply(coef_norm, 2, which.max) # which cluster had the maximum membership
@@ -201,8 +250,8 @@ coef_membership <- apply(coef_norm, 2, max) # maximum membership fraction
 # mindiff core membership
 coef_core_member <- apply(coef_norm, 2, function(x) {
   if ( sum(x == max(x)) > 1 ) return(FALSE) # if more than one cluster-score is the maximum, return FALSE
-  min_diff = max(x) - setdiff(x, max(x)) %>% # difference between our largest coefficient, and our other coefficients 
-    min() # take the minimum difference
+  min_diff_vec = max(x) - setdiff(x, max(x)) # difference between our largest coefficient, and our other coefficients 
+  min_diff = min(min_diff_vec) # take the smallest difference
   min_diff > 1/as.numeric(opt$rank_top) # is this difference less than 1/rank?
 })
 
@@ -234,6 +283,8 @@ colors.NMF = sapply(colors.full.NMF, function(annot) {
 #### filter groups.full to core members ####
 groups.core = filter(groups.full, NMF.core.member) # get just core
 
+
+
 #### write H-matrix & normalized H-matrix to a GCT file, with full groups-file cdesc ####
 ## unmodified H-matrix
 gct.H <- new('GCT')
@@ -248,33 +299,46 @@ gct.H.norm = gct.H # initialize
 gct.H.norm@mat <- apply(gct.H@mat, 2, function(x) x/max(x)) # normalized to the max of each column
 write_gct(gct.H.norm, ofile=paste0(prefix, 'H_normToMax')) # write H-norm to GCT
 
+cat("\n\n####################\nCluster Membership-- Coeficient Matrix Heatmap\n\n")
 #### plot H.norm heatmap, with and without clustering ####
 for (cluster_cols in c(TRUE,FALSE)) {
-  # get heatmap dimensions
+  # get heatmap row/col dimensions
   dim_rows = dim(gct.H.norm@mat)[1] + # get the number of rows in our heatmap
     dim(select(gct.H.norm@cdesc, -all_of(annots.excluded)))[2]  # get number of annotation rows in our heatmap
   dim_cols = dim(gct.H.norm@mat)[2] # get the number of columns in our heatmap
+  
+  hm = MyComplexHeatmap(gct.H.norm@mat, # plot normalized heatmap
+                        heatmap_col = colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), # colorscale for heatmap
+                        show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
+                        select(gct.H.norm@cdesc, -all_of(annots.excluded)), # with all annotations
+                        c(colors, colors.NMF), show_annot=T, # using appropriate annotation colors
+                        show_annotation_legend = F, # hide annotations
+                        show_row_names = T, row_names_side = "left", # show row name
+                        cluster_rows = F, # don't cluster rows
+                        name = "Normalized Coefficient Value",
+                        column_title = "NMF Coefficient Matrix (Normalized Sample-wise)", column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
+                        column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
+                        cluster_columns = cluster_cols, #optionally cluster columns
+                        heatmap_legend_param = list(direction = "horizontal"))
+  
+  
+  # use hm dimensions to calculate figure dimension
+  width = max(dim_cols/5/4 + 3, # set width equal to n_columns/5/4 (column width = row height/4) + padding for row titles
+              8) # (enforce minimum width, to prevent title cutoff)
+  height = dim_rows/5 + 3  # set height equal to n_rows/5 + padding for title / legend
   # open PDF to write heatmap to
   pdf(paste0(prefix, 'heatmap_coeficientMatrixNorm', # save to PDF
              ifelse(cluster_cols, '_clustered', ''),'.pdf'),
-      max(dim_cols/10, 8), # set width equal to # columns / 10 (w/ minimum width, to prevent title cutoff)
-      dim_rows/10*2.5 + 1.5) # set height equal to n_rows/10; scale rows to be 2.5x size of columns & add padding for header/footer
-  # pdf('/opt/input/tmp.pdf', 12,8) # for manual docker testing
-  MyComplexHeatmap(gct.H.norm@mat, # plot normalized heatmap
-                   heatmap_col = colorRampPalette(brewer.pal(n = 7, name = "YlOrRd"))(100), # colorscale for heatmap
-                   show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
-                   select(gct.H.norm@cdesc, -all_of(annots.excluded)), # with all annotations
-                   c(colors, colors.NMF), show_annot=T, # using appropriate annotation colors
-                   show_annotation_legend = F, # hide annotations
-                   show_row_names = T, row_names_side = "left", # show row name
-                   cluster_rows = F, # don't cluster rows
-                   name = "Normalized Coefficient Value",
-                   column_title = "NMF Coefficient Matrix (Normalized Sample-wise)", column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
-                   column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
-                   cluster_columns = cluster_cols, #optionally cluster columns
-                   heatmap_legend_param = list(direction = "horizontal")) %>%
-    draw(., heatmap_legend_side='bottom', # put heatmap legend at bottom so it doesn't overlap annots
-         padding = unit(c(2, 2, 2, 2), "mm")) # add padding so annotations render properly
+      width, height)
+  draw(hm, heatmap_legend_side='bottom', # put heatmap legend at bottom so it doesn't overlap annots
+       padding = unit(c(2, 2, 2, 2), "mm")) # add padding so annotations render properly
+  dev.off()
+  # open PNF to write heatmap to
+  png(paste0(prefix, 'heatmap_coeficientMatrixNorm', # save to PNG
+             ifelse(cluster_cols, '_clustered', ''),'.png'),
+      width=width, height=height, units='in', res=300)
+  draw(hm, heatmap_legend_side='bottom', # put heatmap legend at bottom so it doesn't overlap annots
+       padding = unit(c(2, 2, 2, 2), "mm")) # add padding so annotations render properly
   dev.off()
   
   # obselete pheatmap code
@@ -290,11 +354,53 @@ for (cluster_cols in c(TRUE,FALSE)) {
   #                                      ifelse(cluster_cols, '_clustered', ''),'.pdf')) # with or without clustering suffix
 }
 
+#### draw Annotation Legend (standalone) to file ####
+cat("\n\n####################\nGenerate Standalone-Legend\n\n")
+
+#### pretty version ####
+legend = lapply(lapply(hm@top_annotation@anno_list, # for each annotation
+                       function(annot) {annot@color_mapping}), # get the color mapping object
+                color_mapping_legend) %>% # turn them into a list of legends
+  packLegend(list = ., # and then pack them into a legend
+             max_height = unit(12, 'in')) # prevent from being too tall
+legend_width = convertX(legend@grob$vp$width, unitTo="in", valueOnly=TRUE)
+legend_height = convertX(legend@grob$vp$height, unitTo="in", valueOnly=TRUE)
+# pdf
+pdf(paste0(prefix, "annotationLegend.pdf"),
+    width = legend_width+0.5, 
+    height = legend_height+0.5) 
+draw(legend)
+dev.off()
+# png
+png(paste0(prefix, "annotationLegend.png"),
+    width=legend_width+0.5,
+    height=legend_height+0.5,
+    units = 'in', res=300)
+draw(legend)
+dev.off()
+
+
+#### scrollable version ####
+legend_scrollable = lapply(lapply(hm@top_annotation@anno_list, # for each annotation
+                                  function(annot) {annot@color_mapping}), # get the color mapping object
+                           color_mapping_legend) %>% # turn them into a list of legends
+  packLegend(list = ., # and then pack them into a legend
+             max_width = unit(2.5, 'in')) # only allow one column
+legend_width = convertX(legend_scrollable@grob$vp$width, unitTo="in", valueOnly=TRUE)
+legend_height = convertX(legend_scrollable@grob$vp$height, unitTo="in", valueOnly=TRUE)
+# pdf
+pdf(paste0(prefix, "annotationLegend_scrollable.pdf"),
+    width = legend_width+0.5, 
+    height = legend_height+0.5) # height is full-height, plus padding
+draw(legend_scrollable)
+dev.off()
 
 
 ###########################################################
 ##         enrichment analysis
 ###########################################################
+
+cat("\n\n####################\nEnrichement Analysis\n\n")
 
 ## function for calculating enrichement on a cluster vector & class vector; returns table with cluster, annot_value, and p_value from comparing in-group vs out-group
 CalcClustEnrich <- function(clust.vec,  ## vector of cluster labels
@@ -368,18 +474,28 @@ write.csv(clust.enrich.fwer,
 ##         Silhouette Plots
 ###########################################################
 
+cat("\n\n####################\nSilhouette Plots\n\n")
+
 #consider: only valid for non-bayesian?
 rank.sil <- silhouette(res)
+# create PDF version
 pdf(paste0(prefix, 'silhouettePlot_clusterMembership.pdf')) # open PDF
 plot(rank.sil, main=paste('K=', opt$rank_top, sep=''),
      col=colors.full.NMF$NMF.consensus$colors)
 dev.off() # close PDF
+# create PNG version
+png(paste0(prefix, 'silhouettePlot_clusterMembership.png')) # open PNG
+plot(rank.sil, main=paste('K=', opt$rank_top, sep=''),
+     col=colors.full.NMF$NMF.consensus$colors)
+dev.off() # close PNG
 
 
 
 ###########################################################
 ##         Boxplots of Continuous Features
 ###########################################################
+
+cat("\n\n####################\nBoxplots of Continuous Annotation\n\n")
 
 if ( length(annots.is_continuous) > 0 ) {
   pdf(paste0(prefix, 'boxplots_continuousAnnots.pdf')) # open PDF
@@ -405,6 +521,9 @@ if ( length(annots.is_continuous) > 0 ) {
 ###########################################################
 ##         W-Matrix Analysis / driver features 
 ###########################################################
+
+cat("\n\n####################\nDriver Features-- W-Matrix Analysis\n\n")
+
 #### Calculate Feature Scores to identify driver features ####
 method="max" # try kim first, and then use max if it fails
 feature.scores <- featureScore(basis.mat, method=method) %>% # calculate feature-score for features in basis-matrix
@@ -466,6 +585,7 @@ write_gct(gct.W.norm.comb, ofile=paste0(prefix, 'W_rowNorm_combined_signed')) # 
 
 ###########################################################
 #### Identify Driver Features ####
+cat("\n\n####################\nDriver Features-- T-Test\n\n")
 driver.features <- extractFeatures(basis.mat, method=method)
 driver.features.byName = lapply(driver.features, function(index_vec) {rownames(basis.mat)[index_vec]}) # signed feature ID
 driver.features.byName.unsigned = lapply(driver.features.byName, function(feat_vec) {
@@ -516,23 +636,24 @@ driver.features.df = lapply(driver.features.list, function(df) {
                     starts_with("P.Value."))) %>% # and p-value column
     dplyr::rename("pval" = starts_with("P.value.")) # rename pvalue column for Easy Stacking
 }) %>% do.call(rbind, .) %>% # rbind list into dataframe
-  dplyr::mutate(!!paste0("signif_at_",opt$pval_signif) := pval < opt$pval_signif) # boolean for significance
+  dplyr::mutate(!!paste0("signif_at_",opt$feature_fdr) := pval < opt$feature_fdr) # boolean for significance
 
 #### Benjamini-Hochberg correction ####
 driver.features.bh = mutate(driver.features.df,
                             bh.pval = p.adjust(driver.features.df$pval, method = 'BH'), # apply BH correction
-                            !!paste0("bh.signif_at_",opt$pval_signif) := bh.pval < opt$pval_signif) # boolean if significant
+                            !!paste0("bh.signif_at_",opt$feature_fdr) := bh.pval < opt$feature_fdr) # boolean if significant
 
 
 
 
 #### Write Driver Feature + P-value to CSV ####
+cat("\n\n####################\nDriver Features-- CSV & Excel Export\n\n")
 ## all features
 write.csv(driver.features.bh,
           paste0(prefix, "driverFeatures.csv"))
 ## significant only
 driver.features.sigFeatOnly = filter(driver.features.bh, #filter just to significant features
-                                     !!sym(paste0("bh.signif_at_",opt$pval_signif))) 
+                                     !!sym(paste0("bh.signif_at_",opt$feature_fdr))) 
 write.csv(driver.features.sigFeatOnly, # filter to 
           paste0(prefix, "driverFeatures_sigFeatOnly.csv"))
 
@@ -567,7 +688,8 @@ WriteXLS(driver.features.list.kinase,
 
 
 ###########################################################
-#### create Significant-Driver-Feature expresion-matrix & heatmap (for each cluster) ####
+#### create Significant-Driver-Feature expresion-matrix heatmap (for each cluster) ####
+cat("\n\n####################\nDriver Features-- Generate Expression Heatmaps\n\n")
 for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster that had significant features
   #### subset expression matrix to drivers for this cluster ####
   gct_expr_driver = subset_gct(gct_expr_comb,# take combined expression data
@@ -609,14 +731,19 @@ for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster 
                        cluster_rows = T) # cluster rows/features
   }
 }
+save(file = paste0(prefix, "driverFeatures_hm.concat.Rdata"), hm.concat) # save hm.concat object for troubleshooting
 
 #### draw Heatmap to Files ####
+cat("\n\n####################\nDriver Features-- Compile and Export Expression Heatmap\n\n")
+width = min(max(dim_cols/5/4 + 3, # set width equal to n_columns/5/4 (column width = row height/4) + padding for row titles
+                (dim_rows/5+2)/2, 8), # enforce a minimum width of at least half the height of the figure, or 8"
+            12) # limit  width to at most 12 inches
+height = min(dim_rows/5 + 3,  # set height equal to # rows / 10, plus padding for title
+             24) # limit  width to at most 32 inches
 # open PDF to write heatmap to
 pdf(paste0(prefix, "driverFeatures_complexHeatmap.pdf"),
-    min(max(dim_cols/10, # set width equal to # columns / 10
-            (dim_rows/10+1)*2), # enforce a minimum width of at least half the height of the figure
-        16), # limit  width to at most 16 inches
-    min(dim_rows/10+1, 32)) # set height equal to # rows / 10
+    width,
+    height)  
 # pdf('/opt/input/outputs/tmp.pdf', 12, 12) # for manual docker testing
 draw(hm.concat, #heatmap_legend_side='right',
      show_heatmap_legend = FALSE,
@@ -624,28 +751,18 @@ draw(hm.concat, #heatmap_legend_side='right',
 dev.off()
 
 png(paste0(prefix, "driverFeatures_complexHeatmap.png"),
-    width = min(max(dim_cols/10, # set width equal to # columns / 10
-                    (dim_rows/10+1)*2), # enforce a minimum width of at least half the height of the figure
-                16), # limit  width to at most 16 inches
-    height = min(dim_rows/10+1, 32), # set height equal to # rows / 10
+    width = width, 
+    height = height,
     units="in", res=300)
-draw(hm.concat, heatmap_legend_side='right')
-dev.off()
-
-#### draw Annotation Legend (standalone) to file ####
-pdf(paste0(prefix, "annotationLegend.pdf"), 16, 16)
-legend = lapply(get_color_mapping_list(hm.concat@ht_list[[1]]@top_annotation), # get the color mapping for the annotations
-                  color_mapping_legend) %>% # turn them into a list of legends
-  packLegend(list = ., # and then pack them into a legend
-             max_height = unit(15, "in"), # max height
-             column_gap = unit(0.25, "in")) # gap between columns
-draw(legend)
+draw(hm.concat, #heatmap_legend_side='right',
+     show_heatmap_legend = FALSE)
 dev.off()
 
 
 
 ###########################################################
 #### create UpSet Plot of driver-feature-overlap b/t clusters ####
+cat("\n\n####################\nDriver Features-- Upset Plots\n\n")
 if ( length(unique(driver.features.bh$cluster)) > 1 ) { # if more than one cluster has driver features
   upset.mat <- driver.features.sigFeatOnly %>% # use only significant features
     dplyr::select(c(id, cluster)) %>% # select relevant columns
@@ -665,6 +782,7 @@ if ( length(unique(driver.features.bh$cluster)) > 1 ) { # if more than one clust
 
 ###########################################################
 #### calculate Contributions of Each Ome ####
+cat("\n\n####################\nDriver Features-- # per Cluster (per Ome-Type)\n\n")
 ft_countByOme <- driver.features.sigFeatOnly %>% # use only significant features
   dplyr::select(c(ome_type, cluster)) %>% # select relevant columns
   group_by(cluster, ome_type) %>% summarise(n_feat = n()) %>% # get number of features per-ome per-cluster
@@ -681,7 +799,7 @@ p <- ggplot(ft_countByOme, aes(x = cluster, y = n_feat, fill=ome_type)) +
   geom_text(aes(label = n_feat), # add labels with number of features
             position = position_dodge(width = 0.9), vjust = -0.5, size = 3) + # position label above each column
   labs(x = "NMF Basis", y = "Number of Features") + # x axis and y axis labels
-  ggtitle('Significant Driver-Features by Ome-Type') + # add title
+  ggtitle('Significant Driver-Features by Cluster') + # add title
   theme_minimal() +  # adjust formatting
   theme(panel.grid.major.x = element_blank(),  # remove x-axis gridlines
         plot.title = element_text(face="bold"), # increase title fontsize / bold
@@ -711,6 +829,7 @@ driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant d
 
 
 #### make a PDF for each cluster. ####
+cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
 for (cluster in unique(driver.features.topNFeat$cluster)) {
   pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
   # pdf(glue("/opt/input/tmp_{cluster}.pdf")) # for manual docker testing
@@ -760,7 +879,7 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
 ###########################################################
 #### create Heatmaps of Top Driver-Feature Expression by Cluster
 ###########################################################
-
+cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Heatmaps\n\n"))
 #### make a PDF for each cluster ####
 for (cluster in unique(driver.features.topNFeat$cluster)) {
   driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
@@ -777,13 +896,14 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
   }
   
   # calculate heatmap dimensions
-  dim_rows = 2 + # add space for 2 extra rows per dataset, as an estimate
+  dim_rows = 4 + # add space for 4 extra rows per dataset, as an estimate
     dim(select(groups.full[colnames(gct_expr_comb@mat), , drop = FALSE], -all_of(annots.excluded)))[2]  # add rows for the number of annotation rows
   dim_cols = dim(gct_expr_comb@mat)[2] # set column dimensions to the number of samples
   # open PDF to draw heatmap
   pdf(paste0(prefix, "driverFeatures_expressionHeatmaps_", cluster,".pdf"),
-      max(dim_cols/10, 8), # set width equal to # columns / 10 (w/ minimum width, to prevent title cutoff)
-      dim_rows/10*2.5 + 1.5) # set height equal to # rows / 10; scale rows to be 2.5x size of columns & add padding for header/footer
+      max(dim_cols/5/4 + 1.5, # set width equal to n_columns/5/4 (column width = row height/4) + padding for row titles
+          8), # (enforce minimum width, to prevent title cutoff)
+      dim_rows/5 + 2) # set height equal to n_rows/10 x scaling + padding for title / legend
   # pdf('/opt/input/tmp.pdf', 12,8) # for manual docker testing
   for (i in 1:length(ft_list)) {
     fts = ft_list[[i]]
@@ -814,6 +934,7 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
 ###########################################################
 
 #### tSNE Clustering on NMF Core Samples (across all Features) ####
+cat(glue("\n\n####################\nTSNE Core-Sample Comparisons\n\n"))
 coreSample_expr <- gct_expr_comb@mat[, rownames(filter(NMF.annots,  # expression matrix
                                                        NMF.core.member))] %>% # of JUST core features
   t() # samples as rows
@@ -855,6 +976,7 @@ if (!class(tsne_s) == 'try-error') { # assuming tSNE ran properly
 
 
 #### tSNE Clustering on significant Driver Features (across all Samples) ####
+cat(glue("\n\n####################\nTSNE Driver-Feature Comparisons\n\n"))
 driverFeat_expr <- gct_expr_comb@mat[driver.features.sigFeatOnly$id,] # driver features only, all samples
 tsne_f <- tryCatch(Rtsne(driverFeat_expr, check_duplicates=F), # try tSNE as is
                    # but if it fails
@@ -899,6 +1021,7 @@ if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
 ###########################################################
 ##         Tar all Files
 ###########################################################
+cat(glue("\n\n####################\nTarring Files\n\n"))
 
 output.files = list.files(pattern=prefix, full.names = T)
 tar('NMF_results.tar.gz',

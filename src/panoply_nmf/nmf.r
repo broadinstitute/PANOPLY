@@ -22,11 +22,11 @@ option_list <- list(
   #### NMF Parameters ####
   make_option( c("--kmin"), action='store', type='numeric',  dest='kmin', help='Minimal factorization rank.'),  # default = 2),
   make_option( c("--kmax"), action='store', type='numeric',  dest='kmax', help='Maximal factorization rank.'), # default = 4),
+  make_option( c("-e", "--exclude_2"), action="store", dest='exclude_2', type="logical", help="If TRUE, a '2' will be excluded from calculation of the optimal rank."), #default=TRUE),
   make_option( c("-n", "--nrun"), action='store', type='numeric',  dest='nrun', help='Number of NMF runs with different starting seeds.'), # default = 5),
   make_option( c("-b", "--bayesian"), action='store', type='logical',  dest='bnmf', help='If TRUE Bayesian NMF to determine optimal rank will be used (package ccfindR).', default = FALSE),
   make_option( c("-m", "--nmf_method"), action='store', type='character',  dest='nmf_method', help='NMF Method.'),
   make_option( c("-s", "--seed"), action='store', type='character',  dest='seed', help='Seed method for NMF factorization.'), # default = 'random'),
-  # make_option( c("-e", "--exclude_2"), action="store", dest='exclude_2', type="logical", help="If TRUE, a '2' will be excluded from calculation of the optimal rank."), #default=TRUE),
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
   make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters."),
@@ -82,7 +82,7 @@ if ( !is.null(opt$yaml_file) ) {
   if (is.null(opt$kmax)) opt$kmax = yaml_nmf$kmax
   if (is.null(opt$seed)) opt$seed = yaml_nmf$seed
   if (is.null(opt$nmf_method)) opt$nmf_method = yaml_nmf$method
-  # if (is.null(opt$exclude_2)) opt$exclude_2 = yaml_nmf$exclude_2
+  if (is.null(opt$exclude_2)) opt$exclude_2 = yaml_nmf$exclude_2
   if (is.null(opt$nrun)) opt$nrun = yaml_nmf$nrun
   if (is.null(opt$sd_filt_min)) opt$sd_filt_min = yaml_nmf$sd_filt
   if (is.null(opt$sd_filt_mode)) opt$sd_filt_mode = yaml_nmf$filt_mode
@@ -101,6 +101,7 @@ if ( !is.null(opt$yaml_file) ) {
 # print parameters
 cat("\n####################\nNMF PARAMETERS\n\n")
 print(opt)
+save(file = "nmf_opt.Rdata", opt)
 cat("####################\n")
 
 ###########################################################
