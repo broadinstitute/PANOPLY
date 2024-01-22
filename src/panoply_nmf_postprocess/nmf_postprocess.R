@@ -69,7 +69,7 @@ if ( !is.null(opt$yaml_file) ) {
     yaml_nmf =  yaml_out$panoply_nmf_postprocess # read in those parameters
   } else { # if the section is missing
     if ( !is.null(yaml_out$panoply_mo_nmf) ) { # check for the deprecated mo_nmf section
-      warning(glue("The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocessing' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
+      cat(glue("\nWARNING: The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocessing' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
       yaml_nmf =  yaml_out$panoply_mo_nmf # read in those parameters
       if (is.null(opt$top_n_features)) opt$top_n_features = 25 # manually provide default for top_n_features, since this parameter previously did not exist
     } else { # otherwise, stop
@@ -971,7 +971,7 @@ if (!class(tsne_s) == 'try-error') { # assuming tSNE ran properly
   ggsave(paste0(prefix, "tSNE_coreSamples.png"),
          plot=p, device = "png") # as png
 } else {
-  warning("TSNE clustering failed on NMF core samples.") # try again on driver-features
+  cat("\nWARNING: TSNE clustering failed on NMF core samples.") # try again on driver-features
 }
 
 
@@ -1014,7 +1014,7 @@ if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
   ggsave(paste0(prefix, "tSNE_driverFeatures.png"),
          plot=p, device = "png") # as png
 } else {
-  warning("TSNE clustering failed on Driver Features.") # try again on driver-features
+  cat("\nWARNING: TSNE clustering failed on Driver Features.") # try again on driver-features
 }
 
 

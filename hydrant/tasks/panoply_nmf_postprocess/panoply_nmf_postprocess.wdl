@@ -34,6 +34,7 @@ task panoply_nmf_postprocess {
 	output {
 		File results="NMF_results.tar.gz"
 		File membership="${output_prefix}_K${nclust}_clusterMembership.tsv"
+		File feature_matrix_w=select_first(glob("${output_prefix}_K${nclust}_W_rowNorm_combined_signed_n*.gct")) # select first/only match of array-length-1
 		File parameters="nmf_postprocess_opt.Rdata"
 	}
 

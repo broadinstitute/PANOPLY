@@ -1,1 +1,1 @@
-Analysis method for NMF-based multi-omics clustering
+Analysis method for NMF-based clustering

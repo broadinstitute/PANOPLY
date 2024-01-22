@@ -67,7 +67,7 @@ if ( !is.null(opt$yaml_file) ) {
     yaml_nmf =  yaml_out$panoply_nmf # read in those parameters
   } else { # if the section is missing
     if ( !is.null(yaml_out$panoply_mo_nmf) ) { # check for the deprecated mo_nmf section
-      warning(glue("The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
+      cat(glue("\nWARNING: The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!\n\n"))
       yaml_nmf =  yaml_out$panoply_mo_nmf # read in those parameters
     } else { # otherwise, stop
       stop(glue("The parameter file '{opt$yaml_file}' does not contain an NMF parameters section. Please check that the yaml file contains the appropraite 'panoply_nmf' section."))
@@ -178,8 +178,8 @@ if( !is.null(opt$gene_col) & !is.null(opt$organism) ){ # if we have the required
                   "rat" = "Rn")
   # add annotations
   if ( is.null(comb_rdesc[[opt$gene_col]]) ) { # sanity check that gene-column is IN the rdesc
-    warning(paste0("Gene Symbol Column '", opt$gene_col,
-                   "' was not found in the rdesc. Gene-annotations cannot be added."))
+    cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
+               "' was not found in the rdesc. Gene-annotations cannot be added.\n\n"))
     } else {  # if the gene_column is in the rdesc
       # load AnnotationDBI & organism package
       library(AnnotationDbi)
