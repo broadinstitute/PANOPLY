@@ -2,9 +2,9 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_balance_omes/versions/7/plain-WDL/descriptor" as panoply_nmf_balance_omes_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf/versions/5/plain-WDL/descriptor" as panoply_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/4/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_report/versions/2/plain-WDL/descriptor" as panoply_nmf_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf/versions/6/plain-WDL/descriptor" as panoply_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/5/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_report/versions/3/plain-WDL/descriptor" as panoply_nmf_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as panoply_ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/8/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
@@ -56,8 +56,6 @@ workflow panoply_nmf_internal_workflow {
 		input:
 			nmf_results=nmf.results,
 			nclust=nmf.nclust,
-			expr_comb=nmf.gct_comb,
-			expr_comb_nn=nmf.gct_comb_nn,
 			output_prefix=label,
 			groups_file=groups_file,
 			yaml_file=yaml_file
@@ -67,11 +65,7 @@ workflow panoply_nmf_internal_workflow {
         input:
 			nmf_results=nmf.results,
 			nclust=nmf.nclust,
-			expr_comb=nmf.gct_comb,
-			expr_comb_nn=nmf.gct_comb_nn,
-            nmf_parameters=nmf.parameters,
             postprocess_tarball=postprocess.results,
-            postprocess_parameters=postprocess.parameters,
 			label=label
 	}
 
@@ -95,16 +89,16 @@ workflow panoply_nmf_internal_workflow {
 	}
 
 	output {
-		File nmf_tar=nmf.results # full output tar
-		Int  nmf_nclust=nmf.nclust # number of clusters
-		File nmf_results=nmf.results # .Rdata file with res object output of nmf()
-		File nmf_figures=postprocess.results # .tar with figures & analysis
-		File nmf_membership=postprocess.membership # .tsv with membership results
-		File nmf_report=panoply_nmf_report.report
+		File nmf_results=nmf.results				## tar file output of NMF (combined expression input-GCTs & res.rank Rdata object)
+		Int  nmf_nclust=nmf.nclust					## number of clusters
+		File nmf_figures=postprocess.results		## tar file with figures & analysis & parameters
+		File nmf_membership=postprocess.membership	## .tsv with membership results
+		File nmf_report=panoply_nmf_report.report 	## report file
 
 		File nmf_ssgsea_tar=panoply_ssgsea.results
 		File nmf_ssgsea_report=panoply_ssgsea_report.report
         
 		File? nmf_balance_filter=balance.pdf
+		File? nmf_preprocess_figures=nmf.preprocess_figs
 	}
 }

@@ -441,6 +441,20 @@ write.table(top.rank, file = "nmf_best_rank.txt", quote = FALSE, col.names = FAL
 
 
 ###########################################################
+##         Tar Inputs & Results
+###########################################################
+
+# locate GCT files & Rdata objects (results + parameters)
+output.files = c(list.files(pattern = 'nmf_res.Rdata'), # locate Rdata object containing res.rank
+                 list.files(pattern = "_combined_n.+.gct"), # locate combined GCT file
+                 list.files(pattern = "_combinedNonNegative_n.+.gct"), # locate combined nonnegative GCT file
+                 list.files(pattern = "nmf_opt.Rdata")) # grab NMF parameters object
+tar(paste0(opt$output_prefix,'_NMF_results.tar.gz'),
+    files = output.files, compression = "gzip", tar="tar")
+
+
+
+###########################################################
 ##         Tar PDF Files
 ###########################################################
 

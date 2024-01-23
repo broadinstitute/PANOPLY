@@ -4,7 +4,7 @@
 
 task panoply_nmf {
     Array[File]+ ome_gcts
-    Array[String]+ ome_labels # must match length & order of ome_gcts
+    Array[String]+ ome_labels
 
 	String output_prefix="results_nmf"
 	File? yaml_file
@@ -36,12 +36,9 @@ task panoply_nmf {
 	}
 
 	output {
-		File results="nmf_res.Rdata"
+		File results="${output_prefix}_NMF_results.tar.gz" # tar w/ expr GCT files + res.rank & parameters .Rdata files
 		Int nclust=read_int("nmf_best_rank.txt")
-		File gct_comb=select_first(glob("${output_prefix}_combined_n*.gct")) # select first/only match of array-length-1
-		File gct_comb_nn=select_first(glob("${output_prefix}_combinedNonNegative*.gct")) # select first/only match of array-length-1
 		File? preprocess_figs="NMF_preprocessing_figures.tar.gz"
-		File parameters="nmf_opt.Rdata"
 	}
 
 	runtime {

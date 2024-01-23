@@ -10,10 +10,6 @@ params:
   title: "NMF Clustering Results"
   label: NULL
   nmf_results: NULL
-  nmf_parameters: NULL
-  postprocess_parameters: NULL
-  gct_expr_comb_file: NULL
-  gct_expr_comb_nn_file: NULL
   rank_top: NULL
   postprocess_tar: NULL
 ---
@@ -37,29 +33,45 @@ library(kableExtra)
 library(readxl)
 library(DT) # for JS datatable features
 
-# read in data
-load(params$nmf_results) # load res.rank list object (results of nmf() function)
-# load in parameters
-load(params$nmf_parameters) # load opt list object (panoply_nmf parameters)
-opt_full = opt
-load(params$postprocess_parameters) # load opt list object (panoply_nmf parameters)
-opt_full = c(opt_full, opt) 
+#### import panoply_nmf tarfile ####
+untar(opt$nmf_results) # untar NMF results
+# locate necessary inputs from tar, and error if ANY are missing
+file_nmf_res = list.files(pattern = 'nmf_res.Rdata') # locate Rdata object containing res.rank
+if (length(file_nmf_res) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_res.Rdata object, containing res.rank output of nmf().")
+file_nmf_opt = list.files(pattern = 'nmf_opt.Rdata') # locate Rdata object containing parameters
+if (length(file_nmf_opt) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_opt.Rdata object, containing parameters used in panoply_nmf.")
+file_expr_comb = list.files(pattern = "_combined_n.+.gct") # locate combined GCT file
+if (length(file_expr_comb) != 1) stop("Tarfile {opt$nmf_results} is missing GCT file with combined expression data.")
+file_expr_comb_nn = list.files(pattern = "_combinedNonNegative_n.+.gct") # locate combined nonnegative GCT file
+if (length(file_expr_comb_nn) != 1) stop("Tarfile {opt$nmf_results} is missing GCT file with combined, non-negative expression data.")
 
+# load in panoply_nmf parameters
+load(file_nmf_opt) # load opt list object (panoply_nmf parameters)
+opt_full = opt # initialize opt_full with panoply_nmf parameters
+
+
+#### import panoply_nmf tarfile ####
+untar(params$postprocess_tar) # untar all the figures
+file_nmf_opt = list.files(pattern = 'nmf_postprocess_opt.Rdata') # locate Rdata object containing parameters
+if (length(file_nmf_opt) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_opt.Rdata object, containing parameters used in panoply_nmf.")
+
+# load in panoply_nmf_postprocess parameters
+load(file_nmf_opt) # load opt list object (panoply_nmf parameters)
+opt_full = c(opt_full, opt) # append to opt_full
+
+
+
+#### Finish Setup / Load GCTs ####
 ranks = opt_full$kmin:opt_full$kmax # get range of clusters run
 rank_top = params$rank_top # get 'best' cluster assignment
 
-gct_expr_comb = parse_gctx(params$gct_expr_comb_file)
-gct_expr_comb_nn = parse_gctx(params$gct_expr_comb_nn_file)
+gct_expr_comb = parse_gctx(file_expr_comb)
+gct_expr_comb_nn = parse_gctx(file_expr_comb_nn)
 
 # counter variable for figures and tables
 fig_count <- 1
 tab_count <- 1
 
-```
-
-
-```{r untar_figures, include=FALSE}
-untar(params$postprocess_tar) # untar all the figures
 ```
 
 # Input data matrix

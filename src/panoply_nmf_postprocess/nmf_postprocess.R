@@ -10,10 +10,10 @@ suppressPackageStartupMessages(library("optparse"))
 #### Command Line Arguments ####
 option_list <- list(
   #### Input Parameters ####
-  make_option( c("-n", "--nmf_results"), action='store', type='character',  dest='nmf_results', help='Rdata object with NMF Clustering results (res.rank object).'),
+  make_option( c("-n", "--nmf_results"), action='store', type='character',  dest='nmf_results', help='Tar file containing combined expression GCT, combined non-negative expression GCT, and Rdata object with NMF Clustering results (res.rank object).'),
   make_option( c("-r", "--rank_top"), action='store', type='numeric',  dest='rank_top', help='Best number of clustering / rank.'),
-  make_option( c("-e", "--expr_comb"), action='store', type='character',  dest='expr_comb', help='GCT file with combined expression data.'),
-  make_option( c("-f", "--expr_comb_nn"), action='store', type='character',  dest='expr_comb_nn', help='GCT file with combined (non-negative) expression data, used for NMF.'),
+  # make_option( c("-e", "--expr_comb"), action='store', type='character',  dest='expr_comb', help='GCT file with combined expression data.'),
+  # make_option( c("-f", "--expr_comb_nn"), action='store', type='character',  dest='expr_comb_nn', help='GCT file with combined (non-negative) expression data, used for NMF.'),
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest. If not provided, all annotations in the cdesc will be analyzed.'),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
   #### Post-Processing Parameters ####
@@ -155,13 +155,25 @@ MyComplexHeatmap <- function(matrix, heatmap_col, annot_df, annot_colors, na_col
 
 cat("\n\n####################\nData Import\n\n")
 
+# untar results file
+untar(opt$nmf_results) # untar NMF results
+# locate necessary inputs from tar, and error if ANY are missing
+file_nmf_res = list.files(pattern = 'nmf_res.Rdata') # locate Rdata object containing res.rank
+if (length(file_nmf_res) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_res.Rdata object, containing res.rank output of nmf().")
+file_expr_comb = list.files(pattern = "_combined_n.+.gct") # locate combined GCT file
+if (length(file_expr_comb) != 1) stop("Tarfile {opt$nmf_results} is missing GCT file with combined expression data.")
+file_expr_comb_nn = list.files(pattern = "_combinedNonNegative_n.+.gct") # locate combined nonnegative GCT file
+if (length(file_expr_comb_nn) != 1) stop("Tarfile {opt$nmf_results} is missing GCT file with combined, non-negative expression data.")
+
+  
+
 prefix = paste0(opt$output_prefix,"_K", opt$rank_top, "_") # prefix for filenames
 # cw=10; ch=cw # pheatmap cell size
 sample_id_col = "Sample.ID" # id column used in groups file
 
 #### NMF-Input Dataset Import ####
-gct_expr_comb = parse_gctx(opt$expr_comb)
-gct_expr_comb_nn = parse_gctx(opt$expr_comb_nn)
+gct_expr_comb = parse_gctx(file_expr_comb)
+gct_expr_comb_nn = parse_gctx(file_expr_comb_nn)
 
 #### Annotations / Groups File Pre-processing ####
 if (!is.null(opt$groups_file)) { # if we have a groups file
@@ -219,7 +231,7 @@ if (!is.null(opt$yaml_file)) {
 
 
 #### Load NMF Results ####
-load(opt$nmf_results) # loads in res.rank object
+load(file_nmf_res) # loads in res.rank object from Rdata file, stored in opt$nmf_results
 
 #### Retrieve Basis & Coefficient Matrix ####
 
@@ -1019,8 +1031,9 @@ if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
 ###########################################################
 cat(glue("\n\n####################\nTarring Files\n\n"))
 
-output.files = list.files(pattern=prefix, full.names = T)
-tar('NMF_results.tar.gz',
+output.files = c(list.files(pattern=prefix, full.names = T), # grab all figures
+                 list.files("nmf_postprocess_opt.Rdata", full.names = T)) # also grab the opt parameters object
+tar(paste0(opt$output_prefix,'_NMF_postprocess.tar.gz'),
     files = output.files, compression = "gzip", tar="tar")
 
 
