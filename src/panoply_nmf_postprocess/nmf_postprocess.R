@@ -69,7 +69,7 @@ if ( !is.null(opt$yaml_file) ) {
     yaml_nmf =  yaml_out$panoply_nmf_postprocess # read in those parameters
   } else { # if the section is missing
     if ( !is.null(yaml_out$panoply_mo_nmf) ) { # check for the deprecated mo_nmf section
-      cat(glue("\nWARNING: The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocessing' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
+      cat(glue("\nWARNING: The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocess' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
       yaml_nmf =  yaml_out$panoply_mo_nmf # read in those parameters
       if (is.null(opt$top_n_features)) opt$top_n_features = 25 # manually provide default for top_n_features, since this parameter previously did not exist
     } else { # otherwise, stop
@@ -817,9 +817,8 @@ ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.png"),
 
 
 ###########################################################
-#### create Barplots of Top Driver-Features Expression by Cluster 
+#### Top Driver-Features Expression by Cluster (Boxplot & Heatmaps)
 ###########################################################
-
 #### subset driver-features to top N features ####
 driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant driver-features
   group_by(cluster) %>% # group by cluster
@@ -828,7 +827,7 @@ driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant d
   ungroup() # ungroup
 
 
-#### make a PDF for each cluster. ####
+#### make Boxplot PDF for each cluster. ####
 cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
 for (cluster in unique(driver.features.topNFeat$cluster)) {
   pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
@@ -876,11 +875,8 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
 
 
 
-###########################################################
-#### create Heatmaps of Top Driver-Feature Expression by Cluster
-###########################################################
+#### make Heatmap PDF for each cluster ####
 cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Heatmaps\n\n"))
-#### make a PDF for each cluster ####
 for (cluster in unique(driver.features.topNFeat$cluster)) {
   driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
   
