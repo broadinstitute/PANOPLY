@@ -5,8 +5,8 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_balan
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf/versions/5/plain-WDL/descriptor" as panoply_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/4/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_report/versions/1/plain-WDL/descriptor" as panoply_nmf_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/1/plain-WDL/descriptor" as panoply_ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/2/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as panoply_ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/8/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
 ################################################
 ##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
@@ -47,7 +47,7 @@ workflow panoply_nmf_internal_workflow {
 
 	call panoply_nmf_wdl.panoply_nmf as nmf {
 		input:
-			ome_gcts="${if defined(balance.ome_gcts_balanced) then balance.ome_gcts_balanced else ome_gcts}",
+			ome_gcts=if defined(balance.ome_gcts_balanced) then balance.ome_gcts_balanced else ome_gcts,
 			ome_labels=ome_labels,
 			output_prefix=label,
 			yaml_file=yaml_file

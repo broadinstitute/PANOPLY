@@ -144,7 +144,7 @@ The heatmap shown in **Figure `r fig_count`** is a visualization of the meta-fea
 
 ::: {.column width="80%"}
 
-```{r, include=TRUE, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting the relative contributions of each sample (x-axis) to each cluster (y-axis). Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
+```{r heatmap_coef, include=TRUE, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting the relative contributions of each sample (x-axis) to each cluster (y-axis). Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_heatmap_coeficientMatrixNorm.png"))#pdf"))
 ```
 ```{r echo=F}
@@ -156,7 +156,7 @@ fig_count <- fig_count + 1
 
 ::: {.column width="20%"}
 
-```{r, include=TRUE, out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
+```{r include=TRUE, out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_annotationLegend_scrollable.pdf"))
 ```
 
@@ -181,7 +181,8 @@ For each sample, the difference between its highest cluster membership score and
 **Table `r tab_count`** summarizes the number of samples in each cluster.
 
 ```{r tab_clust, echo=F, warning=F, message=F}
-membership <- read.table(list.files(pattern = "*_clusterMembership.tsv"))
+file = unlist(list.files(pattern = "*_clusterMembership.tsv"))
+membership <- read.table(file)
 
 tab_member <- membership %>%
     group_by(NMF.consensus) %>%
@@ -209,7 +210,7 @@ tab_count <- tab_count + 1
 
 Please note that this table displays nominal p-values, before correction for multiple-comparisons. Adjusted p-values can be found in the file ```r list.files(pattern = "*_clusterMembership.tsv")``` in the result tarball.
 
-```{r, tab_enrich, include=TRUE, echo=FALSE, warning=T, message=F}
+```{r tab_enrich, include=TRUE, echo=FALSE, warning=T, message=F}
 enrich_full <- read_csv(list.files(pattern = "*_clusterEnrichement.csv"))
 enrich_classes <- filter(enrich_full, pval<0.05) %>% # identify annotations enriched at a nominal p-value of 0.05
     select(class, class.level) %>% unique() # select the unique enriched classes
@@ -263,7 +264,7 @@ Matrix _W_ containing the weights of each feature in a certain cluster was used 
 
 ::: {.column width="80%"}
 
-```{r, include=TRUE, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster-specific features defined as descibed above. Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
+```{r heatmap_drivers, include=TRUE, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster-specific features defined as descibed above. Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_driverFeatures_complexHeatmap.png"))#pdf"))
 ```
 ```{r echo=F}
@@ -275,7 +276,7 @@ fig_count <- fig_count + 1
 
 ::: {.column width="20%"}
 
-```{r, include=TRUE, out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
+```{r include=TRUE, out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_annotationLegend_scrollable.pdf"))
 ```
 
@@ -312,7 +313,7 @@ write.table(nmf_xlsx_comb, sep='\t', file='debug.txt') # write out table
 
 In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the method described above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
     
-```{r feat_barplot, include=TRUE, include=TRUE, out.width='75%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Barchart depicting the number of cluster-specific features (y-axis) per cluster (x-axis)'), echo=FALSE}
+```{r barplot_drivers, include=TRUE, include=TRUE, out.width='75%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Barchart depicting the number of cluster-specific features (y-axis) per cluster (x-axis)'), echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_driverFeatures_contributionsByOme_barplot.png"))
 ```
 ```{r echo=F}
@@ -351,7 +352,7 @@ tab_count <- tab_count + 1
 The entries in the sample-by-sample matrix shown in **Figure `r fig_count`** depict relative frequencies with which two samples were assigned to the same cluster across ```r opt_full$nrun``` randomly initialized iterations of NMF.
 
 
-```{r, include=TRUE, fig.align='center', out.width='100%', out.height='100%', fig.cap=paste0('**Figure ', fig_count, '**: Consensus matrix derived from ', opt_full$nrun,' randomly initialized iterations.'), echo=FALSE}
+```{r heatmap_consensus, include=TRUE, fig.align='center', out.width='100%', out.height='100%', fig.cap=paste0('**Figure ', fig_count, '**: Consensus matrix derived from ', opt_full$nrun,' randomly initialized iterations.'), echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_consensusMap.png"))#pdf"))
 ```
 ```{r echo=F}

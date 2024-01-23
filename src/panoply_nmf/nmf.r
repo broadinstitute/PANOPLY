@@ -303,7 +303,7 @@ comb_mat = mat_s # overwrite with (optionally) sd-filtered matrix
 mat_z = comb_mat # initialize
 if(opt$z_score){
   if (is.null(opt$z_score_mode)) stop("Z-scoring is turned on, but z-score method is missing.")
-  cat(glue("\n####################\nApplying Z-Scoring {opt$z_score_mode}\n"))
+  cat(glue("\n####################\nApplying Z-Scoring (mode: {opt$z_score_mode})\n"))
   if(opt$z_score_mode %in% c("row", "rowcol")) # if we are row-normalizing
     mat_z <- apply(mat_z, 1, function(x) (x-mean(x))/sd(x)) %>% # z-score rows
       t() # untransform matrix
@@ -391,6 +391,10 @@ if(opt$bnmf){
 
 #### Calculate Cluster Metrics ####
 if (length(ranks) > 1) { # if we have more than one rank
+  if (opt$exclude_2) {
+    ranks = setdiff(ranks, 2) # remove 2 from ranks
+  }
+  
   #### Calculate Cluster Metrics ####
   ## silhouette
   rank.sil <- lapply(res.rank[ranks], silhouette)
