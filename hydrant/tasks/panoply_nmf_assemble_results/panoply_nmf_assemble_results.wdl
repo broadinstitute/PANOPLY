@@ -8,17 +8,17 @@ task panoply_nmf_assemble_results {
   File? mo_nmf_ssgsea_tar
   File? mo_nmf_ssgsea_report
 
-  Array[File?] so_nmf_results
-  Array[File?] so_nmf_figures
-  Array[File?] so_nmf_report
-  Array[File?] so_nmf_ssgsea_tar
-  Array[File?] so_nmf_ssgsea_report
+  Array[File?]? so_nmf_results
+  Array[File?]? so_nmf_figures
+  Array[File?]? so_nmf_report
+  Array[File?]? so_nmf_ssgsea_tar
+  Array[File?]? so_nmf_ssgsea_report
 
   File? sankey_tar
   File? sankey_report
 
-  String output_results_tar = "nmf_results.tar"
-  String output_reports_tar = "nmf_reports.tar"
+  String output_results_tar = "nmf_results.tar.gz"
+  String output_reports_tar = "nmf_reports.tar.gz"
 
   Int? memory
   Int? disk_space
@@ -39,12 +39,12 @@ task panoply_nmf_assemble_results {
       mkdir nmf_results/mo_nmf # make general mo_nmf directory
 
       ## untar panoply_nmf tar
-      mkdir nmf_results/mo_nmf/results
-      tar -C nmf_results/mo_nmf/results -zxvf $mo_nmf_results #untar file in appropriate directory
+      mkdir nmf_results/mo_nmf/so_nmf_results
+      tar -C nmf_results/mo_nmf/so_nmf_results -zxf ${mo_nmf_results} #untar file in appropriate directory
 
       ## untar panoply_nmf_postprocessing tar
       mkdir nmf_results/mo_nmf/figures
-      tar -C nmf_results/mo_nmf/figures -zxvf $mo_nmf_figures #untar file in appropriate directory
+      tar -C nmf_results/mo_nmf/figures -zxf ${mo_nmf_figures} #untar file in appropriate directory
       
       ## copy in report
       cp ${mo_nmf_report} nmf_results/mo_nmf/ #copy report to results
@@ -52,7 +52,7 @@ task panoply_nmf_assemble_results {
       
       ## copy in ssgsea results
       mkdir nmf_results/mo_nmf/mo_nmf_ssgsea
-      tar -C nmf_results/mo_nmf/mo_nmf_ssgsea -zxvf $mo_nmf_ssgsea #untar file in appropriate directory
+      tar -C nmf_results/mo_nmf/mo_nmf_ssgsea -zxf ${mo_nmf_ssgsea_tar} #untar file in appropriate directory
 
       ## copy in ssgsea report
       cp ${mo_nmf_ssgsea_report} nmf_results/mo_nmf/ #copy reports to results
@@ -63,18 +63,18 @@ task panoply_nmf_assemble_results {
 
 
     ## Compile Single-Ome Results
-    if [ ${so_nmf_results} != '' ]; then
+    if [ ${sep='' so_nmf_results} != '' ]; then
       mkdir nmf_results/so_nmf # make general so_nmf directory
 
       ## untar panoply_nmf tar
       if [ ${sep='' so_nmf_results} != '' ]; then
-        mkdir nmf_results/so_nmf/results
+        mkdir nmf_results/so_nmf/so_nmf_results
         for tar in ${sep=' ' so_nmf_results}
         do
-          cp $tar nmf_results/so_nmf/results #copy tars into folder
-          for filename in nmf_results/so_nmf/results/*.tar
-              do mkdir nmf_results/so_nmf/results/$(basename "$filename" .tar)
-              tar -C nmf_results/so_nmf/results/$(basename "$filename" .tar) -xvf $filename
+          cp $tar nmf_results/so_nmf/so_nmf_results #copy tars into folder
+          for filename in nmf_results/so_nmf/so_nmf_results/*.tar.gz
+              do mkdir nmf_results/so_nmf/so_nmf_results/$(basename "$filename" .tar.gz)
+              tar -C nmf_results/so_nmf/so_nmf_results/$(basename "$filename" .tar.gz) -xf $filename
               rm $filename #untar and remove
           done
         done
@@ -83,13 +83,13 @@ task panoply_nmf_assemble_results {
 
       ## untar panoply_nmf_postprocess tar
       if [ ${sep='' so_nmf_figures} != '' ]; then
-        mkdir nmf_results/so_nmf/figures
+        mkdir nmf_results/so_nmf/so_nmf_figures
         for tar in ${sep=' ' so_nmf_figures}
         do
-          cp $tar nmf_results/so_nmf/figures #copy tars into folder
-          for filename in nmf_results/so_nmf/figures/*.tar
-              do mkdir nmf_results/so_nmf/figures/$(basename "$filename" .tar)
-              tar -C nmf_results/so_nmf/figures/$(basename "$filename" .tar) -xvf $filename
+          cp $tar nmf_results/so_nmf/so_nmf_figures #copy tars into folder
+          for filename in nmf_results/so_nmf/so_nmf_figures/*.tar.gz
+              do mkdir nmf_results/so_nmf/so_nmf_figures/$(basename "$filename" .tar.gz)
+              tar -C nmf_results/so_nmf/so_nmf_figures/$(basename "$filename" .tar.gz) -xf $filename
               rm $filename #untar and remove
           done
         done
@@ -109,7 +109,7 @@ task panoply_nmf_assemble_results {
         cp ${sep=' ' so_nmf_ssgsea_tar} nmf_results/so_nmf/so_nmf_ssgsea #copy tars in
         for filename in nmf_results/so_nmf/so_nmf_ssgsea/*.tar.gz
           do mkdir nmf_results/so_nmf/so_nmf_ssgsea/$(basename "$filename" .tar.gz) #make directory
-      tar -C nmf_results/so_nmf/so_nmf_ssgsea/$(basename "$filename" .tar.gz) -zxvf $filename #untar file
+      tar -C nmf_results/so_nmf/so_nmf_ssgsea/$(basename "$filename" .tar.gz) -zxf $filename #untar file
           rm $filename #remove tar
         done #untar
       fi
@@ -130,8 +130,8 @@ task panoply_nmf_assemble_results {
       mkdir nmf_results/sankey # make general mo_nmf directory
 
       ## untar sankey_tar
-      mkdir nmf_results/sankey
-      tar -C nmf_results/sankey -zxvf $sankey_tar #untar file in appropriate directory
+      mkdir nmf_results/sankey/so_nmf_results
+      tar -C nmf_results/sankey/so_nmf_results -zxf ${sankey_tar} #untar file in appropriate directory
 
       ## copy in report
       cp ${sankey_report} nmf_results/sankey/ #copy report to results
@@ -142,8 +142,8 @@ task panoply_nmf_assemble_results {
 
 
     ### Tar final directories
-    tar -czf ${output_results_tar} nmf_results/
-    tar -czf ${output_reports_tar} nmf_reports/
+    tar -czvf ${output_results_tar} nmf_results/
+    tar -czvf ${output_reports_tar} nmf_reports/
   }
 
   output {

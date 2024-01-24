@@ -1,28 +1,39 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-### Create Rmarkdown report for consensus clustering module ###
-
-# tar_file  - URL of tar file created by task panoply_cons_clust
-# yaml_file - URL of master parameters yaml file including output from startup notebook
-# label     - character, name of folder in tarball
-# data_type - character, data type
+### Create Sankey Diagrams ###
 
 args = commandArgs(TRUE)
 
-label = args[1]
 
-annot_files_str = args[2] # filenames, concatenated into a string, separated by commas (e.g. "file_a.txt,file_b.txt")
-annot_file_types_str = args[3] # filetype labels, concatenated into a string, separated by commas (e.g. "Proteome,Phosphoproteome")
+rm(list=ls())
+options( warn = -1, stringsAsFactors = F )
+suppressPackageStartupMessages(library("optparse"))
 
-annot_column = args[4] # annotation column of interest (e.g. "NMF.consensus")
-annot_prefix = args[5] # prefix that should be appended to annotation-entries (e.g. 'C' for clusters-- C1, C2, C3 instead of 1, 2, 3)
-if (is.na(annot_prefix)) annot_prefix=""
 
-sample_id_col = "Sample.ID"
+#### Command Line Arguments ####
+option_list <- list(
+  #### NMF Outputs ####
+  make_option( c("-f", "--annot_files"), action='store', type='character', dest='annot_files_str', help='String of TSV annotation-files, separated by commas.') , 
+  make_option( c("-l", "--annot_file_labels"), action='store', type='character', dest='annot_file_types_str', help='String of labels for each annotation-file, separated by commas.') , 
+  make_option( c("-j", "--annot_file_primary"), action='store', type='character', dest='annot_file_primary', help='TSV annotation-file which should be centered / highlighted in comparisons.') ,
+  make_option( c("-m", "--annot_label_primary"), action='store', type='character', dest='annot_file_type_primary', help='Labels for primary annotation file.') , 
+  #### Annotation File Format ####
+  make_option( c("-i", "--id_column"), action='store', type='character',  dest='id_column', help='ID column which uniquely identifies entries. Must be shared across all annotation files.'),
+  make_option( c("-a", "--annot_column"), action='store', type='character',  dest='annot_column', help='Column annotation to create sankey comparisons for.'),
+  make_option( c("-p", "--annot_prefix"), action='store', type='character',  dest='annot_prefix', default="", help='Prefix to prepend to annotations (e.g. \'C\' for C1, C2, C3 instead of 1, 2, 3).'),
+  #### General Parameters ####
+  make_option( c("-x", "--label"), action='store', type='character',  dest='label', help='Label associated with this run.')
+  #### ####
+)
 
-annot_file_primary = args[6] # optional "primary comparison" file (e.g. Multiomic data), which should be highlighted / centered in comparisons
-annot_file_type_primary = args[7] # optional; filetype label for "primary" comparison
+opt <- parse_args( OptionParser(option_list=option_list),
+                   # # for testing arguments
+                   # args = c('--nmf_results',"/opt/input/odg_all-mo_nmf_NMF_results.tar.gz",
+                   #          '--rank_top',"3",
+                   #          '-t',"/opt/input/odg_all-mo_nmf_NMF_postprocess.tar.gz",
+                   #          '-x',"odg_test")
+)
 
 
 library(pacman)
@@ -54,8 +65,8 @@ source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiag
 
 ### Begin Editable Section -----
 
-annot_files = unlist(strsplit(annot_files_str, ","))
-annot_file_types = unlist(strsplit(annot_file_types_str, ","))
+annot_files = unlist(strsplit(opt$annot_files_str, ","))
+annot_file_types = unlist(strsplit(opt$annot_file_types_str, ","))
 
 # sanity check that we have the same number of files and labels
 if (length(annot_files)!=length(annot_file_types)) stop( glue("The number of files ({length(annot_files)}) provided for comparison does not match the number of labels ({length(annot_file_types)}) provided."))
@@ -63,9 +74,9 @@ if (length(annot_files)!=length(annot_file_types)) stop( glue("The number of fil
 names(annot_files) = annot_file_types
 
 
-if (file.exists(annot_file_primary)) { #if we have a secondary datafile to compare to
-  annot_file_types = c(annot_file_type_primary, annot_file_types) #add label to array (at BEGINNING)
-  annot_files[annot_file_type_primary] = annot_file_primary #add file to array
+if (file.exists(opt$annot_file_primary)) { #if we have a secondary datafile to compare to
+  annot_file_types = c(opt$annot_file_type_primary, annot_file_types) #add label to array (at BEGINNING)
+  annot_files[opt$annot_file_type_primary] = opt$annot_file_primary #add file to array
 }
 
 
@@ -73,10 +84,10 @@ if (file.exists(annot_file_primary)) { #if we have a secondary datafile to compa
 datatype_combos <- c(combn(annot_file_types, 2, simplify = FALSE), #forwards
                 combn(annot_file_types, 2, rev, simplify = FALSE)) #backwards
 
-if (file.exists(annot_file_primary) && length(annot_file_types)>2) { #if we have a secondary datafile to compare to, and have at least three files total
+if (file.exists(opt$annot_file_primary) && length(annot_file_types)>2) { #if we have a secondary datafile to compare to, and have at least three files total
   datatype_combos = c(datatype_combos,
-                 combn(annot_file_types[which(annot_file_types!=annot_file_type_primary)], 2, #take all datatype combos besides annot_file_type_primary
-                       FUN = function(arr) {append(arr, annot_file_type_primary, after=1)} , simplify = FALSE)) #add annot_file_type_primary in between eaach combo
+                 combn(annot_file_types[which(annot_file_types!=opt$annot_file_type_primary)], 2, #take all datatype combos besides annot_file_type_primary
+                       FUN = function(arr) {append(arr, opt$annot_file_type_primary, after=1)} , simplify = FALSE)) #add annot_file_type_primary in between eaach combo
 }
 
 
@@ -88,17 +99,25 @@ if (file.exists(annot_file_primary) && length(annot_file_types)>2) { #if we have
 ###################################
 ## import files and select columns
 data_list <- lapply(annot_files, function(filename) { # read in / validate
-  data = read_delim(filename, delim='\t')
-  if (!(sample_id_col %in% colnames(data))) stop(paste(glue("Could not locate sample_id_col ('{sample_id_col}')."))) # check for sample ID column
-  if (!(annot_column %in% colnames(data))) stop(paste(glue("Could not locate annot_column ('{annot_column}')."))) # check for annotation column
+  data = read.delim(filename)
+  if (is.null(opt$id_column)) {  # if we have no ID column
+    if (! all(rownames(data)==1:length(rownames(data))) ) { # unless we have default numeric rownames
+      opt$id_column = "sankey_id_column" # create an ID column
+      data[[opt$id_column]] = rownames(data) # use rownames as ID column
+    } else {
+      stop(paste(glue("No ID column selected, and dataset does not contain appropriate rownames')."))) # check for sample ID column
+    }
+  } # if we have no ID column, use rownames or complain
+  if (!(opt$id_column %in% colnames(data))) stop(paste(glue("Could not locate sample_id_col ('{opt$id_column}')."))) # check for sample ID column
+  if (!(opt$annot_column %in% colnames(data))) stop(paste(glue("Could not locate annot_column ('{opt$annot_column}')."))) # check for annotation column
   return(data)
 })
 data_subset_list <- lapply(data_list, function(data) { # subset data
   data_subset = data %>% 
-    select( all_of( c( sample_id_col, annot_column))) %>% # select sample id
-    mutate(!!sample_id_col := make.unique(!!sym(sample_id_col))) %>% # force unique sample IDs
-    mutate(!!annot_column := paste0(annot_prefix, !!sym(annot_column)) ) %>% # add prefix to annot_column, if desired
-    mutate(!!annot_column := factor(!!sym(annot_column), levels=sort(unique(!!sym(annot_column))))) # factorize annot_column, 
+    select( all_of( c( opt$id_column, opt$annot_column))) %>% # select sample id
+    mutate(!!opt$id_column := make.unique(!!sym(opt$id_column))) %>% # force unique sample IDs
+    mutate(!!opt$annot_column := paste0(opt$annot_prefix, !!sym(opt$annot_column)) ) %>% # add prefix to annot_column, if desired
+    mutate(!!opt$annot_column := factor(!!sym(opt$annot_column), levels=sort(unique(!!sym(opt$annot_column))))) # factorize annot_column, 
   return(data_subset)
 }) 
 
@@ -107,17 +126,17 @@ data_subset_list <- lapply(data_list, function(data) { # subset data
 ## set file_type as column name for annot_column
 data_subset_list <- lapply(names(data_subset_list), function(data_label){
   rename(data_subset_list[[data_label]],
-         !!data_label := annot_column) # rename column with data_label
+         !!data_label := opt$annot_column) # rename column with data_label
 } )
 
 #######################################
 ## merge tables
 my_join <- function(x, y){
-  full_join(x, y, by=sample_id_col)
-  #inner_join(x, y, by=sample_id_col)
+  full_join(x, y, by=opt$id_column)
+  #inner_join(x, y, by=opt$id_column)
 }
 data_full <- Reduce(my_join, data_subset_list) %>% # merge dataframes by sample ID
-  column_to_rownames(., sample_id_col) %>% data.frame # set sample IDs to rownames
+  column_to_rownames(., opt$id_column) %>% data.frame # set sample IDs to rownames
 
 # this appends the column name to the cluster (e.g.  acK_C1 vs C1) and is very redundant
 # for(i in 1:ncol(data_full))
@@ -178,4 +197,4 @@ for (datatypes_of_interest in datatype_combos) {
 }
 
 # tar sankey_diagrams into a single file
-tar(paste(label,'sankey_diagrams.tar.gz', sep="_"), list.files(pattern="sankey-.+?.html"))
+tar(paste(opt$label,'sankey_diagrams.tar.gz', sep="_"), list.files(pattern="sankey-.+?.html"))

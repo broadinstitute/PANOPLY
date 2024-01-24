@@ -1030,7 +1030,7 @@ if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
 cat(glue("\n\n####################\nTarring Files\n\n"))
 
 output.files = c(list.files(pattern=prefix, full.names = T), # grab all figures
-                 list.files("nmf_postprocess_opt.Rdata", full.names = T)) # also grab the opt parameters object
+                 list.files(pattern="nmf_postprocess_opt.Rdata", full.names = T)) # also grab the opt parameters object
 tar(paste0(opt$output_prefix,'_NMF_postprocess.tar.gz'),
     files = output.files, compression = "gzip", tar="tar")
 

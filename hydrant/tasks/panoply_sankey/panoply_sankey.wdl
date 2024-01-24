@@ -7,22 +7,22 @@ task panoply_sankey {
     Int? num_threads
     Int? num_preemptions
 
-    Array[File]+ annot_files          # annotation file(s)
-    Array[String]+ annot_file_labels  # datatype(s) / label(s) for the provided annotation file(s)
+    Array[File]+ annot_files            # annotation file(s)
+    Array[String]+ annot_file_labels    # datatype(s) / label(s) for the provided annotation file(s)
+    
+    File? annot_file_primary            # annotation file which should be centered / highlighted in comparisons (optional)
+    String? annot_label_primary         # corresponding label (optional)
 
-    String annot_column               # annotation column which should be used for sankey comparisons (e.g. "NMF.consensus")
-    String annot_prefix               # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
-
-    File? annot_file_primary          # annotation file which should be centered / highlighted in comparisons
-    String? annot_label_primary       # corresponding label
+    String? id_column                   # id column for identifying entries (e.g. "Sample.ID"); uses rownames if not provided
+    String annot_column                 # annotation column for sankey comparisons (e.g. "NMF.consensus")
+    String? annot_prefix                # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
 
     String label
 
     command {
         set -euo pipefail
 
-        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r "${label}" "${sep="," annot_files}" "${sep="," annot_file_labels}" "${annot_column}" "${annot_prefix}" "${annot_file_primary}" "${annot_label_primary}"
-
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r -x "${label}" -f "${sep="," annot_files}" -l "${sep="," annot_file_labels}" "${"-j" + annot_file_primary}" "${"-m" + annot_label_primary}" "${"-i" + annot_column}" -a ${annot_column}" "${"-p" + annot_prefix}" 
         tar -czvf "${label}_sankey_diagrams.tar" sankey-*html
     }
 

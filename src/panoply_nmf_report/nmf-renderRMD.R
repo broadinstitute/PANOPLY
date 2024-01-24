@@ -1,3 +1,8 @@
+#
+# Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
+#
+### Create Rmarkdown report for NMF Clustering module ###
+
 args = commandArgs(TRUE)
 
 
@@ -19,13 +24,19 @@ option_list <- list(
   #### ####
 )
 
-opt <- parse_args( OptionParser(option_list=option_list) )
+opt <- parse_args( OptionParser(option_list=option_list),
+                   # # for testing arguments
+                   # args = c('--nmf_results',"/opt/input/odg_all-mo_nmf_NMF_results.tar.gz",
+                   #          '--rank_top',"3",
+                   #          '-t',"/opt/input/odg_all-mo_nmf_NMF_postprocess.tar.gz",
+                   #          '-x',"odg_test")
+                   )
 
 
 pwd=getwd()
 rmarkdown::render(file.path(opt$lib_dir,"nmf_rmd.rmd"),
                   params = list(title = paste0("NMF Report - ", opt$label),
-                                nmf_tar = opt$nmf_tar,
+                                nmf_results = opt$nmf_results,
                                 label = opt$label,
                                 rank_top = opt$rank_top,
                                 postprocess_tar = opt$postprocess_tar),

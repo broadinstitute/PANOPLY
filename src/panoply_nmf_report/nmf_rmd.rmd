@@ -34,16 +34,16 @@ library(readxl)
 library(DT) # for JS datatable features
 
 #### import panoply_nmf tarfile ####
-untar(opt$nmf_results) # untar NMF results
+untar(params$nmf_results) # untar NMF results
 # locate necessary inputs from tar, and error if ANY are missing
 file_nmf_res = list.files(pattern = 'nmf_res.Rdata') # locate Rdata object containing res.rank
-if (length(file_nmf_res) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_res.Rdata object, containing res.rank output of nmf().")
+if (length(file_nmf_res) != 1) stop(glue("Tarfile {params$nmf_results} is missing nmf_res.Rdata object, containing res.rank output of nmf()."))
 file_nmf_opt = list.files(pattern = 'nmf_opt.Rdata') # locate Rdata object containing parameters
-if (length(file_nmf_opt) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_opt.Rdata object, containing parameters used in panoply_nmf.")
+if (length(file_nmf_opt) != 1) stop(glue("Tarfile {params$nmf_results} is missing nmf_opt.Rdata object, containing parameters used in panoply_nmf."))
 file_expr_comb = list.files(pattern = "_combined_n.+.gct") # locate combined GCT file
-if (length(file_expr_comb) != 1) stop("Tarfile {opt$nmf_results} is missing GCT file with combined expression data.")
+if (length(file_expr_comb) != 1) stop(glue("Tarfile {params$nmf_results} is missing GCT file with combined expression data."))
 file_expr_comb_nn = list.files(pattern = "_combinedNonNegative_n.+.gct") # locate combined nonnegative GCT file
-if (length(file_expr_comb_nn) != 1) stop("Tarfile {opt$nmf_results} is missing GCT file with combined, non-negative expression data.")
+if (length(file_expr_comb_nn) != 1) stop(glue("Tarfile {params$nmf_results} is missing GCT file with combined, non-negative expression data."))
 
 # load in panoply_nmf parameters
 load(file_nmf_opt) # load opt list object (panoply_nmf parameters)
@@ -53,7 +53,7 @@ opt_full = opt # initialize opt_full with panoply_nmf parameters
 #### import panoply_nmf tarfile ####
 untar(params$postprocess_tar) # untar all the figures
 file_nmf_opt = list.files(pattern = 'nmf_postprocess_opt.Rdata') # locate Rdata object containing parameters
-if (length(file_nmf_opt) != 1) stop("Tarfile {opt$nmf_results} is missing nmf_opt.Rdata object, containing parameters used in panoply_nmf.")
+if (length(file_nmf_opt) != 1) stop(glue("Tarfile {params$postprocess_tar} is missing nmf_postprocess_opt.Rdata object, containing parameters used in panoply_nmf."))
 
 # load in panoply_nmf_postprocess parameters
 load(file_nmf_opt) # load opt list object (panoply_nmf parameters)
@@ -61,7 +61,8 @@ opt_full = c(opt_full, opt) # append to opt_full
 
 
 
-#### Finish Setup / Load GCTs ####
+#### Finish Setup / File Import ####
+load(file_nmf_res) # load res.rank list object (nmf() outputs)
 ranks = opt_full$kmin:opt_full$kmax # get range of clusters run
 rank_top = params$rank_top # get 'best' cluster assignment
 
@@ -81,13 +82,13 @@ tab_feat <- table( gct_expr_comb@rdesc$ome_type )
 tab_feat <- data.frame(Type=names(tab_feat), Number=as.vector(tab_feat))
 colnames(tab_feat) <- c('Type', 'Number of features')
 
-show_tab_feat = (dim(tab_feat)[1]>1) # determine if there's more than one ome-type, to toggle the table on/off
+mo_nmf = (dim(tab_feat)[1]>1) # determine if this was single-ome or multi-ome NMF
 
 ```
 
-The data matrix subjected to NMF analysis contained `r nrow(gct_expr_comb@mat)` features measured across `r ncol(gct_expr_comb@mat)` samples. `r if (show_tab_feat) { paste0(" **Table ", tab_count, "** summarizes the number of features used in the clustering and their data type(s).")} else {paste0("All features used in this clustering analysis are of the same data-type.")}`
+The data matrix subjected to NMF analysis contained `r nrow(gct_expr_comb@mat)` features measured across `r ncol(gct_expr_comb@mat)` samples. **Table `r tab_count`** summarizes the number of features used in the clustering and their data type(s).
 
-```{r tab_feat, echo=F, message=FALSE, warning=FALSE, eval=show_tab_feat}
+```{r tab_feat, echo=F, message=FALSE, warning=FALSE}
 
 # create table
 tab_feat  %>%
