@@ -37,11 +37,11 @@ option_list <- list(
 
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
-                       # for testing arguments
-                       # args = c('-d',"/opt/input/acetylome-filtered_table-output.gct,/opt/input/phosphoproteome-filtered_table-output.gct,/opt/input/proteome-filtered_table-output.gct,/opt/input/ubiquitylome-filtered_table-output.gct",
-                       #          '-o',"acK,pSTY,prot,ubK",
+                       # # for testing arguments
+                       # args = c('-d',"/opt/input/phosphoproteome-subset.gct",
+                       #          '-o',"pSTY",
                        #          '-y','/opt/input/master-parameters.yaml',
-                       #          '-x',"odg_test")
+                       #          '-x',"odg_pSTY")
                        )
 
 
@@ -149,6 +149,7 @@ for (ome in ome_labels) {
                             ome_type = ome) %>% # and ome
       mutate(!!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]]) # add opt$gene_col column from rdesc
     comb_mat_raw = ome_gcts[[ome]]@mat # initialize matrix
+    rownames(comb_mat_raw) = comb_rdesc$id
   } else { # after the first instance
     #### merge each component of the GCT to the existing component ####
     # merge cdescs, prioritizing first entry
@@ -303,7 +304,7 @@ comb_mat = mat_s # overwrite with (optionally) sd-filtered matrix
 mat_z = comb_mat # initialize
 if(opt$z_score){
   if (is.null(opt$z_score_mode)) stop("Z-scoring is turned on, but z-score method is missing.")
-  cat(glue("\n####################\nApplying Z-Scoring (mode: {opt$z_score_mode})\n"))
+  cat(glue("\n####################\nApplying Z-Scoring (mode: {opt$z_score_mode})\n\n"))
   if(opt$z_score_mode %in% c("row", "rowcol")) # if we are row-normalizing
     mat_z <- apply(mat_z, 1, function(x) (x-mean(x))/sd(x)) %>% # z-score rows
       t() # untransform matrix

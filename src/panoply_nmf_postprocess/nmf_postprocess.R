@@ -31,12 +31,10 @@ option_list <- list(
 
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
-                       # for testing arguments
-                       # args = c('--nmf_results',"/opt/input/nmf_res.Rdata",
+                       # # for testing arguments
+                       # args = c('--nmf_results',"opt/input/odg_all-so_nmf-pSTY_NMF_results.tar.gz",
                        #          '--rank_top',"3",
-                       #          '--expr_comb',"/opt/input/odg_test_combined_n61x26574.gct",
-                       #          '--expr_comb_nn',"/opt/input/odg_test_combinedNonNegative_n61x53147.gct",
-                       #          '-y',"/opt/input/master-parameters.yaml",
+                       #          '-y',"opt/input/master-parameters.yaml",
                        #          '-x',"odg_test")
 )
 
