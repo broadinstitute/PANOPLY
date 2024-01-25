@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey/versions/1/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey/versions/7/plain-WDL/descriptor" as sankey_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_report/versions/1/plain-WDL/descriptor" as sankey_report_wdl
 
 
@@ -12,8 +12,9 @@ workflow panoply_sankey_workflow {
   File? annot_file_primary          # annotation file which should be centered / highlighted in sankey-diagrams
   String? annot_label_primary       # corresponding label
 
-  String annot_of_comparison        # annotation column which should be used for sankey comparisons (e.g. "NMF.consensus")
-  String annot_prefix               # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
+  String? id_column                   # id column for identifying entries (e.g. "Sample.ID"); uses rownames if not provided
+  String annot_column                 # annotation column for sankey comparisons (e.g. "NMF.consensus")
+  String? annot_prefix                # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
 
 
   String label
@@ -27,7 +28,8 @@ workflow panoply_sankey_workflow {
       annot_file_primary=annot_file_primary,
       annot_label_primary=annot_label_primary,
 
-      annot_column=annot_of_comparison,
+      id_column=id_column,
+      annot_column=annot_column,
       annot_prefix=annot_prefix,
 
       label = label
@@ -37,7 +39,7 @@ workflow panoply_sankey_workflow {
   call sankey_report_wdl.panoply_sankey_report as sankey_report {
     input:
       sankey_tar=sankey.tar_out,
-      annot_of_comparison=annot_of_comparison,
+      annot_of_comparison=annot_column,
       primary_dataype_label=annot_label_primary,
       
       label=label

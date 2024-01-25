@@ -22,7 +22,7 @@ task panoply_nmf_report {
     }
 
     output {
-	File report = label + "_nmf_report.html"
+    File report = label + "_nmf_report.html"
     }
 
     runtime {

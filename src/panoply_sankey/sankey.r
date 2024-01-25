@@ -29,9 +29,11 @@ option_list <- list(
 
 opt <- parse_args( OptionParser(option_list=option_list),
                    # # for testing arguments
-                   # args = c('--nmf_results',"/opt/input/odg_all-mo_nmf_NMF_results.tar.gz",
-                   #          '--rank_top',"3",
-                   #          '-t',"/opt/input/odg_all-mo_nmf_NMF_postprocess.tar.gz",
+                   # args = c('--annot_files',"/opt/input/odg_all-so_nmf-prot_K3_clusterMembership.tsv,/opt/input/odg_all-so_nmf-pSTY_K3_clusterMembership.tsv,/opt/input/odg_all-so_nmf-acK_K4_clusterMembership.tsv,/opt/input/odg_all-so_nmf-ubK_K5_clusterMembership.tsv",
+                   #          '--annot_file_labels',"prot,pSTY,acK,ubK",
+                   #          '--annot_file_primary',"/opt/input/odg_all-mo_nmf_K4_clusterMembership.tsv",
+                   #          '--annot_label_primary',"Multiomic",
+                   #          '--annot_column',"NMF.consensus",
                    #          '-x',"odg_test")
 )
 
@@ -99,6 +101,7 @@ if (file.exists(opt$annot_file_primary) && length(annot_file_types)>2) { #if we 
 ###################################
 ## import files and select columns
 data_list <- lapply(annot_files, function(filename) { # read in / validate
+  cat(glue("Reading in '{filename}'.\n\n"))
   data = read.delim(filename)
   if (is.null(opt$id_column)) {  # if we have no ID column
     if (! all(rownames(data)==1:length(rownames(data))) ) { # unless we have default numeric rownames
@@ -109,13 +112,21 @@ data_list <- lapply(annot_files, function(filename) { # read in / validate
     }
   } # if we have no ID column, use rownames or complain
   if (!(opt$id_column %in% colnames(data))) stop(paste(glue("Could not locate sample_id_col ('{opt$id_column}')."))) # check for sample ID column
+  if ( sum(duplicated(data[[opt$id_column]]))>=1 ) stop(paste(glue("The identified column contains duplicated IDs. Please provide an id_column which uniquely identifies entries."))) # check for sample ID column
   if (!(opt$annot_column %in% colnames(data))) stop(paste(glue("Could not locate annot_column ('{opt$annot_column}')."))) # check for annotation column
   return(data)
 })
+# set ID column, based on whether we're using rownames, or it was set with opt$id_column  
+if (is.null(opt$id_column)) {
+  id_column = "sankey_id_column" # if the ID column wasn't specified, overwrite with the generated ID column
+} else {
+  id_column = opt$id_column
+}
+# subset data to columns of interest / add prefix if specified
 data_subset_list <- lapply(data_list, function(data) { # subset data
   data_subset = data %>% 
-    select( all_of( c( opt$id_column, opt$annot_column))) %>% # select sample id
-    mutate(!!opt$id_column := make.unique(!!sym(opt$id_column))) %>% # force unique sample IDs
+    select( all_of( c( id_column, opt$annot_column))) %>% # select sample id
+    # mutate(!!id_column := make.unique(!!sym(id_column))) %>% # force unique sample IDs
     mutate(!!opt$annot_column := paste0(opt$annot_prefix, !!sym(opt$annot_column)) ) %>% # add prefix to annot_column, if desired
     mutate(!!opt$annot_column := factor(!!sym(opt$annot_column), levels=sort(unique(!!sym(opt$annot_column))))) # factorize annot_column, 
   return(data_subset)
@@ -132,11 +143,11 @@ data_subset_list <- lapply(names(data_subset_list), function(data_label){
 #######################################
 ## merge tables
 my_join <- function(x, y){
-  full_join(x, y, by=opt$id_column)
-  #inner_join(x, y, by=opt$id_column)
+  full_join(x, y, by=id_column)
+  #inner_join(x, y, by=id_column)
 }
 data_full <- Reduce(my_join, data_subset_list) %>% # merge dataframes by sample ID
-  column_to_rownames(., opt$id_column) %>% data.frame # set sample IDs to rownames
+  column_to_rownames(., id_column) %>% data.frame # set sample IDs to rownames
 
 # this appends the column name to the cluster (e.g.  acK_C1 vs C1) and is very redundant
 # for(i in 1:ncol(data_full))

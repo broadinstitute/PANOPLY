@@ -2,8 +2,8 @@
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/10/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/1/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/10/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/9/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/11/plain-WDL/descriptor" as assemble_wdl
 
 
 ################################################
@@ -74,8 +74,7 @@ workflow panoply_nmf_workflow {
 				annot_file_primary = mo_nmf.nmf_membership, # single file with mo-NMF results
 				annot_label_primary = "Multiomic",			# label for mo-NMF data
 
-				annot_of_comparison="NMF.consensus",		# column for analysis
-				annot_prefix=""								# no annot prefix to add
+				annot_column="NMF.consensus"		# column for analysis
 		}
 	}
 

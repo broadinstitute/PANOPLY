@@ -849,7 +849,9 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
                          # sample.id = gct_expr_comb@cid, # get corresponding sample name (unnecessary but convenient)
                          cluster = NMF.annots[gct_expr_comb@cid, # in the order of the samples
                                               'NMF.consensus']) #get cluster membership
-    annot.df = filter(driver.features.sigFeatOnly, id==ft) # filter annotations to relevant driver-feature
+    annot.df = driver.features.sigFeatOnly %>%
+      filter(cluster==!!cluster) %>% # filter to driver-features in cluster
+      filtre(id==ft) # filter annotations to relevant driver-feature
     
     # boxplot title
     if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
