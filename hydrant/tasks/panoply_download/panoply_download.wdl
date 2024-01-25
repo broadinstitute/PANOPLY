@@ -7,7 +7,8 @@ task panoply_download
   File ssgsea_ome_tar
   File ssgsea_rna_tar
   File? ptmsea
-  File? so_nmf_tar
+  File? so_nmf_results
+  File? so_nmf_figures
   File? so_nmf_ssgsea_tar
   File? omicsev_tar
   File? cosmo_tar
@@ -45,7 +46,8 @@ task panoply_download
         -a ${analysisDir} \
         -s ${ssgsea_assoc_dir} \
         ${"-p" + ptmsea} \
-        ${"-n" + so_nmf_tar} \
+        ${"-n" + so_nmf_results} \
+        ${"-f" + so_nmf_figures} \
         ${"-m" + so_nmf_ssgsea_tar} \
         ${"-e" + omicsev_tar} \
         ${"-c" + cosmo_tar};
@@ -59,7 +61,7 @@ task panoply_download
   } 
 
   runtime {
-    docker : "broadcptacdev/panoply_download:latest"
+    docker : "broadcptacdev/panoply_download:DEV"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
@@ -73,5 +75,5 @@ task panoply_download
 }
 
 workflow panoply_download_workflow {
-	call panoply_download
+  call panoply_download
 }

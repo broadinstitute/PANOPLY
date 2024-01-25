@@ -39,12 +39,12 @@ task panoply_nmf_assemble_results {
       mkdir nmf_results/mo_nmf # make general mo_nmf directory
 
       ## untar panoply_nmf tar
-      mkdir nmf_results/mo_nmf/so_nmf_results
-      tar -C nmf_results/mo_nmf/so_nmf_results -zxf ${mo_nmf_results} #untar file in appropriate directory
+      mkdir nmf_results/mo_nmf/mo_nmf_results
+      tar -C nmf_results/mo_nmf/mo_nmf_results -zxf ${mo_nmf_results} #untar file in appropriate directory
 
       ## untar panoply_nmf_postprocessing tar
-      mkdir nmf_results/mo_nmf/figures
-      tar -C nmf_results/mo_nmf/figures -zxf ${mo_nmf_figures} #untar file in appropriate directory
+      mkdir nmf_results/mo_nmf/mo_nmf_figures
+      tar -C nmf_results/mo_nmf/mo_nmf_figures -zxf ${mo_nmf_figures} #untar file in appropriate directory
       
       ## copy in report
       cp ${mo_nmf_report} nmf_results/mo_nmf/ #copy report to results

@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/10/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/11/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/9/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/11/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/12/plain-WDL/descriptor" as assemble_wdl
 
 
 ################################################
@@ -12,8 +12,9 @@ workflow panoply_nmf_workflow {
 	String label
 
 	## Data Upload
-	Array[File]+ ome_gcts		# array of GCT files
-	Array[String]+ ome_labels	# array of ome-labels for those GCT files (MUST MATCH ORDER)
+    Array[Pair[String,File]]+ ome_pairs
+	# Array[File]+ ome_gcts		# array of GCT files
+	# Array[String]+ ome_labels	# array of ome-labels for those GCT files (MUST MATCH ORDER)
 	# File? omes_tar			# tar file with GCTs for analysis. not set up.
 
 	## Auxilliary Files
@@ -30,11 +31,15 @@ workflow panoply_nmf_workflow {
 	Boolean run_so_nmf
 	Boolean run_mo_nmf
 	Boolean run_sankey
-
-
-	# zip ome_labels w/ ome files together
-	Array[Pair[String,File]]+ ome_pairs = zip(ome_labels, ome_gcts)
-
+    
+	# # zip ome_labels w/ ome files together
+	# Array[Pair[String,File]]+ ome_pairs = zip(ome_labels, ome_gcts)
+    
+    # separate paired-array into array of labels and array of GCTs (for MO-NMF & Sankey)
+    scatter (pairs in ome_pairs) {
+    	String ome_labels = pairs.left
+    	File ome_gcts = pairs.right
+    }
 
 	# Single-Ome NMF
 	if (run_so_nmf) { # if we are running so_nmf
@@ -42,7 +47,8 @@ workflow panoply_nmf_workflow {
 			call nmf_wdl.panoply_nmf_internal_workflow as so_nmf { # call nmf_internal for each pair
 				input:
 					label="${label}-so_nmf-${pair.left}",
-					ome_pairs=[pair],
+					ome_labels=[pair.left],
+					ome_gcts=[pair.right],
 					gene_set_database=gene_set_database,
 					yaml_file=yaml_file,
 					groups_file=groups_file
@@ -52,10 +58,12 @@ workflow panoply_nmf_workflow {
 
 	# Multi-Ome NMF
 	if (run_mo_nmf) { # if we are running mo_nmf
+    	
 		call nmf_wdl.panoply_nmf_internal_workflow as mo_nmf { # call nmf_internal for full array of pairs
 			input:
 				label="${label}-mo_nmf",
-				ome_pairs=ome_pairs,
+				ome_labels=ome_labels,
+				ome_gcts=ome_gcts,
 				gene_set_database=gene_set_database,
 				yaml_file=yaml_file,
 				groups_file=groups_file
@@ -94,7 +102,10 @@ workflow panoply_nmf_workflow {
 			so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report,
 
 			sankey_tar = nmf_sankey.sankey_tar,
-			sankey_report = nmf_sankey.sankey_report_file
+			sankey_report = nmf_sankey.sankey_report_file,
+
+			output_results_tar = "${label}_nmf_results.tar.gz",
+			output_reports_tar = "${label}_nmf_reports.tar.gz"
 	}
 
 

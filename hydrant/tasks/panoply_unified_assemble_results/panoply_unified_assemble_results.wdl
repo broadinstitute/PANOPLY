@@ -15,14 +15,8 @@ task panoply_unified_assemble_results {
   Array[File?] blacksheep_report
   Array[File?] cmap_output
   Array[File?] cmap_ssgsea_output
-  File? so_nmf_results
-  File? so_nmf_reports
-  File? so_nmf_sankey_results
-  File? so_nmf_sankey_report
-  File? mo_nmf_tar
-  File? mo_nmf_report
-  File? mo_nmf_ssgsea_tar
-  File? mo_nmf_ssgsea_report
+  File? nmf_results
+  File? nmf_reports
   File? immune_tar
   File? immune_report
 
@@ -84,7 +78,7 @@ task panoply_unified_assemble_results {
       mv ${sep=' ' cna_corr_report} reports/proteogenomics_analysis
     fi
 
-	  if [ ${sep='' omicsev_report} != '' ]; then
+    if [ ${sep='' omicsev_report} != '' ]; then
       cp ${sep=' ' omicsev_report} results/proteogenomics_analysis/all_html_reports
       mv ${sep=' ' omicsev_report} reports/proteogenomics_analysis
     fi
@@ -125,49 +119,16 @@ task panoply_unified_assemble_results {
       mv ${sep=' ' blacksheep_report} reports/blacksheep_outlier
     fi
 
-    # SO-NMF
-    if [ ${so_nmf_results} != '' ]; then #has results and reports
-      mv ${so_nmf_results} results/so-nmf
-      for filename in results/so-nmf/*.tar;do tar -C results/so-nmf -xvf $filename --strip-components 1;rm $filename;done
-    fi
-    if [ ${so_nmf_reports} != '' ]; then #has just reports
-      mv ${so_nmf_reports} reports/so-nmf
-      for filename in reports/so-nmf/*.tar;do tar -C reports/so-nmf -xvf $filename --strip-components 2;rm $filename;done
-      # report files are already in so_nmf_results tar, do not recopy
-    fi
-    if [ ${so_nmf_sankey_results} != '' ]; then
-      mkdir results/so-nmf/sankey
-      mv ${so_nmf_sankey_results} results/so-nmf/sankey
-      for filename in results/so-nmf/sankey/*.tar;do tar -C results/so-nmf/sankey -xvf $filename;rm $filename;done
-    fi
-    if [ ${so_nmf_sankey_report} != '' ]; then
-      cp ${so_nmf_sankey_report} results/so-nmf/sankey
-      mv ${so_nmf_sankey_report} reports/so-nmf
-    fi
-
-    # MO-NMF
-    mkdir results/mo-nmf/mo-nmf
-    if [ ${mo_nmf_tar} != '' ]; then
-      mv ${mo_nmf_tar} results/mo-nmf/mo-nmf
-      for filename in results/mo-nmf/mo-nmf/*.tar;do tar -C results/mo-nmf/mo-nmf -xvf $filename;rm $filename;done
+    # NMF Results
+    if [ ${nmf_results} != '' ]; then
+      mkdir results/nmf/nmf_results
+      tar -C results/nmf/nmf_results -xvf ${nmf_results}
     fi
     
-    mkdir results/mo-nmf/mo-nmf_report
-    if [ ${mo_nmf_report} != '' ]; then
-      cp ${mo_nmf_report} results/mo-nmf/mo-nmf_report
-      mv ${mo_nmf_report} reports/mo-nmf
-    fi
-    
-  mkdir results/mo-nmf/mo-nmf_ssgsea
-    if [ ${mo_nmf_ssgsea_tar} != '' ]; then
-      mv ${mo_nmf_ssgsea_tar} results/mo-nmf/mo-nmf_ssgsea
-      for filename in results/mo-nmf/mo-nmf_ssgsea/*.tar.gz;do tar -C results/mo-nmf/mo-nmf_ssgsea -zxvf $filename;rm $filename;done
-    fi
-
-  mkdir results/mo-nmf/mo-nmf_ssgsea_report
-    if [ ${mo_nmf_ssgsea_report} != '' ]; then
-      cp ${mo_nmf_ssgsea_report} results/mo-nmf/mo-nmf_ssgsea_report
-      mv ${mo_nmf_ssgsea_report} reports/mo-nmf
+    if [ ${nmf_reports} != '' ]; then
+      mkdir results/nmf/nmf_reports
+      cp ${nmf_reports} results/nmf/nmf_reports
+      mv ${nmf_reports} reports/nmf
     fi
 
     # IMMUNE

@@ -2,7 +2,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-while getopts ":t:o:r:a:s:p:n:m:e:c:" opt; do
+while getopts ":t:o:r:a:s:p:n:f:m:e:c:" opt; do
     case $opt in
         t) association_tar="$OPTARG";;
         o) ssgsea_ome="$OPTARG";;
@@ -10,7 +10,8 @@ while getopts ":t:o:r:a:s:p:n:m:e:c:" opt; do
         a) analysis_dir="$OPTARG";;
         s) ssgsea_assoc="$OPTARG";;
         p) ptmsea="$OPTARG";;
-        n) nmf="$OPTARG";;
+        n) nmf_res="$OPTARG";;
+        f) nmf_figs="$OPTARG";;
         m) nmf_ssgsea="$OPTARG";;
         e) omicsev_tar="$OPTARG";;
         c) cosmo_tar="$OPTARG";;
@@ -47,9 +48,10 @@ dir_create()
   if [[ ! -z $ptmsea ]]; then
     mkdir -p ptmsea && tar xf $ptmsea -C ptmsea
   fi
-  if [[ ! -z $nmf ]]; then
+  if [[ ! -z $nmf_res ]]; then
     mkdir -p so_nmf
-    mkdir -p so_nmf/nmf && tar xf $nmf -C so_nmf/nmf --strip-components 1
+    mkdir -p so_nmf/nmf_results && tar xf $nmf_res -C so_nmf/nmf_results
+    mkdir -p so_nmf/nmf_figures && tar xf $nmf_figs -C so_nmf/nmf_figures
     mkdir -p so_nmf/nmf_ssgsea && tar xf $nmf_ssgsea -C so_nmf/nmf_ssgsea
   fi
 }
@@ -97,12 +99,7 @@ collect()
   if [[ ! -z $nmf ]]; then
     cp -r so_nmf $full_path/.;
     mkdir -p $summ_path/so_nmf
-    cp -r so_nmf/nmf/* $summ_path/so_nmf; # skip nmf_ssgsea into summary tar
-    #prune unnecessary files from $summ_path/so_nmf
-    rm -r $summ_path/so_nmf/K_*/nmf-features #remove K_* nmf-features folder
-    rm -r $summ_path/so_nmf/submissions #remove submissions folder
-    find $summ_path/so_nmf/ -type f ! \( -name '*.pdf' -o -name '*.png' \) -delete
-    find $summ_path/so_nmf -empty -type d -delete
+    cp -r so_nmf/nmf_figs/* $summ_path/so_nmf; # only copy figures to summary path
     rm -rf so_nmf;
   fi
 }

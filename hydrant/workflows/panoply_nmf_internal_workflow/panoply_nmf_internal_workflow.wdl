@@ -13,7 +13,9 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_re
 workflow panoply_nmf_internal_workflow {
 	
 	String label
-	Array[Pair[String,File]]+ ome_pairs
+	# Array[Pair[String,File]]+ ome_pairs
+    Array[File]+ ome_gcts			# array of GCT files
+    Array[String]+ ome_labels		# labels corresponding to those GCT files
 
 	File gene_set_database
 	File? yaml_file
@@ -26,14 +28,14 @@ workflow panoply_nmf_internal_workflow {
 	Float? var
 	String? zscore_mode
 
-    # separate paired-array into array of labels and array of GCTs
-    scatter (pairs in ome_pairs) {
-        String ome_labels = pairs.left
-        File ome_gcts = pairs.right
-    }
+    # # separate paired-array into array of labels and array of GCTs
+    # scatter (pairs in ome_pairs) {
+    #     String ome_labels = pairs.left
+    #     File ome_gcts = pairs.right
+    # }
 
 	# Toggle Balance Module -- run if we have multi-omic data && balancing is on
-	if (length(ome_pairs) > 1 && select_first([balance_omes, false])) { # false by default, if balance_omes not provided
+	if (length(ome_gcts) > 1 && select_first([balance_omes, false])) { # false by default, if balance_omes not provided
 		call panoply_nmf_balance_omes_wdl.panoply_nmf_balance_omes as balance {
 			input:
 				label=label,

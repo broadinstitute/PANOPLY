@@ -76,7 +76,7 @@ if (length(annot_files)!=length(annot_file_types)) stop( glue("The number of fil
 names(annot_files) = annot_file_types
 
 
-if (file.exists(opt$annot_file_primary)) { #if we have a secondary datafile to compare to
+if (!is.null(opt$annot_file_primary)) { #if we have a secondary datafile to compare to
   annot_file_types = c(opt$annot_file_type_primary, annot_file_types) #add label to array (at BEGINNING)
   annot_files[opt$annot_file_type_primary] = opt$annot_file_primary #add file to array
 }
@@ -84,9 +84,9 @@ if (file.exists(opt$annot_file_primary)) { #if we have a secondary datafile to c
 
 # combos to plot (all combos either order)
 datatype_combos <- c(combn(annot_file_types, 2, simplify = FALSE), #forwards
-                combn(annot_file_types, 2, rev, simplify = FALSE)) #backwards
+                     combn(annot_file_types, 2, rev, simplify = FALSE)) #backwards
 
-if (file.exists(opt$annot_file_primary) && length(annot_file_types)>2) { #if we have a secondary datafile to compare to, and have at least three files total
+if (!is.null(opt$annot_file_primary) && length(annot_file_types)>2) { #if we have a secondary datafile to compare to, and have at least three files total
   datatype_combos = c(datatype_combos,
                  combn(annot_file_types[which(annot_file_types!=opt$annot_file_type_primary)], 2, #take all datatype combos besides annot_file_type_primary
                        FUN = function(arr) {append(arr, opt$annot_file_type_primary, after=1)} , simplify = FALSE)) #add annot_file_type_primary in between eaach combo
