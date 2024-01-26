@@ -268,7 +268,12 @@ tab_count <- tab_count + 1
 
 # Cluster-specific features
 
-Matrix _W_ containing the weights of each feature in a certain cluster was used to derive a list of representative features separating the clusters using the method proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/)). In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt_full$feature_fdr` were used in subsequent analyses.   
+```{r feature_selection, include=FALSE}
+feature_method = read.table(list.files(pattern = "*_driverFeatures_driverSelectionMethod.txt"))[[1]]
+
+```
+
+Matrix _W_ containing the weights of each feature in a certain cluster was used to derive a list of representative features separating the clusters. The ```r feature_method``` method was used```r if(feature_method=="kim") ", as proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/))"```. In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://pubmed.ncbi.nlm.nih.gov/25605792/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt_full$feature_fdr` were used in subsequent analyses.   
 
 
 ## Feature expression heatmap
@@ -310,11 +315,12 @@ nmf_xlsx_sheets <- excel_sheets(xlsx_file)
 ## import all sheets
 nmf_xlsx <- lapply(nmf_xlsx_sheets, function(x) {
   read_excel(xlsx_file, sheet=x) %>%  # read in each sheet
-    dplyr::select(one_of(c('id_og', 'ome_type', # select relevant columns
-                           # 'Direction',
+    mutate(Directionality = sign(!!as.name(glue("t.{sub('C','',x)}.over.rest")))) %>% # get sign of t-test
+    dplyr::select(one_of(c('cluster', 'id_og', 'ome_type', # select relevant columns
+                           'Directionality',
                            'SYMBOL', 'ENZYME', 'CYTOBAND',
                            'feature.scores'))) %>%
-    mutate(Cluster = x, .before=1) %>%
+    # mutate(Cluster = x, .before=1) %>%
     rename(Accession = id_og, # rename id_og to Accession
            Type = ome_type) # rename ome_type to Type
   })
@@ -324,7 +330,7 @@ nmf_xlsx_comb <- Reduce('rbind', nmf_xlsx) # combine into one dataframe
 write.table(nmf_xlsx_comb, sep='\t', file='debug.txt') # write out table
 ```
 
-In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the method described above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
+In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the ```r feature_method``` method described above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
     
 ```{r barplot_drivers, include=TRUE, include=TRUE, out.width='75%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Barchart depicting the number of cluster-specific features (y-axis) per cluster (x-axis)'), echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_driverFeatures_contributionsByOme_barplot.png"))
@@ -366,7 +372,7 @@ The entries in the sample-by-sample matrix shown in **Figure `r fig_count`** dep
 
 
 ```{r heatmap_consensus, include=TRUE, fig.align='center', out.width='100%', out.height='100%', fig.cap=paste0('**Figure ', fig_count, '**: Consensus matrix derived from ', opt_full$nrun,' randomly initialized iterations.'), echo=FALSE}
-knitr::include_graphics(list.files(pattern = "*_consensusMap.png"))#pdf"))
+knitr::include_graphics(list.files(pattern = "*_consensusMap_complexHeatmap.png"))#pdf"))
 ```
 ```{r echo=F}
 ## increment
