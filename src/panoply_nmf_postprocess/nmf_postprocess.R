@@ -280,10 +280,6 @@ write_gct(gct.H.norm, ofile=paste0(prefix, 'H_normToMax')) # write H-norm to GCT
 cat("\n\n####################\nCluster Membership-- Coeficient Matrix Heatmap\n\n")
 #### plot H.norm heatmap, with and without clustering ####
 for (cluster_cols in c(TRUE,FALSE)) {
-  # get heatmap row/col dimensions
-  # dim_rows = dim(gct.H.norm@mat)[1] + # get the number of rows in our heatmap
-  #   dim(select(gct.H.norm@cdesc, -all_of(annots.excluded)))[2]  # get number of annotation rows in our heatmap
-  # dim_cols = dim(gct.H.norm@mat)[2] # get the number of columns in our heatmap
   annot_df = select(gct.H.norm@cdesc, -all_of(annots.excluded))
   
   hm = Heatmap(matrix = gct.H.norm@mat, # plot normalized heatmap
@@ -306,10 +302,7 @@ for (cluster_cols in c(TRUE,FALSE)) {
   
   # use hm dimensions to calculate figure dimension
   hm_dims = calc_ht_size(hm) + 0.5 # hm dimensions in inches, plus padding
-  # width = max(dim_cols/5/4 + 3, # set width equal to n_columns/5/4 (column width = row height/4) + padding for row titles
-  #             8) # (enforce minimum width, to prevent title cutoff)
-  # height = dim_rows/5 + 3  # set height equal to n_rows/5 + padding for title / legend
-  # open PDF to write heatmap to
+  # open PDF to write heatmap to 
   pdf(paste0(prefix, 'heatmap_coeficientMatrixNorm', # save to PDF
              ifelse(cluster_cols, '_clustered', ''),'.pdf'),
       hm_dims[1], hm_dims[2])
@@ -903,7 +896,7 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
     #### create boxplot ####
     p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
       geom_boxplot(color = boxplot.colors, # boxplots of expression data
-                   width = 0.5) + 
+                   width = 0.25) + 
       geom_hline(yintercept = 0, color='grey', linetype='dashed') + # add dashed line at 0
       labs(x = "NMF Basis", y = "Feature Expression", # x axis and y axis labels
            title = boxplot.title, # add title
