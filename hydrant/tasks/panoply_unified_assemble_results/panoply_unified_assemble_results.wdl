@@ -120,6 +120,7 @@ task panoply_unified_assemble_results {
     fi
 
     # NMF Results
+    mkdir results/nmf
     if [ ${nmf_results} != '' ]; then
       mkdir results/nmf/nmf_results
       tar -C results/nmf/nmf_results -xvf ${nmf_results}

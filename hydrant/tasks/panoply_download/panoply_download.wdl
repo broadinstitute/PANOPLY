@@ -61,7 +61,7 @@ task panoply_download
   } 
 
   runtime {
-    docker : "broadcptacdev/panoply_download:DEV"
+    docker : "broadcptacdev/panoply_download:latest"
     memory : select_first ([memory, 12]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

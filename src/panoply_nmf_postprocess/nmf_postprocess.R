@@ -32,8 +32,9 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('--nmf_results',"opt/input/odg_all-mo_nmf_NMF_results.tar.gz",
-                       #          '--rank_top',"3",
+                       # args = c('--nmf_results',"opt/input/luad_NMF_restructure_proteome_NMF_results.tar.gz",
+                       #          '--rank_top',"5",
+                       #          '-g',"opt/input/groups-subset.csv",
                        #          '-y',"opt/input/master-parameters.yaml",
                        #          '-x',"odg_test")
 )
@@ -80,7 +81,7 @@ if ( !is.null(opt$yaml_file) ) {
     yaml_nmf =  yaml_out$panoply_nmf_postprocess # read in those parameters
   } else { # if the section is missing
     if ( !is.null(yaml_out$panoply_mo_nmf) ) { # check for the deprecated mo_nmf section
-      cat(glue("\nWARNING: The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocess' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!"))
+      cat(glue("\nWARNING: The parameter file '{opt$yaml_file}' is missing the 'panoply_nmf_postprocess' section, but includes the deprecated 'panoply_mo_nmf' parameter section. Parameters will be read in from 'panoply_mo_nmf', but please consider updating your parameters file!\n"))
       yaml_nmf =  yaml_out$panoply_mo_nmf # read in those parameters
       if (is.null(opt$top_n_features)) opt$top_n_features = 25 # manually provide default for top_n_features, since this parameter previously did not exist
     } else { # otherwise, stop
@@ -692,15 +693,15 @@ write.csv(driver.features.sigFeatOnly, # filter to
 #### Write Excel File with full test results + BH correction ####
 # add bh correction to full driver-feature df 
 driver.features.list.bh <- driver.features.list # initialize with original list
-names(driver.features.list.bh) = paste0('C', 1:length(driver.features.list.bh))
-for (clust in 1:length(driver.features.list.bh)) { # for each cluster
-  if (is.na(driver.features.list.bh[[clust]])) { # if we find a cluster with no features
-    driver.features.list.bh[[clust]] <- NULL # set that entry to NULL
+names(driver.features.list.bh) = paste0('C', 1:opt$rank_top)
+for (cluster in names(driver.features.list.bh)) { # for each cluster
+  if (is.na(driver.features.list.bh[[cluster]])) { # if we find a cluster with no features
+    driver.features.list.bh[[cluster]] <- NULL # set that entry to NULL
     next # and skip to next cluster
   } 
   # otherwise, append two new columns
-  driver.features.list.bh[[clust]]$global.adj.P.Value <- dplyr::filter(driver.features.bh, cluster==paste0('C',clust))$bh.pval # append a column with the BH corrected pvalues
-  driver.features.list.bh[[clust]]$global.adj.P.Value_signif <- dplyr::filter(driver.features.bh, cluster==paste0('C',clust))$bh.signif_at # append a column with whether the value was significant
+  driver.features.list.bh[[cluster]]$global.adj.P.Value <- dplyr::filter(driver.features.bh, cluster==!!cluster)$bh.pval # append a column with the BH corrected pvalues
+  driver.features.list.bh[[cluster]]$global.adj.P.Value_signif <- dplyr::filter(driver.features.bh, cluster==!!cluster)$bh.signif_at # append a column with whether the value was significant
 }
 WriteXLS(driver.features.list.bh,
          ExcelFileName=paste0(prefix, "driverFeatures_byCluster.xlsx"),
