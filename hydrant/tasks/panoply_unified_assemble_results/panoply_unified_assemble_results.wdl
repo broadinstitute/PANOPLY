@@ -33,9 +33,9 @@ task panoply_unified_assemble_results {
 
     ### Setup RESULTS and REPORTS directory structure
     mkdir results
-    mkdir results/proteogenomics_analysis results/blacksheep_outlier results/so-nmf results/mo-nmf results/immune_analysis
+    mkdir results/proteogenomics_analysis results/blacksheep_outlier results/nmf results/immune_analysis
     mkdir reports
-    mkdir reports/proteogenomics_analysis reports/blacksheep_outlier reports/so-nmf reports/mo-nmf reports/immune_analysis
+    mkdir reports/proteogenomics_analysis reports/blacksheep_outlier reports/nmf reports/immune_analysis
 
     ### Dump results files into the given folders
     # MAIN 
@@ -120,16 +120,12 @@ task panoply_unified_assemble_results {
     fi
 
     # NMF Results
-    mkdir results/nmf
     if [ ${nmf_results} != '' ]; then
-      mkdir results/nmf/nmf_results
-      tar -C results/nmf/nmf_results -xvf ${nmf_results}
+      tar -C results/nmf -xvf ${nmf_results} --strip-components 1 # note: results tar already contains reports
     fi
     
     if [ ${nmf_reports} != '' ]; then
-      mkdir results/nmf/nmf_reports
-      cp ${nmf_reports} results/nmf/nmf_reports
-      mv ${nmf_reports} reports/nmf
+      tar -C reports/nmf -xvf ${nmf_reports} --strip-components 1
     fi
 
     # IMMUNE

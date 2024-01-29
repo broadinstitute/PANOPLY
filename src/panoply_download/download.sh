@@ -1,7 +1,9 @@
 #!/bin/bash
+set -e # exit upon error condition
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+
 while getopts ":t:o:r:a:s:p:n:f:m:e:c:" opt; do
     case $opt in
         t) association_tar="$OPTARG";;
@@ -48,7 +50,7 @@ dir_create()
   if [[ ! -z $ptmsea ]]; then
     mkdir -p ptmsea && tar xf $ptmsea -C ptmsea
   fi
-  if [[ ! -z $nmf_res ]]; then
+  if [ ! -z $nmf_res ] && [ ! -z $nmf_figs ]; then
     mkdir -p so_nmf
     mkdir -p so_nmf/nmf_results && tar xf $nmf_res -C so_nmf/nmf_results
     mkdir -p so_nmf/nmf_figures && tar xf $nmf_figs -C so_nmf/nmf_figures
@@ -96,10 +98,10 @@ collect()
     rm -rf ptmsea;
   fi
 
-  if [[ ! -z $nmf ]]; then
-    cp -r so_nmf $full_path/.;
-    mkdir -p $summ_path/so_nmf
-    cp -r so_nmf/nmf_figs/* $summ_path/so_nmf; # only copy figures to summary path
+  if [ ! -z $nmf_res ] && [ ! -z $nmf_figs ]; then
+    cp -r so_nmf $full_path/so_nmf/;
+    mkdir -p $summ_path/so_nmf;
+    cp -r so_nmf/nmf_figures/ $summ_path/so_nmf; # copy only the figures to summary-path
     rm -rf so_nmf;
   fi
 }

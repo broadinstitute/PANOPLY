@@ -315,7 +315,7 @@ nmf_xlsx_sheets <- excel_sheets(xlsx_file)
 ## import all sheets
 nmf_xlsx <- lapply(nmf_xlsx_sheets, function(x) {
   read_excel(xlsx_file, sheet=x) %>%  # read in each sheet
-    mutate(Directionality = sign(!!as.name(glue("t.{sub('C','',x)}.over.rest")))) %>% # get sign of t-test
+    mutate(Directionality = ifelse(!!as.name(glue("t.{sub('C','',x)}.over.rest"))>0,"up","down")) %>% # get sign of t-test
     dplyr::select(one_of(c('cluster', 'id_og', 'ome_type', # select relevant columns
                            'Directionality',
                            'SYMBOL', 'ENZYME', 'CYTOBAND',
