@@ -98,6 +98,16 @@ if ( !is.null(opt$yaml_file) ) {
   }
 }
 
+# set seed explicitly
+if (opt$seed == "random") {
+  opt$seed = as.numeric(Sys.time()) # set seed to system time
+  cat(glue("\n####################\nRandom seed requested-- using Sys.tim() '{opt$seed}'\n"))
+} else {
+  opt$seed = as.numeric(opt$seed) # force seed to be numeric
+  cat(glue("\n####################\nUsing seed '{opt$seed}'\n"))
+}
+set.seed(opt$seed) # set general seed ( will also set nmf() seed later )
+
 # print parameters
 cat("\n####################\nNMF PARAMETERS\n\n")
 print(opt)

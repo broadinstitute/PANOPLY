@@ -102,14 +102,16 @@ if (!is.null(opt$annot_file_primary) && length(annot_file_types)>2) { #if we hav
 ## import files and select columns
 data_list <- lapply(annot_files, function(filename) { # read in / validate
   cat(glue("Reading in '{filename}'.\n\n"))
-  data = read.delim(filename)
   if (is.null(opt$id_column)) {  # if we have no ID column
+    data = read.delim(filename, row.names = 1) # assume rownames
     if (! all(rownames(data)==1:length(rownames(data))) ) { # unless we have default numeric rownames
       opt$id_column = "sankey_id_column" # create an ID column
       data[[opt$id_column]] = rownames(data) # use rownames as ID column
     } else {
       stop(paste(glue("No ID column selected, and dataset does not contain appropriate rownames')."))) # check for sample ID column
     }
+  } else {
+    data = read.delim(filename)
   } # if we have no ID column, use rownames or complain
   if (!(opt$id_column %in% colnames(data))) stop(paste(glue("Could not locate sample_id_col ('{opt$id_column}')."))) # check for sample ID column
   if ( sum(duplicated(data[[opt$id_column]]))>=1 ) stop(paste(glue("The identified column contains duplicated IDs. Please provide an id_column which uniquely identifies entries."))) # check for sample ID column
