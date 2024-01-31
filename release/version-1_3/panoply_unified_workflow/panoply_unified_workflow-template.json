@@ -424,6 +424,7 @@
     "panoply_unified_workflow.run_cmap": "\"false\"",
     "panoply_unified_workflow.run_nmf": "\"true\"",
     "panoply_unified_workflow.run_ptmsea": "\"false\"",
+    "panoply_unified_workflow.run_so_nmf": "",
     "panoply_unified_workflow.sample_annotation": "this.annotation_ss",
     "panoply_unified_workflow.so_nmf.gene_set_database": "",
     "panoply_unified_workflow.so_nmf.multiomic_nmf_tar": "",
@@ -503,8 +504,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_unified_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_unified_workflow/27",
-    "methodVersion": 27,
+    "methodUri": "agora://broadcptac/panoply_unified_workflow/31",
+    "methodVersion": 31,
     "sourceRepo": "agora"
   },
   "name": "panoply_unified_workflow",

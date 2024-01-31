@@ -2,24 +2,22 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/4/plain-WDL/descriptor" as rna_prot_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/4/plain-WDL/descriptor" as harmonize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc/versions/4/plain-WDL/descriptor" as sampleqc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_setup/versions/4/plain-WDL/descriptor" as cna_setup_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation/versions/2/plain-WDL/descriptor" as cna_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/5/plain-WDL/descriptor" as assoc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/4/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation_report/versions/3/plain-WDL/descriptor" as rna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/4/plain-WDL/descriptor" as cna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/4/plain-WDL/descriptor" as sampleqc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/5/plain-WDL/descriptor" as cmap_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/1/plain-WDL/descriptor" as check_yaml_default_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation/versions/7/plain-WDL/descriptor" as rna_prot_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_harmonize/versions/7/plain-WDL/descriptor" as harmonize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc/versions/8/plain-WDL/descriptor" as sampleqc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_setup/versions/7/plain-WDL/descriptor" as cna_setup_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation/versions/7/plain-WDL/descriptor" as cna_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation_report/versions/6/plain-WDL/descriptor" as rna_corr_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation_report/versions/6/plain-WDL/descriptor" as cna_corr_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc_report/versions/5/plain-WDL/descriptor" as sampleqc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cmap_analysis/versions/6/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_check_yaml_default/versions/9/plain-WDL/descriptor" as check_yaml_default_wdl
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/3/plain-WDL/descriptor" as assoc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/3/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_workflow/versions/4/plain-WDL/descriptor" as assoc_workflow
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_gct/versions/9/plain-WDL/descriptor" as so_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/11/plain-WDL/descriptor" as download_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/11/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/17/plain-WDL/descriptor" as download_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/11/plain-WDL/descriptor" as cosmo_wdl
 
 
@@ -28,7 +26,6 @@ workflow panoply_main {
   String job_identifier
   String ome_type
   String? run_ptmsea # "true" or "false"
-  File sample_annotation
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
 
@@ -42,6 +39,7 @@ workflow panoply_main {
   File? groups_file_cna
   File? groups_file_association
   File? groups_file_cmap_enrichment
+  File? groups_file_nmf
 
   ## cmap inputs
   Int cmap_n_permutations = 10
@@ -198,35 +196,19 @@ workflow panoply_main {
       tmpDir = "tmp"
   }
   
-  call assoc_wdl.panoply_association {
+  call assoc_workflow.panoply_association_workflow {
     input: 
       inputData = panoply_cna_correlation.outputs, 
-      groupsFile = "${if defined(groups_file_association) then groups_file_association else groups_file}",
+      association_groups = "${if defined(groups_file_association) then groups_file_association else groups_file}",
       type = ome_type,
       standalone = standalone,
       yaml = yaml,
+      job_identifier = job_identifier,
       sample_na_max=sample_na_max,
       nmiss_factor=nmiss_factor,
       duplicate_gene_policy=duplicate_gene_policy,
-      gene_id_col=gene_id_col
-  }
-
-  call accum_wdl.panoply_accumulate as accumulate_assoc {
-    input:
-      input_tar = panoply_association.outputs,
-      module = "association"
-  } 
-
-  Array[File] list_gct_assoc = accumulate_assoc.list_gct
-  scatter (f in list_gct_assoc){
-    call ssgsea_wdl.panoply_ssgsea as ssgsea_assoc {
-      input:
-        input_ds = "${f}",
-        gene_set_database = geneset_db,
-        output_prefix = job_identifier,
-        level = "gc",
-        yaml_file = yaml
-    }
+      gene_id_col=gene_id_col,
+      geneset_db=geneset_db
   }
   
   if ( run_cmap == "true" ){
@@ -239,45 +221,40 @@ workflow panoply_main {
           annotation_pathway_db = annotation_pathway_db, 
           subset_bucket = subset_bucket,
           n_permutations = cmap_n_permutations,
-            cmap_enrichment_groups = "${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file}",
-            yaml = yaml
+          cmap_enrichment_groups = "${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file}",
+          yaml = yaml
         
       }
     }
   }
 
   if ( run_nmf == "true" ){
-    call so_nmf_wdl.panoply_so_nmf_gct_workflow as so_nmf {
+    call nmf_wdl.panoply_nmf_internal_workflow as so_nmf {
       input:
-      yaml_file = yaml,
-      label = job_identifier,
-      ome = input_pome,
-      ome_type = ome_type,
-      gene_set_database = geneset_db
+        label = "${job_identifier}_${ome_type}",
+        ome_labels=[ome_type],
+        ome_gcts=[input_pome],
+
+        yaml_file = yaml,
+        groups_file = "${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",,
+        gene_set_database = geneset_db
     }
   }
 
   call download_wdl.panoply_download {
     input:
-      association_tar = panoply_association.outputs,
+      association_tar = panoply_association_workflow.outputs, # contains all results in non-standalone
       ssgsea_ome_tar = ssgsea_ome.results,
       ssgsea_rna_tar = ssgsea_rna.results,
       omicsev_tar = panoply_omicsev.outputs,
       cosmo_tar = panoply_cosmo_workflow.cosmo_tar,
       analysisDir = job_identifier,
-      ssgsea_assoc_tars = ssgsea_assoc.results,
+      ssgsea_assoc_tars = panoply_association_workflow.ssgsea_assoc_tars, # association ssgsea results
       ptmsea = ptmsea_ome.results,
-      so_nmf_tar = so_nmf.nmf_clust,
-      so_nmf_ssgsea_tar = so_nmf.nmf_ssgsea,
+      so_nmf_results = so_nmf.nmf_results,
+      so_nmf_figures = so_nmf.nmf_figures,
+      so_nmf_ssgsea_tar = so_nmf.nmf_ssgsea_tar,
       output_prefix = ome_type
-  }
-  
-  call assoc_report_wdl.panoply_association_report {
-    input:
-      input_tar = panoply_download.full,
-      master_yaml = yaml,
-      label = "${job_identifier}-full-results",
-      type = ome_type
   }
 
   output {
@@ -288,8 +265,8 @@ workflow panoply_main {
     File omicsev_report = panoply_omicsev.report
     File? cosmo_report = panoply_cosmo_workflow.cosmo_report
     File sample_qc_report = panoply_sampleqc_report.report
-    File association_report = panoply_association_report.report_out
-    File? so_nmf_report = so_nmf.nmf_clust_report
+    File association_report = panoply_association_workflow.report
+    File? so_nmf_report = so_nmf.nmf_report
     File? so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput

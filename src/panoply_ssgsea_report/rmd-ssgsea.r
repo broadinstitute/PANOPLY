@@ -13,7 +13,7 @@ option_list <- list(
   make_option( c("-l", "--label"), action='store', type='character',  dest='label', help="label/file prefix used in ssgsea GCT files.", default='NA'),
   make_option( c("-f", "--fdr"), action='store', type='character',  dest='fdr', help="max. FDR", default='NA'),
   make_option( c("-n", "--top_n"), action='store', type='character',  dest='top_n', help="Max. number of significant hits to plot/label", default='NA'),
-  make_option( c("-y", "--yaml_file"), action='store', type='character',  dest='yaml_file', help='yaml parameter file.', default = 'NA'),
+  make_option( c("-y", "--yaml_file"), action='store', type='character',  dest='yaml_file', help='yaml parameter file.', default = NA),
   make_option( c("-p", "--ptmsigdb"), action='store', type='logical',  dest='ptmsigdb', help='PTMsigDB?', default = FALSE),
   make_option( c("-z", "--libdir"), action='store', type='character',  dest='libdir', help='Folder to source from.', default = 'NA')
  )

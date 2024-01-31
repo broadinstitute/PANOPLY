@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e # exit upon error condition
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
