@@ -11,15 +11,17 @@ task panoply_nmf {
 
 	Float? sd_filt_min
 	String? sd_filt_mode
+	String? z_score			# true / false
 	String? z_score_mode
 	String? gene_column
-	String? organism_id # can be 'Hs', 'Mm', or 'Rn'
+	String? organism_id		# can be 'Hs', 'Mm', or 'Rn'
 	
 	Int? kmin
 	Int? kmax
+	String? exclude_2		# true / false
 	Int? nrun
 	# Boolean? bayesian
-	String? nmf_method # in the YAML
+	String? nmf_method		# options in the YAML
 	String? seed
 
 	Int? memory
@@ -30,15 +32,13 @@ task panoply_nmf {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-v " + z_score_mode} ${"-a " + gene_column} ${"-i " + organism_id} ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-u " + z_score} ${"-v " + z_score_mode} ${"-a " + gene_column} ${"-i " + organism_id} ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-e " + exclude_2} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 	}
 
 	output {
-		File results="nmf_res.Rdata"
-		File gct_comb=select_first(glob("${output_prefix}_combined_n*.gct")) # select first/only match of array-length-1
-		File gct_comb_nn=select_first(glob("${output_prefix}_combinedNonNegative*.gct")) # select first/only match of array-length-1
-		File? sd_filt_results=select_first(glob("${output_prefix}_*_filteringResults.pdf")) # select first/only match of sd-filter results (if it was applied)
+		File results="${output_prefix}_NMF_results.tar.gz" # tar w/ expr GCT files + res.rank & parameters .Rdata files
 		Int nclust=read_int("nmf_best_rank.txt")
+		File? preprocess_figs="NMF_preprocessing_figures.tar.gz"
 	}
 
 	runtime {
@@ -57,7 +57,7 @@ task panoply_nmf {
 }
 
 ################################################
-##  workflow: mo-nmf
+## workflow
 workflow panoply_nmf_workflow {
-	call panoply_nmf
+    call panoply_nmf
 }

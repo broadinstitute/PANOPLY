@@ -2,9 +2,14 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_nmf_report {
-
-    File tarball
     String label
+
+    # inputs from panoply_nmf
+    File nmf_results                ## Rdata file containing results of nmf()
+    Int nclust                      ## best clustering assignment
+
+    # inputs from panoply_nmf_postprocess
+    File postprocess_tarball        ## tarball containing all figures and outputs from panply_nmf_postprocess
 
     Int? memory
     Int? disk_space
@@ -13,16 +18,16 @@ task panoply_nmf_report {
 
     command {
         set -euo pipefail
-	Rscript /home/pgdac/src/rmd-mo-nmf.R ${tarball} ${label}
+        Rscript /prot/proteomics/Projects/PGDAC/src/nmf-renderRMD.R ${"-n " + nmf_results} ${"-r " + nclust} ${"-t " + postprocess_tarball} ${"-x " + label}
     }
 
     output {
-	File report = "mo-nmf-report-" + label + ".html"
+    File report = label + "_nmf_report.html"
     }
 
     runtime {
         docker : "broadcptacdev/panoply_nmf_report:latest"
-        memory: select_first ([memory, 2]) + "GB"
+        memory: select_first ([memory, 16]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
         cpu : select_first ([num_threads, 1]) + ""
         preemptible : select_first ([num_preemptions, 0])

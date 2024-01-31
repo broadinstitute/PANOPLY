@@ -61,12 +61,14 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 	p_install( fastcluster ); \
 	p_install( glmnet ); \
 	p_install( gplots ); \
+	p_install( htmlwidgets ); \
 	p_install( lattice ); \
 	p_install( lme4 ); \
 	p_install( maptools ); \
 	p_install( mclust ); \
 	p_install( misc3d ); \
 	p_install( mixtools ); \
+	p_install( networkD3 ); \
 	p_install( nlme ); \
 	p_install( optparse ); \
 	p_install( parmigene ); \
@@ -104,6 +106,7 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
 # Install devtools directly from crane, NOT from mirror repository
 RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
 RUN R -e 'devtools::install_version("khroma", version="1.11.0", repos = "https://packagemanager.posit.co/cran/2023-11-01")' # install NEWER version of khroma (color-management) so that palettes can be loaded automatically
+RUN R -e "devtools::install_github(c('Displayr/flipU', 'Displayr/flipFormat', 'Displayr/flipTime'))" # for sankeyNetwork()
 
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \
@@ -116,6 +119,10 @@ RUN echo 'install.packages( \
 RUN apt-get install -y gfortran -std=legacy
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/pamr_1.56.1.tar.gz", \
+	type="source", repos=NULL );' > /tmp/packages.R && Rscript /tmp/packages.R
+
+RUN echo 'install.packages( \
+	"/prot/proteomics/Projects/PGDAC/packages/flipTransformations_1.14.0.tar.gz", \
 	type="source", repos=NULL );' > /tmp/packages.R && Rscript /tmp/packages.R
 
 ## Check which packages got installed and which failed

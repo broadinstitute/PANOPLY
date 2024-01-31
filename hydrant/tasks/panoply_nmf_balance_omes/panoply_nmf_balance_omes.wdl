@@ -6,7 +6,7 @@ task panoply_nmf_balance_omes {
     String label
     
     Array[File]+ ome_gcts
-    Array[String]+ ome_labels
+    Array[String]+ ome_labels # must match length & order of ome_gcts
 
     Int? memory
     Int? disk_space
@@ -26,8 +26,8 @@ task panoply_nmf_balance_omes {
     }
 
     output {
-       Array[Pair[String?,File?]] ome_pairs_balanced = zip(ome_labels, glob("*-balanced-contrib.gct"))
-       File pdf="balance-omes.pdf"
+        Array[File]+ ome_gcts_balanced=glob("*-balanced-contrib.gct") # labelled numerically; will match the order of ome_labels
+        File pdf="balance-omes.pdf"
     }
 
     runtime {
@@ -44,20 +44,10 @@ task panoply_nmf_balance_omes {
     }
 }
 
+################################################
 ## workflow
 workflow panoply_nmf_balance_omes_workflow {
-    Array[Pair[String,File]]+ ome_pairs
-
-    # get array of labels and GCTs
-    scatter (pairs in ome_pairs) {
-        String ome_labels = pairs.left
-        File ome_gcts = pairs.right
-    }
-
-    call panoply_nmf_balance_omes {
-        input:
-            ome_gcts=ome_gcts,
-            ome_labels=ome_labels,
-    }
+    call panoply_nmf_balance_omes
 }
+
 

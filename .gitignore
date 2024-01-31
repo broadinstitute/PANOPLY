@@ -13,6 +13,7 @@ misc/
 analysis
 hydrant/drmani-github-access-token
 hydrant/tasks/*/tests/
+hydrant/tasks/panoply_test/
 Thumbs.db
 
 panda/.ipynb_checkpoints/
