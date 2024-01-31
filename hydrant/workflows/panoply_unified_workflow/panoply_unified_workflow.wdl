@@ -3,7 +3,7 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/1/plain-WDL/descriptor" as select_pairs
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/14/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/57/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/58/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/13/plain-WDL/descriptor" as blacksheep_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/30/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/14/plain-WDL/descriptor" as immune_wdl

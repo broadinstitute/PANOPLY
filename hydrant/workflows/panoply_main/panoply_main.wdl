@@ -17,7 +17,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_associati
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/11/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/19/plain-WDL/descriptor" as download_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/20/plain-WDL/descriptor" as download_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/11/plain-WDL/descriptor" as cosmo_wdl
 
 
@@ -271,7 +271,8 @@ workflow panoply_main {
   #############################
   call download_wdl.panoply_download {
     input:
-      association_tar = panoply_association_workflow.outputs, # contains all results in non-standalone
+      association_tar = panoply_association_workflow.outputs,
+      cna_corr_tar = panoply_cna_correlation.outputs, # contains all results in non-standalone
       ssgsea_ome_tar = ssgsea_ome.results,
       ssgsea_rna_tar = ssgsea_rna.results,
       omicsev_tar = panoply_omicsev.outputs,

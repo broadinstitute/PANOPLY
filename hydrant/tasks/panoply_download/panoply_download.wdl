@@ -5,6 +5,7 @@ task panoply_download
 {
   File association_tar
   File ssgsea_ome_tar
+  File? cna_corr_tar # non-standalone tar with genomic-only-modyle outputs
   File? ssgsea_rna_tar
   File? ptmsea
   File? so_nmf_results
@@ -44,6 +45,7 @@ task panoply_download
         -o ${ssgsea_ome_tar} \
         -a ${analysisDir} \
         -s ${ssgsea_assoc_dir} \
+        ${"-g" + cna_corr_tar} \
         ${"-r" + ssgsea_rna_tar} \
         ${"-p" + ptmsea} \
         ${"-n" + so_nmf_results} \
