@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/9/plain-WDL/descriptor" as assoc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/10/plain-WDL/descriptor" as assoc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/8/plain-WDL/descriptor" as accum_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/7/plain-WDL/descriptor" as 	assoc_report_wdl
@@ -12,9 +12,10 @@ workflow panoply_association_workflow {
 
   	String job_identifier
   	String ome_type
+	String standalone
 
 	## inputs
-	File input_pome
+	File inputData
 	File yaml
 	File association_groups
 
@@ -27,11 +28,11 @@ workflow panoply_association_workflow {
 
 
 	call assoc_wdl.panoply_association as assoc {
-    input: 
-    	inputData = input_pome,
+    input:
+    	inputData = inputData,
     	groupsFile = association_groups,
     	type = ome_type,
-    	standalone = "true",
+    	standalone = standalone,
     	analysisDir = job_identifier,
     	yaml = yaml,
     	sample_na_max=sample_na_max,

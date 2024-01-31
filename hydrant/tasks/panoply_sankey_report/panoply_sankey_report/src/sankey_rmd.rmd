@@ -1,0 +1,68 @@
+---
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      smooth_scroll: no
+params:
+  title: "NMF Clustering Results"
+  sankey_tar: NULL
+  label: NULL
+  annot_of_comparison: NULL
+  primary_dataype_label: NULL
+---
+
+---
+title: `r params$title`
+---
+
+```{r setup, include=FALSE}
+library(htmltools)
+library(stringr)
+library(glue)
+
+```
+
+This document visualizes and compares `r params$annot_of_comparison`, through sankey diagrams.
+
+# Sankey Diagrams
+
+```{r sankey_diagrams, results='asis', echo=FALSE, out.width='100%', out.height='50%'}
+untar(params$sankey_tar)
+sankey_files = list.files(pattern="sankey.+html")
+
+ome_types = str_split(sankey_files, '_', simplify=TRUE)[,1] %>% str_replace(., 'sankey-', "") %>% unique()
+
+if (primary_dataype_label %in% ome_types) { #if we have a "primary" dataset
+  ome_types = c(primary_dataype_label, ome_types[which(ome_types!=primary_dataype_label)]) #move primary dataset to front of ome_types vector
+}
+
+for(ome in ome_types) {
+  cat("  \n## ",  ome, " {.tabset}  \n")
+  
+  files_tmp = list.files(pattern=glue("sankey-{ome}.+Source.html"))
+  files_tmp = files_tmp[grep(glue("_{primary_dataype_label}_"), files_tmp, invert = TRUE)] #only plot figures that DON'T have "primary" datatype in the center
+  
+  if (primary_dataype_label %in% ome_types) { #if we have a "primary" datatype
+    primary_sankey = grep(primary_dataype_label, files_tmp, value=TRUE)
+    files_tmp = c(primary_sankey, files_tmp[which(files_tmp!=primary_sankey)]) #move primary datatype sankey file to front of files_tmp vector
+  }
+  
+  for(file in files_tmp) {
+    other_ome = str_replace(file, glue("sankey-{ome}_"), "") %>% str_replace(., '-.+html', '')
+    cat("  \n### ",  other_ome, " \n")
+    
+    # include Sankey Diagrams
+    print(htmltools::tagList(tags$iframe(srcdoc=includeHTML(file), # insert widget into iframe
+                                         seamless="seamless", frameBorder = 0, height="400vh", width="100%")))
+    cat("  \n")
+    cat(glue("**{ome} vs {other_ome}** This sankey diagram compares {annot_of_comparison} from {ome} data, to {annot_of_comparison} from {other_ome} data."))
+    cat("  \n")
+  }
+}
+
+```
+
+
+
+
