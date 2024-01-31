@@ -60,8 +60,10 @@ task fragpipe {
     projdir="fragpipe"
     proc_data_zip="fragpipe_processed_data.zip"
     out_zip="fragpipe_output.zip"
-    cromwell_root=$(pwd)
-    cd ~
+    cromwell_root=$(pwd)                           # use cromwell_root fs for working dir
+    working_dir=$(mktemp -d working_dir_XXXXXX)    # use wd in the /cromwell_root file system
+    cd $working_dir
+    
     mkdir -p $projdir/out
     chmod -R 777 $projdir
 
@@ -72,7 +74,7 @@ task fragpipe {
     cd $projdir
     if [ -z ~{file_of_files} ]
     then
-      cp -a ~{files_folder} .
+      cp -a ~{files_folder} .                      # change to mv?
       mv $(basename ~{files_folder}) data
     else
       mkdir data

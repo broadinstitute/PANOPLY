@@ -38,14 +38,16 @@ task spectronaut {
 
     out_zip="spectronaut_output.zip"
     out_dir="spectronaut/out"
-    cromwell_root=$(pwd)
-    cd ~
+    cromwell_root=$(pwd)                           # use cromwell_root fs for both wd and temp dir
+    sn_temp=$(mktemp -d sn_temp_XXXXXX)            # temp dir for Spectronaut -- else runs out of space on root fs 
+    working_dir=$(mktemp -d working_dir_XXXXXX)    # use wd in the /cromwell_root file system
+    cd $working_dir
 
     mkdir -p $out_dir
     if [[ "${directory_input}" = "true" ]]
     then
       tmp_dir=$(mktemp -d data_XXXXXX)      # in case the files_folder is named 'data'
-      cp -a ${files_folder}/* $tmp_dir
+      mv ${files_folder}/* $tmp_dir         # all under $cromwell_root -- no need to copy
       mv $tmp_dir data
     else
       mkdir data
@@ -57,12 +59,12 @@ task spectronaut {
     /usr/bin/spectronaut ${if direct_DIA then "-direct" else ""} ${"-s " + analysis_settings} \
         ${"-con " + condition_setup} -n ${experiment_name} -o $out_dir \
         -fasta ${fasta} ${"-fasta " + fasta_1} ${"-a " + spectral_library} ${"-a " + spectral_library_1} \
-        ${"-rs " + report_schema} ${"-j " + json_settings} -d data
+        ${"-rs " + report_schema} ${"-j " + json_settings} -d data -setTemp $sn_temp
     spectronaut -deactivate
 
     zip -r $out_zip $out_dir -x \*.zip
 
-    # directory structure after completion of run (~ = /root):
+    # directory structure after completion of run ($working_dir = /root):
     #   /root/data/                                         input data
     #        /$out_dir/[timestamp]_${experiment_name}/      output
     #        /$out_zip                                      output zip file
