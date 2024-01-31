@@ -45,7 +45,9 @@ dir_create()
   mkdir -p omicsev_tar && tar xf $omicsev_tar -C omicsev_tar
   mkdir -p cosmo_tar && tar xf $cosmo_tar -C cosmo_tar
   mkdir -p ssgsea_ome && tar xf $ssgsea_ome -C ssgsea_ome
-  mkdir -p ssgsea_rna && tar xf $ssgsea_rna -C ssgsea_rna
+  if [[ ! -z $ssgsea_rna ]]; then
+    mkdir -p ssgsea_rna && tar xf $ssgsea_rna -C ssgsea_rna
+  fi
   scatter_processing $src/$ssgsea_assoc
   if [[ ! -z $ptmsea ]]; then
     mkdir -p ptmsea && tar xf $ptmsea -C ptmsea
@@ -79,17 +81,22 @@ collect()
   cp -r cosmo_tar/* $full_path/.;
   rm -rf cosmo_tar;
   cp -r ssgsea_ome $full_path/ssgsea_ome/;
-  cp -r ssgsea_rna $full_path/ssgsea_rna/;
   cp -r $ssgsea_assoc $full_path/$ssgsea_assoc/;
+  if [[ ! -z $ssgsea_rna ]]; then
+    cp -r ssgsea_rna $full_path/ssgsea_rna/;
+  fi
 
   mkdir -p $summ_path/ssgsea_ome;
-  mkdir -p $summ_path/ssgsea_rna;
   mkdir -p $summ_path/$ssgsea_assoc;
   cp -r ssgsea_ome/* $summ_path/ssgsea_ome/.;
-  cp -r ssgsea_rna/* $summ_path/ssgsea_rna/.;
   cp -r $ssgsea_assoc/* $summ_path/$ssgsea_assoc/.;
-
-  rm -rf ssgsea_ome ssgsea_rna $ssgsea_assoc;
+  rm -rf ssgsea_ome $ssgsea_assoc;
+  
+  if [[ ! -z $ssgsea_rna ]]; then
+    mkdir -p $summ_path/ssgsea_rna;
+    cp -r ssgsea_rna/* $summ_path/ssgsea_rna/.;
+    rm -rf ssgsea_rna;
+  fi
 
   if [[ ! -z $ptmsea ]]; then
     cp -r ptmsea $full_path/ptmsea/;

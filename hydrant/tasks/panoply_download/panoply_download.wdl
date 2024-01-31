@@ -5,7 +5,7 @@ task panoply_download
 {
   File association_tar
   File ssgsea_ome_tar
-  File ssgsea_rna_tar
+  File? ssgsea_rna_tar
   File? ptmsea
   File? so_nmf_results
   File? so_nmf_figures
@@ -42,9 +42,9 @@ task panoply_download
     /prot/proteomics/Projects/PGDAC/src/download.sh \
         -t ${association_tar} \
         -o ${ssgsea_ome_tar} \
-        -r ${ssgsea_rna_tar} \
         -a ${analysisDir} \
         -s ${ssgsea_assoc_dir} \
+        ${"-r" + ssgsea_rna_tar} \
         ${"-p" + ptmsea} \
         ${"-n" + so_nmf_results} \
         ${"-f" + so_nmf_figures} \
