@@ -26,7 +26,6 @@ workflow panoply_main {
   String job_identifier
   String ome_type
   String? run_ptmsea # "true" or "false"
-  File sample_annotation
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
 
@@ -36,13 +35,14 @@ workflow panoply_main {
   File input_cna
   File yaml
 
-  File? nmf_groups
-  File? cna_groups
-  File association_groups
+  File groups_file
+  File? groups_file_cna
+  File? groups_file_association
+  File? groups_file_cmap_enrichment
+  File? groups_file_nmf
 
   ## cmap inputs
   Int cmap_n_permutations = 10
-  File? cmap_enrichment_groups
   File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt"
   File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx"
   File? annotation_pathway_db #this.gseaDB
@@ -175,7 +175,7 @@ workflow panoply_main {
   call cna_setup_wdl.panoply_cna_setup {
     input:
       tarball = panoply_sampleqc.outputs,
-      groupsFile = cna_groups,
+      groupsFile = "${if defined(groups_file_cna) then groups_file_cna else groups_file}",
       type = ome_type,
       yaml = yaml
   }
@@ -199,8 +199,8 @@ workflow panoply_main {
   call assoc_workflow.panoply_association_workflow {
     input: 
       inputData = panoply_cna_correlation.outputs, 
-      association_groups = association_groups,
-      ome_type = ome_type,
+      association_groups = "${if defined(groups_file_association) then groups_file_association else groups_file}",
+      type = ome_type,
       standalone = standalone,
       yaml = yaml,
       job_identifier = job_identifier,
@@ -221,7 +221,7 @@ workflow panoply_main {
           annotation_pathway_db = annotation_pathway_db, 
           subset_bucket = subset_bucket,
           n_permutations = cmap_n_permutations,
-          cmap_enrichment_groups = cmap_enrichment_groups,
+          cmap_enrichment_groups = "${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file}",
           yaml = yaml
         
       }
@@ -236,7 +236,7 @@ workflow panoply_main {
         ome_gcts=[input_pome],
 
         yaml_file = yaml,
-        groups_file = nmf_groups,
+        groups_file = "${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",,
         gene_set_database = geneset_db
     }
   }

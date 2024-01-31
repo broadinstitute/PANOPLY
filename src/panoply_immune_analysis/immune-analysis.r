@@ -196,7 +196,8 @@ run.immune.analysis <- function (rna.data=rna.data.file, groups.file=immune.enri
 if (!interactive()) {
   # read parameters from config.r and run analysis
   rna.data <- rna.data.file
-  groups.file <- ifelse (exists ("immune.enrichment.subgroups"), immune.enrichment.subgroups, NULL)
+  if(exists ("immune.enrichment.subgroups")) 
+    { groups.file <- immune.enrichment.subgroups } else { groups.file <- NULL } # can't use ifelse() for groups.file, since NULL is of length zero, not length 1
   FDR <- ifelse (exists ("immune.enrichment.fdr"), immune.enrichment.fdr, 0.05)  # default 0.05
   heatmap.width <- ifelse (exists ("immune.heatmap.width"), immune.heatmap.width, 10)
   heatmap.height <- ifelse (exists ("immune.heatmap.height"), immune.heatmap.height, 15)

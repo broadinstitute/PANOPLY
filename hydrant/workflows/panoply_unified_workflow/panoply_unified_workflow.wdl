@@ -18,13 +18,17 @@ workflow panoply_unified_workflow {
   File? ubiquityl_ome
   File? rna_data      #version 1.3 only!
   File? cna_data
-  File? sample_annotation
   File yaml
   String job_id
   String run_cmap
   Boolean run_mo_nmf #'true' or 'false'
   Boolean run_so_nmf #'true' or 'false'
   String? run_ptmsea
+
+  File groups_file
+  File? groups_file_blacksheep
+  File? groups_file_immune
+  File? groups_file_nmf
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
@@ -81,7 +85,7 @@ workflow panoply_unified_workflow {
         run_nmf = "false",
         input_cna="${cna_data}",
         input_rna="${rna_data}",
-        sample_annotation="${sample_annotation}",
+        groups_file="${groups_file}",
         yaml="${yaml}"
     }
   }
@@ -96,7 +100,8 @@ workflow panoply_unified_workflow {
         input_gct = "${pair.right}",
         master_yaml = "${yaml}",
         output_prefix = "${pair.left}",
-        type = "${pair.left}"
+        type = "${pair.left}",
+        groups_file="${if defined(groups_file_blacksheep) then groups_file_blacksheep else groups_file}"
     }
   }
 
@@ -108,7 +113,7 @@ workflow panoply_unified_workflow {
 
         label = job_id,                     # default parameters & figure colors
         yaml_file = yaml,                   # default parameters & figure colors
-        groups_file = sample_annotation,    # datatable with annotations-of-interest (for figures & enrichement analysis)
+        groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}"
 
         run_mo_nmf = run_mo_nmf,            # toggle for Multi-omic NMF
         run_so_nmf = run_so_nmf             # toggle for Single-omic NMF
@@ -124,7 +129,8 @@ workflow panoply_unified_workflow {
           type="rna",
           yaml=yaml,
           analysisDir=job_id,
-          label=job_id
+          label=job_id,
+          groupsFile="${if defined(groups_file_immune) then groups_file_immune else groups_file}"
     }
   }
   
