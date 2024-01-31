@@ -27,12 +27,13 @@ workflow panoply_nmf_internal_workflow {
 	Float? tol
 	Float? var
 	String? zscore_mode
-
-    # # separate paired-array into array of labels and array of GCTs
-    # scatter (pairs in ome_pairs) {
-    #     String ome_labels = pairs.left
-    #     File ome_gcts = pairs.right
-    # }
+	
+	## NMF Parameters
+	Int? kmin
+	Int? kmax
+	String? exclude_2		# true / false
+	String? nmf_method		# options in the YAML
+	String? seed			# 'random' for random seed, or numeric for explicit seed
 
 	# Toggle Balance Module -- run if we have multi-omic data && balancing is on
 	if (length(ome_gcts) > 1 && select_first([balance_omes, false])) { # false by default, if balance_omes not provided
@@ -52,7 +53,12 @@ workflow panoply_nmf_internal_workflow {
 			ome_gcts=if defined(balance.ome_gcts_balanced) then balance.ome_gcts_balanced else ome_gcts,
 			ome_labels=ome_labels,
 			output_prefix=label,
-			yaml_file=yaml_file
+			yaml_file=yaml_file,
+            kmin=kmin,
+            kmax=kmax,
+            exclude_2=exclude_2,
+            nmf_method=nmf_method,
+            seed=seed
 	}
 	call panoply_nmf_postprocess_wdl.panoply_nmf_postprocess as postprocess {
 		input:

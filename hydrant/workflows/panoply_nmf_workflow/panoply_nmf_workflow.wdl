@@ -2,7 +2,7 @@
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/1/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/11/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/12/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/9/plain-WDL/descriptor" as sankey_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/12/plain-WDL/descriptor" as assemble_wdl
 
@@ -23,10 +23,17 @@ workflow panoply_nmf_workflow {
 	File yaml_file				# default parameters & figure colors
 	File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
 	
-	## Analysis Parameters
+	## Balance Parameters
 	Float? tol
 	Float? var
 	String? zscore_mode
+	
+	## NMF Parameters
+	Int? kmin
+	Int? kmax
+	String? exclude_2		# true / false
+	String? nmf_method		# options in the YAML
+	String? seed			# 'random' for random seed, or numeric for explicit seed
 
 	## Module Toggles
 	Boolean run_so_nmf
@@ -49,7 +56,12 @@ workflow panoply_nmf_workflow {
 					ome_gcts=[pair.right],
 					gene_set_database=gene_set_database,
 					yaml_file=yaml_file,
-					groups_file=groups_file
+					groups_file=groups_file,
+					kmin=kmin,
+					kmax=kmax,
+					exclude_2=exclude_2,
+					nmf_method=nmf_method,
+					seed=seed
 			}
 		}
 	}
@@ -64,7 +76,12 @@ workflow panoply_nmf_workflow {
 				ome_gcts=select_pairs.pair_file,
 				gene_set_database=gene_set_database,
 				yaml_file=yaml_file,
-				groups_file=groups_file
+				groups_file=groups_file,
+				kmin=kmin,
+				kmax=kmax,
+				exclude_2=exclude_2,
+				nmf_method=nmf_method,
+				seed=seed
 		}
 	}
 
