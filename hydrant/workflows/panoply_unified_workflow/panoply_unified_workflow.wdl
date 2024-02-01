@@ -3,9 +3,9 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/1/plain-WDL/descriptor" as select_pairs
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/14/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/52/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/58/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/13/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/37/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/30/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/14/plain-WDL/descriptor" as immune_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/25/plain-WDL/descriptor" as assemble_wdl
 
@@ -47,8 +47,8 @@ workflow panoply_unified_workflow {
   }
 
   Array[Pair[String?, File?]] geneome_pairs_input =
-    [ ("rna", "${rna_data}"),
-      ("cna", "${cna_data}") ]
+    [ ("rna", rna_data),
+      ("cna", cna_data) ]
   call select_pairs.panoply_select_all_pairs as geneome_pairs { # select extant pairs
     input:
         pairs_input = geneome_pairs_input
@@ -70,6 +70,9 @@ workflow panoply_unified_workflow {
   
   # Zip Normalization / Filter Output into a labelled Array 
   Array[Pair[String,File]] ome_pairs_norm_filt = zip(norm_filt.output_ome_type , norm_filt.filtered_data_table)
+  
+  # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for NMF & Blacksheep use:
+  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,geneome_pairs.pairs])
 
 
   ### MAIN:
@@ -77,21 +80,18 @@ workflow panoply_unified_workflow {
     call main_wdl.panoply_main as pome {
       input:
         ## include all required arguments from above
-        input_pome="${pair.right}",
-        ome_type="${pair.left}",
+        input_pome=pair.right,
+        ome_type=pair.left,
         job_identifier="${job_id}-${pair.left}",
         run_ptmsea="${run_ptmsea}",
         run_cmap = "${run_cmap}",
         run_nmf = "false",
-        input_cna="${cna_data}",
-        input_rna="${rna_data}",
-        groups_file="${groups_file}",
-        yaml="${yaml}"
+        input_cna=cna_data,
+        input_rna=rna_data,
+        groups_file=groups_file,
+        yaml=yaml
     }
   }
-  
-  # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for NMF & Blacksheep use:
-  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,geneome_pairs.pairs])
   
   ### BLACKSHEEP:
   scatter (pair in all_pairs) {
@@ -113,7 +113,7 @@ workflow panoply_unified_workflow {
 
         label = job_id,                     # default parameters & figure colors
         yaml_file = yaml,                   # default parameters & figure colors
-        groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}"
+        groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",
 
         run_mo_nmf = run_mo_nmf,            # toggle for Multi-omic NMF
         run_so_nmf = run_so_nmf             # toggle for Single-omic NMF
