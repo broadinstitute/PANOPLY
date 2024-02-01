@@ -334,12 +334,16 @@ for (cluster_cols in c(TRUE,FALSE)) {
 #### draw Annotation Legend (standalone) to file ####
 cat("\n\n####################\nGenerate Standalone-Legend\n\n")
 
+legend_list = lapply(hm@top_annotation@anno_list,
+                     function(annot) { # for each annotation
+                       cm = annot@color_mapping # get the color mapping object
+                       if (length(cm@levels)==0 ) return(NULL) # if the legend element is empty, return NULL
+                       return(color_mapping_legend(cm))
+                     }) %>% # otherwise, turn it into a legend object
+  .[! sapply(.,is.null)] # drop all null-elements from list
 ## pretty version
-legend = lapply(lapply(hm@top_annotation@anno_list, # for each annotation
-                       function(annot) {annot@color_mapping}), # get the color mapping object
-                color_mapping_legend) %>% # turn them into a list of legends
-  packLegend(list = ., # and then pack them into a legend
-             max_height = unit(12, 'in')) # prevent from being too tall
+legend = packLegend(list = legend_list, # and then pack them into a legend
+                    max_height = unit(12, 'in')) # prevent from being too tall
 legend_width = convertX(legend@grob$vp$width, unitTo="in", valueOnly=TRUE)
 legend_height = convertX(legend@grob$vp$height, unitTo="in", valueOnly=TRUE)
 # pdf
@@ -358,11 +362,8 @@ dev.off()
 
 
 ## scrollable version
-legend_scrollable = lapply(lapply(hm@top_annotation@anno_list, # for each annotation
-                                  function(annot) {annot@color_mapping}), # get the color mapping object
-                           color_mapping_legend) %>% # turn them into a list of legends
-  packLegend(list = ., # and then pack them into a legend
-             max_width = unit(2.5, 'in')) # only allow one column
+legend_scrollable = packLegend(list = legend_list, # and then pack them into a legend
+                               max_width = unit(2.5, 'in')) # only allow one column
 legend_width = convertX(legend_scrollable@grob$vp$width, unitTo="in", valueOnly=TRUE)
 legend_height = convertX(legend_scrollable@grob$vp$height, unitTo="in", valueOnly=TRUE)
 # pdf
@@ -869,6 +870,7 @@ driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant d
 #### make Boxplot PDF for each cluster. ####
 cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
 for (cluster in unique(driver.features.topNFeat$cluster)) {
+  cat(glue("\n\n##### Boxplot for {cluster}\n\n"))
   pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
   # pdf(glue("/opt/input/tmp_{cluster}.pdf")) # for manual docker testing
   driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
@@ -919,6 +921,7 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
 #### make Heatmap PDF for each cluster ####
 cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Heatmaps\n\n"))
 for (cluster in unique(driver.features.topNFeat$cluster)) {
+  cat(glue("\n\n##### Heatmap for {cluster}\n\n"))
   driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
   
   if (!is.null(opt$gene_col)) { # if we have the gene column
@@ -961,7 +964,7 @@ for (cluster in unique(driver.features.topNFeat$cluster)) {
                   name = goi[i],
                   cluster_rows = T, row_dend_side = 'left',
                   show_row_names = TRUE, row_names_side = "right",
-                  column_title = hm.title, column_title_rot = 0, # add column title-- and specify rotation argument, bc otherwise R thinks I'm being lazy and writing column_title_rot
+                  column_title = hm.title, column_title_rot = 0, # add column title and rotation
                   column_title_gp = gpar(fontsize = 16, fontface = "bold"),
                   show_heatmap_legend = T, 
                   row_title_rot = 0, # horizontal titles
