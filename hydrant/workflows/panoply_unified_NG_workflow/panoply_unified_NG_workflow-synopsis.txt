@@ -1,1 +1,0 @@
-PANOPLY workflow for protegenomic analysis including ALL proteome/PTM data types
