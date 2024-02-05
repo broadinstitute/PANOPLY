@@ -13,7 +13,7 @@ workflow panoply_nmf_workflow {
 	String label
 
 	## Data Upload
-    Array[Pair[String?,File?]]+ ome_pairs_input
+    Array[Pair[String?,File?]]+ ome_pairs
 	# Array[File]+ ome_gcts		# array of GCT files
 	# Array[String]+ ome_labels	# array of ome-labels for those GCT files (MUST MATCH ORDER)
 	# File? omes_tar			# tar file with GCTs for analysis. not set up.
@@ -40,10 +40,10 @@ workflow panoply_nmf_workflow {
 	Boolean run_mo_nmf
 	Boolean run_sankey
     
-	# select extant pairs from ome_pairs_input
+	# select extant pairs from ome_pairs
     call select_pairs.panoply_select_all_pairs as select_pairs {
     	input:
-        	pairs_input = ome_pairs_input
+        	pairs_input = ome_pairs
     }
 
 	# Single-Ome NMF

@@ -28,7 +28,7 @@ workflow panoply_association_workflow {
 
 
 	call assoc_wdl.panoply_association as assoc {
-    input:
+    input: 
     	inputData = inputData,
     	groupsFile = association_groups,
     	type = ome_type,
@@ -69,6 +69,7 @@ workflow panoply_association_workflow {
 	}
 
 	output {
+		File outputs=assoc.outputs
 		File contrasts=accumulate_assoc.outputs
 		Array[File] ssgsea_assoc_tars=ssgsea_assoc.results
 		File report=assoc_report.report_out
