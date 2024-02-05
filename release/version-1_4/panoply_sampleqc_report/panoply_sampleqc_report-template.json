@@ -1,0 +1,28 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.disk_space": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.label": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.memory": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.num_preemptions": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.num_threads": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.tarball": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.tmpDir": "",
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.type": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_sampleqc_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_sampleqc_report/17",
+    "methodVersion": 17,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_sampleqc_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_sampleqc_report_workflow.panoply_sampleqc_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,0 +1,43 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_filter_workflow.panoply_filter.analysisDir": "",
+    "panoply_filter_workflow.panoply_filter.combineReplicates": "",
+    "panoply_filter_workflow.panoply_filter.disk_space": "",
+    "panoply_filter_workflow.panoply_filter.filterProteomics": "",
+    "panoply_filter_workflow.panoply_filter.geneIdCol": "",
+    "panoply_filter_workflow.panoply_filter.inputData": "",
+    "panoply_filter_workflow.panoply_filter.memory": "",
+    "panoply_filter_workflow.panoply_filter.naMax": "",
+    "panoply_filter_workflow.panoply_filter.ndigits": "",
+    "panoply_filter_workflow.panoply_filter.noNA": "",
+    "panoply_filter_workflow.panoply_filter.num_preemptions": "",
+    "panoply_filter_workflow.panoply_filter.num_threads": "",
+    "panoply_filter_workflow.panoply_filter.outTable": "",
+    "panoply_filter_workflow.panoply_filter.outTar": "",
+    "panoply_filter_workflow.panoply_filter.proteinIdCol": "",
+    "panoply_filter_workflow.panoply_filter.proteinIdType": "",
+    "panoply_filter_workflow.panoply_filter.sdFilterThreshold": "",
+    "panoply_filter_workflow.panoply_filter.separateQCTypes": "",
+    "panoply_filter_workflow.panoply_filter.standalone": "",
+    "panoply_filter_workflow.panoply_filter.type": "",
+    "panoply_filter_workflow.panoply_filter.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_filter",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_filter/3",
+    "methodVersion": 3,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_filter",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_filter_workflow.panoply_filter.output_tar": "",
+    "panoply_filter_workflow.panoply_filter.output_yaml": "",
+    "panoply_filter_workflow.panoply_filter.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

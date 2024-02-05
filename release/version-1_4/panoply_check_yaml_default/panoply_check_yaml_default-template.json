@@ -1,0 +1,23 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_check_yaml_default_workflow.panoply_check_yaml_default.param": "",
+    "panoply_check_yaml_default_workflow.panoply_check_yaml_default.param_lookup": "",
+    "panoply_check_yaml_default_workflow.panoply_check_yaml_default.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_check_yaml_default",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_check_yaml_default/17",
+    "methodVersion": 17,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_check_yaml_default",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_check_yaml_default_workflow.panoply_check_yaml_default.param_boolean": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

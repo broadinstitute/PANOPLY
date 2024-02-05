@@ -1,0 +1,28 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_sankey_report_workflow.panoply_sankey_report.annot_of_comparison": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.disk_space": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.label": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.memory": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.num_preemptions": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.num_threads": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.primary_dataype_label": "",
+    "panoply_sankey_report_workflow.panoply_sankey_report.sankey_tar": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_sankey_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_sankey_report/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_sankey_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_sankey_report_workflow.panoply_sankey_report.report_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
