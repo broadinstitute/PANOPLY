@@ -94,14 +94,12 @@ configure_primary_workflow() {
       jq '.inputs."panoply_main.input_cna" = $val' --arg val "this.cna_ss" |  \
       jq '.inputs."panoply_main.input_rna" = $val' --arg val "this.rna_ss" |  \
       jq '.inputs."panoply_main.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
+      jq '.inputs."panoply_main.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_main.run_cmap" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_main.run_ptmsea" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_main.annotation_pathway_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_main.geneset_db" = $val' --arg val "this.gseaDB" |  \
-      jq '.inputs."panoply_main.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
-      jq '.inputs."panoply_main.association_groups" = $val' --arg val "this.groups_ss" |  \
-      jq '.inputs."panoply_main.cluster_enrichment_groups" = $val' --arg val "this.groups_ss" |  \
-      jq '.inputs."panoply_main.cmap_enrichment_groups" = $val' --arg val "this.groups_ss" > new-template.json
+      jq '.inputs."panoply_main.ptm_db" = $val' --arg val "this.ptmseaDB" > new-template.json
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
     
@@ -122,23 +120,19 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.yaml" = $val' --arg val "this.parameters" |  \
       jq '.inputs."panoply_unified_workflow.cna_data" = $val' --arg val "this.cna_ss" |  \
       jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_ss" |  \
-      jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
+      # jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
+      jq '.inputs."panoply_unified_workflow.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.run_nmf" = $val' --arg val "\"true\"" |  \
       jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.nmf.gene_set_database" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.geneset_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
-      jq '.inputs."panoply_unified_workflow.immune.groupsFile" = $val' --arg val "this.groups_ss" |  \
-      jq '.inputs."panoply_unified_workflow.outlier.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.acetyl_ome" = $val' --arg val "this.acetylome_ss" |  \
       jq '.inputs."panoply_unified_workflow.prote_ome" = $val' --arg val "this.proteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.ubiquityl_ome" = $val' --arg val "this.ubiquitylome_ss" |  \
-      jq '.inputs."panoply_unified_workflow.pome.annotation_pathway_db" = $val' --arg val "this.gseaDB" |  \
-      jq '.inputs."panoply_unified_workflow.pome.cmap_enrichment_groups" = $val' --arg val "this.groups_ss" |  \
-      jq '.inputs."panoply_unified_workflow.pome.association_groups" = $val' --arg val "this.groups_ss" |  \
-      jq '.inputs."panoply_unified_workflow.pome.cluster_enrichment_groups" = $val' --arg val "this.groups_ss" > new-template.json
+      jq '.inputs."panoply_unified_workflow.pome.annotation_pathway_db" = $val' --arg val "this.gseaDB" > new-template.json
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
   fi
