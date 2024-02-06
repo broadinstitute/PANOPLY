@@ -14,7 +14,7 @@ workflow panoply_sankey_workflow {
 
   String? id_column                   # id column for identifying entries (e.g. "Sample.ID"); uses rownames if not provided
   String annot_column                 # annotation column for sankey comparisons (e.g. "NMF.consensus")
-  String? annot_prefix                # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
+  String? annot_prefix                # prefix to prepend to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
 
 
   String label

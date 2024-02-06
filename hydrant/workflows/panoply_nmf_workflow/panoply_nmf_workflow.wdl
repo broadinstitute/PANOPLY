@@ -23,16 +23,18 @@ workflow panoply_nmf_workflow {
 	File yaml_file				# default parameters & figure colors
 	File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
 	
-	## Balance Parameters
-	Float? tol
-	Float? var
-	String? zscore_mode
+	## Preprocess Parameters
+	Float? sd_filt_min
+	String? sd_filt_mode
+	String? z_score			# true / false
+	String? z_score_mode
 	
 	## NMF Parameters
 	Int? kmin
 	Int? kmax
 	String? exclude_2		# true / false
 	String? nmf_method		# options in the YAML
+	Int? nrun				# Number of NMF runs with different starting seeds.
 	String? seed			# 'random' for random seed, or numeric for explicit seed
 
 	## Module Toggles
@@ -57,11 +59,20 @@ workflow panoply_nmf_workflow {
 					gene_set_database=gene_set_database,
 					yaml_file=yaml_file,
 					groups_file=groups_file,
-					kmin=kmin,
-					kmax=kmax,
-					exclude_2=exclude_2,
-					nmf_method=nmf_method,
-					seed=seed
+
+					## Preprocess Parameters
+					sd_filt_min=sd_filt_min,
+					sd_filt_mode=sd_filt_mode,
+					z_score=z_score,
+					z_score_mode=z_score_mode,
+
+					## NMF Parameters
+		            kmin=kmin,
+		            kmax=kmax,
+		            exclude_2=exclude_2,
+		            nmf_method=nmf_method,
+		            nrun=nrun,
+		            seed=seed
 			}
 		}
 	}
@@ -77,11 +88,20 @@ workflow panoply_nmf_workflow {
 				gene_set_database=gene_set_database,
 				yaml_file=yaml_file,
 				groups_file=groups_file,
-				kmin=kmin,
-				kmax=kmax,
-				exclude_2=exclude_2,
-				nmf_method=nmf_method,
-				seed=seed
+
+				## Preprocess Parameters
+				sd_filt_min=sd_filt_min,
+				sd_filt_mode=sd_filt_mode,
+				z_score=z_score,
+				z_score_mode=z_score_mode,
+
+				## NMF Parameters
+	            kmin=kmin,
+	            kmax=kmax,
+	            exclude_2=exclude_2,
+	            nmf_method=nmf_method,
+	            nrun=nrun,
+	            seed=seed
 		}
 	}
 
