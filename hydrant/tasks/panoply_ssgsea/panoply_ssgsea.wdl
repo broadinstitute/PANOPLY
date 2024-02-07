@@ -7,8 +7,8 @@ task panoply_ssgsea {
 	File gene_set_database
 	File yaml_file
 	
-        ## parameters to create gene-centric or single-site-centric 
-        ## GCT files for ssGSEA / PTM-SEA
+    ## parameters to create gene-centric or single-site-centric 
+    ## GCT files for ssGSEA / PTM-SEA
 	String? level
  	String? id_type
 	String? id_type_out
@@ -34,7 +34,7 @@ task panoply_ssgsea {
 	Int? nperm
 	Boolean? global_fdr
 
-        ## VM parameters
+    ## VM parameters
 	Int? memory
 	Int? disk_space
 	Int? num_threads
