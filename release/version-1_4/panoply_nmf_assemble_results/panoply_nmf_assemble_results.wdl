@@ -161,7 +161,7 @@ task panoply_nmf_assemble_results {
   }
 
   meta {
-    author : "C. Williams"
+    author : "C.M. Williams"
     email : "proteogenomics@broadinstitute.org"
   }
 }

@@ -16,8 +16,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_nmf_balance_omes",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_nmf_balance_omes/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptac/panoply_nmf_balance_omes/3",
+    "methodVersion": 3,
     "sourceRepo": "agora"
   },
   "name": "panoply_nmf_balance_omes",

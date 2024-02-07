@@ -18,8 +18,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_sankey",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_sankey/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptac/panoply_sankey/3",
+    "methodVersion": 3,
     "sourceRepo": "agora"
   },
   "name": "panoply_sankey",

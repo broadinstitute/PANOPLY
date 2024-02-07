@@ -20,8 +20,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_nmf_postprocess",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_nmf_postprocess/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptac/panoply_nmf_postprocess/2",
+    "methodVersion": 2,
     "sourceRepo": "agora"
   },
   "name": "panoply_nmf_postprocess",

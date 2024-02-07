@@ -58,8 +58,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_association_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_association_workflow/6",
-    "methodVersion": 6,
+    "methodUri": "agora://broadcptac/panoply_association_workflow/8",
+    "methodVersion": 8,
     "sourceRepo": "agora"
   },
   "name": "panoply_association_workflow",

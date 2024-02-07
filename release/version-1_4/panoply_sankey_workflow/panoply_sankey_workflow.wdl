@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sankey/versions/1/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sankey_report/versions/1/plain-WDL/descriptor" as sankey_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sankey/versions/3/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sankey_report/versions/3/plain-WDL/descriptor" as sankey_report_wdl
 
 
 workflow panoply_sankey_workflow {
@@ -14,7 +14,7 @@ workflow panoply_sankey_workflow {
 
   String? id_column                   # id column for identifying entries (e.g. "Sample.ID"); uses rownames if not provided
   String annot_column                 # annotation column for sankey comparisons (e.g. "NMF.consensus")
-  String? annot_prefix                # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
+  String? annot_prefix                # prefix to prepend to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
 
 
   String label

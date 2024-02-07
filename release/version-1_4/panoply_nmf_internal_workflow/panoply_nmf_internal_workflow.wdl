@@ -1,10 +1,10 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_balance_omes/versions/1/plain-WDL/descriptor" as panoply_nmf_balance_omes_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf/versions/2/plain-WDL/descriptor" as panoply_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_postprocess/versions/1/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_report/versions/1/plain-WDL/descriptor" as panoply_nmf_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_balance_omes/versions/3/plain-WDL/descriptor" as panoply_nmf_balance_omes_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf/versions/4/plain-WDL/descriptor" as panoply_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_postprocess/versions/2/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_report/versions/3/plain-WDL/descriptor" as panoply_nmf_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/29/plain-WDL/descriptor" as panoply_ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/21/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
@@ -21,18 +21,23 @@ workflow panoply_nmf_internal_workflow {
 	File? yaml_file
 	File? groups_file
 
-	# balance filter
+	## Balance Toggle
 	Boolean? balance_omes
-
 	Float? tol
 	Float? var
-	String? zscore_mode
+
+	## Preprocess Parameters
+	Float? sd_filt_min
+	String? sd_filt_mode
+	String? z_score			# true / false
+	String? z_score_mode
 	
 	## NMF Parameters
 	Int? kmin
 	Int? kmax
 	String? exclude_2		# true / false
 	String? nmf_method		# options in the YAML
+	Int? nrun				# Number of NMF runs with different starting seeds.
 	String? seed			# 'random' for random seed, or numeric for explicit seed
 
 	# Toggle Balance Module -- run if we have multi-omic data && balancing is on
@@ -43,8 +48,7 @@ workflow panoply_nmf_internal_workflow {
 				ome_gcts=ome_gcts,
 				ome_labels=ome_labels,
 				tol=tol,
-				var=var,
-				zscore_mode=zscore_mode
+				var=var
 		}
 	}
 
@@ -54,10 +58,17 @@ workflow panoply_nmf_internal_workflow {
 			ome_labels=ome_labels,
 			output_prefix=label,
 			yaml_file=yaml_file,
+			## Preprocess Parameters
+			sd_filt_min=sd_filt_min,
+			sd_filt_mode=sd_filt_mode,
+			z_score=z_score,
+			z_score_mode=z_score_mode,
+			## NMF Parameters
             kmin=kmin,
             kmax=kmax,
             exclude_2=exclude_2,
             nmf_method=nmf_method,
+            nrun=nrun,
             seed=seed
 	}
 	call panoply_nmf_postprocess_wdl.panoply_nmf_postprocess as postprocess {

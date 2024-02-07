@@ -11,7 +11,7 @@ err="${red}Error:${reg}"
 not="${grn}====>>${reg}" ## notification
 
 ## users (for method permissions)
-proteomics_comp=(manidr@broadinstitute.org kpham@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org svartany@broadinstitute.org)
+proteomics_comp=(manidr@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org)
 proteomics_cptac=(GROUP_Broad_CPTAC@firecloud.org)
 
 ## documentation location (assumes wiki repo is available in path)
@@ -256,7 +256,7 @@ if [[ -n $patch_flag ]]; then
   if [[ $rebuild_docker_flag ]]; then # if we are rebuilding dockers
     echo -e "$not Dockers will be rebuilt."
   fi
-  echo -e "$not Documentation will not be rereleased."
+  echo -e "$not Documentation will be rereleased."
 fi
 
 
@@ -306,11 +306,6 @@ if [[ -z $patch_flag ]]; then # during full release
   mkdir -p $release_dir # create release directory
   rm -f $snapshots # delete all snapshots
   yes | docker system prune --all
-fi
-
-
-## TASKS
-if [[ -z $patch_flag ]]; then # if full release
   modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename ) ) # rebuild all modules
 fi # otherwise, modules are pulled from trailing arguments ( see display_usage() )
 
@@ -393,10 +388,10 @@ done
 
 
 ## DOCUMENTATION
-if [[ -z $patch_flag ]]; then # run during full release, NOT during patch fixes
+if [[ -z $patch_flag ]]; then # only make directory on initial-release
   mkdir -p $release_dir/docs
-  for f in $generic_docs
-  do
-    cp $doc_dir/$f $release_dir/docs/$f
-  done
 fi
+for f in $generic_docs
+do
+  cp $doc_dir/$f $release_dir/docs/$f
+done

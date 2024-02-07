@@ -34,7 +34,7 @@ task panoply_sankey_report {
     }
 
     meta {
-        author : "C. Williams"
+        author : "C.M. Williams"
         email : "proteogenomics@broadinstitute.org"
     }
 }
