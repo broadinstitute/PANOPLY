@@ -1,5 +1,5 @@
 # PANOPLY: A cloud-based platform for automated and reproducible proteogenomic data analysis
-#### Version 1.3
+#### Version 1.4
 
 PANOPLY is a platform for applying state-of-the-art statistical and machine learning algorithms to transform multi-omic data from cancer samples into biologically meaningful and interpretable results. PANOPLY leverages [Terra](http://app.terra.bio)—a cloud-native platform for extreme-scale data analysis, sharing, and collaboration—to host proteogenomic workflows, and is designed to be flexible, automated, reproducible, scalable, and secure. A wide array of algorithms applicable to all cancer types have been implemented, and available in PANOPLY for analysis of cancer proteogenomic data.
 
@@ -11,7 +11,7 @@ PANOPLY is a platform for applying state-of-the-art statistical and machine lear
 
 PANOPLY consists of the following components:
 
-* A Terra production workspace on [PANOPLY_Production_Pipelines_v1_3](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_3) with a preconfigured unified workflow to automatically run all analysis tasks on proteomics (global proteome, phosphoproteome, acetylome, ubiquitylome), transcriptome and copy number data; and an [additional workspace](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Modules_v1_3) that includes separate methods for each analysis component. 
+* A Terra production workspace on [PANOPLY_Production_Pipelines_v1_4](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Pipelines_v1_4) with a preconfigured unified workflow to automatically run all analysis tasks on proteomics (global proteome, phosphoproteome, acetylome, ubiquitylome), transcriptome and copy number data; and an [additional workspace](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Production_Modules_v1_4) that includes separate methods for each analysis component. 
 * An interactive Jupyter notebook (included in the Terra workspaces) that provides step-by-step instructions for uploading data, identifying data types, specifying parameters, and setting up the PANOPLY workspace for analyzing a new dataset.
 * A GitHub [repository](https://github.com/broadinstitute/PANOPLY) that contains code for all PANOPLY tasks and workflows, including R code for implementing analysis algorithms, task module creation, and release management. A GitHub [wiki](https://github.com/broadinstitute/PANOPLY/wiki) includes documentation and description of algorithms. 
 * A [tutorial](https://github.com/broadinstitute/PANOPLY/wiki/PANOPLY-Tutorial) illustrating the application of PANOPLY to a published breast cancer dataset and demonstrating the practical relevance of PANOPLY by regenerating many of the results described in (Mertins et al) (1) with minimal effort. The [PANOPLY_Tutorial](https://app.terra.bio/#workspaces/broad-firecloud-cptac/PANOPLY_Tutorial) workspace contains data and results from running the tuorial.
