@@ -53,7 +53,7 @@ for(ome in ome_types) {
     cat("  \n### ",  other_ome, " \n")
     
     # include Sankey Diagrams
-    print(htmltools::tagList(tags$iframe(srcdoc=includeHTML(file), # insert widget into iframe
+    print(htmltools::tagList(tags$iframe(srcdoc=suppressWarnings(includeHTML(file)), # insert widget into iframe. suppress warning about using includeHTML()
                                          seamless="seamless", frameBorder = 0, height="400vh", width="100%")))
     cat("  \n")
     cat(glue("**{ome} vs {other_ome}** This sankey diagram compares {annot_of_comparison} from {ome} data, to {annot_of_comparison} from {other_ome} data."))
