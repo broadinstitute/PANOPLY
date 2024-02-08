@@ -18,7 +18,7 @@ task panoply_sankey_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/sankey-renderRMD.R "${annot_of_comparison}" "${sankey_tar}" "${label}" "${primary_dataype_label}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey-renderRMD.R "${annot_of_comparison}" "${sankey_tar}" "${label}" "${primary_dataype_label}"
     }
 
     output {

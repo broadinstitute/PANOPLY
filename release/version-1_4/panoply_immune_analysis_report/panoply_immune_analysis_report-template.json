@@ -1,0 +1,27 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.disk_space": "",
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.label": "",
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.memory": "",
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.num_preemptions": "",
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.num_threads": "",
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.tar_file": "",
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_immune_analysis_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_immune_analysis_report/17",
+    "methodVersion": 17,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_immune_analysis_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_immune_analysis_report_workflow.panoply_immune_analysis_report.report_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

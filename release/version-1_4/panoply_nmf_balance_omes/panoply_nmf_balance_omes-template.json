@@ -1,0 +1,31 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.disk_space": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.label": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.memory": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.num_preemptions": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.num_threads": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.ome_gcts": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.ome_labels": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.tol": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.var": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.zscore_mode": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_nmf_balance_omes",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_nmf_balance_omes/3",
+    "methodVersion": 3,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_nmf_balance_omes",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.ome_gcts_balanced": "",
+    "panoply_nmf_balance_omes_workflow.panoply_nmf_balance_omes.pdf": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

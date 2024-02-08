@@ -1,0 +1,1 @@
+FROM broadcptacdev/panoply_rna_protein_correlation_report:latest
