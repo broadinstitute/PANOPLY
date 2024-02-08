@@ -5,6 +5,7 @@ RUN apt-get update
 RUN apt-get install -y libssl-dev
 RUN apt-get install -y libcurl4-openssl-dev
 RUN apt-get install -y jags
+RUN apt-get install -y wget
 
 # Freeze cran Repository to end of 2020
 # RUN sed -i 's/cloud.r-project.org/packagemanager.rstudio.com\/cran\/2020-12-31/' /usr/local/lib/R/etc/Rprofile.site # for rbase docker
