@@ -7,8 +7,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_select_all_pairs",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_select_all_pairs/7",
-    "methodVersion": 7,
+    "methodUri": "agora://broadcptac/panoply_select_all_pairs/11",
+    "methodVersion": 11,
     "sourceRepo": "agora"
   },
   "name": "panoply_select_all_pairs",

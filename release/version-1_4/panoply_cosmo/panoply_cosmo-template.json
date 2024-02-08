@@ -23,8 +23,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_cosmo",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_cosmo/3",
-    "methodVersion": 3,
+    "methodUri": "agora://broadcptac/panoply_cosmo/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_cosmo",

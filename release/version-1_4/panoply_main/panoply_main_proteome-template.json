@@ -332,8 +332,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_main",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_main/30",
-    "methodVersion": 30,
+    "methodUri": "agora://broadcptac/panoply_main/32",
+    "methodVersion": 32,
     "sourceRepo": "agora"
   },
   "name": "panoply_main_proteome",

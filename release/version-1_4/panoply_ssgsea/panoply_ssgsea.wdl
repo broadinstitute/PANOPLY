@@ -7,8 +7,8 @@ task panoply_ssgsea {
 	File gene_set_database
 	File yaml_file
 	
-        ## parameters to create gene-centric or single-site-centric 
-        ## GCT files for ssGSEA / PTM-SEA
+    ## parameters to create gene-centric or single-site-centric 
+    ## GCT files for ssGSEA / PTM-SEA
 	String? level
  	String? id_type
 	String? id_type_out
@@ -34,7 +34,7 @@ task panoply_ssgsea {
 	Int? nperm
 	Boolean? global_fdr
 
-        ## VM parameters
+    ## VM parameters
 	Int? memory
 	Int? disk_space
 	Int? num_threads
@@ -51,7 +51,7 @@ task panoply_ssgsea {
 		
 		# run ssgsea/ptm-sea
 		# don't use curly brackets for $input_ds_proc because it this is not a WDL variable 
-		/home/pgdac/ssgsea-cli.R -i $input_ds_proc -y ${yaml_file} -d ${gene_set_database} -o ${default=NA output_prefix} -n ${default=NA sample_norm_type} -w ${default=NA weight} -c ${default=NA correl_type} -t ${default=NA statistic} -s ${default=NA output_score_type} -p ${default=NA nperm} -m ${default=NA min_overlap} -g ${default=NA global_fdr}
+		/home/pgdac/ssgsea-cli.R -i $input_ds_proc -y ${yaml_file} -d ${gene_set_database} -o ${default=NA output_prefix} -n ${default=NA sample_norm_type} -w ${default=NA weight} -c ${default=NA correl_type} -t ${default=NA statistic} -s ${default=NA output_score_type} -p ${default=NA nperm} -m ${default=NA min_overlap} -g ${default=NA global_fdr} -z /home/pgdac
 
 		# set wdl variable 'output_prefix' to the value specified in the yaml file,
 		# if not specified via cmd line 

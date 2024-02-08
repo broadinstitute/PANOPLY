@@ -19,8 +19,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_rna_protein_correlation",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_rna_protein_correlation/17",
-    "methodVersion": 17,
+    "methodUri": "agora://broadcptac/panoply_rna_protein_correlation/18",
+    "methodVersion": 18,
     "sourceRepo": "agora"
   },
   "name": "panoply_rna_protein_correlation",
