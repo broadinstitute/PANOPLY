@@ -152,7 +152,7 @@ panoply_nmf:
 
   ## clustering
   kmin: 2              ## minimum number of clusters    
-  kmax: 10             ## maximum number of clusters
+  kmax: 8             ## maximum number of clusters
   exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
 
   #########################
