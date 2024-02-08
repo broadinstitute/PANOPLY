@@ -44,8 +44,8 @@ task panoply_nmf_postprocess {
 	}
 
 	meta {
-		author : "Karsten Krug"
-		email : "karsten@broadinstitute.org"
+		author : "C.M. Williams"
+		email : "proteogenomics@broadinstitute.org"
 	}
 
 }

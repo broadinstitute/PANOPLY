@@ -147,67 +147,50 @@ panoply_ptm_normalization:
   score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
 
 ########################################
-## multi-omics NMF clustering
-panoply_mo_nmf:
+## NMF clustering
+panoply_nmf:
 
   ## clustering
   kmin: 2              ## minimum number of clusters    
   kmax: 10             ## maximum number of clusters
   exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
 
-  ## core membership
-  core_membership_mode: mindiff ## 'legacy'  - membership score > 'core_membership'
-                                ## 'mindiff' - minimal difference between fractional scores of cluster pairs >1/K 
-  core_membership: 0.5          ## minimal cluster membership used in lagacy mode
-  sample_order: clust_then_core_then_score  ## determines how samples in the heatmaps are ordered 
-                                            ## "clust_then_score"" or "clust_then_core_then_score"
   #########################
   ## NMF parameters
   nrun: 50         ## number of iterations
   seed: random     ## initialization method for the itertions
-  method: lee   ## NMF method implemented in R-package 'NMF'   
+  method: lee      ## NMF method implemented in R-package 'NMF'   
   bnmf: FALSE      ## NOT SUPPORTED
+
+  #########################
+  ## filtering
+  filt_mode: global   ## global, separate, equal
+  sd_filt: 0.05       ## min SD percentile to remove
   
   #########################
-  ## feature selection
-  feature_fdr: 0.01    ## max. FDR for 2-sample t-test
-  
+  ## z-scoring
+  z_score: TRUE        ## should the data be z-scored?
+  z_score_mode: rowcol ## z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
+ 
+########################################
+## NMF figure generation & analysis
+panoply_nmf_postprocess:
+
+  #########################
+  ## driver features 
+  top_n_features: 25            ## number of driver-features (per cluster) to plot expression data for
+
   #########################
   ## overrepresentation 
   ## analysis
   ora_pval: 0.01         ## max. p-value for overrepresentation analysis (Fisher's exact test)
   ora_max_categories: 10 ## max. number of levels in a annotation category to be included in the
                          ## overrepresentation analysis
-  
-  ## heatmap parameters
-  hm_cw: 5      ## cell width
-  hm_ch: 8      ## cell height 
-  hm_max_val: 10   ## max value at which the data will be capped in heatmap 
-  hm_max_val_z: 4  ## max value if z-scored 
 
   #########################
-  ## filtering
-  filt_mode: global   ## global, separate, equal
-  sd_filt: 0.05       ## SD percentile to remove
-  
-  #########################
-  ## z-scoring
-  z_score: TRUE        ## should the data be z-scored?
-  z_score_mode: rowcol ## z-score mode: row (z-score rows), col (z-score columns), rowcol (z-score rows and then columns) 
-  
- 
-  #########################
-  ## imputation
-  impute: FALSE   ## If TRUE, kNN imputation will be used to impute missing values
-  impute_k: 5     ## k for kNN
-  max_na_row: 0.3 ## (not working yet)
-  max_na_col: 0.9 ## (not working yet)
- 
-  #########################
-  ## misc
-  gene_col: geneSymbol     ##    
-  nmf_only: FALSE          ## if TRUE, no downstream analysis of clustering results will be performed
-  organism: human
+  ## feature selection
+  feature_fdr: 0.01    ## max. FDR for 2-sample t-test
+
 
 ################################
 ## ssGSEA default  parameters (projection)

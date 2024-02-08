@@ -51,10 +51,10 @@ read_sets <- function( sample.set.member.file ){
   set.names = unique(meta.file[[1]]) # get list of sets from the first column
   
   #  convert the meta.file into a list
-  sets_list = sapply( set.names, function(set) {
-    set.members = meta.file[meta.file[[1]]==set,2] #for each set, return a vector listing the samples in that set
-    return(make.names(set.members)) # return make.names() version of Sample.IDs
-  } )
+  sets_list = sapply( set.names, function(set) { # for each set
+    set.members = meta.file[meta.file[[1]]==set,2] # return a vector with the samples in that set
+    return(make.names(set.members)) # revert ID changes made by populate_sample_set.R
+  }, simplify = FALSE, USE.NAMES = TRUE) # return as list, and label elements with set.names 
   
   return( sets_list )
 }

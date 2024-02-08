@@ -9,6 +9,7 @@ task panoply_nmf {
 	String output_prefix="results_nmf"
 	File? yaml_file
 
+	## Preprocess Parameters
 	Float? sd_filt_min
 	String? sd_filt_mode
 	String? z_score			# true / false
@@ -16,13 +17,14 @@ task panoply_nmf {
 	String? gene_column
 	String? organism_id		# can be 'Hs', 'Mm', or 'Rn'
 	
+	## NMF Parameters
 	Int? kmin
 	Int? kmax
 	String? exclude_2		# true / false
-	Int? nrun
-	# Boolean? bayesian
 	String? nmf_method		# options in the YAML
-	String? seed
+	Int? nrun				# Number of NMF runs with different starting seeds.
+	String? seed			# 'random' for random seed, or numeric for explicit seed
+	# Boolean? bayesian
 
 	Int? memory
 	Int? disk_space
