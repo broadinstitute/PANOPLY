@@ -635,11 +635,11 @@ panda_preprocessing <- function() {
   cat(paste0(sep, '\n'))
   
   ### PTM-SEA / Flanking Sequence Column
+  run.ptmsea <<- FALSE # initialize run.ptmsea as FALSE
   if ( 'phosphoproteome' %in% names(typemap.gct) && !is.null(typemap.gmt) ) { # if we have phosphoproteome data
     run.ptmsea <<- y2true("Phosphoproteome data detected. Should PTM-SEA be run?")
     
     if (run.ptmsea) validate_flanking_sequence()
-    else run.ptmsea <<- FALSE
   }
   
   print( DONE )
