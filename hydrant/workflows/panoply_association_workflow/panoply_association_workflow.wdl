@@ -55,6 +55,7 @@ workflow panoply_association_workflow {
 			gene_set_database = geneset_db,
 			output_prefix = job_identifier,
 			level = "gc",
+			mode = "abs.max", # association contrasts are log-transformed signed p-values and should be combined by abs.max
 			yaml_file = yaml
 		}
 	}
