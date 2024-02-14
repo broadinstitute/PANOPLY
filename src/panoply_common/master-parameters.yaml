@@ -123,7 +123,7 @@ panoply_immune_analysis:
   immune_heatmap_height: 15
 
 panoply_blacksheep:
-  apply_filtering: FALSE
+  apply_filtering: TRUE
   identifiers_file: NULL
   groups_file: NULL
   fraction_samples_cutoff: 0.3
