@@ -41,7 +41,6 @@
     "panoply_association_workflow.ssgsea_assoc.min_overlap": "",
     "panoply_association_workflow.ssgsea_assoc.mod_res": "",
     "panoply_association_workflow.ssgsea_assoc.mod_type": "",
-    "panoply_association_workflow.ssgsea_assoc.mode": "",
     "panoply_association_workflow.ssgsea_assoc.nperm": "",
     "panoply_association_workflow.ssgsea_assoc.num_preemtions": "",
     "panoply_association_workflow.ssgsea_assoc.num_threads": "",
@@ -58,8 +57,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_association_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_association_workflow/12",
-    "methodVersion": 12,
+    "methodUri": "agora://broadcptac/panoply_association_workflow/19",
+    "methodVersion": 19,
     "sourceRepo": "agora"
   },
   "name": "panoply_association_workflow",

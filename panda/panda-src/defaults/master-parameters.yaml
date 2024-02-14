@@ -123,7 +123,7 @@ panoply_immune_analysis:
   immune_heatmap_height: 15
 
 panoply_blacksheep:
-  apply_filtering: FALSE
+  apply_filtering: TRUE
   identifiers_file: NULL
   groups_file: NULL
   fraction_samples_cutoff: 0.3
@@ -152,7 +152,7 @@ panoply_nmf:
 
   ## clustering
   kmin: 2              ## minimum number of clusters    
-  kmax: 10             ## maximum number of clusters
+  kmax: 8             ## maximum number of clusters
   exclude_2: TRUE      ## if TRUE, k=2 will be excluded from determining the optimal number of clusters
 
   #########################
