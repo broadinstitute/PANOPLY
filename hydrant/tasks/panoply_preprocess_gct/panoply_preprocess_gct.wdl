@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_ssgsea {
+task panoply_preprocess_gct {
 
 	File input_ds
 	File yaml_file
@@ -36,11 +36,11 @@ task panoply_ssgsea {
 
 	output {
 		# Outputs defined here
-		File results=select_first(read_lines("fn.out")) # read processed GCT filename from fn.out
+		File result=select_first(read_lines("fn.out")) # read processed GCT filename from fn.out
 	}
 
 	runtime {
-		docker : "broadcptacdev/panoply_ssgsea:latest"
+		docker : "broadcptacdev/panoply_preprocess_gct:latest"
 		memory : select_first ([memory, 8]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " HDD"
 		cpu : select_first ([num_threads, 8]) + ""
@@ -54,6 +54,6 @@ task panoply_ssgsea {
 
 }
 
-workflow panoply_ssgsea_workflow {
-	call panoply_ssgsea
+workflow panoply_preprocess_gct_workflow {
+	call panoply_preprocess_gct
 }
