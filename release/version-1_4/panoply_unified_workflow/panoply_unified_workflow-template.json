@@ -242,7 +242,6 @@
     "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.min_overlap": "",
     "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.mod_res": "",
     "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.mod_type": "",
-    "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.mode": "",
     "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.nperm": "",
     "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.num_preemtions": "",
     "panoply_unified_workflow.pome.panoply_association_workflow.ssgsea_assoc.num_threads": "",
@@ -520,8 +519,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_unified_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_unified_workflow/38",
-    "methodVersion": 38,
+    "methodUri": "agora://broadcptac/panoply_unified_workflow/42",
+    "methodVersion": 42,
     "sourceRepo": "agora"
   },
   "name": "panoply_unified_workflow",

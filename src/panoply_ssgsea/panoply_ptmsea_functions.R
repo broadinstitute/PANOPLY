@@ -123,6 +123,8 @@ preprocessGCT <- function(
   cdesc <- gct@cdesc
   #cdesc.ids <- colnames(cdesc)
   rdesc <- gct@rdesc
+  # add original ID to rdesc as a column
+  rdesc$original.id <- gct@rid
   #rdesc.ids <- colnames(rdesc)
   
   ## ###########################################
