@@ -32,15 +32,10 @@ task panoply_ssgsea {
 
 		# set wdl variable 'output_prefix' to the value specified in the yaml file,
 		# if not specified via cmd line 
-		#output_prefix=${default="NA" output_prefix}
 		output_prefix_local="results"
-		#if( $output_prefix_local = "NA" ); then
- 		#    output_prefix_local=`cat $yaml_file | grep output_prefix | awk '\\123print $2\\125'`
-		#fi
 
 		# archive result files
 		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^.*.log.txt$|^.*parameters.txt$"
-		result_regexpr="$result_regexpr|^$input_ds_proc"
 		
 		find * -regextype posix-extended -regex $result_regexpr -print0 | tar -czvf ${output_prefix}.tar.gz --null -T -
 		}
