@@ -6,9 +6,9 @@ task panoply_ssgsea {
 	File input_ds
 	File gene_set_database
 	File yaml_file
+	String output_prefix='results-ssgsea'
 	
 	## ssGSEA / PTM-SEA parameters below	
-	String output_prefix='results-ssgsea'
 	String? sample_norm_type
 	String? correl_type
 	String? statistic

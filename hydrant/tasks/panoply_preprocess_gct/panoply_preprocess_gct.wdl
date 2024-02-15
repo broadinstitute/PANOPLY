@@ -5,6 +5,7 @@ task panoply_preprocess_gct {
 
 	File input_ds
 	File yaml_file
+	String output_prefix='input-ssgsea'
 	
     ## parameters to create gene-centric or single-site-centric 
     ## GCT files for ssGSEA / PTM-SEA
@@ -32,11 +33,13 @@ task panoply_preprocess_gct {
 		
 		# prepare GCT file
 		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${default=NA level} -t ${default=NA id_type} -o ${default=NA id_type_out} -a ${default=NA acc_type} -s ${default=NA seqwin_col} --gene_symbol_column ${default=NA gene_col} -k ${default=NA humanize_gene}  -v ${default=NA SGT_col} -d ${default=NA loc} -m ${default=NA mode} -r "${default=NA mod_res}" -p '${default=NA mod_type}' -u TRUE -z /home/pgdac/src
+
+		mv `cat fn.out` '${output_prefix}_out.gct' # rename the output file from preprocessGCR.R
 	}
 
 	output {
 		# Outputs defined here
-		File result=select_first(read_lines("fn.out")) # read processed GCT filename from fn.out
+		File result='${output_prefix}_out.gct'
 	}
 
 	runtime {
