@@ -34,6 +34,7 @@ workflow panoply_fragpipe_search {
   }
 }
 
+
 task fragpipe {
   input {
     File fragpipe_workflow
@@ -74,11 +75,12 @@ task fragpipe {
     cd $projdir
     if [ -z ~{file_of_files} ]
     then
-      cp -a ~{files_folder} .                      # change to mv?
-      mv $(basename ~{files_folder}) data
+      tmp_dir=$(mktemp -d data_XXXXXX)
+      mv ~{files_folder}/* $tmp_dir 
+      mv $tmp_dir data
     else
       mkdir data
-      cp ~{sep(' ', files)} data
+      cp ~{sep(' ', files)} data 
     fi
 
     echo "database.db-path=~{basename(database)}" >> $frag_workflow
@@ -91,14 +93,16 @@ task fragpipe {
 
     if [ -z ~{fragpipe_manifest} ]
     then
-      python /usr/local/bin/get_fp_manifest.py /root/$projdir/"data" "data" ~{raw_file_type}
+      python /usr/local/bin/get_fp_manifest.py /cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
       frag_manifest="generated.fp-manifest"
     else
       cp -s ~{fragpipe_manifest} .
       frag_manifest=$(basename ${fragpipe_manifest})
+      sed -i -e "s/\/path\//\/cromwell_root\/$working_dir\/$projdir\/data\//g" $frag_manifest  
     fi
     
-    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.7/MSFragger-3.7.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.8.10/IonQuant-1.8.10.jar --config-python /opt/conda/envs/fragpipe/bin/python
+    #headless version 
+    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.8/MSFragger-3.8.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.9.8/IonQuant-1.9.8.jar --config-python /opt/conda/envs/fragpipe/bin/python
 
     cd ..
     zip -r $out_zip $projdir/out -x \*.zip
@@ -115,6 +119,7 @@ task fragpipe {
 
   runtime {
     docker: "broadcptacdev/panoply_fragpipe:latest"
+    cpuPlatform : "AMD Rome"
     memory: "${ram_gb}GB"
     bootDiskSizeGb: 512
     disks : "local-disk ${local_disk_gb} HDD"
