@@ -13,7 +13,7 @@ Step-by-step slides for running this workflow are available [here](https://docs.
 - `files_folder` (Directory): Google Bucket path to folder containing raw DDA files to be searched (ex: "gs://fc-3f59fceb-8ce2-4855-9198-d6f6527cd8af/Experiment_1/")
 - `fragpipe_workflow` (File): Google Bucket path to FragPipe workflow configuration (.workflow). This file can be saved from FragPipe GUI upon selecting the suitable parameters
 - `file_of_files` (File, optional): Google Bucket path to a text file storing Google Bucket paths to raw files to be analyzed (only works with Thermo data as timsTOF `.d` are technically folders); pecifying this would overwrite `files_folder`
-- `fragpipe_manifest` (File): Google Bucket path to FragPipe manifest file (.fp-manifest)
+- `fragpipe_manifest` (File): Google Bucket path to FragPipe manifest file (.fp-manifest) 
 - `raw_file_type` (String, default="DDA"): acquisition type of raw data, needed for automatic creation of the manifest
 
 **Terra parameters**
@@ -34,28 +34,30 @@ Step-by-step slides for running this workflow are available [here](https://docs.
     - Converted files (if created, `.mzML`) created by FragPipe
 
 ### Configuring a custom manifest file (e.g., grouping by experiments or replicates):
-Paths to the raw files must start with `/root/fragpipe_fragpipe/data/` (this is how it's implemented in the Docker that the workflow runs on). It is recommended that you create this file with FragPipe GUI and edit the path prefix to fit this requirement.
+Paths to the raw files must start with `/path/` (this is how it's implemented in the Docker that the workflow runs on). It is recommended that you create this file with FragPipe GUI and edit the path prefix to fit this requirement.
 ```
-/root/fragpipe/data/file1.mzML  exp 1   DDA
-/root/fragpipe/data/file2.mzML  exp 2   DDA
-/root/fragpipe/data/file3.mzML  exp 3   DDA
+/path/file1.mzML  exp 1   DDA
+/path/file2.mzML  exp 2   DDA
+/path/file3.mzML  exp 3   DDA
 ```
 Once you save this file and upload to Google Bucket, you'd then configure the following parameter:
 - `fragpipe_manifest` (File): Google Bucket path to manifest file (.fp-manifest)
+``
+The workflow will fill in 'path' to match the directory that the analysis is running in.
 
 ## Developer guide 
 ### Flow
 1. Docker contains MSFragger, philosopher, IonQuant, easyPQP that FragPipe headless uses
-2. Files are localized into `/root/fragpipe/data` data folder from `files_folder` or `file_of_files` (if supplied)
+2. Files are localized into `/cromwell_root/$working_dir/fragpipe/data` data folder from `files_folder` or `file_of_files` (if supplied)
 3. Inputted database will be written into the workflow file before running FragPipe
 4. (Experimental) `try_one_file` flag removes all but one file in data folder. Used to test if workflow works without running on the whole dataset
 5. Manifest can either be user-supplied or automatically generated with `get_fp_manifest.py` script which doesn't assume any experimental design
 6. Call FragPipe CLI command with supplied workflow, localized files, and manifest (auto-generated or supplied)
 
 ### Paths
-- Working directory is `/root/fragpipe`
-- Input data will be in `/root/fragpipe/data`
-- Outputs will be in `/root/fragpipe/out`
+- Working directory is `/cromwell_root/$working_dir/fragpipe/`
+- Input data will be in `/cromwell_root/$working_dir/fragpipe/data`
+- Outputs will be in `/cromwell_root/$working_dir/fragpipe/out`
 
 ## References
 - Kong, A. T., Leprevost, F. V., Avtonomov, D. M., Mellacheruvu, D., & Nesvizhskii, A. I. (2017). MSFragger: ultrafast and comprehensive peptide identification in mass spectrometry–based proteomics. Nature Methods, 14(5), 513-520.

@@ -38,7 +38,7 @@ scatter (file in get_array_of_files.input_files) {
     call convert_raw_to_mzml {
     input:
         file=file,
-        filterparams = filterparams,
+        filterparams=filterparams,
 
         num_cpus=4,
         ram_gb=16,
@@ -49,8 +49,8 @@ scatter (file in get_array_of_files.input_files) {
     Array[File] array_of_files = (convert_raw_to_mzml.converted_files)
     call copyfiles{
         input:
-        array_of_files = array_of_files,
-        output_folder = output_folder,
+        array_of_files=array_of_files,
+        output_folder=output_folder,
 
         num_cpus=4,
         ram_gb=16,
@@ -59,60 +59,7 @@ scatter (file in get_array_of_files.input_files) {
     }
 }
 
-
-
-task convert_raw_to_mzml {
-    input {
-        File file
-        String? filterparams 
-
-        Int num_cpus=4
-        Int ram_gb=16
-        Int local_disk_gb=750
-        Int num_preemptions=0
-    }
-    
-    command {
-        . /etc/profile
-        set -euo pipefail
-        
-        projdir="raw_files"
-        mkdir -p $projdir/data
-
-        cd $projdir
-        cp ~{file} data/
-
-        if ls data/*.raw &> /dev/null; then
-        wine msconvert --zlib --filter "peakPicking vendor msLevel=1-" --filter "zeroSamples removeExtra 1-" ~{filterparams} ~{file} -o data/
-        else
-        echo "No .raw file is present. Skipping .raw to .mzML conversion."
-        fi
-
-        cd ..
-        find $projdir/data -name '*.mzML' | xargs mv -t .
-    }
-
-    output {
-        File converted_files = select_first(glob("*.mzML"))
-    }
-
-    runtime {
-        docker      : "chambm/pwiz-skyline-i-agree-to-the-vendor-licenses"
-        cpuPlatform : "AMD Rome"
-        memory      : "${ram_gb}GB"
-        bootDiskSizeGb: 128
-        disks       : "local-disk ${local_disk_gb} HDD"
-        preemptible : num_preemptions
-        cpu         : num_cpus
-    }
-    meta {
-        author: "Khoi Pham Munchic"
-        email : "kpham@broadinstitute.org"
-    }
-}
-
-
-    task get_array_of_files {
+task get_array_of_files {
     input {
         Directory files_folder
         File? file_of_files
@@ -167,6 +114,58 @@ task convert_raw_to_mzml {
     }
 }
 
+task convert_raw_to_mzml {
+    input {
+        File file
+        String? filterparams 
+
+        Int num_cpus=4
+        Int ram_gb=16
+        Int local_disk_gb=750
+        Int num_preemptions=0
+    }
+    
+    String rawfilename = basename(file)
+
+    command {
+        . /etc/profile
+        set -euo pipefail
+        
+        projdir="raw_files"
+        mkdir -p $projdir/data
+
+        cd $projdir
+        cp ~{file} data/
+        
+
+        if ls data/*.raw &> /dev/null; then
+        wine msconvert --zlib --filter "peakPicking vendor msLevel=1-" --filter "zeroSamples removeExtra 1-" ~{filterparams} data/~{rawfilename} -o data/
+        else
+        echo "No .raw file is present. Skipping .raw to .mzML conversion."
+        fi
+
+        cd ..
+        find $projdir/data -name '*.mzML' | xargs mv -t .
+    }
+
+    output {
+        File converted_files = select_first(glob("*.mzML"))
+    }
+
+    runtime {
+        docker      : "chambm/pwiz-skyline-i-agree-to-the-vendor-licenses"
+        cpuPlatform : "AMD Rome"
+        memory      : "${ram_gb}GB"
+        bootDiskSizeGb: 128
+        disks       : "local-disk ${local_disk_gb} HDD"
+        preemptible : num_preemptions
+        cpu         : num_cpus
+    }
+    meta {
+        author: "Simone Gohsman"
+        email : "gohsmans@broadinstitute.org"
+    }
+}
 
 task copyfiles{
     input {

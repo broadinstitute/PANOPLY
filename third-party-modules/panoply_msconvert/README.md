@@ -26,8 +26,8 @@ This workflow wraps the msConvert GUI and converts DIA RAW files into MZML outpu
 3. (Experimental) `try_one_file` flag removes all but one file in data folder. Used to test if workflow works without running on the whole dataset
 
 ### Paths
-- Working directory is `/root/raw_files`
-- Input data will be in `/root/raw_files/data`
+- Working directory is `/cromwell_root/raw_files`
+- Input data will be in `/cromwell_root/raw_files/data`
 - Outputs will be in user specified output directory
 
 ## References

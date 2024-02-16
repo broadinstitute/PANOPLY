@@ -62,7 +62,10 @@ task fragpipe {
     proc_data_zip="fragpipe_processed_data.zip"
     out_zip="fragpipe_output.zip"
     cromwell_root=$(pwd)
-    cd ~
+    
+    working_dir=$(mktemp -d working_dir_XXXXXX)
+    cd $working_dir
+
     mkdir -p $projdir/out
     chmod -R 777 $projdir
 
@@ -73,8 +76,9 @@ task fragpipe {
     cd $projdir
     if [ -z ~{file_of_files} ]
     then
-      cp -a ~{files_folder} .
-      mv $(basename ~{files_folder}) data
+      tmp_dir=$(mktemp -d data_XXXXXX)
+      mv ~{files_folder}/* $tmp_dir 
+      mv $tmp_dir data
     else
       mkdir data
       cp ~{sep(' ', files)} data 
@@ -90,13 +94,15 @@ task fragpipe {
 
     if [ -z ~{fragpipe_manifest} ]
     then
-      python /usr/local/bin/get_fp_manifest.py /root/$projdir/"data" "data" ~{raw_file_type}
+      python /usr/local/bin/get_fp_manifest.py /cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
       frag_manifest="generated.fp-manifest"
     else
       cp -s ~{fragpipe_manifest} .
       frag_manifest=$(basename ${fragpipe_manifest})
+      sed -i -e "s/\/path\//\/cromwell_root\/$working_dir\/$projdir\/data\//g" $frag_manifest  
     fi
     
+    #headless version 
     /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.8/MSFragger-3.8.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.9.8/IonQuant-1.9.8.jar --config-python /opt/conda/envs/fragpipe/bin/python
 
     cd ..

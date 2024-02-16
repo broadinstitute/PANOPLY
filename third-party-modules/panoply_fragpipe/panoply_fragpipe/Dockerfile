@@ -51,7 +51,6 @@ RUN unzip IonQuant-1.9.8.zip && rm IonQuant-1.9.8.zip && chmod 755 /IonQuant-1.9
 ADD src/MSFragger-3.8.zip /
 RUN unzip MSFragger-3.8.zip && rm MSFragger-3.8.zip && chmod 755 /MSFragger-3.8/MSFragger-3.8.jar
 
-ADD src/
 COPY src/collect_psm.sh /usr/local/bin/
 COPY src/package.sh /usr/local/bin/
 COPY src/mv.sh /etc/profile.d/
