@@ -32,11 +32,11 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('--nmf_results',"opt/input/luad_NMF_restructure_proteome_NMF_results.tar.gz",
+                       # args = c('--nmf_results',"opt/input/test-so_nmf-CNA_NMF_results.tar.gz",
                        #          '--rank_top',"5",
-                       #          '-g',"opt/input/groups-subset.csv",
+                       #          # '-g',"opt/input/groups-subset.csv",
                        #          '-y',"opt/input/master-parameters.yaml",
-                       #          '-x',"odg_test")
+                       #          '-x',"test")
 )
 
 
@@ -146,6 +146,16 @@ sample_id_col = "Sample.ID" # id column used in groups file
 #### NMF-Input Dataset Import ####
 gct_expr_comb = parse_gctx(file_expr_comb)
 gct_expr_comb_nn = parse_gctx(file_expr_comb_nn)
+
+if ( !is.null(opt$gene_col) && # if we have a gene-symbol column
+     opt$gene_col %in% names(gct_expr_comb@rdesc) ) { # AND it exists in our GCT
+  gene_col_toggle = TRUE # add toggle indicating extant gene_col
+} else { # otherwise
+  if ( !is.null(opt$gene_col) ) # if it should have existed, print a warning
+    cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
+               "' was not found in the rdesc. Gene-annotations assumed missing.\n\n"))
+  gene_col_toggle = FALSE # add toggle indicating missing gene_col
+}
 
 #### Annotations / Groups File Pre-processing ####
 if (!is.null(opt$groups_file)) { # if we have a groups file
@@ -715,7 +725,7 @@ WriteXLS(driver.features.list.bh,
          row.names=F, BoldHeaderRow=T, AutoFilter=T)
 
 #### Write Excel File, subset to Kinase Only ####
-if ( opt$gene_col %in% gct_expr_comb@rdesc ) { # if we have our gene-column, assume ENZYME annotations were added
+if ( gene_col_toggle ) { # if we have our gene-column annotation, create XLSX subsetted to kinase/phosphotase
   driver.features.list.kinase = lapply(driver.features.list.bh, function(df) {
     filter(df, grepl('2\\.7\\.1[0-2]|3\\.1\\.3\\.(16|48)', ENZYME)) # subset each DF of driver-features to kinases only
   })
@@ -724,9 +734,6 @@ if ( opt$gene_col %in% gct_expr_comb@rdesc ) { # if we have our gene-column, ass
            FreezeRow=1, FreezeCol=1,
            SheetNames=make.unique(substr(names(driver.features.list.kinase), 1, 20)),
            row.names=F, BoldHeaderRow=T, AutoFilter=T)
-} else {
-  cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
-             "' was not found in the rdesc. Gene-annotations assumed missing.\n\n"))
 }
 
 ###########################################################
@@ -823,13 +830,16 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                   names_from='cluster', # create column for each cluster with driver features
                   values_from='observed', values_fill=0) %>% # fill with observed (1) if driver-feature was seen in cluster & fill wtih missing with 0 instead of NA if driver was NOT seen in cluster
       column_to_rownames('id') # convert feature-id to rowname
-    
-    p <- upset(upset.mat, # create upset-plot
-               point.size = 4, text.scale = 1.5, nintersects = NA,
-               nsets = dim(upset.mat)[2])
-    
-    pdf(paste0(prefix, "driverFeatures_UpSet.pdf")); p; dev.off(); # plot as PDF
-    png(paste0(prefix, "driverFeatures_UpSet.png")); p; dev.off(); # plot as PNG
+    if (all( dim(upset.mat)>1) ) { # if we have... more than one cluster (columns) OR feature (rows) to plot
+      p <- upset(upset.mat, # create upset-plot
+                 point.size = 4, text.scale = 1.5, nintersects = NA,
+                 nsets = dim(upset.mat)[2])
+      
+      pdf(paste0(prefix, "driverFeatures_UpSet.pdf")); p; dev.off(); # plot as PDF
+      png(paste0(prefix, "driverFeatures_UpSet.png")); p; dev.off(); # plot as PNG
+    } else {
+      cat("\nWARNING: No overlap between cluster driver-features to plot.\n") # try again on driver-features
+    }
   }
   
   ###########################################################
@@ -891,12 +901,14 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                            # sample.id = gct_expr_comb@cid, # get corresponding sample name (unnecessary but convenient)
                            cluster = NMF.annots[gct_expr_comb@cid, # in the order of the samples
                                                 'NMF.consensus']) #get cluster membership
+      if (nrow(expr.df)==0) next # if we have no data to plot, skip this feature
+      
       annot.df = driver.features.sigFeatOnly %>%
         filter(cluster==!!cluster) %>% # filter to driver-features in cluster
         filter(id==ft) # filter annotations to relevant driver-feature
       
       # boxplot title
-      if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
+      if (gene_col_toggle) { # if we have the gene column, use it for the boxplot title
         boxplot.title = glue('Expression of {annot.df[[opt$gene_col]]} in {annot.df$ome_type} ({annot.df$id_og})')
       } else { # otherwise just use the feature ID
         boxplot.title = glue('Expression of feature {annot.df$id_og} ({annot.df$ome_type})')
@@ -909,7 +921,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
       
       #### create boxplot ####
       p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
-        geom_boxplot(color = boxplot.colors, # boxplots of expression data
+        geom_boxplot(color = boxplot.colors[sort(unique(expr.df$cluster))], # grab only the colors for clusters that appear in our dataframe
                      width = 0.25) + 
         geom_hline(yintercept = 0, color='grey', linetype='dashed') + # add dashed line at 0
         labs(x = "NMF Basis", y = "Feature Expression", # x axis and y axis labels
@@ -935,7 +947,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
     cat(glue("\n\n##### Heatmap for {cluster}\n\n"))
     driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
     
-    if (!is.null(opt$gene_col)) { # if we have the gene column
+    if (gene_col_toggle) { # if we have the gene column
       goi = filter(driver.features.sigFeatOnly, id %in% driverFeats) %>%
         .[[opt$gene_col]] %>% unique() # and identify unique genes
       ft_list = lapply(goi, function(gene) {
@@ -960,19 +972,20 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
     for (i in 1:length(ft_list)) {
       fts = ft_list[[i]]
       
-      if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
+      if (gene_col_toggle) { # if we have the gene column, use it for the boxplot title
         hm.title = glue('Expression of Driver Features for Gene {goi[i]}')
       } else { # otherwise just use the feature ID
         hm.title = glue('Expression of Driver Feature {fts}')
       }
       
       mat = gct_expr_comb@mat[fts,,drop=F]
+      if (nrow(mat)==0) next # if we have no data to plot, skip this feature
       # generate heatmap
       hm <- Heatmap(matrix = mat, # plot normalized heatmap
                     top_annotation = HeatmapAnnotation(df=annot_df,
                                                        col=c(colors, colors.NMF), na_col="#f7f7f7",
                                                        show_legend=FALSE), # hide annotation legend
-                    name = goi[i],
+                    # name = goi[i],
                     cluster_rows = T, row_dend_side = 'left',
                     show_row_names = TRUE, row_names_side = "right",
                     column_title = hm.title, column_title_rot = 0, # add column title and rotation

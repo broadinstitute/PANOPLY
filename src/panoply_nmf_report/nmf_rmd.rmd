@@ -152,11 +152,9 @@ fig_count <- fig_count + 1
 
 The heatmap shown in **Figure `r fig_count`** is a visualization of the meta-feature matrix derived from decomposing the input matrix, normalized per column by the maximum entry. The matrix presents one of the main results of NMF as it provides the basis of assigning samples to clusters.  
 
-
 :::: {style="display: flex;"}
 
 ::: {.column width="80%"}
-
 ```{r heatmap_coef, include=TRUE, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting the relative contributions of each sample (x-axis) to each cluster (y-axis). Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_heatmap_coeficientMatrixNorm.png"))#pdf"))
 ```
@@ -164,21 +162,17 @@ knitr::include_graphics(list.files(pattern = "*_heatmap_coeficientMatrixNorm.png
 ## increment
 fig_count <- fig_count + 1
 ```
-
 :::
 
 ::: {.column width="20%"}
-
 ```{r include=TRUE, out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
 knitr::include_graphics(list.files(pattern = "*_annotationLegend_scrollable.pdf"))
 ```
-
-
 :::
 
 ::::
 
-
+***
 
 ## Core membership
 
@@ -271,6 +265,9 @@ tab_count <- tab_count + 1
 ```{r feature_selection, include=FALSE}
 feature_method = read.table(list.files(pattern = "*_driverFeatures_driverSelectionMethod.txt"))[[1]]
 
+nsig_feat = nrow(read.csv(list.files(pattern ="_driverFeatures_sigFeatOnly.csv"))) # number of significant driver features
+driver_toggle = ( nsig_feat > 0 ) # determine if there ARE significant driver features
+
 ```
 
 Matrix _W_ containing the weights of each feature in a certain cluster was used to derive a list of representative features separating the clusters. The ```r feature_method``` method was used, `r if(feature_method=="kim") {" as proposed in ([Kim and Park, 2007](https://pubmed.ncbi.nlm.nih.gov/17483501/))"} else if(feature_method=="max") {", as described in ([ Carmona-Saez et al., 2006](https://pubmed.ncbi.nlm.nih.gov/16503973/))"}`. In order to derive a p-value for each cluster-specific feature, a 2-sample moderated t-test ([Ritchie et al., 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1434777/)) was used to compare the abundance of the features between the respective cluster and all other clusters. Derived p-values were adjusted for multiple hypothesis testing using the methods proposed in ([Benjamini and Hochberg, 1995](https://www.jstor.org/stable/2346101?seq=1)). Features with FDR <`r opt_full$feature_fdr` were used in subsequent analyses.   
@@ -281,24 +278,25 @@ Matrix _W_ containing the weights of each feature in a certain cluster was used 
 :::: {style="display: flex;"}
 
 ::: {.column width="80%"}
-
-```{r heatmap_drivers, include=TRUE, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster-specific features defined as descibed above. Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
-knitr::include_graphics(list.files(pattern = "*_driverFeatures_complexHeatmap.png"))#pdf"))
+```{r heatmap_drivers, out.width='100%', out.height='100%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Heatmap depicting abundances of cluster-specific features defined as descibed above. Samples are ordered by cluster, cluster core and cluster membership score in decreasing order (from left to right).'), echo=FALSE}
+if(driver_toggle) {
+  knitr::include_graphics(list.files(pattern = "*_driverFeatures_complexHeatmap.png"))#pdf"))
+} else {
+  cat("No Significant Driver Features.")
+}
 ```
 ```{r echo=F}
 ## increment
-fig_count <- fig_count + 1
+if(driver_toggle) fig_count <- fig_count + 1
 ```
-
 :::
 
 ::: {.column width="20%"}
-
-```{r include=TRUE, out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
-knitr::include_graphics(list.files(pattern = "*_annotationLegend_scrollable.pdf"))
+```{r out.width='100%', out.height='100%', fig.align='right', fig.pos='H', echo=FALSE}
+if(driver_toggle) {
+  knitr::include_graphics(list.files(pattern = "*_annotationLegend_scrollable.pdf"))
+} else {cat("---")}
 ```
-
-
 :::
 
 ::::
@@ -315,8 +313,10 @@ nmf_xlsx_sheets <- excel_sheets(xlsx_file)
 ## import all sheets
 nmf_xlsx <- lapply(nmf_xlsx_sheets, function(x) {
   read_excel(xlsx_file, sheet=x) %>%  # read in each sheet
-    mutate(Directionality = ifelse(!!as.name(glue("t.{sub('C','',x)}.over.rest"))>0,"up","down")) %>% # get sign of t-test
-    dplyr::select(one_of(c('cluster', 'id_og', 'ome_type', # select relevant columns
+    dplyr::mutate(!!glue("t.{sub('C','',x)}.over.rest") := ifelse(glue("t.{sub('C','',x)}.over.rest") %in% names(.), glue("t.{sub('C','',x)}.over.rest"), NA)) %>% # create t.test column if missing
+    dplyr::mutate(Directionality = ifelse(!!as.name(glue("t.{sub('C','',x)}.over.rest"))>0,"up","down")) %>% # get sign of t-test
+    dplyr::filter(as.logical(global.adj.P.Value_signif)) %>% # filter for significant features only
+    dplyr::select(any_of(c('cluster', 'id_og', 'ome_type', # select relevant columns
                            'Directionality',
                            'SYMBOL', 'ENZYME', 'CYTOBAND',
                            'feature.scores'))) %>%
@@ -330,14 +330,18 @@ nmf_xlsx_comb <- Reduce('rbind', nmf_xlsx) # combine into one dataframe
 write.table(nmf_xlsx_comb, sep='\t', file='debug.txt') # write out table
 ```
 
-In total ```r nrow(nmf_xlsx_comb)``` features separating the clusters have been detected using the ```r feature_method``` method described above. The distribution of features across the different clusters are shown in **Figure `r fig_count`**. 
+In total ```r nsig_feat``` significant features separating the clusters have been detected using the ```r feature_method``` method described above. `r if(driver_toggle) { print(paste0("The distribution of features across the different clusters are shown in **Figure ", fig_count,"**.")) }` 
     
-```{r barplot_drivers, include=TRUE, include=TRUE, out.width='75%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Barchart depicting the number of cluster-specific features (y-axis) per cluster (x-axis)'), echo=FALSE}
+```{r barplot_drivers, include=TRUE, out.width='75%', fig.align='left', fig.pos='H', fig.cap=paste0('**Figure ', fig_count,'**: Barchart depicting the number of cluster-specific features (y-axis) per cluster (x-axis)'), echo=FALSE}
+if(driver_toggle) {
 knitr::include_graphics(list.files(pattern = "*_driverFeatures_contributionsByOme_barplot.png"))
+} else {
+  cat("No Significant Driver Features.")
+}
 ```
 ```{r echo=F}
 ## increment
-fig_count <- fig_count + 1
+if(driver_toggle) fig_count <- fig_count + 1
 ```
 
 
@@ -347,7 +351,7 @@ fig_count <- fig_count + 1
 
 **Table `r tab_count`** depicts all significant cluster specific features. The table can be sorted and filtered interactively. Please note that the table represents a condensed verison of the entire table which can be found in the Excel sheet ```r sub('.*/', '', xlsx_file)``` in the result tarball.
 
-```{r display_feat_xlsx, fig.cap=paste0('**Table ', tab_count,'**: Data table containing all significant cluster-specific features.'), echo=F}
+```{r display_feat_xlsx, include=TRUE, fig.cap=paste0('**Table ', tab_count,'**: Data table containing all significant cluster-specific features.'), echo=F}
 DT::datatable(nmf_xlsx_comb, width='800', escape=F, filter='top', rownames=FALSE,
                   options = list( pageLength = 10, scrollX = T, selection='none', 
                                   autoWidth = F, paging=T, searchHighlight = TRUE,
