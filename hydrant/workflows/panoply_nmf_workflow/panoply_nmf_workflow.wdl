@@ -2,7 +2,7 @@
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/1/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/12/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/13/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/9/plain-WDL/descriptor" as sankey_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/12/plain-WDL/descriptor" as assemble_wdl
 
@@ -19,7 +19,9 @@ workflow panoply_nmf_workflow {
 	# File? omes_tar			# tar file with GCTs for analysis. not set up.
 
 	## Auxilliary Files
-	File gene_set_database		# used for ssgsea
+
+	## ssGSEA parameters
+	File? gene_set_database
 	File yaml_file				# default parameters & figure colors
 	File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
 	
@@ -40,6 +42,7 @@ workflow panoply_nmf_workflow {
 	## Module Toggles
 	Boolean run_so_nmf
 	Boolean run_mo_nmf
+	Boolean run_ssgsea		# run ssGSEA on nmf results
 	Boolean run_sankey
     
 	# select extant pairs from ome_pairs
@@ -56,6 +59,7 @@ workflow panoply_nmf_workflow {
 					label="${label}-so_nmf-${pair.left}",
 					ome_labels=[pair.left],
 					ome_gcts=[pair.right],
+					run_ssgsea=run_ssgsea,
 					gene_set_database=gene_set_database,
 					yaml_file=yaml_file,
 					groups_file=groups_file,
@@ -85,6 +89,7 @@ workflow panoply_nmf_workflow {
 				label="${label}-mo_nmf",
 				ome_labels=select_pairs.pair_string,
 				ome_gcts=select_pairs.pair_file,
+				run_ssgsea=run_ssgsea,
 				gene_set_database=gene_set_database,
 				yaml_file=yaml_file,
 				groups_file=groups_file,

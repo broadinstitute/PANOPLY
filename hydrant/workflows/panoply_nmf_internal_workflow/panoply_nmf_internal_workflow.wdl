@@ -17,9 +17,12 @@ workflow panoply_nmf_internal_workflow {
     Array[File]+ ome_gcts			# array of GCT files
     Array[String]+ ome_labels		# labels corresponding to those GCT files
 
-	File gene_set_database
 	File? yaml_file
 	File? groups_file
+
+	## ssGSEA parameters
+	Boolean run_ssgsea
+	File? gene_set_database
 
 	## Balance Toggle
 	Boolean? balance_omes
@@ -88,23 +91,25 @@ workflow panoply_nmf_internal_workflow {
 			label=label
 	}
 
-	call panoply_ssgsea_wdl.panoply_ssgsea {
-		input:
-			input_ds=postprocess.feature_matrix_w,
-			gene_set_database=gene_set_database,
-			yaml_file=yaml_file,
-			output_prefix=label,
- 			mode="abs.max",
-			weight=1,
-			
-	}
+	if (run_ssgsea) { # if we are running mo_nmf
+		call panoply_ssgsea_wdl.panoply_ssgsea {
+			input:
+				input_ds=postprocess.feature_matrix_w,
+				gene_set_database=gene_set_database,
+				yaml_file=yaml_file,
+				output_prefix=label,
+	 			mode="abs.max",
+				weight=1,
+				
+		}
 
-    call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
-		input:
-			tarball=panoply_ssgsea.results,
-			cfg_yaml=yaml_file,
-			label=label
-		
+	    call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
+			input:
+				tarball=panoply_ssgsea.results,
+				cfg_yaml=yaml_file,
+				label=label
+			
+		}
 	}
 
 	output {
@@ -114,8 +119,8 @@ workflow panoply_nmf_internal_workflow {
 		File nmf_membership=postprocess.membership	## .tsv with membership results
 		File nmf_report=panoply_nmf_report.report 	## report file
 
-		File nmf_ssgsea_tar=panoply_ssgsea.results
-		File nmf_ssgsea_report=panoply_ssgsea_report.report
+		File? nmf_ssgsea_tar=panoply_ssgsea.results
+		File? nmf_ssgsea_report=panoply_ssgsea_report.report
         
 		File? nmf_balance_filter=balance.pdf
 		File? nmf_preprocess_figures=nmf.preprocess_figs
