@@ -489,9 +489,10 @@ validate_gene_id <- function(ome) {
       # check whether user is inputting a gene.id.col, or a prot.id.col and prot.id.type
       id.col.type = smart_readline( prompt = paste(glue("\n$$ To create a Gene ID column for {toupper(ome)}, please choose to either:"),
                                                    "\t1) Select an existing annotation column with HUGO Gene Symbols",
-                                                   "\t2) Convert protein IDs to HUGO Gene Symbol \n",
+                                                   "\t2) Convert protein IDs to HUGO Gene Symbol",
+                                                   "\t3) Proceed without a gene-symbol column, at your own risk \n",
                                                    sep = "\n"),
-                                    custom_condition = function(input) { input %in% c(1,2) },
+                                    custom_condition = function(input) { input %in% c(1,2,3) },
                                     custom_warning = stnd_custom_warning,
                                     exit_message = stnd_exit_message )
       if(is.null(id.col.type)) stop()
@@ -501,7 +502,10 @@ validate_gene_id <- function(ome) {
         valid_id = gene_id_column_select(ome, gct, gene.id.col.default) #select column w/ gene IDs
       else if (id.col.type==2) 
         valid_id = gene_id_column_create(ome, gct, gene.id.col.default, protein.id.col) # convert protein IDs to gene IDs
-      else { printX("ERROR", "This shouldn't have happened!"); stop() }
+      else if (id.col.type==3) {
+        printX("WARNING", glue("Skipping check for gene-symbol column in {toupper(ome)} data. Proceed with caution; many PANOPLY modules require this column"))
+        valid_id = TRUE # skip check entirely
+      } else { printX("ERROR", "This shouldn't have happened!"); stop() }
     }
   }
   
