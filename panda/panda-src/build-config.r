@@ -714,13 +714,19 @@ verify_group_validity <- function( groups.cols, typemap.csv ){
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- sort(unique( annot[[groups.cols[group.idx]]] ))
-    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
+    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){
+      # display an appropriate warning
+      if ( length( groups.vals ) > max.categories ) tmp = glue("more than {max.categories} categories")
+      if ( length( groups.vals ) <= 1 ) tmp = "1 or fewer unique categories"
+      printX ("WARNING", glue("The '{groups.cols[group.idx]}' annotation has {tmp} ({length( groups.vals )}), and will not be used as a categorical variable."))
       # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
       # if column has > max.categories, drop from groups.cols, 
       #   but, if numeric, treat as a continuous column and add to groups.cols.continuous
       drop <- c( drop, group.idx )
-      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) 
+      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) {
         cont <- c (cont, group.idx)
+        printX ("INFO", glue("The '{groups.cols[group.idx]}' annotation will be included as a continuous variable."))
+      }
     }
   }
   if ( length( cont ) > 0 ) groups.cols.continuous <- groups.cols[cont]
