@@ -63,10 +63,10 @@ Plot_cis_trans_effect <- function(cna_mrna,cna_protein,genelocate,chromLength,ou
     y <- abs(cna_protein)
     spe_protein <- apply(y,2,sum)
 
-    maxM <- max(spe_mrna)
-    maxP <- max(spe_protein)
-    maxO <- min(ov)
-    maxS <- max(maxM,maxP)
+    maxM <- max(spe_mrna, na.rm = TRUE)
+    maxP <- max(spe_protein, na.rm = TRUE)
+    maxO <- min(ov, na.rm = TRUE)
+    maxS <- max(maxM,maxP, na.rm = TRUE)
 
     png(outputfile,height=480*8,width=480*11,res=300,type='cairo')
 
@@ -81,36 +81,63 @@ Plot_cis_trans_effect <- function(cna_mrna,cna_protein,genelocate,chromLength,ou
 
     la <- 1
     for(i in c(1:length(p))){
-        po <- p[i]
-        rowi <- po %% rownum
-        if(rowi == 0){
-            rowi <- rownum
+      
+      po <- p[i]
+      rowi <- po %% rownum
+      if (rowi == 0) {
+        rowi <- rownum
+      }
+      coli <- ceiling(po / rownum)
+      cnag <- allcnagene[coli]
+      ovg <- allovgene[rowi]
+      cnagp <- allgene_locate[allgene_locate[, 1] == cnag, 5]
+      ovgp <- allgene_locate[allgene_locate[, 1] == ovg, 5]
+      
+      if (length(cnagp) == 0 || length(ovgp) == 0) {
+        next
+      }
+      
+      cov <- cna_mrna[rowi, coli]
+      color <- ifelse(cov > 0, "red", "green")
+      if (la == 1) {
+        plot(
+          cnagp,
+          ovgp,
+          xlim = c(0, allChromlen),
+          ylim = c(0, allChromlen),
+          xaxt = "n",
+          yaxt = "n",
+          frame.plot = F,
+          xlab = "",
+          ylab = "",
+          pch = 20,
+          col = color,
+          cex = 0.2
+        )
+        axis(
+          side = 2,
+          at = (chromLength[, 4] - chromLength[, 2] / 2),
+          labels = chrome
+        )
+        abline(
+          h = c(0, chromLength[, 4]),
+          v = c(0, chromLength[, 4]),
+          col = "gray",
+          lty = 3
+        )
+        la <- la + 1
+      } else{
+        for (u in c(1:length(cnagp))) {
+          for (v in c(1:length(ovgp))) {
+            points(cnagp[u],
+                   ovgp[v],
+                   pch = 20,
+                   col = color,
+                   cex = 0.2)
+          }
         }
-        coli <- ceiling(po/rownum)
-        cnag <- allcnagene[coli]
-        ovg <- allovgene[rowi]
-        cnagp <- allgene_locate[allgene_locate[,1]==cnag,5]
-        ovgp <- allgene_locate[allgene_locate[,1]==ovg,5]
-    
-        if(length(cnagp)==0 || length(ovgp)==0){
-            next
-        }
-    
-        cov <- cna_mrna[rowi,coli]
-        color <- ifelse(cov>0,"red","green")
-       	if(la==1){
-		plot(cnagp,ovgp,xlim=c(0,allChromlen),ylim=c(0,allChromlen),xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="",pch=20,col=color,cex=0.2)
-            axis(side=2,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
-            abline(h=c(0,chromLength[,4]),v=c(0,chromLength[,4]),col="gray",lty=3)
-            la <- la+1
-        }else{
-            for(u in c(1:length(cnagp))){
-                for(v in c(1:length(ovgp))){
-                    points(cnagp[u],ovgp[v],pch=20,col=color,cex=0.2)
-                }
-            }
-        }
-	}
+      }
+    }
 
     par(mar=c(4,4,0,0))
 
