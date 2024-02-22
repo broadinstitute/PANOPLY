@@ -885,7 +885,8 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
   driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant driver-features
     group_by(cluster) %>% # group by cluster
     slice_min(order_by = bh.pval, # order by p-value
-              n = opt$top_n_features) %>% # select n features with lowest p-values
+              n = opt$top_n_features, # select n features with lowest p-values
+              with_ties = FALSE) %>% # enforce minimum even if there are ties
     ungroup() # ungroup
   
   
