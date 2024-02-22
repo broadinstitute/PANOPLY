@@ -156,6 +156,7 @@ if ( !is.null(opt$gene_col) && # if we have a gene-symbol column
                "' was not found in the rdesc. Gene-annotations assumed missing.\n\n"))
   gene_col_toggle = FALSE # add toggle indicating missing gene_col
 }
+write.table(gene_col_toggle, file = "gene_col_toggle.txt", quote = FALSE, col.names = FALSE, row.names = FALSE) # write gene-column toggle to .txt file, to determine if ssGSEA can be run
 
 #### Annotations / Groups File Pre-processing ####
 if (!is.null(opt$groups_file)) { # if we have a groups file
@@ -393,7 +394,7 @@ consensusmap(res, filename = paste0(prefix, "consensusMap.png")) # idk what make
 ## ComplexHeatmap version
 hm = Heatmap(matrix = res@consensus, # plot normalized heatmap
              col = colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), # colorscale for heatmap
-             top_annotation = HeatmapAnnotation(df=NMF.annots,
+             top_annotation = HeatmapAnnotation(df=NMF.annots[colnames(res@consensus),],
                                                 col=colors.NMF, na_col="#f7f7f7",
                                                 show_legend=TRUE), # hide annotation legend
              show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
