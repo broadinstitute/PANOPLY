@@ -313,7 +313,10 @@ nmf_xlsx_sheets <- excel_sheets(xlsx_file)
 ## import all sheets
 nmf_xlsx <- lapply(nmf_xlsx_sheets, function(x) {
   read_excel(xlsx_file, sheet=x) %>%  # read in each sheet
-    dplyr::mutate(!!glue("t.{sub('C','',x)}.over.rest") := ifelse(glue("t.{sub('C','',x)}.over.rest") %in% names(.), glue("t.{sub('C','',x)}.over.rest"), NA)) %>% # create t.test column if missing
+    dplyr::mutate(!!glue("t.{sub('C','',x)}.over.rest") := {
+      if (glue("t.{sub('C','',x)}.over.rest") %in% names(.) ) {
+        !!sym(glue("t.{sub('C','',x)}.over.rest"))
+        } else NA }) %>% # create t.test column if missing
     dplyr::mutate(Directionality = ifelse(!!as.name(glue("t.{sub('C','',x)}.over.rest"))>0,"up","down")) %>% # get sign of t-test
     dplyr::filter(as.logical(global.adj.P.Value_signif)) %>% # filter for significant features only
     dplyr::select(any_of(c('cluster', 'id_og', 'ome_type', # select relevant columns

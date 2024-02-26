@@ -683,7 +683,7 @@ driver.features.df = lapply(driver.features.list, function(df) {
     dplyr::select(c(!ends_with(".over.rest"), # annotation columns
                     starts_with("P.Value."))) %>% # and p-value column
     dplyr::rename("pval" = starts_with("P.value.")) %>% # rename pvalue column for Easy Stacking
-    dplyr::mutate(pval = ifelse("pval" %in% names(.), pval, NA), # define a pvalue column if our t-test failed
+    dplyr::mutate(pval = { if ("pval" %in% names(.)) pval else NA }, # define a pvalue column if our t-test failed
                   !!paste0("signif_at_",opt$feature_fdr) := pval < opt$feature_fdr) # add boolean column indicating significance at chosen FDR
 }) %>% do.call(rbind, .) # rbind list into dataframe
 
@@ -886,9 +886,13 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
     group_by(cluster) %>% # group by cluster
     slice_min(order_by = bh.pval, # order by p-value
               n = opt$top_n_features, # select n features with lowest p-values
-              with_ties = FALSE) %>% # enforce minimum even if there are ties
+              with_ties = TRUE) %>% # allow ties, if multiple drivers have the same p-value; note that if multiple features have the same score, this could cause issues
     ungroup() # ungroup
-  
+  # add a warning, if certain clusters have >2x the number of top-features
+  if (any( table(driver.features.topNFeat$cluster) > opt$top_n_features*2 )) {
+    tmp = table(driver.features.topNFeat$cluster)
+    cat(glue("\nWARNING: More than {opt$top_n_features*2} top driver-features were selected for expression-plotting in some clusters (largest cluster: {names(tmp)[which.max(tmp)]} with {max(tmp)} features), indicating many driver-features with identical t-scores / p-values.\n")) # try again on driver-features
+  }
   
   #### make Boxplot PDF for each cluster. ####
   cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
