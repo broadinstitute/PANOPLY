@@ -38,8 +38,8 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('-d',"/opt/input/phosphoproteome-subset.gct",
-                       #          '-o',"pSTY",
+                       # args = c('-d',"/opt/input/proteome-subset.gct,/opt/input/phosphoproteome-subset.gct,/opt/input/acetylome-subset.gct,/opt/input/ubiquitylome-subset.gct,/opt/input/cna-subset.gct,/opt/input/rna-subset.gct,/opt/input/meta-subset.gct",
+                       #          '-o',"prot,pSTY,acK,ubK,CNA,RNA,metabolomic",
                        #          '-y','/opt/input/master-parameters.yaml',
                        #          '-x',"odg_pSTY")
                        )
@@ -170,7 +170,9 @@ for (ome in ome_labels) {
                        data.frame(id = paste(ome, ome_gcts[[ome]]@rid, sep="_"), # initialize rdesc with id column
                                   id_og = ome_gcts[[ome]]@rid, # initialize rdesc with id column
                                   ome_type = ome) %>% # ome-output_prefix
-                         mutate(!!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]])) # add opt$gene_col column from rdesc # and ome
+                         mutate(!!opt$gene_col := ifelse(!is.null(ome_gcts[[ome]]@rdesc[[opt$gene_col]]), # if the gene_col exists
+                                                         ome_gcts[[ome]]@rdesc[[opt$gene_col]], # add opt$gene_col column from rdesc
+                                                         NA)))  # otherwise fill w/ NA
     # append matrices, based on shared samples / CIDs
     shared_samples <- intersect(colnames(comb_mat_raw), colnames(ome_gcts[[ome]]@mat))
     if (length(shared_samples)==0) stop(paste("The GCT for",ome,"does not share any samples in common with previously loaded GCTs"))
