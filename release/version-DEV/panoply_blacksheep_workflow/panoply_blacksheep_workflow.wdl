@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep/versions/7/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_report/versions/7/plain-WDL/descriptor" as blacksheep_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep/versions/8/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_report/versions/8/plain-WDL/descriptor" as blacksheep_report_wdl
 
 workflow panoply_blacksheep_workflow {
     File input_gct

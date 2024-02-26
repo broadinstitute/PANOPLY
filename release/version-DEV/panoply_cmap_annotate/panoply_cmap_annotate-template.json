@@ -20,8 +20,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_cmap_annotate",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_cmap_annotate/6",
-    "methodVersion": 6,
+    "methodUri": "agora://broadcptacdev/panoply_cmap_annotate/7",
+    "methodVersion": 7,
     "sourceRepo": "agora"
   },
   "name": "panoply_cmap_annotate",
