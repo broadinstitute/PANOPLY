@@ -9,8 +9,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_check_yaml_default",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_check_yaml_default/28",
-    "methodVersion": 28,
+    "methodUri": "agora://broadcptac/panoply_check_yaml_default/29",
+    "methodVersion": 29,
     "sourceRepo": "agora"
   },
   "name": "panoply_check_yaml_default",

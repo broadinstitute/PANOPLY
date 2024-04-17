@@ -10,13 +10,13 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlat
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation_report/versions/16/plain-WDL/descriptor" as rna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cna_correlation_report/versions/18/plain-WDL/descriptor" as cna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sampleqc_report/versions/17/plain-WDL/descriptor" as sampleqc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/17/plain-WDL/descriptor" as cmap_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/28/plain-WDL/descriptor" as check_yaml_default_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cmap_analysis/versions/18/plain-WDL/descriptor" as cmap_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/29/plain-WDL/descriptor" as check_yaml_default_wdl
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_workflow/versions/19/plain-WDL/descriptor" as assoc_workflow
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_workflow/versions/20/plain-WDL/descriptor" as assoc_workflow
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/37/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_omicsev/versions/4/plain-WDL/descriptor" as omicsev_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_internal_workflow/versions/16/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_internal_workflow/versions/17/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_download/versions/17/plain-WDL/descriptor" as download_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_cosmo/versions/3/plain-WDL/descriptor" as cosmo_wdl
 

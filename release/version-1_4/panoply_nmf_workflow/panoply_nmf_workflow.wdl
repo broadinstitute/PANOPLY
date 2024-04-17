@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/16/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_internal_workflow/versions/16/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sankey_workflow/versions/15/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/17/plain-WDL/descriptor" as select_pairs
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_internal_workflow/versions/17/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_sankey_workflow/versions/16/plain-WDL/descriptor" as sankey_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_assemble_results/versions/4/plain-WDL/descriptor" as assemble_wdl
 
 
