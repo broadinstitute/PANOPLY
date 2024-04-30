@@ -173,8 +173,8 @@ colnames(my.data) <- c(names(data_full), 'freq') # add filetype labels back into
 #######################################
 # set color-scheme for annotations
 # get all annotation values
-annots = unique(unlist(my.data[-length(my.data)]))
-annots_noNA = annots[annots!='NA'] # exclude NA
+annots = levels(unlist(my.data[-length(my.data)])) # get levels from all data, except the frequency column
+annots_noNA = annots[annots!='NA'] # exclude NA from color-scheme
 max_annots=length(annots_noNA) # count number of non-NA values
 # format color-scheme
 default_palette = c('#fde0dd','#f768a1','#7a0177') # default color-palette
@@ -189,27 +189,31 @@ colors = tryCatch(colorRampPalette(palette)(max_annots),
                     cat(glue("\nWARNING: Some or all of the provided colors ({paste(palette, collapse=', ')}) were invalid. Using default palette.\n"))
                     colorRampPalette(default_palette)(max_annots) # choose enough colors to color all clusters
                   })
-# names(colors) = annots_noNA # name colors (SankeyDiagram doesn't consider names)
-# colors = c(colors, "NA" = "grey") # add NA color explicitly (SankeyDiagram doesn't consider names)
+names(colors) = annots_noNA # name colors (note: SankeyDiagram doesn't consider names, this is for my sorting)
+colors = c(colors, "NA" = "grey") # add NA color explicitly (note: SankeyDiagram doesn't consider names, this is for my sorting)
+
 
 for (datatypes_of_interest in datatype_combos) {
   ###################################
   ## plot
   # link.color = 'Source'
   for (link.color in c('Source', 'Target')) {
+    # reorder annotation colors based on which direction we're using for base-coloring
+    lvls = levels(my.data[[datatypes_of_interest[1]]]) # use levels of first datatype
+    not_in_lvls = setdiff(levels(unlist(my.data[datatypes_of_interest])), lvls) # get the remaining color-levels for the other datatypes
+    colors_sorted = colors[c(lvls, not_in_lvls)] #compile them into a properly-sorted list (fingers crossed)
+    
     widget <- SankeyDiagram(my.data[, datatypes_of_interest],
                             link.color = link.color,
                             # link.color = "First variable",
                             # link.color = "None",
                             
-                            weights = my.data$freq,
+                            weights = my.data$freq, # pull frequency data
                             variables.share.values = TRUE,
-                            colors=colors,
+                            colors=colors_sorted,
                             # label.show.percentages = TRUE,
                             node.padding=50,font.size = 20,
                             max.categories = 15)
-    
-    # widget    
     
     # ## export
     datatype_tmp <- paste(datatypes_of_interest, collapse='_')
