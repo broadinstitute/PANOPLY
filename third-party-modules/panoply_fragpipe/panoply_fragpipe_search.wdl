@@ -3,7 +3,7 @@ workflow panoply_fragpipe_search {
   input {
     File fragpipe_workflow
     File database
-    String files_folder
+    File files_folder
 
     File? file_of_files
     String raw_file_type="DDA"
@@ -40,7 +40,7 @@ task fragpipe {
     File fragpipe_workflow
     File database
     
-    String files_folder
+    File files_folder
     File? file_of_files
     String raw_file_type
 
