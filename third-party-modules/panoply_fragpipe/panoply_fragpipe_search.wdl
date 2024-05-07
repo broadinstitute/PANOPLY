@@ -3,7 +3,7 @@ workflow panoply_fragpipe_search {
   input {
     File fragpipe_workflow
     File database
-    File files_folder
+    String files_folder
 
     File? file_of_files
     String raw_file_type="DDA"
@@ -40,7 +40,7 @@ task fragpipe {
     File fragpipe_workflow
     File database
     
-    File files_folder
+    String files_folder
     File? file_of_files
     String raw_file_type
 
@@ -56,7 +56,10 @@ task fragpipe {
 
   command {
     . /etc/profile
+    set -x
     set -euo pipefail
+
+    echo ~{files_folder}
 
     projdir="fragpipe"
     proc_data_zip="fragpipe_processed_data.zip"
