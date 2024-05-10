@@ -56,15 +56,16 @@ task fragpipe {
 
   command {
     . /etc/profile
-    set -x
     set -euo pipefail
+    set -x
+    
     ls
     pwd
-    echo ~{files_folder[0]} 
-
+    
     projdir="fragpipe"
     proc_data_zip="fragpipe_processed_data.zip"
     out_zip="fragpipe_output.zip"
+    
     cromwell_root=$(pwd)                           # use cromwell_root fs for working dir
     working_dir=$(mktemp -d working_dir_XXXXXX)    # use wd in the /cromwell_root file system
     cd $working_dir
@@ -75,12 +76,15 @@ task fragpipe {
     cp -s ~{fragpipe_workflow} $projdir/
     cp -s ~{database} $projdir/
     frag_workflow=$(basename ${fragpipe_workflow})
-
+    
+    parent_directory_mzML=$(dirname ${files_folder[0]})
+    echo $parent_directory_mzML
+    
     cd $projdir
     if [ -z ~{file_of_files} ]
     then
       tmp_dir=$(mktemp -d data_XXXXXX)
-      mv ~{files_folder}/* $tmp_dir 
+      mv $parent_directory_mzML/* $tmp_dir 
       mv $tmp_dir data
     else
       mkdir data
