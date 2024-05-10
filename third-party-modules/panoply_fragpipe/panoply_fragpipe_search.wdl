@@ -59,9 +59,6 @@ task fragpipe {
     set -euo pipefail
     set -x
     
-    ls
-    pwd
-    
     projdir="fragpipe"
     proc_data_zip="fragpipe_processed_data.zip"
     out_zip="fragpipe_output.zip"
@@ -99,9 +96,6 @@ task fragpipe {
       cd data && ls | grep -v $file_to_keep | xargs rm -r && cd ..
     fi
     
-    echo "TEST"
-    echo $cromwell_root/$working_dir/$projdir/
-
     if [ -z ~{fragpipe_manifest} ]
     then
       python /usr/local/bin/get_fp_manifest.py $cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
@@ -119,7 +113,6 @@ task fragpipe {
     zip -r $out_zip $projdir/out -x \*.zip
     zip -r $proc_data_zip $projdir/data -x \*.zip
     
-    echo "MOVE OUTPUTS TO CROMWELL_ROOT"
     mv $out_zip $cromwell_root/
     mv $proc_data_zip $cromwell_root/
   }
