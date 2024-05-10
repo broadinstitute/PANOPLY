@@ -98,15 +98,18 @@ task fragpipe {
       file_to_keep=$(ls -1 "data" | head -1)
       cd data && ls | grep -v $file_to_keep | xargs rm -r && cd ..
     fi
+    
+    echo "TEST"
+    echo $cromwell_root/$working_dir/$projdir/
 
     if [ -z ~{fragpipe_manifest} ]
     then
-      python /usr/local/bin/get_fp_manifest.py /cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
+      python /usr/local/bin/get_fp_manifest.py $cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
       frag_manifest="generated.fp-manifest"
     else
       cp -s ~{fragpipe_manifest} .
       frag_manifest=$(basename ${fragpipe_manifest})
-      sed -i -e "s/\/path\//\/cromwell_root\/$working_dir\/$projdir\/data\//g" $frag_manifest  
+      sed -i -e "s/\/path\//\/$cromwell_root\/$working_dir\/$projdir\/data\//g" $frag_manifest  
     fi
     
     #headless version 
@@ -115,9 +118,10 @@ task fragpipe {
     cd ..
     zip -r $out_zip $projdir/out -x \*.zip
     zip -r $proc_data_zip $projdir/data -x \*.zip
-
-    mv $out_zip /$cromwell_root/
-    mv $proc_data_zip /$cromwell_root/
+    
+    echo "MOVE OUTPUTS TO CROMWELL_ROOT"
+    mv $out_zip $cromwell_root/
+    mv $proc_data_zip $cromwell_root/
   }
 
   output {
