@@ -77,19 +77,13 @@ task fragpipe {
     cp -s ~{database} $projdir/
     frag_workflow=$(basename ${fragpipe_workflow})
 
-    ls
-    # untar the mzML directory
     basename_mzML=$(basename ${files_folder})
     basename_mzML=`echo $basename_mzML | cut -d. -f1`
     
+    # untar the mzML directory
     tar -xvf "~{files_folder}"
     rm ~{files_folder}
-    ls
-    pwd
-    echo $basename_mzML
     path_mzML=$(pwd) 
-    echo $path_mzML
-
     cd $projdir
     
     if [ -z ~{file_of_files} ]
