@@ -3,7 +3,7 @@ workflow panoply_fragpipe_search {
   input {
     File fragpipe_workflow
     File database
-    Directory files_folder
+    File files_folder
 
     File? file_of_files
     String raw_file_type="DDA"
@@ -40,7 +40,7 @@ task fragpipe {
     File fragpipe_workflow
     File database
     
-    Directory files_folder
+    File files_folder
     File? file_of_files
     String raw_file_type
 
@@ -57,10 +57,15 @@ task fragpipe {
   command {
     . /etc/profile
     set -euo pipefail
-
+    set -x
+    
+    ls
+    pwd
+    
     projdir="fragpipe"
     proc_data_zip="fragpipe_processed_data.zip"
     out_zip="fragpipe_output.zip"
+    
     cromwell_root=$(pwd)                           # use cromwell_root fs for working dir
     working_dir=$(mktemp -d working_dir_XXXXXX)    # use wd in the /cromwell_root file system
     cd $working_dir
@@ -72,11 +77,19 @@ task fragpipe {
     cp -s ~{database} $projdir/
     frag_workflow=$(basename ${fragpipe_workflow})
 
+    basename_mzML=$(basename ${files_folder})
+    basename_mzML=`echo $basename_mzML | cut -d. -f1`
+    
+    # untar the mzML directory
+    tar -xvf "~{files_folder}"
+    rm ~{files_folder}
+    path_mzML=$(pwd) 
     cd $projdir
+    
     if [ -z ~{file_of_files} ]
     then
       tmp_dir=$(mktemp -d data_XXXXXX)
-      mv ~{files_folder}/* $tmp_dir 
+      mv $path_mzML/$basename_mzML/* $tmp_dir 
       mv $tmp_dir data
     else
       mkdir data
@@ -90,15 +103,15 @@ task fragpipe {
       file_to_keep=$(ls -1 "data" | head -1)
       cd data && ls | grep -v $file_to_keep | xargs rm -r && cd ..
     fi
-
+    
     if [ -z ~{fragpipe_manifest} ]
     then
-      python /usr/local/bin/get_fp_manifest.py /cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
+      python /usr/local/bin/get_fp_manifest.py $cromwell_root/$working_dir/$projdir/"data" "data" ~{raw_file_type} 
       frag_manifest="generated.fp-manifest"
     else
       cp -s ~{fragpipe_manifest} .
       frag_manifest=$(basename ${fragpipe_manifest})
-      sed -i -e "s/\/path\//\/cromwell_root\/$working_dir\/$projdir\/data\//g" $frag_manifest  
+      sed -i -e "s/\/path\//\/$cromwell_root\/$working_dir\/$projdir\/data\//g" $frag_manifest  
     fi
     
     #headless version 
@@ -107,9 +120,10 @@ task fragpipe {
     cd ..
     zip -r $out_zip $projdir/out -x \*.zip
     zip -r $proc_data_zip $projdir/data -x \*.zip
-
-    mv $out_zip /$cromwell_root/
-    mv $proc_data_zip /$cromwell_root/
+    
+    mv $out_zip $cromwell_root/
+    mv $proc_data_zip $cromwell_root/
+    
   }
 
   output {
