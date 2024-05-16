@@ -56,6 +56,7 @@ RUN unzip IonQuant-1.9.8.zip && rm IonQuant-1.9.8.zip && chmod 755 /IonQuant-1.9
 ADD src/MSFragger-3.8.zip /
 RUN unzip MSFragger-3.8.zip && rm MSFragger-3.8.zip && chmod 755 /MSFragger-3.8/MSFragger-3.8.jar
 
+# copy files in the src directory to usr/local/bin
 COPY src/collect_psm.sh src/package.sh src/mv.sh src/get_fp_manifest.py /usr/local/bin/
 
 # Set the PATH environment variable
