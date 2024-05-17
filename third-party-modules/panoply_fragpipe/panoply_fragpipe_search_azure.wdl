@@ -132,7 +132,7 @@ task fragpipe {
   }
 
   runtime {
-    docker: "broadcptacdev/panoply_fragpipe:latest"
+    docker: "terraworkflows.azurecr.io/panoply_fragpipe:v1"
     cpuPlatform : "AMD Rome"
     memory: "${ram_gb}GB"
     bootDiskSizeGb: 512
