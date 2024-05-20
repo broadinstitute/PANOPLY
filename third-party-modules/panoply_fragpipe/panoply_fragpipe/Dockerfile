@@ -42,7 +42,7 @@ RUN set -ex; \
     chmod 755 /fragpipe/bin/fragpipe; \
     
     # philosopher_v5
-    cd /; \
+    cd /usr/local/bin; \
     curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v5.0.0/philosopher_v5.0.0_linux_amd64.zip; \
     unzip philosopher_v5.0.0_linux_amd64.zip; \
     rm philosopher_v5.0.0_linux_amd64.zip; \
