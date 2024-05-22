@@ -22,8 +22,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_association",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_association/9",
-    "methodVersion": 9,
+    "methodUri": "agora://broadcptacdev/panoply_association/11",
+    "methodVersion": 11,
     "sourceRepo": "agora"
   },
   "name": "panoply_association",

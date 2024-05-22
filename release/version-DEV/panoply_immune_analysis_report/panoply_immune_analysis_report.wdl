@@ -14,7 +14,7 @@ task panoply_immune_analysis_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_immune_analysis.r "${tar_file}" "${yaml_file}" "${label}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/rmd_immune_analysis.r "${tar_file}" "${yaml_file}" "${label}"
     }
 
     output {

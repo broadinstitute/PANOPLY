@@ -9,7 +9,7 @@ task panoply_mimp_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_mimp.R "${tar_file}" "${output_prefix}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/rmd_mimp.R "${tar_file}" "${output_prefix}"
     }
 
     output {

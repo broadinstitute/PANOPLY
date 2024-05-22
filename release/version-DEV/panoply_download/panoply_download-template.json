@@ -3,6 +3,7 @@
   "inputs": {
     "panoply_download_workflow.panoply_download.analysisDir": "",
     "panoply_download_workflow.panoply_download.association_tar": "",
+    "panoply_download_workflow.panoply_download.cna_corr_tar": "",
     "panoply_download_workflow.panoply_download.cosmo_tar": "",
     "panoply_download_workflow.panoply_download.disk_space": "",
     "panoply_download_workflow.panoply_download.full_tar": "",
@@ -12,8 +13,9 @@
     "panoply_download_workflow.panoply_download.omicsev_tar": "",
     "panoply_download_workflow.panoply_download.output_prefix": "",
     "panoply_download_workflow.panoply_download.ptmsea": "",
+    "panoply_download_workflow.panoply_download.so_nmf_figures": "",
+    "panoply_download_workflow.panoply_download.so_nmf_results": "",
     "panoply_download_workflow.panoply_download.so_nmf_ssgsea_tar": "",
-    "panoply_download_workflow.panoply_download.so_nmf_tar": "",
     "panoply_download_workflow.panoply_download.ssgsea_assoc_dir": "",
     "panoply_download_workflow.panoply_download.ssgsea_assoc_tars": "",
     "panoply_download_workflow.panoply_download.ssgsea_ome_tar": "",
@@ -24,8 +26,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_download",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_download/14",
-    "methodVersion": 14,
+    "methodUri": "agora://broadcptacdev/panoply_download/21",
+    "methodVersion": 21,
     "sourceRepo": "agora"
   },
   "name": "panoply_download",

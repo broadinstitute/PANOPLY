@@ -1,0 +1,32 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_sankey_workflow.panoply_sankey.annot_column": "",
+    "panoply_sankey_workflow.panoply_sankey.annot_file_labels": "",
+    "panoply_sankey_workflow.panoply_sankey.annot_file_primary": "",
+    "panoply_sankey_workflow.panoply_sankey.annot_files": "",
+    "panoply_sankey_workflow.panoply_sankey.annot_label_primary": "",
+    "panoply_sankey_workflow.panoply_sankey.annot_prefix": "",
+    "panoply_sankey_workflow.panoply_sankey.disk_space": "",
+    "panoply_sankey_workflow.panoply_sankey.id_column": "",
+    "panoply_sankey_workflow.panoply_sankey.label": "",
+    "panoply_sankey_workflow.panoply_sankey.memory": "",
+    "panoply_sankey_workflow.panoply_sankey.num_preemptions": "",
+    "panoply_sankey_workflow.panoply_sankey.num_threads": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_sankey",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_sankey/8",
+    "methodVersion": 8,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_sankey",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_sankey_workflow.panoply_sankey.tar_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,4 +1,4 @@
-# ```panoply_cmap_analysis```
+# ```panoply_ptm_normalization```
 
 ## Description
 In a mass-spectrometry proteomics experiment, the abundances of proteins and PTM sites are typically measured as a ratio between a sample (e.g. patient or cell line) and reference (e.g. control) and are performed as separate experiments on the mass spectrometer (Hogrebe et al., 2018). Ratios observed at the PTM level cannot readily be interpreted as change of PTM site stoichiometry alone and the expression of the cognate protein on which the PTM site was detected has to be taken into account.
