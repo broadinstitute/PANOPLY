@@ -12,6 +12,7 @@ This workflow invokes the Spectronaut CLI interface. All of the settings can be 
 - `files_folder` (Directory): Google Bucket path to folder containing raw data files to be searched (ex: "gs://fc-7579f17f-822d-47be-af67-5c99fc597005/RawFiles/Ultra")
 - `analysis_settings` (File,optional): Google Bucket path to Spectronaut settings file (.prop). This file can be saved from Spectronaut UI upon selecting the suitable parameters, or default settings can be obtained from a Spectronaut/Biognosys
 - `condition_setup` (File, optional): Google Bucket path to a `.tsv` file exported from the Spectronaut UI
+- `enzyme_database` (File, optional): Google Bucket path to a `.enzdb` file exported from the Spectronaut UI
 - `file_of_files` (File, optional): Google Bucket path to a text file storing Google Bucket paths to raw files to be analyzed (only works with Thermo data as timsTOF `.d` are technically folders); specifying this would overwrite `files_folder`
 - `json_settings` (File,optional): Google Bucket path to a `json` file with Spectronaut settings. This is an alternate way of specifying settings (instead of a `.prop` file)
 - `fasta_1` (File): Google Bucket path to additional protein search database (.fasta)
