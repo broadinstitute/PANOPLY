@@ -173,7 +173,7 @@ colnames(my.data) <- c(names(data_full), 'freq') # add filetype labels back into
 #######################################
 # set color-scheme for annotations
 # get all annotation values
-annots = levels(unlist(my.data[-length(my.data)])) # get levels from all data, except the frequency column
+annots = sort(unique(unlist(my.data[-length(my.data)]))) # get levels from all data, except the frequency column
 annots_noNA = annots[annots!='NA'] # exclude NA from color-scheme
 max_annots=length(annots_noNA) # count number of non-NA values
 # format color-scheme
@@ -199,8 +199,8 @@ for (datatypes_of_interest in datatype_combos) {
   # link.color = 'Source'
   for (link.color in c('Source', 'Target')) {
     # reorder annotation colors based on which direction we're using for base-coloring
-    lvls = levels(my.data[[datatypes_of_interest[1]]]) # use levels of first datatype
-    not_in_lvls = setdiff(levels(unlist(my.data[datatypes_of_interest])), lvls) # get the remaining color-levels for the other datatypes
+    lvls = sort(unique(my.data[[datatypes_of_interest[1]]])) # use levels of first datatype
+    not_in_lvls = setdiff(sort(unique(unlist(my.data[datatypes_of_interest]))), lvls) # get the remaining color-levels for the other datatypes
     colors_sorted = colors[c(lvls, not_in_lvls)] #compile them into a properly-sorted list (fingers crossed)
     
     widget <- SankeyDiagram(my.data[, datatypes_of_interest],
