@@ -32,6 +32,11 @@ workflow panoply_fragpipe_search {
       ram_gb=ram_gb,
       local_disk_gb=local_disk_gb
   }
+
+  output {
+    File fragpipe_output = fragpipe.fragpipe_output
+    File fragpipe_processed_data = fragpipe.fragpipe_processed_data
+  }
 }
 
 
