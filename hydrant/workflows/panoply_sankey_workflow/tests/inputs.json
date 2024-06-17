@@ -1,7 +1,0 @@
-{
-  "panoply_sankey_workflow.annot_file_labels": ["Proteome", "Phosphoproteome"],
-  "panoply_sankey_workflow.annot_files": ["/Users/wcorinne/Downloads/sankey_testing/prot_membership.txt", "/Users/wcorinne/Downloads/sankey_testing/pSTY_membership.txt"],
-  "panoply_sankey_workflow.annot_of_comparison": "NMF.consensus",
-  "panoply_sankey_workflow.annot_prefix": "C",
-  "panoply_sankey_workflow.label": "SO NMF"
-}
