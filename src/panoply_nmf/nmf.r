@@ -38,10 +38,10 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('-d',"/opt/input/proteome-subset.gct,/opt/input/phosphoproteome-subset.gct,/opt/input/acetylome-subset.gct,/opt/input/ubiquitylome-subset.gct,/opt/input/cna-subset.gct,/opt/input/rna-subset.gct,/opt/input/meta-subset.gct",
-                       #          '-o',"prot,pSTY,acK,ubK,CNA,RNA,metabolomic",
+                       # args = c('-d',"/opt/input/precovid_prot-pr_plasma_bloodall_n218x1417.gct,/opt/input/precovid_trans_plasma_bloodall_n807x20526.gct,/opt/input/precovid_met_plasma_bloodall_n836x1719.gct",
+                       #          '-o',"prot,trans,meta",
                        #          '-y','/opt/input/master-parameters.yaml',
-                       #          '-x',"odg_pSTY")
+                       #          '-x',"precovid_NMF_all_timepoints-mo_nmf")
                        )
 
 
@@ -157,7 +157,9 @@ for (ome in ome_labels) {
     comb_rdesc = data.frame(id = paste(ome, ome_gcts[[ome]]@rid, sep="_"), # initialize rdesc with id column
                             id_og = ome_gcts[[ome]]@rid, # initialize rdesc with id column
                             ome_type = ome) %>% # and ome
-      mutate(!!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]]) # add opt$gene_col column from rdesc
+      mutate(!!opt$gene_col := ifelse(!is.null(ome_gcts[[ome]]@rdesc[[opt$gene_col]]), # if the gene_col exists
+                                      ogime_gcts[[ome]]@rdesc[[opt$gene_col]], # add opt$gene_col column from rdesc
+                                      NA))  # otherwise fill w/ NA
     comb_mat_raw = ome_gcts[[ome]]@mat # initialize matrix
     rownames(comb_mat_raw) = comb_rdesc$id
   } else { # after the first instance
