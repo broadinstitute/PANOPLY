@@ -158,7 +158,7 @@ for (ome in ome_labels) {
                             id_og = ome_gcts[[ome]]@rid, # initialize rdesc with id column
                             ome_type = ome) %>% # and ome
       mutate(!!opt$gene_col := ifelse(!is.null(ome_gcts[[ome]]@rdesc[[opt$gene_col]]), # if the gene_col exists
-                                      ogime_gcts[[ome]]@rdesc[[opt$gene_col]], # add opt$gene_col column from rdesc
+                                      ome_gcts[[ome]]@rdesc[[opt$gene_col]], # add opt$gene_col column from rdesc
                                       NA))  # otherwise fill w/ NA
     comb_mat_raw = ome_gcts[[ome]]@mat # initialize matrix
     rownames(comb_mat_raw) = comb_rdesc$id
