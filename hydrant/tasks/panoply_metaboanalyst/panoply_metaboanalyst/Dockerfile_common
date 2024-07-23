@@ -1,0 +1,15 @@
+FROM broadcptacdev/panoply_common:latest
+MAINTAINER proteogenomics@broadinstitute.org
+
+RUN apt-get update
+RUN apt-get install -y libcairo2-dev libnetcdf-dev libxml2 libxt-dev libssl-dev libbz2-dev
+
+
+COPY src /prot/proteomics/Projects/PGDAC/src
+RUN Rscript /prot/proteomics/Projects/PGDAC/src/install_dependencies.R
+
+# install additional dependencies
+RUN R -e 'install.packages(c("pls", "som", "RJSONIO", "ROCR", "fitdistrplus", "lars", "spls", "metap", "entropy", "rsm"))'
+RUN R -e 'BiocManager::install(c("SSPA", "Rserve", "Cairo"))'
+
+RUN R CMD INSTALL /prot/proteomics/Projects/PGDAC/src/MetaboAnalystR_3.0.3.tar.gz
