@@ -195,6 +195,10 @@ if( !is.null(opt$gene_col) & !is.null(opt$organism) ){ # if we have the required
   if ( is.null(comb_rdesc[[opt$gene_col]]) ) { # sanity check that gene-column is IN the rdesc
     cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
                "' was not found in the rdesc. Gene-annotations cannot be added.\n\n"))
+    } else if ( all(is.na(comb_rdesc[[opt$gene_col]])) ) { # if all geneSymbols are NA, drop the geneSymbol column
+      cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
+                 "' was not present in any -ome's rdesc. Gene-annotations will not be added.\n\n"))
+      comb_rdesc[[opt$gene_col]]=NULL
     } else {  # if the gene_column is in the rdesc
       # load AnnotationDBI & organism package
       library(AnnotationDbi)
