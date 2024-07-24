@@ -44,7 +44,7 @@ opt = opt_cmd # ToDo: Add YAML parameters (temporarily setting opt straight from
 
 
 library(MetaboAnalystR) # analysis tools for Metabolomic Data
-library(RefMet) # mapping between RefMet and other ID types
+# library(RefMet) # mapping between RefMet and other ID types
 library(glue)
 library(cmapR)
 library(tidyverse)
@@ -126,37 +126,40 @@ enrichementAnalysis <- function(gct, cov_of_interest, value_of_interest, label,
   qea.mat = mSet$analSet$qea.mat # Q and P values
   qea.pvals = mSet$analSet$qea.pvals # p-values of individual metabolites
   
-  write.csv(qea.mat, glue("{label}_qea_results"))
+  write.csv(qea.mat, glue("{label}_qea_results.csv"))
 }
 
 
 # variables for enrichement analysis
-gct_full = gct_meta
+gct = gct_meta
+cov_of_interest = "Type"
+id_type = "name"
 metabolite_id_col = "Metabolite"
 sample_id_col = "Sample.ID"
-cov_of_interest = "Type"
-pathway = "kegg"
-id_type = "name"
+pathway = "smpdb"
+# pathway = "kegg"
 
-#### ID Mapping ####
-gct_full@rdesc$Standardized.name = refmet_map_df(gct_full@rdesc[[metabolite_id_col]])$Standardized.name # get standardized names with RefMet::refmet_map_df(), and add to rdesc
-refmet_map = read.csv(file.path(opt$lib_dir, 'refmet.csv'))
-gct_full@rdesc = left_join(gct_full@rdesc, refmet_map, by = c("Standardized.name" = "refmet_name"))
-# gct_full@rdesc$Metabolite[which(gct_full@rdesc$Standardized.name=="-")] # get IDs that didn't map
-# prune no-match or duplicates IDs
-# duplicated_pubchem_id = unique(gct_full@rdesc$pubchem_cid[which(duplicated(gct_full@rdesc$pubchem_cid))])
-# gct = subset_gct(gct_full, rid = which(!(gct_full@rdesc$pubchem_cid %in% duplicated_pubchem_id)))
-# metabolite_id_col = "pubchem_cid"
-# id_type = "pubchem"
+# #### ID Mapping ####
+# gct_full@rdesc$Standardized.name = refmet_map_df(gct_full@rdesc[[metabolite_id_col]])$Standardized.name # get standardized names with RefMet::refmet_map_df(), and add to rdesc
+# refmet_map = read.csv(file.path(opt$lib_dir, 'refmet.csv'))
+# gct_full@rdesc = left_join(gct_full@rdesc, refmet_map, by = c("Standardized.name" = "refmet_name"))
+# # gct_full@rdesc$Metabolite[which(gct_full@rdesc$Standardized.name=="-")] # get IDs that didn't map
+# # prune no-match or duplicates IDs
+# # duplicated_pubchem_id = unique(gct_full@rdesc$pubchem_cid[which(duplicated(gct_full@rdesc$pubchem_cid))])
+# # gct = subset_gct(gct_full, rid = which(!(gct_full@rdesc$pubchem_cid %in% duplicated_pubchem_id)))
+# # metabolite_id_col = "pubchem_cid"
+# # id_type = "pubchem"
 
 #### Enrichement Analysis ####
 for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
-  enrichementAnalysis(gct_full, cov_of_interest, value_of_interest, id_type = id_type,
-                      # metabolite_id_col = 'Standardized.name',
+  enrichementAnalysis(gct, cov_of_interest, value_of_interest, id_type = id_type,
+                      metabolite_id_col = metabolite_id_col, sample_id_col = sample_id_col,
+                      transNorm = "LogNorm",
                       label = glue("{opt$output_prefix}_{value_of_interest}"), pathway=pathway)
 }
 
-
+# # file-copy for docker testing
+# file.copy(list.files(pattern=opt$output_prefix), 'opt/input/', overwrite=T)
 
 # # Set organism to human, at the moment only human data can be accomodated
 # mSet<-SetOrganism(mSet, "hsa")
