@@ -30,7 +30,7 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # for testing arguments
-                       args = c('--metabolome_gct',"opt/input/ODG-v2_2-metabolomics-with-NMF.gct",
+                       args = c('--metabolome_gct',"opt/input/ODG-v2_2-metabolomics-with-NMF-HMDB_UNIQUE.gct",
                                 #'--metabolome_gct',"opt/input/ODG-v2_2-metabolomics_log_norm.gct",
                                 '--contrast_gct',"opt/input/contrasts/metabolomics_logNorm-NMF.consensus-contrast.gct",
                                 '--proteome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
@@ -55,30 +55,34 @@ gct_rna = parse_gctx(opt$rna_gct)
 
 gct_contr = parse_gctx(opt$contrast_gct)
 
-enrichementAnalysis <- function(gct, cov_of_interest, value_of_interest, label,
-                                id_type = "name", pathway = "smpdb", match_no_hits = FALSE,
-                                rowNorm="NULL", # Select the option for row-wise normalization, "QuantileNorm" for Quantile Normalization, "CompNorm" for Normalization by a reference feature, "SumNorm" for Normalization to constant sum, "MedianNorm" for Normalization to sample median, and "SpecNorm" for Normalization by a sample-specific factor.
-                                transNorm="NULL", # Select option to transform the data, "LogNorm" for Log Normalization, and "CrNorm" for Cubic Root Transformation.
-                                scaleNorm="NULL", # Select option for scaling the data, "MeanCenter" for Mean Centering, "AutoNorm" for Autoscaling, "ParetoNorm" for Pareto Scaling, amd "RangeNorm" for Range Scaling.
-                                metabolite_id_col="Metabolite", sample_id_col="Sample.ID") {
+
+mSetPrep <- function(gct, anal.type,
+                     metabolite_id_col, id_type, sample_id_col,
+                     cov_of_interest, value_of_interest=NULL, 
+                     rowNorm="NULL", # Select the option for row-wise normalization, "QuantileNorm" for Quantile Normalization, "CompNorm" for Normalization by a reference feature, "SumNorm" for Normalization to constant sum, "MedianNorm" for Normalization to sample median, and "SpecNorm" for Normalization by a sample-specific factor.
+                     transNorm="NULL", # Select option to transform the data, "LogNorm" for Log Normalization, and "CrNorm" for Cubic Root Transformation.
+                     scaleNorm="NULL", # Select option for scaling the data, "MeanCenter" for Mean Centering, "AutoNorm" for Autoscaling, "ParetoNorm" for Pareto Scaling, amd "RangeNorm" for Range Scaling.)
+                     match_no_hits = F, label = NULL) {
+  if (is.null(label)) {label = anal.type}
   # write .txt file for Read.TextData() to parse
   df = t(gct@mat) %>% # transform matrix to samples as rows
     as.tibble(df) %>% # convert to tibble to prevent special-character replacement
-    set_names(gct@rid) %>% # set colnames as original Metabolite IDs
-    # set_names(gct@rdesc[[metabolite_id_col]]) %>% # set colnames as original Metabolite IDs
+    # set_names(gct@rid) %>% # set colnames as original Metabolite IDs
+    set_names(gct@rdesc[[metabolite_id_col]]) %>% # set colnames as original Metabolite IDs
     mutate(Sample.ID = gct@cdesc[[sample_id_col]]) %>% # add Sample.ID as column
     mutate(cls = gct@cdesc[[cov_of_interest]]) %>%
-    mutate(cls = ifelse(cls==value_of_interest, cls, glue("not_{value_of_interest}"))) %>% # add Sample.ID as column
+    {if (!is.null(value_of_interest)) {mutate(., cls = ifelse(cls==value_of_interest, cls,
+                                                              glue("not_{value_of_interest}")))} else {.} } %>%
     select(Sample.ID, cls, everything())
-  write_csv(df, file = "tmp.csv")
+  input_fn = tempfile(pattern = anal.type, fileext = ".csv")
+  write_csv(df, file = input_fn)
   
-  rm(list = c('mSet')) # clear previous mSet object
   # Initialize mSetObj & add data from Contrasts GCT
-  mSet <- InitDataObjects("conc", "msetqea", FALSE) 
-  mSet <- Read.TextData(mSet, "tmp.csv", "rowu", "disc")
+  mSet=InitDataObjects("conc", anal.type, FALSE)
+  mSet=Read.TextData(mSet, input_fn, "rowu", "disc")
   
   # Perform cross-referencing of compound names
-  mSet <- CrossReferencing(mSet, id_type, lipid=F);
+  mSet=CrossReferencing(mSet, id_type)
   
   # match_no_hits=FALSE # toggle for metabolites without hits should be soft-searched against MetaboAnalyst's databases
   no_hits = mSet$name.map$query.vec[!mSet$name.map$match.state] # get list of metabolites with no hits
@@ -89,55 +93,228 @@ enrichementAnalysis <- function(gct, cov_of_interest, value_of_interest, label,
     cat(glue("\n\n#####\n{length(no_hits)} of {length(mSet$name.map$query.vec)} metabolites did not map to known compound names\n\n"))
   }
   
-  mSet<-CreateMappingResultTable(mSet) # creates the mSet$dataSet$map.table entry (map between ID types)
+  if (anal.type=="msetqea") { # if we're doing mSetQEA
+    tmp = anal.type; assign('anal.type', 'tmp', envir = .GlobalEnv)  # temporarily change anal.type to get around hardcoded mSet global-variable reference to in CreateMappingResultTable()
+    anal.type_resetToggle=T # and set a toggle to ensure it gets fixed after 
+  } else {anal.type_resetToggle=F}
+  mSet<-CreateMappingResultTable(mSet)
+  if (anal.type_resetToggle) { assign('anal.type', tmp, envir = .GlobalEnv) } # reset to original analysis type
   
   
   #### Preprocessing Steps ####
   # Mandatory check of data 
-  mSet1<-SanityCheckData(mSet);
-  if (is.numeric(mSet1)) { stop("Error code in SanityCheckData().") } else { mSet <- mSet1 }
+  mSet1=SanityCheckData(mSet)
+  if (is.numeric(mSet1)) { stop("Error code in SanityCheckData().") } else { mSet=mSet1 }
   # Replace missing values with minimum concentration levels (required, even when no missing exist)
   # ToDo: NOTE that this replaces things with half the smallest positive value-- it ASSUMES we have all positive, which doesn't work for z-scores 
-  mSet<-ReplaceMin(mSet);
+  mSet=ReplaceMin(mSet)
   # Perform no normalization
-  mSet<-PreparePrenormData(mSet)
-  mSet<-Normalization(mSet, rowNorm=rowNorm, transNorm=transNorm, scaleNorm=scaleNorm, ratio=FALSE, ratioNum=20)
+  mSet=PreparePrenormData(mSet)
+  mSet=Normalization(mSet, rowNorm=rowNorm, transNorm=transNorm, scaleNorm=scaleNorm, ratio=FALSE, ratioNum=20)
   
   
   #### Normalization Plots ####
   # Plot normalization
-  mSet<-PlotNormSummary(mSet, glue("{label}_norm_0_"), "png", 72, width=NA)
+  mSet=PlotNormSummary(mSet, glue("{label}_norm_0_"), "png", 72, width=NA)
   # Plot sample-wise normalization
-  mSet<-PlotSampleNormSummary(mSet, glue("{label}_snorm_0_"), "png", 72, width=NA)
+  mSet=PlotSampleNormSummary(mSet, glue("{label}_snorm_0_"), "png", 72, width=NA)
   
+  return(mSet)
+}
+
+mSetCreateReport <- function(mSetObj) {
+  if (exists('mSet', envir = .GlobalEnv)) {
+    message('\nWARNING: Global mSet variable already exist. Object will be temporarily saved and reinstated on.exit().\nExisting MetaboAnalystR analyses will likely be disrupted.\n')
+    tmp_global_mSet = mSet # store mSet object
+    rm(envir = .GlobalEnv, list=c('mSet')) # remove global mSet object to avoid conflicts with new analysis
+    on.exit(expr = assign('mSet', tmp_global_mSet, envir = .GlobalEnv), add = T) # and reassign it on-exit
+  }
+  
+  on.exit(expr = {
+    cat("Removing intermediary global variables set during MetaboAnalyst Report-Generation.\n########################\n")
+    rm(list = c('fig.count', 'rnwFile', 'table.count'), envir = .GlobalEnv)
+  }, add=T)
+  
+  assign('mSet', mSetObj, envir = .GlobalEnv) # briefly set mSet as a global variable
+  PreparePDFReport(mSet, 'PANOPLY')
+  rm(envir = .GlobalEnv, list=c('mSet')) # remove that mSet object to avoid problems later
+}
+
+
+enrichementAnalysis <- function(gct, metabolite_id_col, sample_id_col, id_type, 
+                                cov_of_interest, value_of_interest=NULL, 
+                                pathway = "smpdb_pathway", label = "results",
+                                rowNorm="NULL", # Select the option for row-wise normalization, "QuantileNorm" for Quantile Normalization, "CompNorm" for Normalization by a reference feature, "SumNorm" for Normalization to constant sum, "MedianNorm" for Normalization to sample median, and "SpecNorm" for Normalization by a sample-specific factor.
+                                transNorm="NULL", # Select option to transform the data, "LogNorm" for Log Normalization, and "CrNorm" for Cubic Root Transformation.
+                                scaleNorm="NULL", # Select option for scaling the data, "MeanCenter" for Mean Centering, "AutoNorm" for Autoscaling, "ParetoNorm" for Pareto Scaling, amd "RangeNorm" for Range Scaling.
+                                match_no_hits = FALSE, create_report = TRUE) {
+  #### On-Exit Behavior (MetaboAnalyst Cleanup) ####
+  on.exit(expr = {
+    # rm(list = c('mSetQEA')) # remove mSetQEA object; these functions seem to only re
+    cat("\n########################\nRemoving all intermediary .qs files.\n")
+    file.remove(list.files(pattern="\\.qs")) # remove all .qs files
+    # cat("\n\n#####\nRemoving intermediary mSetQEA object.\n\n")
+    # rm(list = c('mSetQEA'), envir = .GlobalEnv)
+    cat("Removing intermediary global variables set by MetaboAnalyst.\n########################\n")
+    rm(list = c('anal.type', 'api.base', 'current.msetlib', 'mdata.all',
+                'mdata.siggenes', 'meta.selected', 'metaboanalyst_env',
+                'module.count', 'plink.path', 'primary.user', 
+                'smpdbpw.count', 'url.pre'), envir = .GlobalEnv)
+  }, add=T)
+  
+  mSetQEA = mSetPrep(gct, anal.type = 'msetqea', label=label,
+                     metabolite_id_col=metabolite_id_col, id_type=id_type,
+                     sample_id_col=sample_id_col,
+                     cov_of_interest=cov_of_interest, value_of_interest=value_of_interest,
+                     rowNorm=rowNorm,transNorm=transNorm,scaleNorm=scaleNorm, match_no_hits=match_no_hits)
   
   #### Finalize Enrichement Setup & Visualize ####
   # Set the metabolome filter
-  mSet<-SetMetabolomeFilter(mSet, F); # turn metabolite filter off
+  mSetQEA=SetMetabolomeFilter(mSetQEA, F) # turn metabolite filter off
   # Set the metabolite set library to pathway
-  mSet<-SetCurrentMsetLib(mSet, glue("{pathway}_pathway"), 0); # might be able to change pathways here
+  mSetQEA=SetCurrentMsetLib(mSetQEA, pathway, 0) # might be able to change pathways here
   # Calculate the global test score
-  mSet<-CalculateGlobalTestScore(mSet)
-  # Plot the QEA
-  mSet<-PlotQEA.Overview(mSet, glue("{label}_qea_0_"), "bar", "png", 72, width=NA)
+  mSetQEA=CalculateGlobalTestScore(mSetQEA)
+  
+  # Plot the QEA Barchart
+  mSetQEA=PlotQEA.Overview(mSetQEA, glue("{label}_qea_{pathway}_barPlot_"), "bar", "pdf", width=NA)
+  mSetQEA=PlotEnrichDotPlot(mSetQEA, imgName = glue("{label}_qea_{pathway}_dotPlot_"), enrichType = "qea", "pdf", width=NA)
+  # mSetQEA=with(environment(MetaboAnalystR::PlotEnrichNet.Overview), PlotEnrichPieChart(mSetQEA, imgName = glue("{label}_qea_{pathway}_pieChart_"), enrichType = "qea", "png", 72, width=NA)) # i dunno exactly what this shows in this context
+  
+  # Plot the QEA Network Chart
+  folds = mSetQEA$analSet$qea.mat[, 3]/mSetQEA$analSet$qea.mat[, 4]
+  GetShortNames = with(environment(MetaboAnalystR::PlotEnrichNet.Overview), 
+                       GetShortNames) # steal the GetShortNames function from the MetaboAnalystR environment
+  names(folds) = GetShortNames(rownames(mSetQEA$analSet$qea.mat)) 
+  pvals = mSetQEA$analSet$qea.mat[, "Raw p"]
+  mSetQEA$analSet$enrich.net = PlotEnrichNet.Overview(folds, pvals)
+  file.copy("msea_network.json", glue("{label}_qea_{pathway}_network.json"), overwrite = T)
   
   
   #### Pull Out Enrichement Analysis Data ####
-  qea.mat = mSet$analSet$qea.mat # Q and P values
-  qea.pvals = mSet$analSet$qea.pvals # p-values of individual metabolites
+  qea.mat = mSetQEA$analSet$qea.mat # Q and P values
+  qea.pvals = mSetQEA$analSet$qea.pvals # p-values of individual metabolites
   
-  write.csv(qea.mat, glue("{label}_qea_results.csv"))
+  write.csv(qea.mat, glue("{label}_qea_{pathway}_results.csv"))
+  
+  if(create_report) {
+    mSetCreateReport(mSetQEA)
+    file.copy('Analysis_Report.pdf', glue("{label}_qea_{pathway}_report.pdf"), overwrite = T)
+  }
+  
+  return(mSetQEA)
+}
+
+
+networkAnalysis <- function() {
+  #### On-Exit Behavior (MetaboAnalyst Cleanup) ####
+  on.exit(expr = {
+    # rm(list = c('mSetQEA')) # remove mSetQEA object; these functions seem to only re
+    cat("\n########################\nRemoving all intermediary .qs files.\n")
+    file.remove(list.files(pattern="\\.qs")) # remove all .qs files
+    # cat("\n\n#####\nRemoving intermediary mSetQEA object.\n\n")
+    # rm(list = c('mSetQEA'), envir = .GlobalEnv)
+    # cat("Removing intermediary global variables set by MetaboAnalyst.\n########################\n")
+    # rm(list = c('anal.type', 'api.base', 'current.msetlib', 'mdata.all',
+    #             'mdata.siggenes', 'meta.selected', 'metaboanalyst_env',
+    #             'module.count', 'plink.path', 'primary.user', 
+    #             'smpdbpw.count', 'url.pre'), envir = .GlobalEnv)
+  }, add=T)
+  
+  if (exists('mSet', envir = .GlobalEnv)) {
+    message('\nWARNING: Global mSet variable already exist. Object will be temporarily saved and reinstated on.exit().\nExisting MetaboAnalystR analyses will likely be disrupted.\n')
+    tmp_global_mSet = mSet # store mSet object
+    rm(envir = .GlobalEnv, list=c('mSet')) # remove global mSet object to avoid conflicts with new analysis
+    on.exit(expr = assign('mSet', tmp_global_mSet, envir = .GlobalEnv), add = T) # and reassign it on-exit
+  }
+  
+  
+  
+  mSetNet<-PrepareNetworkData(mSetNet);
+  
+  
+  PerformDSPC<-with(environment(MetaboAnalystR::SetKEGG.PathLib),
+                    PerformDSPC)
+  mSetNet<-PerformDSPC(mSetNet)
+  
+  mSetNet<-CreateGraph(mSetNet)
+  
+  if(create_report) {
+    assign('mSet', mSetNet, envir = .GlobalEnv) # briefly set mSet as a global variable
+    PreparePDFReport(mSet, 'PANOPLY')
+    rm(envir = .GlobalEnv, list=c('mSet')) # remove that mSet object to avoid problems later
+    file.copy('Analysis_Report.pdf', glue("{label}_network_report.pdf"))
+    # }
+  }
+}
+
+pathwayAnalysis <-  function(gct, metabolite_id_col, sample_id_col, id_type, 
+                             cov_of_interest, value_of_interest=NULL, 
+                             label = "results",
+                             rowNorm="NULL", # Select the option for row-wise normalization, "QuantileNorm" for Quantile Normalization, "CompNorm" for Normalization by a reference feature, "SumNorm" for Normalization to constant sum, "MedianNorm" for Normalization to sample median, and "SpecNorm" for Normalization by a sample-specific factor.
+                             transNorm="NULL", # Select option to transform the data, "LogNorm" for Log Normalization, and "CrNorm" for Cubic Root Transformation.
+                             scaleNorm="NULL", # Select option for scaling the data, "MeanCenter" for Mean Centering, "AutoNorm" for Autoscaling, "ParetoNorm" for Pareto Scaling, amd "RangeNorm" for Range Scaling.
+                             match_no_hits = FALSE, create_report = TRUE) {
+  #### On-Exit Behavior (MetaboAnalyst Cleanup) ####
+  on.exit(expr = {
+    # rm(list = c('mSetQEA')) # remove mSetQEA object; these functions seem to only re
+    cat("\n########################\nRemoving all intermediary .qs files.\n")
+    file.remove(list.files(pattern="\\.qs")) # remove all .qs files
+    # cat("\n\n#####\nRemoving intermediary mSetQEA object.\n\n")
+    # rm(list = c('mSetQEA'), envir = .GlobalEnv)
+    cat("Removing intermediary global variables set by MetaboAnalyst.\n########################\n")
+    rm(list = c('anal.type', 'api.base', #'current.msetlib',
+                'mdata.all', 'mdata.siggenes', 'meta.selected', 'metaboanalyst_env',
+                'mem.univ', 'msg.vec',
+                'module.count', 'plink.path', 'primary.user', 
+                'smpdbpw.count', 'url.pre'), envir = .GlobalEnv)
+  }, add=T)
+  
+  if (exists('mSet', envir = .GlobalEnv)) {
+    message('\nWARNING: Global mSet variable already exist. Object will be temporarily saved and reinstated on.exit().\nExisting MetaboAnalystR analyses will likely be disrupted.\n')
+    tmp_global_mSet = mSet # store mSet object
+    rm(envir = .GlobalEnv, list=c('mSet')) # remove global mSet object to avoid conflicts with new analysis
+    on.exit(expr = assign('mSet', tmp_global_mSet, envir = .GlobalEnv), add = T) # and reassign it on-exit
+  }
+  
+  mSetPTW = mSetPrep(gct, anal.type = 'pathqea', label=label,
+                     metabolite_id_col=metabolite_id_col, id_type=id_type,
+                     sample_id_col=sample_id_col,
+                     cov_of_interest=cov_of_interest, value_of_interest=value_of_interest,
+                     rowNorm=rowNorm,transNorm=transNorm,scaleNorm=scaleNorm, match_no_hits=match_no_hits)
+  
+  mSetPTW<-SetKEGG.PathLib(mSetPTW, "hsa", "current")
+  # mSetPTW<-SetSMPDB.PathLib(mSetPTW, "hsa")
+  mSetPTW<-SetMetabolomeFilter(mSetPTW, F);
+  
+  mSetPTW1<-CalculateQeaScore(mSetPTW, "rbc", "gt") # API issues here... kinda at a loss.....
+  if (is.numeric(mSetPTW1)) { stop("Error code in CalculateQeaScore().") } else { mSetPTW=mSetPTW1 }
+  mSetPTW<-PlotPathSummary(mSetPTW, F, "path_view_0_", "png", 72, width=NA, NA, NA )
+  
+  
+  ComputePathHeatmap<-with(environment(MetaboAnalystR::SetKEGG.PathLib),
+                           ComputePathHeatmap)
+  ComputePathHeatmap(mSetPTW, "hsa",glue("{label}_pathwayqea_heatmap.json"), "pathqea")
+  
+  
+  mSet<-PlotPathSummary(mSet, F, "path_view_0_", "png", 72, width=NA, NA, NA )
+  
 }
 
 
 # variables for enrichement analysis
 gct = gct_meta
 cov_of_interest = "Type"
-id_type = "name"
-metabolite_id_col = "Metabolite"
+id_type = "hmdb"
+metabolite_id_col = "HMDB_ID"
 sample_id_col = "Sample.ID"
-pathway = "smpdb"
-# pathway = "kegg"
+pathway = "smpdb_pathway"
+# pathway = "kegg_pathway"
+
+rowNorm="NULL" # Select the option for row-wise normalization, "QuantileNorm" for Quantile Normalization, "CompNorm" for Normalization by a reference feature, "SumNorm" for Normalization to constant sum, "MedianNorm" for Normalization to sample median, and "SpecNorm" for Normalization by a sample-specific factor.
+transNorm="logNorm" # Select option to transform the data, "LogNorm" for Log Normalization, and "CrNorm" for Cubic Root Transformation.
+scaleNorm="NULL" # Select option for scaling the data, "MeanCenter" for Mean Centering, "AutoNorm" for Autoscaling, "ParetoNorm" for Pareto Scaling, amd "RangeNorm" for Range Scaling.
+
 
 # #### ID Mapping ####
 # gct_full@rdesc$Standardized.name = refmet_map_df(gct_full@rdesc[[metabolite_id_col]])$Standardized.name # get standardized names with RefMet::refmet_map_df(), and add to rdesc
@@ -152,17 +329,77 @@ pathway = "smpdb"
 
 #### Enrichement Analysis ####
 for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
-  enrichementAnalysis(gct, cov_of_interest, value_of_interest, id_type = id_type,
-                      metabolite_id_col = metabolite_id_col, sample_id_col = sample_id_col,
-                      transNorm = "LogNorm",
-                      label = glue("{opt$output_prefix}_{value_of_interest}"), pathway=pathway)
+  out = enrichementAnalysis(gct, cov_of_interest=cov_of_interest, value_of_interest = value_of_interest,
+                            metabolite_id_col = metabolite_id_col, sample_id_col = sample_id_col, id_type=id_type, 
+                            rowNorm=rowNorm, transNorm = transNorm, scaleNorm=scaleNorm,
+                            label = glue("{opt$output_prefix}_{cov_of_interest}_{value_of_interest}"),
+                            pathway=pathway)
 }
 
-# # file-copy for docker testing
-# file.copy(list.files(pattern=opt$output_prefix), 'opt/input/', overwrite=T)
-
-# # Set organism to human, at the moment only human data can be accomodated
-# mSet<-SetOrganism(mSet, "hsa")
+# file-copy for docker testing
+file.copy(list.files(pattern=opt$output_prefix), 'opt/input/', overwrite=T)
+file.copy(list.files(path='/tmp/', full.names=T, recursive = 1), '/opt/input/', overwrite=T)
 
 
 
+#### Pathway Analysis ####
+for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
+  out = pathwayAnalysis(gct, cov_of_interest=cov_of_interest, value_of_interest = value_of_interest,
+                        metabolite_id_col = metabolite_id_col, sample_id_col = sample_id_col, id_type=id_type, 
+                        rowNorm=rowNorm, transNorm = transNorm, scaleNorm=scaleNorm,
+                        label = glue("{opt$output_prefix}_{cov_of_interest}_{value_of_interest}"),
+                        pathway=pathway)
+}
+
+
+source('https://raw.githubusercontent.com/broadinstitute/protigy/master/src/modT.R')
+for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
+  df_list = list(list(ome = "metabolome",
+                      ft_id_col = metabolite_id_col,
+                      gct = gct_meta),
+                 list(ome = "proteome",
+                      ft_id_col = "geneSymbol",
+                      gct = gct_prot),
+                 list(ome = "RNA",
+                      ft_id_col = "geneSymbol",
+                      gct = gct_rna))
+  
+  for (data in df_list) {
+    d = as.data.frame(data$gct@mat) %>% # transform matrix into tibble
+      mutate(feature_id = data$gct@rdesc[[data$ft_id_col]]) %>% # add feature_id column
+      select(feature_id, everything()) 
+    d_subset = filter(d, !(feature_id %in% d[which(duplicated(d$feature_id)), 'feature_id']))
+    cat(glue("{dim(d)[1]-dim(d_subset)[1]} features dropped (from original {dim(d)[1]} features) for duplicated '{data$ft_id_col}' IDs"))
+    groups = data$gct@cdesc[[cov_of_interest]] %>%
+      { ifelse(.==value_of_interest, ., glue("not_{value_of_interest}")) }
+    
+    out = modT.test.2class(d_subset, 'tmp', groups=groups, id.col = "feature_id")
+    write.csv(out$output['logFC'], file=glue("{opt$output_prefix}_logFC_{data$ome}_{cov_of_interest}-{value_of_interest}.vs.{value_of_interest}_not.csv"))
+  }
+  
+}
+file.copy(list.files(pattern=glue("{opt$output_prefix}_logFC")), 'opt/input/', overwrite=T)
+
+# note: can run internal functions with the following:
+# with(environment(MetaboAnalystR::PlotEnrichDotPlot), GetMyHeatCols(92))
+
+# # minimal code for creates current.msetlib object
+# mSet=InitDataObjects("conc", "mSetQEA", FALSE)
+# mSet = SetCurrentMsetLib(mSet, pathway, 0)
+# current.msetlib[,3]
+
+# # or, create it manually
+# libname = pathway
+# destfile <- paste(libname, ".qs", sep = "")
+# my.qs <- paste("https://www.metaboanalyst.ca/resources/libs/msets/",
+#                destfile, sep = "")
+# if (!file.exists(destfile)) {
+#   download.file(my.qs, destfile, method = "curl")
+# }
+# current.msetlib <- qs::qread(destfile)
+# 
+# ms.list <- iconv(current.msetlib[, 3], from = "utf8",
+#                  to = "utf8")
+# ms.list <- lapply(ms.list, function(x) unique(unlist(strsplit(x,
+#                                                               "; ", fixed = TRUE))))
+# names(ms.list) <- current.msetlib[, 2]
