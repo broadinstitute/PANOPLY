@@ -11,6 +11,7 @@ suppressPackageStartupMessages(library("optparse"))
 option_list <- list(
   #### Input Parameters ####
   make_option( c("-m", "--metabolome_gct"), action='store', type='character',  dest='metabolome_gct', help='GCT file containing expression data for the metabolome.'),
+  make_option( c("-n", "--metabolome_norm_gct"), action='store', type='character',  dest='metabolome_norm_gct', help='GCT file containing expression data for the NORMALIZED metabolome.'),
   make_option( c("-c", "--contrast_gct"), action='store', type='character',  dest='contrast_gct', help='GCT file containing contrast values for the metabolome, across some annotation.'),
   make_option( c("-o", "--proteome_gct"), action='store', type='character',  dest='proteome_gct', help='GCT file containing expression data for the proteome'),
   make_option( c("-r", "--rna_gct"), action='store', type='character',  dest='rna_gct', help='GCT file containing expression data for the transcriptome'),
@@ -31,7 +32,7 @@ option_list <- list(
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # for testing arguments
                        args = c('--metabolome_gct',"opt/input/ODG-v2_2-metabolomics-with-NMF-HMDB_UNIQUE.gct",
-                                #'--metabolome_gct',"opt/input/ODG-v2_2-metabolomics_log_norm.gct",
+                                '--metabolome_norm_gct',"opt/input/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
                                 '--contrast_gct',"opt/input/contrasts/metabolomics_logNorm-NMF.consensus-contrast.gct",
                                 '--proteome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
                                 '--rna_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
@@ -50,6 +51,7 @@ library(cmapR)
 library(tidyverse)
 
 gct_meta = parse_gctx(opt$metabolome_gct)
+gct_meta_norm = parse_gctx(opt$metabolome_norm_gct)
 gct_prot = parse_gctx(opt$proteome_gct)
 gct_rna = parse_gctx(opt$rna_gct)
 
@@ -352,11 +354,15 @@ for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
 }
 
 
+#### LogFC ####
+
 source('https://raw.githubusercontent.com/broadinstitute/protigy/master/src/modT.R')
+# install.packages('statmod')
+library(limma)
 for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
   df_list = list(list(ome = "metabolome",
                       ft_id_col = metabolite_id_col,
-                      gct = gct_meta),
+                      gct = gct_meta_norm),
                  list(ome = "proteome",
                       ft_id_col = "geneSymbol",
                       gct = gct_prot),
@@ -374,11 +380,18 @@ for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
       { ifelse(.==value_of_interest, ., glue("not_{value_of_interest}")) }
     
     out = modT.test.2class(d_subset, 'tmp', groups=groups, id.col = "feature_id")
-    write.csv(out$output['logFC'], file=glue("{opt$output_prefix}_logFC_{data$ome}_{cov_of_interest}-{value_of_interest}.vs.{value_of_interest}_not.csv"))
+    # n_feat = NULL # number of features
+    out_df = out$output %>%
+      arrange(P.Value) %>%
+      # { if (!is.null(n_feat)) {top_n(., n=n_feat, wt = -P.Value)} else {.} }
+      filter(adj.P.Val < 0.05) # filter to significant logFC
+    df = data.frame(id = rownames(out_df['logFC']),
+                    logFC = round(out_df[['logFC']], 5))
+    write.table(df, file=glue("{opt$output_prefix}_logFC_signFeat_{data$ome}_{cov_of_interest}-{value_of_interest}.vs.{value_of_interest}_not.tsv"),
+                sep = '\t', quote=FALSE, row.names = FALSE)
   }
-  
 }
-file.copy(list.files(pattern=glue("{opt$output_prefix}_logFC")), 'opt/input/', overwrite=T)
+file.copy(list.files(pattern=glue("{opt$output_prefix}_logFC_signFeat")), 'opt/input/', overwrite=T)
 
 # note: can run internal functions with the following:
 # with(environment(MetaboAnalystR::PlotEnrichDotPlot), GetMyHeatCols(92))
