@@ -17,7 +17,10 @@ task spectronaut {
     File? enzyme_database
     File? spectral_library
     File? spectral_library_1
+    # report schema -- upto 3 can be provided
     File? report_schema
+    File? report_schema_1
+    File? report_schema_2
     File? json_settings
 
     Directory files_folder
@@ -61,7 +64,7 @@ task spectronaut {
     /usr/bin/spectronaut ${if direct_DIA then "-direct" else ""} ${"-s " + analysis_settings} \
         ${"-con " + condition_setup} -n ${experiment_name} -o $out_dir \
         -fasta ${fasta} ${"-fasta " + fasta_1} ${"-a " + spectral_library} ${"-a " + spectral_library_1} \
-        ${"-rs " + report_schema} ${"-j " + json_settings} -d data -setTemp $sn_temp
+        ${"-rs " + report_schema} ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} ${"-j " + json_settings} -d data -setTemp $sn_temp
     spectronaut -deactivate
 
     zip -r $out_zip $out_dir -x \*.zip
