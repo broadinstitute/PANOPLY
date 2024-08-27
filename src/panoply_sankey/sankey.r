@@ -30,13 +30,12 @@ option_list <- list(
 
 opt <- parse_args( OptionParser(option_list=option_list),
                    # # for testing arguments
-                   # args = c('--annot_files',"/opt/input/melanoma-v1-so_nmf-prot_K3_clusterMembership.tsv,/opt/input/melanoma_v1_DIA-mo_nmf_K4_clusterMembership.tsv,/opt/input/melanoma_v1_k=4_250iter-mo_nmf_K4_clusterMembership.tsv,/opt/input/melanoma_v1_DIA-so_nmf-DIA_prot_K4_clusterMembership.tsv,/opt/input/melanoma-v1-so_nmf-prot_K3_clusterMembership.tsv,/opt/input/melanoma_v1_DIA-so_nmf-RNA_K3_clusterMembership.tsv",
-                   #          '--annot_file_labels',"Multi_DIA_k=3,Multi_DIA_k=4,Multi_DDA,DIA_prot,DDA_prot,RNA" ,
-                   #          '--annot_file_primary',"/opt/input/melanoma-v1-so_nmf-prot_K3_clusterMembership.tsv",
-                   #          '--annot_label_primary',"Multi_DIA_k=3",
+                   # args = c('--annot_files',"/opt/input/24hr-so_nmf-prot_K4_clusterMembership.tsv,/opt/input/24hr-so_nmf-phos_K3_clusterMembership.tsv,/opt/input/24hr-so_nmf-transcript_K5_clusterMembership.tsv,/opt/input/24hr-so_nmf-met_K3_clusterMembership.tsv",
+                   #          '--annot_file_labels',"prot,phos,transcript,met" ,
+                   #          '--annot_file_primary',"/opt/input/24hr-mo_nmf_K4_clusterMembership.tsv",
+                   #          '--annot_label_primary',"Multiomic",
                    #          '--annot_column',"NMF.consensus",
-                   #          '-c',"#AA0000,#0000AA",
-                   #          '-x',"melanoma_v1_DIA_vs_DDA")
+                   #          '-x',"24hr")
 )
 
 
@@ -53,7 +52,8 @@ library(tibble)
 library('flipU')
 library('flipTransformations')
 library('networkD3') # needed for sankeyNetwork()
-source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
+# source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R') # current version requires Sum() function from the Displayr/verbs package, which is not compatible with R version 3.6.3
+source('https://raw.githubusercontent.com/Displayr/flipPlots/72cc55f75558e97e611c0c448e5b59a70e69bd15/R/sankeydiagram.R') # pull stable commit
 # NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded
 
 library(htmlwidgets) #must be 1.2.0, don't try to p_load
@@ -202,7 +202,6 @@ for (datatypes_of_interest in datatype_combos) {
     lvls = sort(unique(my.data[[datatypes_of_interest[1]]])) # use levels of first datatype
     not_in_lvls = setdiff(sort(unique(unlist(my.data[datatypes_of_interest]))), lvls) # get the remaining color-levels for the other datatypes
     colors_sorted = colors[c(lvls, not_in_lvls)] #compile them into a properly-sorted list (fingers crossed)
-    
     widget <- SankeyDiagram(my.data[, datatypes_of_interest],
                             link.color = link.color,
                             # link.color = "First variable",
