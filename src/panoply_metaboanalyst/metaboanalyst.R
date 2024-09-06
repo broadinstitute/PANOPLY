@@ -27,12 +27,11 @@ option_list <- list(
   #### ####
 )
 
-
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # for testing arguments
                        args = c('--metabolome_gct',"opt/input/ODG-v2_2-metabolomics-with-NMF-HMDB_UNIQUE.gct",
-                                '--metabolome_norm_gct',"opt/input/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
+                                '--metabolome_norm_gct',"opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
                                 '--contrast_gct',"opt/input/contrasts/metabolomics_logNorm-NMF.consensus-contrast.gct",
                                 '--proteome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
                                 '--rna_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
@@ -50,7 +49,7 @@ library(glue)
 library(cmapR)
 library(tidyverse)
 
-gct_meta = parse_gctx(opt$metabolome_gct)
+# gct_meta = parse_gctx(opt$metabolome_gct)
 gct_meta_norm = parse_gctx(opt$metabolome_norm_gct)
 gct_prot = parse_gctx(opt$proteome_gct)
 gct_rna = parse_gctx(opt$rna_gct)
@@ -305,8 +304,8 @@ pathwayAnalysis <-  function(gct, metabolite_id_col, sample_id_col, id_type,
 
 
 # variables for enrichement analysis
-gct = gct_meta
-cov_of_interest = "Type"
+gct = gct_meta_norm
+cov_of_interest = "K6.NMF.consensus"
 id_type = "hmdb"
 metabolite_id_col = "HMDB_ID"
 sample_id_col = "Sample.ID"
@@ -377,7 +376,7 @@ for (value_of_interest in unique(gct@cdesc[[cov_of_interest]])) {
     d_subset = filter(d, !(feature_id %in% d[which(duplicated(d$feature_id)), 'feature_id']))
     cat(glue("{dim(d)[1]-dim(d_subset)[1]} features dropped (from original {dim(d)[1]} features) for duplicated '{data$ft_id_col}' IDs"))
     groups = data$gct@cdesc[[cov_of_interest]] %>%
-      { ifelse(.==value_of_interest, ., glue("not_{value_of_interest}")) }
+      { ifelse(!is.na(.) & .==value_of_interest, ., glue("not_{value_of_interest}")) } # NA -> no_<value_of_interest>
     
     out = modT.test.2class(d_subset, 'tmp', groups=groups, id.col = "feature_id")
     # n_feat = NULL # number of features
