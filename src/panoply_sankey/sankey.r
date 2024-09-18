@@ -23,39 +23,42 @@ option_list <- list(
   make_option( c("-a", "--annot_column"), action='store', type='character',  dest='annot_column', help='Column annotation to create sankey comparisons for.'),
   make_option( c("-p", "--annot_prefix"), action='store', type='character',  dest='annot_prefix', default="", help='Prefix to prepend to annotations (e.g. \'C\' for C1, C2, C3 instead of 1, 2, 3).'),
   #### General Parameters ####
+  make_option( c("-c", "--color_str"), action='store', type='character',  dest='color_str', help='String of hex-codes for sankey diagram colors, separated by commas. If too many/few colors are provided, colors will be extrapolated.'),
   make_option( c("-x", "--label"), action='store', type='character',  dest='label', help='Label associated with this run.')
   #### ####
 )
 
 opt <- parse_args( OptionParser(option_list=option_list),
                    # # for testing arguments
-                   # args = c('--annot_files',"/opt/input/odg_all-so_nmf-prot_K3_clusterMembership.tsv,/opt/input/odg_all-so_nmf-pSTY_K3_clusterMembership.tsv,/opt/input/odg_all-so_nmf-acK_K4_clusterMembership.tsv,/opt/input/odg_all-so_nmf-ubK_K5_clusterMembership.tsv",
-                   #          '--annot_file_labels',"prot,pSTY,acK,ubK",
-                   #          '--annot_file_primary',"/opt/input/odg_all-mo_nmf_K4_clusterMembership.tsv",
+                   # args = c('--annot_files',"/opt/input/24hr-so_nmf-prot_K4_clusterMembership.tsv,/opt/input/24hr-so_nmf-phos_K3_clusterMembership.tsv,/opt/input/24hr-so_nmf-transcript_K5_clusterMembership.tsv,/opt/input/24hr-so_nmf-met_K3_clusterMembership.tsv",
+                   #          '--annot_file_labels',"prot,phos,transcript,met" ,
+                   #          '--annot_file_primary',"/opt/input/24hr-mo_nmf_K4_clusterMembership.tsv",
                    #          '--annot_label_primary',"Multiomic",
                    #          '--annot_column',"NMF.consensus",
-                   #          '-x',"odg_test")
+                   #          '-x',"24hr")
 )
 
 
-library(pacman)
-p_load(readr)
-p_load(dplyr)
-p_load(purrr)
-p_load(glue)
-p_load(tibble)
+# library(pacman)
+library(readr)
+library(dplyr)
+library(purrr)
+library(glue)
+library(tibble)
 
-library(htmlwidgets) #must be 1.2.0, don't try to p_load
-# p_load(webshot)
-# webshot::instfull_phantomjs()
 
 
 # For SankeyDiagram()
 library('flipU')
 library('flipTransformations')
-p_load('networkD3') # needed for sankeyNetwork()
-source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R')
+library('networkD3') # needed for sankeyNetwork()
+# source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R') # current version requires Sum() function from the Displayr/verbs package, which is not compatible with R version 3.6.3
+source('https://raw.githubusercontent.com/Displayr/flipPlots/72cc55f75558e97e611c0c448e5b59a70e69bd15/R/sankeydiagram.R') # pull stable commit
 # NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded
+
+library(htmlwidgets) #must be 1.2.0, don't try to p_load
+library(webshot)
+
 
 # # For NMF-related stuff (I think)
 # source('https://raw.githubusercontent.com/karstenkrug/R-code/main/my_plots.r')
@@ -65,35 +68,38 @@ source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiag
 
 
 
-### Begin Editable Section -----
+###################################
+## specify annotation files and their respective labels
 
-annot_files = unlist(strsplit(opt$annot_files_str, ","))
-annot_file_types = unlist(strsplit(opt$annot_file_types_str, ","))
+annot_files = unlist(strsplit(opt$annot_files_str, ",")) # split into array of filenames
+annot_file_types = unlist(strsplit(opt$annot_file_types_str, ",")) # split into array of labels #%>% make.names(unique = TRUE) # remove special characters
 
 # sanity check that we have the same number of files and labels
 if (length(annot_files)!=length(annot_file_types)) stop( glue("The number of files ({length(annot_files)}) provided for comparison does not match the number of labels ({length(annot_file_types)}) provided."))
 
 names(annot_files) = annot_file_types
 
-
+# establish a primary annotation file, if provided
 if (!is.null(opt$annot_file_primary)) { #if we have a secondary datafile to compare to
-  annot_file_types = c(opt$annot_file_type_primary, annot_file_types) #add label to array (at BEGINNING)
+  annot_file_types = c(opt$annot_file_type_primary, annot_file_types) #%>% #add label to array (at BEGINNING)
+    #make.unique() # ensure that labels are unique
   annot_files[opt$annot_file_type_primary] = opt$annot_file_primary #add file to array
 }
+# save labels to file, to avoid regex parsing in the report
+readr::write_lines(annot_file_types, 'sankey_labels.txt')
 
 
-# combos to plot (all combos either order)
+
+###################################
+## specify annotation-combinations we want to create sankey diagrams for
 datatype_combos <- c(combn(annot_file_types, 2, simplify = FALSE), #forwards
                      combn(annot_file_types, 2, rev, simplify = FALSE)) #backwards
 
 if (!is.null(opt$annot_file_primary) && length(annot_file_types)>2) { #if we have a secondary datafile to compare to, and have at least three files total
   datatype_combos = c(datatype_combos,
-                 combn(annot_file_types[which(annot_file_types!=opt$annot_file_type_primary)], 2, #take all datatype combos besides annot_file_type_primary
+                 combn(annot_file_types[-1], 2, #take all datatype combos besides annot_file_type_primary (i.e. "first" filetype)
                        FUN = function(arr) {append(arr, opt$annot_file_type_primary, after=1)} , simplify = FALSE)) #add annot_file_type_primary in between eaach combo
 }
-
-
-### End Editable Section -----
 
 
 
@@ -149,11 +155,7 @@ my_join <- function(x, y){
   #inner_join(x, y, by=id_column)
 }
 data_full <- Reduce(my_join, data_subset_list) %>% # merge dataframes by sample ID
-  column_to_rownames(., id_column) %>% data.frame # set sample IDs to rownames
-
-# this appends the column name to the cluster (e.g.  acK_C1 vs C1) and is very redundant
-# for(i in 1:ncol(data_full))
-#     data_full[, i] <- paste(colnames(data_full)[i], '_', data_full[, i], sep='')
+  column_to_rownames(., id_column)# %>% data.frame # set sample IDs to rownames
 
 
 #######################################
@@ -168,29 +170,49 @@ cont.tab.clust <- cont.tab.split
 my.data <- data.frame(Reduce('rbind', cont.tab.clust), as.numeric(cont.tab.flat)) # convert to data.frame
 colnames(my.data) <- c(names(data_full), 'freq') # add filetype labels back into data
 
-max_annots=sum(unique(unlist(my.data[-length(my.data)]))!='NA') #figure out the max number of annots, across all files, to enforce consistent colors
+#######################################
+# set color-scheme for annotations
+# get all annotation values
+annots = sort(unique(unlist(my.data[-length(my.data)]))) # get levels from all data, except the frequency column
+annots_noNA = annots[annots!='NA'] # exclude NA from color-scheme
+max_annots=length(annots_noNA) # count number of non-NA values
+# format color-scheme
+default_palette = c('#fde0dd','#f768a1','#7a0177') # default color-palette
+if(!is.null(opt$color_str)) { # if the user provided colors as an argument
+  palette = unlist(strsplit(opt$color_str, ",")) # parse the argument string into a vector
+} else {
+  palette = default_palette # otherwise use the default palette
+}
+# create color-scale for annot values
+colors = tryCatch(colorRampPalette(palette)(max_annots),
+                  error = function(e) {
+                    cat(glue("\nWARNING: Some or all of the provided colors ({paste(palette, collapse=', ')}) were invalid. Using default palette.\n"))
+                    colorRampPalette(default_palette)(max_annots) # choose enough colors to color all clusters
+                  })
+names(colors) = annots_noNA # name colors (note: SankeyDiagram doesn't consider names, this is for my sorting)
+colors = c(colors, "NA" = "grey") # add NA color explicitly (note: SankeyDiagram doesn't consider names, this is for my sorting)
+
 
 for (datatypes_of_interest in datatype_combos) {
-  
-  colors=colorRampPalette(c('#fde0dd','#f768a1','#7a0177'))(max_annots) # choose enough colors to color all clusters
-
   ###################################
   ## plot
   # link.color = 'Source'
   for (link.color in c('Source', 'Target')) {
+    # reorder annotation colors based on which direction we're using for base-coloring
+    lvls = sort(unique(my.data[[datatypes_of_interest[1]]])) # use levels of first datatype
+    not_in_lvls = setdiff(sort(unique(unlist(my.data[datatypes_of_interest]))), lvls) # get the remaining color-levels for the other datatypes
+    colors_sorted = colors[c(lvls, not_in_lvls)] #compile them into a properly-sorted list (fingers crossed)
     widget <- SankeyDiagram(my.data[, datatypes_of_interest],
                             link.color = link.color,
                             # link.color = "First variable",
                             # link.color = "None",
                             
-                            weights = my.data$freq,
+                            weights = my.data$freq, # pull frequency data
                             variables.share.values = TRUE,
-                            colors=colors,
+                            colors=colors_sorted,
                             # label.show.percentages = TRUE,
                             node.padding=50,font.size = 20,
                             max.categories = 15)
-    
-    # widget    
     
     # ## export
     datatype_tmp <- paste(datatypes_of_interest, collapse='_')
@@ -199,9 +221,14 @@ for (datatypes_of_interest in datatype_combos) {
     
     wd <- getwd()
     setwd(tmp.dir)
+    # save widget to HTML file
     saveWidget(widget, file=fn, selfcontained = TRUE, libdir = NULL,
                background = "white", knitrOptions = list())
-    # webshot(fn, file=sub('\\.html$','.pdf',fn)) #would take a screenshot of the sankey diagram -> PDF. don't need
+    # # save widget to PDF file
+    webshot(fn, file=sub('\\.html$','.pdf',fn)) # takes a screenshot of the sankey diagram -> PDF
+    # cmd <- sprintf("pandoc '%s' --pdf-engine=pdflatex -t latex -o '%s'", fn, sub('\\.html$','.pdf',fn)) # create pandoc command-line prompt for generating PDF
+    # system(cmd) # run command-line prompt to convert HTML to PDF 
+    
     file.copy(dir('.', pattern = fn), wd, overwrite = T)
     file.copy(dir('.', pattern = sub('\\.html$','.pdf',fn)), wd, overwrite = T)
     setwd(wd)
@@ -209,5 +236,15 @@ for (datatypes_of_interest in datatype_combos) {
   
 }
 
-# tar sankey_diagrams into a single file
-tar(paste(opt$label,'sankey_diagrams.tar.gz', sep="_"), list.files(pattern="sankey-.+?.html"))
+# # tar sankey_diagrams into a single file
+# out_tar = paste(opt$label,'sankey_diagrams.tar.gz', sep="_") # tar file-name
+# out_files = c(list.files(pattern="sankey-.+?(.html)|(.pdf)"), # get all HTML/PDFs filenames
+#               "sankey_labels.txt") # and also get the TXT with the file-labels, so the report doesn't need regex
+# cmd = glue("tar -czvf {out_tar} {paste(out_files, collapse=' ')}") # run tar as a command-line prompt, since tar() is failing
+# system(cmd) # run command-line tar prompt
+
+
+# tar(tarfile = ,
+#     files = list.files(pattern="sankey-.+?(.html)|(.pdf)"), # collect all HTML and PDF files
+#     compression = "gzip", # compress using gzip (i.e. .gz file)
+#     extra_flags = "-v") # verbose

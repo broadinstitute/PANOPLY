@@ -13,8 +13,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_immune_analysis_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_immune_analysis_report/7",
-    "methodVersion": 7,
+    "methodUri": "agora://broadcptacdev/panoply_immune_analysis_report/8",
+    "methodVersion": 8,
     "sourceRepo": "agora"
   },
   "name": "panoply_immune_analysis_report",

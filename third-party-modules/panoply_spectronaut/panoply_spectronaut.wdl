@@ -5,7 +5,7 @@ workflow panoply_spectronaut {
 
 task spectronaut {
   input {
-    String license_key="b233d39d-b28c-47b9-8e41-e16a9ba923ad"
+    String license_key
 
     String experiment_name
     File? analysis_settings
@@ -14,9 +14,13 @@ task spectronaut {
     File fasta       
     File? fasta_1
     # spectral libraries -- upto 2 can be provided; if none specified, perform DirectDIA
+    File? enzyme_database
     File? spectral_library
     File? spectral_library_1
+    # report schema -- upto 3 can be provided
     File? report_schema
+    File? report_schema_1
+    File? report_schema_2
     File? json_settings
 
     Directory files_folder
@@ -53,13 +57,14 @@ task spectronaut {
       mkdir data
       cp ${sep(' ', files)} data
     fi
-    
+    #find path within the docker 
     # run spectronaut
     spectronaut -activate ${license_key}
+    ${"dotnet /usr/lib/spectronaut/SpectronautCMD.dll --importEnzymeDB "+ enzyme_database}
     /usr/bin/spectronaut ${if direct_DIA then "-direct" else ""} ${"-s " + analysis_settings} \
         ${"-con " + condition_setup} -n ${experiment_name} -o $out_dir \
         -fasta ${fasta} ${"-fasta " + fasta_1} ${"-a " + spectral_library} ${"-a " + spectral_library_1} \
-        ${"-rs " + report_schema} ${"-j " + json_settings} -d data -setTemp $sn_temp
+        ${"-rs " + report_schema} ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} ${"-j " + json_settings} -d data -setTemp $sn_temp
     spectronaut -deactivate
 
     zip -r $out_zip $out_dir -x \*.zip

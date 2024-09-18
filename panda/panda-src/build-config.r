@@ -825,8 +825,9 @@ restore_config_colors <- function( groups.colors, groups.colors.old ){
     if ( (group %in% names(groups.colors.old))  && # if the group already exists
          any(groups.vals %in% groups.colors.old[[group]]$vals) ) { # and at least some values are shared
       # override those values 
-      ind = match(groups.vals, groups.colors.old[[group]]$vals) # indices of groups.colors.old values that appear in current data-- ordered as they should appear in the current data
-      groups.colors[[group]]$colors[ind] = unname(groups.colors.old[[group]]$colors[ind]) # use corresponding colors
+      ind_new = which(groups.vals %in% groups.colors.old[[group]]$vals) # indices that have a match in groups.colors.old
+      ind_old = match(groups.vals[ind_new], groups.colors.old[[group]]$vals) # indices of groups.colors.old values that appear in current data-- ordered as they should appear in the current data
+      groups.colors[[group]]$colors[ind_new] = unname(groups.colors.old[[group]]$colors[ind_old]) # overwrite corresponding colors
     }
   }
   

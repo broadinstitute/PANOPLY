@@ -5,7 +5,7 @@ workflow panoply_spectronaut_libgen {
 
 task spectronaut_libgen {
   input {
-    String license_key="b233d39d-b28c-47b9-8e41-e16a9ba923ad"
+    String license_key
 
     String experiment_name
     File? analysis_settings

@@ -22,10 +22,8 @@ Optional inputs:
 * ```blacksheep_report```: (Array[File]) array of `.html` report files from `panoply_blacksheep_report` 
 * ```cmap_output```: (Array[File]) array of `.tar` output files from `panoply_cmap_analysis` in the `panoply_main` proteogenomic analysis
 * ```cmap_ssgsea_output```: (Array[File]) array of `.tar` output files from running ssGSEA on `panoply_cmap_analysis` in the `panoply_main` proteogenomic analysis
-* ```mo_nmf_tar```: (File) `.tar` file results from `panoply_mo_nmf` analysis
-* ```mo_nmf_report```: (File) `.html` file showing results from running `panoply_mo_nmf` analysis
-* ```mo_nmf_ssgsea_tar```: (File) `.tar` file results from running ssGSEA on `panoply_mo_nmf` analysis
-* ```mo_nmf_ssgsea_report```: (File) `.html` file showing results from running ssGSEA on `panoply_mo_nmf` analysis
+* ```nmf_results```: (File) `.tar` file with all results from `panoply_nmf_workflow`
+* ```nmf_report```: (File) `.tar` file with all reports from `panoply_nmf_workflow`
 * ```immune_tar```: (File) `.tar` file results from `panoply_immune_analysis`
 * ```immune_report```: (File) `.html` file showing results from `panoply_immune_analysis` analysis
 

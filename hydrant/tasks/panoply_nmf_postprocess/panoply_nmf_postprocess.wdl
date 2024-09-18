@@ -33,6 +33,7 @@ task panoply_nmf_postprocess {
 		File results="${output_prefix}_NMF_postprocess.tar.gz" # contains all outputs of NMF post-processing + parameters
 		File membership="${output_prefix}_K${nclust}_clusterMembership.tsv"
 		File feature_matrix_w=select_first(glob("${output_prefix}_K${nclust}_W_rowNorm_combined_signed_n*.gct")) # select first and only match (of array-length-1)
+		Boolean ssgsea_viable=read_boolean("gene_col_toggle.txt")
 	}
 
 	runtime {

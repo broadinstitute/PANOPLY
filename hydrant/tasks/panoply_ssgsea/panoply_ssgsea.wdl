@@ -15,6 +15,7 @@ task panoply_ssgsea {
 	String? output_score_type
 	Float? weight
 	Int? min_overlap
+	String? tolerate_min_overlap_err # boolean value: should the WDL tolerate "not-enough-overlap" errors?
 	Int? nperm
 	Boolean? global_fdr
 
@@ -28,7 +29,7 @@ task panoply_ssgsea {
 		set -euo pipefail
 		
 		# run ssgsea/ptm-sea
-		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${default=NA output_prefix} -n ${default=NA sample_norm_type} -w ${default=NA weight} -c ${default=NA correl_type} -t ${default=NA statistic} -s ${default=NA output_score_type} -p ${default=NA nperm} -m ${default=NA min_overlap} -g ${default=NA global_fdr} -z /home/pgdac
+		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${default=NA output_prefix} -n ${default=NA sample_norm_type} -w ${default=NA weight} -c ${default=NA correl_type} -t ${default=NA statistic} -s ${default=NA output_score_type} -p ${default=NA nperm} -m ${default=NA min_overlap} ${"-q " + tolerate_min_overlap_err} -g ${default=NA global_fdr} -z /home/pgdac
 
 		# set wdl variable 'output_prefix' to the value specified in the yaml file,
 		# if not specified via cmd line 
@@ -43,6 +44,7 @@ task panoply_ssgsea {
 	output {
 		# Outputs defined here
 		File results="${output_prefix}.tar.gz"
+		Boolean ssgsea_min_overlap_err=read_boolean("geneset_overlap_below_min.txt")
 		}
 
 	runtime {

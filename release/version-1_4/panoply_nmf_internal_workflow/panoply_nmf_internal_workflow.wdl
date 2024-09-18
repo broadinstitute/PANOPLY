@@ -5,7 +5,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_balance_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf/versions/4/plain-WDL/descriptor" as panoply_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_postprocess/versions/2/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_report/versions/3/plain-WDL/descriptor" as panoply_nmf_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/30/plain-WDL/descriptor" as panoply_ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/37/plain-WDL/descriptor" as panoply_ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/21/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
 ################################################

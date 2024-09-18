@@ -23,7 +23,7 @@ task panoply_mimp {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+        Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
         --module mimp \
         --master_yaml ${master_yaml} \
         ${"--mimp_groups_file_path " + groups_file_path} \
@@ -36,7 +36,7 @@ task panoply_mimp {
         ${"--mimp_sample_id_col " + sample_id_col} \
         ${"--mimp_transcript_id_col " + transcript_id_col}
 
-		/usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml"
+		Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml"
 
 		tar -czvf "${output_prefix}_mimp_output.tar" mimp_results_dir
 

@@ -16,14 +16,15 @@ task panoply_sankey {
     String? id_column                   # id column for identifying entries (e.g. "Sample.ID"); uses rownames if not provided
     String annot_column                 # annotation column for sankey comparisons (e.g. "NMF.consensus")
     String? annot_prefix                # prefix to prepent to annotation values (e.g. "C" -> C1 C2 C3, instead of 1 2 3)
+    String? color_str                   # string of colors (comma separated) to use for sankey diagrams (e.g. '#AA0000,#0000AA' will create a gradient from red to blue)
 
     String label
 
     command {
         set -euo pipefail
 
-        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r -x ${label} -f ${sep="," annot_files} -l ${sep="," annot_file_labels} ${"-j " + annot_file_primary} ${"-m " + annot_label_primary} ${"-i " + id_column} -a ${annot_column} ${"-p " + annot_prefix}
-        tar -czvf "${label}_sankey_diagrams.tar" sankey-*html
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r -x ${label} -f ${sep="," annot_files} -l ${sep="," annot_file_labels} ${"-j " + annot_file_primary} ${"-m " + annot_label_primary} ${"-i " + id_column} -a ${annot_column} ${"-p " + annot_prefix} ${"-c '" + color_str + "'"}
+        tar -czvf "${label}_sankey_diagrams.tar" sankey-*html sankey-*pdf sankey_labels.txt # tar all HTMLs and PDFs, and the TXT with all file-labels
     }
 
     output {
@@ -31,7 +32,7 @@ task panoply_sankey {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_sankey:test"
+        docker : "broadcptacdev/panoply_sankey:latest"
         memory : select_first ([memory, 10]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""

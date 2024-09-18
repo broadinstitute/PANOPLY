@@ -9,7 +9,7 @@ params:
   sankey_tar: NULL
   label: NULL
   annot_of_comparison: NULL
-  primary_dataype_label: NULL
+  # primary_dataype_label: NULL
 ---
 
 ---
@@ -19,6 +19,7 @@ title: `r params$title`
 ```{r setup, include=FALSE}
 library(htmltools)
 library(stringr)
+library(readr)
 library(glue)
 
 ```
@@ -29,29 +30,26 @@ This document visualizes and compares the `r params$annot_of_comparison` annotat
 
 ```{r sankey_diagrams, results='asis', echo=FALSE, out.width='100%', out.height='50%'}
 untar(params$sankey_tar)
-sankey_files = list.files(pattern="sankey.+html")
 
-ome_types = str_split(sankey_files, '_', simplify=TRUE)[,1] %>% str_replace(., 'sankey-', "") %>% unique()
-
-if (primary_dataype_label %in% ome_types) { #if we have a "primary" dataset
-  ome_types = c(primary_dataype_label, ome_types[which(ome_types!=primary_dataype_label)]) #move primary dataset to front of ome_types vector
+if (file.exists("sankey_labels.txt")) { # if we find a file with the labels
+  ome_types = readr::read_lines('sankey_labels.txt') # read in labels from sankey_labels file
+} else { # otherwise, parse ome_types from file-names (prone to bugs)
+  cat(glue("\nWARNING: sankey_labels.txt file is missing from sankey tar. Data labels will be parsed from filenames, which may result in errors if the original labels contained special characters.\n")) # warn that labels file was missing
+  sankey_files = list.files(pattern="sankey.+html")
+  ome_types = str_split(sankey_files, '_', simplify=TRUE)[,1] %>% str_replace(., 'sankey-', "") %>% unique() # parse from filenames
 }
+
+# if (primary_dataype_label %in% ome_types) { #if we have a "primary" dataset
+#   ome_types = c(primary_dataype_label, ome_types[which(ome_types!=primary_dataype_label)]) #move primary dataset to front of ome_types vector
+# }
 
 for(ome in ome_types) {
   cat("  \n## ",  ome, " {.tabset}  \n")
   
-  files_tmp = list.files(pattern=glue("sankey-{ome}.+Source.html"))
-  files_tmp = files_tmp[grep(glue("_{primary_dataype_label}_"), files_tmp, invert = TRUE)] #only plot figures that DON'T have "primary" datatype in the center
-  
-  if (primary_dataype_label %in% ome_types) { #if we have a "primary" datatype
-    primary_sankey = grep(primary_dataype_label, files_tmp, value=TRUE)
-    files_tmp = c(primary_sankey, files_tmp[which(files_tmp!=primary_sankey)]) #move primary datatype sankey file to front of files_tmp vector
-  }
-  
-  for(file in files_tmp) {
-    other_ome = str_replace(file, glue("sankey-{ome}_"), "") %>% str_replace(., '-.+html', '')
+  other_omes = ome_types[which(ome_types!=ome)] # get the other omes we want to compare (will have primary_data_type first because of how sankey_labels.txt is structured)
+  for(other_ome in other_omes) {
     cat("  \n### ",  other_ome, " \n")
-    
+    file = list.files(pattern=glue("sankey-{ome}_{other_ome}-N-[0-9]+?-Source.html"))[[1]] # find the relevant file comparing these two omes
     # include Sankey Diagrams
     print(htmltools::tagList(tags$iframe(srcdoc=suppressWarnings(includeHTML(file)), # insert widget into iframe. suppress warning about using includeHTML()
                                          seamless="seamless", frameBorder = 0, height="400vh", width="100%")))

@@ -32,11 +32,11 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('--nmf_results',"opt/input/luad_NMF_restructure_proteome_NMF_results.tar.gz",
+                       # args = c('--nmf_results',"opt/input/test-so_nmf-CNA_NMF_results.tar.gz",
                        #          '--rank_top',"5",
-                       #          '-g',"opt/input/groups-subset.csv",
+                       #          # '-g',"opt/input/groups-subset.csv",
                        #          '-y',"opt/input/master-parameters.yaml",
-                       #          '-x',"odg_test")
+                       #          '-x',"test")
 )
 
 
@@ -146,6 +146,17 @@ sample_id_col = "Sample.ID" # id column used in groups file
 #### NMF-Input Dataset Import ####
 gct_expr_comb = parse_gctx(file_expr_comb)
 gct_expr_comb_nn = parse_gctx(file_expr_comb_nn)
+
+if ( !is.null(opt$gene_col) && # if we have a gene-symbol column
+     opt$gene_col %in% names(gct_expr_comb@rdesc) ) { # AND it exists in our GCT
+  gene_col_toggle = TRUE # add toggle indicating extant gene_col
+} else { # otherwise
+  if ( !is.null(opt$gene_col) ) # if it should have existed, print a warning
+    cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
+               "' was not found in the rdesc. Gene-annotations assumed missing.\n\n"))
+  gene_col_toggle = FALSE # add toggle indicating missing gene_col
+}
+write.table(gene_col_toggle, file = "gene_col_toggle.txt", quote = FALSE, col.names = FALSE, row.names = FALSE) # write gene-column toggle to .txt file, to determine if ssGSEA can be run
 
 #### Annotations / Groups File Pre-processing ####
 if (!is.null(opt$groups_file)) { # if we have a groups file
@@ -383,7 +394,7 @@ consensusmap(res, filename = paste0(prefix, "consensusMap.png")) # idk what make
 ## ComplexHeatmap version
 hm = Heatmap(matrix = res@consensus, # plot normalized heatmap
              col = colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), # colorscale for heatmap
-             top_annotation = HeatmapAnnotation(df=NMF.annots,
+             top_annotation = HeatmapAnnotation(df=NMF.annots[colnames(res@consensus),],
                                                 col=colors.NMF, na_col="#f7f7f7",
                                                 show_legend=TRUE), # hide annotation legend
              show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
@@ -535,12 +546,12 @@ if ( length(annots.is_continuous) > 0 ) {
 
 
 ###########################################################
-##         W-Matrix Analysis / driver features 
+##         W-Matrix Analysis / Driver Features 
 ###########################################################
 
 cat("\n\n####################\nDriver Features-- W-Matrix Analysis\n\n")
 
-#### Calculate Feature Scores to identify driver features ####
+#### Calculate Feature Scores ####
 ## determine which feature-selection method to use
 for (method in c("kim", "max")) {
   s <- extractFeatures(basis.mat, method=method)
@@ -619,6 +630,7 @@ write_gct(gct.W.norm.comb, ofile=paste0(prefix, 'W_rowNorm_combined_signed')) # 
 
 ###########################################################
 #### Identify Driver Features ####
+###########################################################
 cat("\n\n####################\nDriver Features-- T-Test\n\n")
 driver.features <- extractFeatures(basis.mat, method=method)
 driver.features.byName = lapply(driver.features, function(index_vec) {rownames(basis.mat)[index_vec]}) # signed feature ID
@@ -647,13 +659,15 @@ for (clust in 1:as.numeric(opt$rank_top)) { # for each clusters' driver features
   # note: it's important that the class.vec and expr_mat have columns IN THE SAME ORDER; names() are not actually taken into account...
 
   #### perform moderated test ####
-  res.tmp <-  try({
+  res.tmp <- tryCatch({
     label = glue("{clust}.over.rest")
     modT.test.2class( ft.expr, groups=class.vec,
                       id.col='feature.id', label=label )$output %>%
       .[, c(1, grep(label, colnames(.)))] # subset to JUST the id-column & t-test-columns
-  })
-  if(class(res.tmp) == 'try-error') { # if t-test failed
+  }, error = function(e) {
+    cat(glue("\nERROR: T-test failed for cluster {clust} with error:\n{e}\nContinuing...\n\n")) # just print error for now and continue
+    return(NA)} ) # return NA if the t-test fails
+  if(is.na(res.tmp)) { # if t-test failed
     driver.features.list[[clust]] <- feat.cl # just return the feature annotation df
   } else { # otherwise
     driver.features.list[[clust]] <- full_join(feat.cl, res.tmp, by="id") %>% # merge feature-annotation df with t-test df
@@ -668,9 +682,10 @@ driver.features.df = lapply(driver.features.list, function(df) {
   df %>% # subset each data-frame to
     dplyr::select(c(!ends_with(".over.rest"), # annotation columns
                     starts_with("P.Value."))) %>% # and p-value column
-    dplyr::rename("pval" = starts_with("P.value.")) # rename pvalue column for Easy Stacking
-}) %>% do.call(rbind, .) %>% # rbind list into dataframe
-  dplyr::mutate(!!paste0("signif_at_",opt$feature_fdr) := pval < opt$feature_fdr) # boolean for significance
+    dplyr::rename("pval" = starts_with("P.value.")) %>% # rename pvalue column for Easy Stacking
+    dplyr::mutate(pval = { if ("pval" %in% names(.)) pval else NA }, # define a pvalue column if our t-test failed
+                  !!paste0("signif_at_",opt$feature_fdr) := pval < opt$feature_fdr) # add boolean column indicating significance at chosen FDR
+}) %>% do.call(rbind, .) # rbind list into dataframe
 
 #### Benjamini-Hochberg correction ####
 driver.features.bh = mutate(driver.features.df,
@@ -711,272 +726,293 @@ WriteXLS(driver.features.list.bh,
          row.names=F, BoldHeaderRow=T, AutoFilter=T)
 
 #### Write Excel File, subset to Kinase Only ####
-driver.features.list.kinase = lapply(driver.features.list.bh, function(df) {
-  filter(df, grepl('2\\.7\\.1[0-2]|3\\.1\\.3\\.(16|48)', ENZYME)) # subset each DF of driver-features to kinases only
-})
-WriteXLS(driver.features.list.kinase,
-         ExcelFileName=paste0(prefix, "driverFeatures-kinase-phosphotase_byCluster.xlsx"),
-         FreezeRow=1, FreezeCol=1,
-         SheetNames=make.unique(substr(names(driver.features.list.kinase), 1, 20)),
-         row.names=F, BoldHeaderRow=T, AutoFilter=T)
-
-
-###########################################################
-#### create Significant-Driver-Feature expresion-matrix heatmap (for each cluster) ####
-cat("\n\n####################\nDriver Features-- Generate Expression Heatmaps\n\n")
-for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster that had significant features
-  #### subset expression matrix to drivers for this cluster ####
-  gct_expr_driver = subset_gct(gct_expr_comb,# take combined expression data
-                               rid = filter(driver.features.sigFeatOnly, cluster==clust)$id) # filter to significant features for this cluster
-  gct_expr_driver@cdesc = groups.full[colnames(gct_expr_comb@mat), , drop = FALSE] # overwrite rdesc with groups.full
-  #### write out GCT ####
-  write_gct(gct_expr_driver, ofile=paste0(prefix,'driverFeatures_expression_',
-                                          clust)) # write to GCT
-  ##### append signficant features to heatmap ####
-  mat = gct_expr_driver@mat
-  annot_df = select(gct_expr_driver@cdesc, -all_of(annots.excluded))
-  row_split = data.frame(ome_type = gct_expr_driver@rdesc$ome_type)
-  if (clust == unique(driver.features.sigFeatOnly$cluster)[1]) { # if we're on the first cluster-heatmap 
-    # initialize hm.concat
-    hm.concat <- Heatmap(matrix = mat, # plot normalized heatmap
-                         top_annotation = HeatmapAnnotation(df=annot_df,
-                                                            col=c(colors, colors.NMF), na_col="#f7f7f7",
-                                                            show_legend=FALSE), # hide annotation legend
-                         name = clust, # name each heatmap with cluster
-                         show_heatmap_legend = T, show_column_names = F, # show heatmap & sample IDs
-                         show_row_names = F, # don't show feature IDs
-                         row_split = row_split, # split rows by ome-type
-                         row_title_rot = 0, # horizontal titles
-                         cluster_rows = T, row_dend_side = 'right', # cluster features, show dendrogram on right
-                         column_title = "Expression of Significant Driver Features", 
-                         column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
-                         column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
-                         cluster_columns = cluster_cols, #optionally cluster columns
-                         width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
-                         height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
-                         heatmap_legend_param = list(direction = "horizontal"))
-      
-  } else { # otherwise
-    # append new heatmap to hm.concat
-    hm.concat <- hm.concat %v% # append heatmaps vertically
-      Heatmap(matrix = mat, # plot normalized heatmap
-              name = clust, # name each heatmap with cluster
-              show_heatmap_legend = T, show_column_names = F, # show heatmap & sample IDs
-              show_row_names = F, # don't show feature IDs
-              row_split = row_split, # split rows by ome-type
-              row_title_rot = 0, # horizontal titles
-              cluster_rows = T, row_dend_side = 'right', # cluster features, show dendrogram on right
-              column_title = "Expression of Significant Driver Features", 
-              column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
-              column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
-              cluster_columns = cluster_cols, #optionally cluster columns
-              width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
-              height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
-              heatmap_legend_param = list(direction = "horizontal"))
-  }
-}
-save(file = paste0(prefix, "driverFeatures_hm.concat.Rdata"), hm.concat) # save hm.concat object for troubleshooting
-
-#### draw Heatmap to Files ####
-cat("\n\n####################\nDriver Features-- Compile and Export Expression Heatmap\n\n")
-hm_dims = calc_ht_size(hm.concat) + 0.5 # hm dimensions in inches, plus padding
-
-# open PDF to write heatmap to
-pdf(paste0(prefix, "driverFeatures_complexHeatmap.pdf"),
-    hm_dims[1],
-    hm_dims[2])  
-# pdf('/opt/input/outputs/tmp.pdf', 12, 12) # for manual docker testing
-draw(hm.concat, #heatmap_legend_side='right',
-     show_heatmap_legend = FALSE,
-     ht_gap = unit(5, "mm")) #row_title = "Driver Features (grouped by Cluster)")
-dev.off()
-
-# open PNG to write heatmap to
-png(paste0(prefix, "driverFeatures_complexHeatmap.png"),
-    width = hm_dims[1], 
-    height = hm_dims[2],
-    units="in", res=300)
-draw(hm.concat, #heatmap_legend_side='right',
-     show_heatmap_legend = FALSE)
-dev.off()
-
-###########################################################
-#### create UpSet Plot of driver-feature-overlap b/t clusters ####
-cat("\n\n####################\nDriver Features-- Upset Plots\n\n")
-if ( length(unique(driver.features.bh$cluster)) > 1 ) { # if more than one cluster has driver features
-  upset.mat <- driver.features.sigFeatOnly %>% # use only significant features
-    dplyr::select(c(id, cluster)) %>% # select relevant columns
-    dplyr::mutate(observed = 1) %>% # make placeholder "observed" column, to use as the value in the pivot_wider() function
-    pivot_wider(id_col = 'id', # use feature-id as id
-                names_from='cluster', # create column for each cluster with driver features
-                values_from='observed', values_fill=0) %>% # fill with observed (1) if driver-feature was seen in cluster & fill wtih missing with 0 instead of NA if driver was NOT seen in cluster
-    column_to_rownames('id') # convert feature-id to rowname
-  
-  p <- upset(upset.mat, # create upset-plot
-             point.size = 4, text.scale = 1.5, nintersects = NA,
-             nsets = dim(upset.mat)[2])
-  
-  pdf(paste0(prefix, "driverFeatures_UpSet.pdf")); p; dev.off(); # plot as PDF
-  png(paste0(prefix, "driverFeatures_UpSet.png")); p; dev.off(); # plot as PNG
+if ( gene_col_toggle ) { # if we have our gene-column annotation, create XLSX subsetted to kinase/phosphotase
+  driver.features.list.kinase = lapply(driver.features.list.bh, function(df) {
+    filter(df, grepl('2\\.7\\.1[0-2]|3\\.1\\.3\\.(16|48)', ENZYME)) # subset each DF of driver-features to kinases only
+  })
+  WriteXLS(driver.features.list.kinase,
+           ExcelFileName=paste0(prefix, "driverFeatures-kinase-phosphotase_byCluster.xlsx"),
+           FreezeRow=1, FreezeCol=1,
+           SheetNames=make.unique(substr(names(driver.features.list.kinase), 1, 20)),
+           row.names=F, BoldHeaderRow=T, AutoFilter=T)
 }
 
 ###########################################################
-#### calculate Contributions of Each Ome ####
-cat("\n\n####################\nDriver Features-- # per Cluster (per Ome-Type)\n\n")
-ft_countByOme <- driver.features.sigFeatOnly %>% # use only significant features
-  dplyr::select(c(ome_type, cluster)) %>% # select relevant columns
-  group_by(cluster, ome_type) %>% summarise(n_feat = n()) %>% # get number of features per-ome per-cluster
-  ungroup() %>% complete(ome_type, cluster, fill = list(n_feat = 0)) # add rows for ome_type/cluster combinations with n_feat = 0
-#### write CSV of contributions per ome ####
-write.csv(pivot_wider(ft_countByOme, id_cols=ome_type, # pivot ft_countByOme wider for easer viewing / interpretation
-                      names_from=cluster, values_from=n_feat), # make a column for each cluster, with values being the number of features in that cluster/ome combo
-          paste0(prefix, "driverFeatures_contributionsByOme.csv"))
-#### plot Barplot of Significant Features per Ome ####
-p <- ggplot(ft_countByOme, aes(x = cluster, y = n_feat, fill=ome_type)) +
-  geom_bar(position="dodge", stat="identity") + # grouped barplot with n_feat per clut per ome
-  facet_grid(~ cluster, space="free_x", scales="free_x", switch="x") + # facet by cluster to make the deliniation clearer
-  scale_x_discrete(labels=NULL) + # remove x-axis labels so they aren't double-plotted
-  geom_text(aes(label = n_feat), # add labels with number of features
-            position = position_dodge(width = 0.9), vjust = -0.5, size = 3) + # position label above each column
-  labs(x = "NMF Basis", y = "Number of Features") + # x axis and y axis labels
-  ggtitle('Significant Driver-Features by Cluster') + # add title
-  theme_minimal() +  # adjust formatting
-  theme(panel.grid.major.x = element_blank(),  # remove x-axis gridlines
-        plot.title = element_text(face="bold"), # increase title fontsize / bold
-        strip.background = element_rect(fill=NA,colour="grey80")) # add border around cluster-label
-
-# ggsave('/opt/input/tmp.pdf', # for manual docker testing
-#        plot = p, device="pdf") # plot as PDF
-ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.pdf"),
-       plot = p, device="pdf") # plot as PDF
-ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.png"),
-       plot = p, device="png") # plot as PNG
-
-
-
-
-
+#### Analyze Driver Features (if we have any) ####
 ###########################################################
-#### Top Driver-Features Expression by Cluster (Boxplot & Heatmaps)
-###########################################################
-#### subset driver-features to top N features ####
-driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant driver-features
-  group_by(cluster) %>% # group by cluster
-  slice_min(order_by = bh.pval, # order by p-value
-            n = opt$top_n_features) %>% # select n features with lowest p-values
-  ungroup() # ungroup
-
-
-#### make Boxplot PDF for each cluster. ####
-cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
-for (cluster in unique(driver.features.topNFeat$cluster)) {
-  cat(glue("\n\n##### Boxplot for {cluster}\n\n"))
-  pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
-  # pdf(glue("/opt/input/tmp_{cluster}.pdf")) # for manual docker testing
-  driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
-  for (ft in driverFeats) {
-    #### collect the info we need for our boxplot ####
-    expr.df = data.frame(ft.expression = gct_expr_comb@mat[ft,], # get expression data
-                         # sample.id = gct_expr_comb@cid, # get corresponding sample name (unnecessary but convenient)
-                         cluster = NMF.annots[gct_expr_comb@cid, # in the order of the samples
-                                              'NMF.consensus']) #get cluster membership
-    annot.df = driver.features.sigFeatOnly %>%
-      filter(cluster==!!cluster) %>% # filter to driver-features in cluster
-      filter(id==ft) # filter annotations to relevant driver-feature
-    
-    # boxplot title
-    if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
-      boxplot.title = glue('Expression of {annot.df[[opt$gene_col]]} in {annot.df$ome_type} ({annot.df$id_og})')
-    } else { # otherwise just use the feature ID
-      boxplot.title = glue('Expression of feature {annot.df$id_og} ({annot.df$ome_type})')
-    }
-    
-    # boxplot colors
-    boxplot.colors = rep('black', opt$rank_top) #initialize color-scheme with all black
-    names(boxplot.colors) = paste0("C", 1:opt$rank_top) # name vector w/ clusters
-    boxplot.colors[[cluster]] = "red" # color the expression red in the cluster the driver feature drives
-    
-    #### create boxplot ####
-    p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
-      geom_boxplot(color = boxplot.colors, # boxplots of expression data
-                   width = 0.25) + 
-      geom_hline(yintercept = 0, color='grey', linetype='dashed') + # add dashed line at 0
-      labs(x = "NMF Basis", y = "Feature Expression", # x axis and y axis labels
-           title = boxplot.title, # add title
-           subtitle = glue("Driver Feature in {annot.df$cluster}\nFeature Score: {signif(annot.df$feature.scores, 3)}\nAdj-P-Val: {signif(annot.df$bh.pval, 3)}")) +
-      stat_summary(fun.data = function(y) {c(y = max(y), # add label slightly above box plot
-                                             label = length(y))}, # label with the number of observations
-                   geom = "text", vjust = -1,
-                   position = position_dodge(width = 0.75)) +
-      theme_minimal() + # adjust formatting
-      theme(panel.grid.major.x = element_blank(), # remove lines
-            plot.title = element_text(face="bold")) # increase title fontsize / bold
-    plot(p) # plot as PDF page
-  }
-  dev.off()
-}
-
-
-
-#### make Heatmap PDF for each cluster ####
-cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Heatmaps\n\n"))
-for (cluster in unique(driver.features.topNFeat$cluster)) {
-  cat(glue("\n\n##### Heatmap for {cluster}\n\n"))
-  driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
-  
-  if (!is.null(opt$gene_col)) { # if we have the gene column
-    goi = filter(driver.features.sigFeatOnly, id %in% driverFeats) %>%
-      .[[opt$gene_col]] %>% unique() # and identify unique genes
-    ft_list = lapply(goi, function(gene) {
-      fts = driver.features.sigFeatOnly %>% # take significant features
-        filter(cluster==!!cluster) %>% # subset to cluster
-        filter(!!as.name(opt$gene_col)==gene) %>% # subset to goi
-        .$id
-      return(fts)}) # get feature ID
-  } else { # otherwise
-    goi = NULL
-    ft_list = as.list(driverFeats) # just use the driverFeats as is
-  }
-  
-  # get annotation table
-  annot_df = select(groups.full[colnames(gct_expr_comb@mat), , drop = FALSE],
-                    -all_of(annots.excluded))
-  # open PDF to draw heatmap
-  pdf(paste0(prefix, "driverFeatures_expressionHeatmaps_", cluster,".pdf"),
-      hm_dims[1], # use hm_dims from previous expression heatmap
-      (dim(annot_df)[2]+6)/5 + 3) # set height equal to n_annots/5 + 6 features x scaling + padding for title / legend
-  # pdf('/opt/input/tmp.pdf', 12,8) # for manual docker testing
-  for (i in 1:length(ft_list)) {
-    fts = ft_list[[i]]
-    
-    if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
-      hm.title = glue('Expression of Driver Features for Gene {goi[i]}')
-    } else { # otherwise just use the feature ID
-      hm.title = glue('Expression of Driver Feature {fts}')
-    }
-    
-    mat = gct_expr_comb@mat[fts,,drop=F]
-    # generate heatmap
-    hm <- Heatmap(matrix = mat, # plot normalized heatmap
-                  top_annotation = HeatmapAnnotation(df=annot_df,
+if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one significant driver feature 
+  ###########################################################
+  #### create Significant-Driver-Feature expresion-matrix heatmap (for each cluster) ####
+  cat("\n\n####################\nDriver Features-- Generate Expression Heatmaps\n\n")
+  for (clust in unique(driver.features.sigFeatOnly$cluster)) { # for each cluster that had significant features
+    #### subset expression matrix to drivers for this cluster ####
+    gct_expr_driver = subset_gct(gct_expr_comb,# take combined expression data
+                                 rid = filter(driver.features.sigFeatOnly, cluster==clust)$id) # filter to significant features for this cluster
+    gct_expr_driver@cdesc = groups.full[colnames(gct_expr_comb@mat), , drop = FALSE] # overwrite rdesc with groups.full
+    #### write out GCT ####
+    write_gct(gct_expr_driver, ofile=paste0(prefix,'driverFeatures_expression_',
+                                            clust)) # write to GCT
+    ##### append signficant features to heatmap ####
+    mat = gct_expr_driver@mat
+    annot_df = select(gct_expr_driver@cdesc, -all_of(annots.excluded))
+    row_split = data.frame(ome_type = gct_expr_driver@rdesc$ome_type)
+    if (clust == unique(driver.features.sigFeatOnly$cluster)[1]) { # if we're on the first cluster-heatmap 
+      # initialize hm.concat
+      hm.concat <- Heatmap(matrix = mat, # plot normalized heatmap
+                           top_annotation = HeatmapAnnotation(df=annot_df,
                                                               col=c(colors, colors.NMF), na_col="#f7f7f7",
                                                               show_legend=FALSE), # hide annotation legend
-                  name = goi[i],
-                  cluster_rows = T, row_dend_side = 'left',
-                  show_row_names = TRUE, row_names_side = "right",
-                  column_title = hm.title, column_title_rot = 0, # add column title and rotation
-                  column_title_gp = gpar(fontsize = 16, fontface = "bold"),
-                  show_heatmap_legend = T, 
-                  row_title_rot = 0, # horizontal titles
-                  column_split = annot_df[["NMF.consensus"]],
-                  width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
-                  height = min(nrow(mat), 75)*unit(5, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 300mm)
-                  heatmap_legend_param = list(direction = "horizontal"))
+                           name = clust, # name each heatmap with cluster
+                           show_heatmap_legend = T, show_column_names = F, # show heatmap & sample IDs
+                           show_row_names = F, # don't show feature IDs
+                           row_split = row_split, # split rows by ome-type
+                           row_title_rot = 0, # horizontal titles
+                           cluster_rows = T, row_dend_side = 'right', # cluster features, show dendrogram on right
+                           column_title = "Expression of Significant Driver Features", 
+                           column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
+                           column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
+                           cluster_columns = cluster_cols, #optionally cluster columns
+                           width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
+                           height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
+                           heatmap_legend_param = list(direction = "horizontal"))
       
-    draw(hm, padding = unit(c(2, 2, 2, 2), "mm"))
+    } else { # otherwise
+      # append new heatmap to hm.concat
+      hm.concat <- hm.concat %v% # append heatmaps vertically
+        Heatmap(matrix = mat, # plot normalized heatmap
+                name = clust, # name each heatmap with cluster
+                show_heatmap_legend = T, show_column_names = F, # show heatmap & sample IDs
+                show_row_names = F, # don't show feature IDs
+                row_split = row_split, # split rows by ome-type
+                row_title_rot = 0, # horizontal titles
+                cluster_rows = T, row_dend_side = 'right', # cluster features, show dendrogram on right
+                column_title = "Expression of Significant Driver Features", 
+                column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
+                column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
+                cluster_columns = cluster_cols, #optionally cluster columns
+                width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
+                height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
+                heatmap_legend_param = list(direction = "horizontal"))
+    }
   }
+  save(file = paste0(prefix, "driverFeatures_hm.concat.Rdata"), hm.concat) # save hm.concat object for troubleshooting
+  
+  #### draw Heatmap to Files ####
+  cat("\n\n####################\nDriver Features-- Compile and Export Expression Heatmap\n\n")
+  hm_dims = calc_ht_size(hm.concat) + 0.5 # hm dimensions in inches, plus padding
+  
+  # open PDF to write heatmap to
+  pdf(paste0(prefix, "driverFeatures_complexHeatmap.pdf"),
+      hm_dims[1],
+      hm_dims[2])  
+  # pdf('/opt/input/outputs/tmp.pdf', 12, 12) # for manual docker testing
+  draw(hm.concat, #heatmap_legend_side='right',
+       show_heatmap_legend = FALSE,
+       ht_gap = unit(5, "mm")) #row_title = "Driver Features (grouped by Cluster)")
   dev.off()
+  
+  # open PNG to write heatmap to
+  png(paste0(prefix, "driverFeatures_complexHeatmap.png"),
+      width = hm_dims[1], 
+      height = hm_dims[2],
+      units="in", res=300)
+  draw(hm.concat, #heatmap_legend_side='right',
+       show_heatmap_legend = FALSE)
+  dev.off()
+  
+  ###########################################################
+  #### create UpSet Plot of driver-feature-overlap b/t clusters ####
+  cat("\n\n####################\nDriver Features-- Upset Plots\n\n")
+  if ( length(unique(driver.features.bh$cluster)) > 1 ) { # if more than one cluster has driver features
+    upset.mat <- driver.features.sigFeatOnly %>% # use only significant features
+      dplyr::select(c(id, cluster)) %>% # select relevant columns
+      dplyr::mutate(observed = 1) %>% # make placeholder "observed" column, to use as the value in the pivot_wider() function
+      pivot_wider(id_col = 'id', # use feature-id as id
+                  names_from='cluster', # create column for each cluster with driver features
+                  values_from='observed', values_fill=0) %>% # fill with observed (1) if driver-feature was seen in cluster & fill wtih missing with 0 instead of NA if driver was NOT seen in cluster
+      column_to_rownames('id') # convert feature-id to rowname
+    if (all( dim(upset.mat)>1) ) { # if we have... more than one cluster (columns) OR feature (rows) to plot
+      p <- upset(upset.mat, # create upset-plot
+                 point.size = 4, text.scale = 1.5, nintersects = NA,
+                 nsets = dim(upset.mat)[2])
+      
+      pdf(paste0(prefix, "driverFeatures_UpSet.pdf")); p; dev.off(); # plot as PDF
+      png(paste0(prefix, "driverFeatures_UpSet.png")); p; dev.off(); # plot as PNG
+    } else {
+      cat("\nWARNING: No overlap between cluster driver-features to plot.\n") # try again on driver-features
+    }
+  }
+  
+  ###########################################################
+  #### calculate Contributions of Each Ome ####
+  cat("\n\n####################\nDriver Features-- # per Cluster (per Ome-Type)\n\n")
+  ft_countByOme <- driver.features.sigFeatOnly %>% # use only significant features
+    dplyr::select(c(ome_type, cluster)) %>% # select relevant columns
+    group_by(cluster, ome_type) %>% summarise(n_feat = n()) %>% # get number of features per-ome per-cluster
+    ungroup() %>% complete(ome_type, cluster, fill = list(n_feat = 0)) # add rows for ome_type/cluster combinations with n_feat = 0
+  #### write CSV of contributions per ome ####
+  write.csv(pivot_wider(ft_countByOme, id_cols=ome_type, # pivot ft_countByOme wider for easer viewing / interpretation
+                        names_from=cluster, values_from=n_feat), # make a column for each cluster, with values being the number of features in that cluster/ome combo
+            paste0(prefix, "driverFeatures_contributionsByOme.csv"))
+  #### plot Barplot of Significant Features per Ome ####
+  p <- ggplot(ft_countByOme, aes(x = cluster, y = n_feat, fill=ome_type)) +
+    geom_bar(position="dodge", stat="identity") + # grouped barplot with n_feat per clut per ome
+    facet_grid(~ cluster, space="free_x", scales="free_x", switch="x") + # facet by cluster to make the deliniation clearer
+    scale_x_discrete(labels=NULL) + # remove x-axis labels so they aren't double-plotted
+    geom_text(aes(label = n_feat), # add labels with number of features
+              position = position_dodge(width = 0.9), vjust = -0.5, size = 3) + # position label above each column
+    labs(x = "NMF Basis", y = "Number of Features") + # x axis and y axis labels
+    ggtitle('Significant Driver-Features by Cluster') + # add title
+    theme_minimal() +  # adjust formatting
+    theme(panel.grid.major.x = element_blank(),  # remove x-axis gridlines
+          plot.title = element_text(face="bold"), # increase title fontsize / bold
+          strip.background = element_rect(fill=NA,colour="grey80")) # add border around cluster-label
+  
+  # ggsave('/opt/input/tmp.pdf', # for manual docker testing
+  #        plot = p, device="pdf") # plot as PDF
+  ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.pdf"),
+         plot = p, device="pdf") # plot as PDF
+  ggsave(paste0(prefix, "driverFeatures_contributionsByOme_barplot.png"),
+         plot = p, device="png") # plot as PNG
+  
+  
+  
+  
+  
+  ###########################################################
+  #### Top Driver-Features Expression by Cluster (Boxplot & Heatmaps) ####
+  #### subset driver-features to top N features ####
+  driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant driver-features
+    group_by(cluster) %>% # group by cluster
+    slice_min(order_by = bh.pval, # order by p-value
+              n = opt$top_n_features, # select n features with lowest p-values
+              with_ties = TRUE) %>% # allow ties, if multiple drivers have the same p-value; note that if multiple features have the same score, this could cause issues
+    ungroup() # ungroup
+  # add a warning, if certain clusters have >2x the number of top-features
+  if (any( table(driver.features.topNFeat$cluster) > opt$top_n_features*2 )) {
+    tmp = table(driver.features.topNFeat$cluster)
+    cat(glue("\nWARNING: More than {opt$top_n_features*2} top driver-features were selected for expression-plotting in some clusters (largest cluster: {names(tmp)[which.max(tmp)]} with {max(tmp)} features), indicating many driver-features with identical t-scores / p-values.\n")) # try again on driver-features
+  }
+  
+  #### make Boxplot PDF for each cluster. ####
+  cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
+  for (cluster in unique(driver.features.topNFeat$cluster)) {
+    cat(glue("\n\n##### Boxplot for {cluster}\n\n"))
+    pdf(paste0(prefix, "driverFeatures_expressionBoxplots_", cluster,".pdf"))
+    # pdf(glue("/opt/input/tmp_{cluster}.pdf")) # for manual docker testing
+    driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
+    for (ft in driverFeats) {
+      #### collect the info we need for our boxplot ####
+      expr.df = data.frame(ft.expression = gct_expr_comb@mat[ft,], # get expression data
+                           # sample.id = gct_expr_comb@cid, # get corresponding sample name (unnecessary but convenient)
+                           cluster = NMF.annots[gct_expr_comb@cid, # in the order of the samples
+                                                'NMF.consensus']) #get cluster membership
+      if (nrow(expr.df)==0) next # if we have no data to plot, skip this feature
+      
+      annot.df = driver.features.sigFeatOnly %>%
+        filter(cluster==!!cluster) %>% # filter to driver-features in cluster
+        filter(id==ft) # filter annotations to relevant driver-feature
+      
+      # boxplot title
+      if (gene_col_toggle) { # if we have the gene column, use it for the boxplot title
+        boxplot.title = glue('Expression of {annot.df[[opt$gene_col]]} in {annot.df$ome_type} ({annot.df$id_og})')
+      } else { # otherwise just use the feature ID
+        boxplot.title = glue('Expression of feature {annot.df$id_og} ({annot.df$ome_type})')
+      }
+      
+      # boxplot colors
+      boxplot.colors = rep('black', opt$rank_top) #initialize color-scheme with all black
+      names(boxplot.colors) = paste0("C", 1:opt$rank_top) # name vector w/ clusters
+      boxplot.colors[[cluster]] = "red" # color the expression red in the cluster the driver feature drives
+      
+      #### create boxplot ####
+      p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
+        geom_boxplot(color = boxplot.colors[sort(unique(expr.df$cluster))], # grab only the colors for clusters that appear in our dataframe
+                     width = 0.25) + 
+        geom_hline(yintercept = 0, color='grey', linetype='dashed') + # add dashed line at 0
+        labs(x = "NMF Basis", y = "Feature Expression", # x axis and y axis labels
+             title = boxplot.title, # add title
+             subtitle = glue("Driver Feature in {annot.df$cluster}\nFeature Score: {signif(annot.df$feature.scores, 3)}\nAdj-P-Val: {signif(annot.df$bh.pval, 3)}")) +
+        stat_summary(fun.data = function(y) {c(y = max(y), # add label slightly above box plot
+                                               label = length(y))}, # label with the number of observations
+                     geom = "text", vjust = -1,
+                     position = position_dodge(width = 0.75)) +
+        theme_minimal() + # adjust formatting
+        theme(panel.grid.major.x = element_blank(), # remove lines
+              plot.title = element_text(face="bold")) # increase title fontsize / bold
+      plot(p) # plot as PDF page
+    }
+    dev.off()
+  }
+  
+  
+  
+  #### make Heatmap PDF for each cluster ####
+  cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Heatmaps\n\n"))
+  for (cluster in unique(driver.features.topNFeat$cluster)) {
+    cat(glue("\n\n##### Heatmap for {cluster}\n\n"))
+    driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
+    
+    if (gene_col_toggle) { # if we have the gene column
+      goi = filter(driver.features.sigFeatOnly, id %in% driverFeats) %>%
+        .[[opt$gene_col]] %>% unique() # and identify unique genes
+      ft_list = lapply(goi, function(gene) {
+        fts = driver.features.sigFeatOnly %>% # take significant features
+          filter(cluster==!!cluster) %>% # subset to cluster
+          filter(!!as.name(opt$gene_col)==gene) %>% # subset to goi
+          .$id
+        return(fts)}) # get feature ID
+    } else { # otherwise
+      goi = NULL
+      ft_list = as.list(driverFeats) # just use the driverFeats as is
+    }
+    
+    # get annotation table
+    annot_df = select(groups.full[colnames(gct_expr_comb@mat), , drop = FALSE],
+                      -all_of(annots.excluded))
+    # open PDF to draw heatmap
+    pdf(paste0(prefix, "driverFeatures_expressionHeatmaps_", cluster,".pdf"),
+        hm_dims[1], # use hm_dims from previous expression heatmap
+        (dim(annot_df)[2]+6)/5 + 3) # set height equal to n_annots/5 + 6 features x scaling + padding for title / legend
+    # pdf('/opt/input/tmp.pdf', 12,8) # for manual docker testing
+    for (i in 1:length(ft_list)) {
+      fts = ft_list[[i]]
+      
+      if (gene_col_toggle) { # if we have the gene column, use it for the boxplot title
+        hm.title = glue('Expression of Driver Features for Gene {goi[i]}')
+      } else { # otherwise just use the feature ID
+        hm.title = glue('Expression of Driver Feature {fts}')
+      }
+      
+      mat = gct_expr_comb@mat[fts,,drop=F]
+      if (nrow(mat)==0) next # if we have no data to plot, skip this feature
+      # generate heatmap
+      hm <- Heatmap(matrix = mat, # plot normalized heatmap
+                    top_annotation = HeatmapAnnotation(df=annot_df,
+                                                       col=c(colors, colors.NMF), na_col="#f7f7f7",
+                                                       show_legend=FALSE), # hide annotation legend
+                    # name = goi[i],
+                    cluster_rows = T, row_dend_side = 'left',
+                    show_row_names = TRUE, row_names_side = "right",
+                    column_title = hm.title, column_title_rot = 0, # add column title and rotation
+                    column_title_gp = gpar(fontsize = 16, fontface = "bold"),
+                    show_heatmap_legend = T, 
+                    row_title_rot = 0, # horizontal titles
+                    column_split = annot_df[["NMF.consensus"]],
+                    width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
+                    height = min(nrow(mat), 75)*unit(5, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 300mm)
+                    heatmap_legend_param = list(direction = "horizontal"))
+      
+      draw(hm, padding = unit(c(2, 2, 2, 2), "mm"))
+    }
+    dev.off()
+  }
+  
+  
+} else {
+  cat("\nWARNING: No significant driver features identified.\n") # try again on driver-features
 }
+
 
 
 ###########################################################
@@ -1026,47 +1062,50 @@ if (!class(tsne_s) == 'try-error') { # assuming tSNE ran properly
 
 
 #### tSNE Clustering on significant Driver Features (across all Samples) ####
-cat(glue("\n\n####################\nTSNE Driver-Feature Comparisons\n\n"))
-driverFeat_expr <- gct_expr_comb@mat[driver.features.sigFeatOnly$id,] # driver features only, all samples
-tsne_f <- tryCatch(Rtsne(driverFeat_expr, check_duplicates=F), # try tSNE as is
-                   # but if it fails
-                   error = function(e) { #try again with perplexity set explicitly
-                     message(conditionMessage(e))
-                     message("Trying again, with perplexity set explitictly.")
-                     try(Rtsne(driverFeat_expr,
-                               perplexity = floor((nrow(driverFeat_expr) - 1) / 3), # to avoid perplexity error
-                               check_duplicates=F))
-                   })
-#### plot results ####
-if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
-  #### create dataframe for plotting ####
-  feat_id = rownames(driverFeat_expr) # get feature-ids from expression matrix
-  cluster = driver.features.sigFeatOnly[match(feat_id, # match order of feature-ids
-                                              driver.features.sigFeatOnly$id), # to the driver feature dataframe
-                                        "cluster"] %>%
-    factor(levels = paste0("C",1:opt$rank_top))
-  tsne.df <- data.frame(tsne_x = tsne_f$Y[,1],
-                        tsne_y = tsne_f$Y[,2],
-                        feat_id = feat_id,
-                        cluster = cluster) # pull out corresponding cluster
-  #### plot and save ####
-  p = ggplot(tsne.df, aes(tsne_x, tsne_y, color = cluster)) +
-    geom_point() +
-    scale_color_manual(values = colors.NMF$NMF.consensus) + # color by NMF scheme
-    labs(title = "tSNE Clustering on significant Driver Features", # title
-         subtitle = "Clustered across all samples") + # subtitle, describing the dataset
-    geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + # plot 0,0 axes in black
-    theme_minimal() +
-    theme(plot.title = element_text(face="bold")) # increase title fontsize / bold
-  # ggsave("/opt/input/tmp.png", plot=p, device="png") # for manual docker testing
-  ggsave(paste0(prefix, "tSNE_driverFeatures.pdf"),
-         plot=p, device = "pdf") # saveas pdf
-  ggsave(paste0(prefix, "tSNE_driverFeatures.png"),
-         plot=p, device = "png") # as png
+if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have driver features
+  cat(glue("\n\n####################\nTSNE Driver-Feature Comparisons\n\n"))
+  driverFeat_expr <- gct_expr_comb@mat[driver.features.sigFeatOnly$id,] # driver features only, all samples
+  tsne_f <- tryCatch(Rtsne(driverFeat_expr, check_duplicates=F), # try tSNE as is
+                     # but if it fails
+                     error = function(e) { #try again with perplexity set explicitly
+                       message(conditionMessage(e))
+                       message("Trying again, with perplexity set explitictly.")
+                       try(Rtsne(driverFeat_expr,
+                                 perplexity = floor((nrow(driverFeat_expr) - 1) / 3), # to avoid perplexity error
+                                 check_duplicates=F))
+                     })
+  #### plot results ####
+  if (!class(tsne_f) == 'try-error') { # assuming tSNE ran properly
+    #### create dataframe for plotting ####
+    feat_id = rownames(driverFeat_expr) # get feature-ids from expression matrix
+    cluster = driver.features.sigFeatOnly[match(feat_id, # match order of feature-ids
+                                                driver.features.sigFeatOnly$id), # to the driver feature dataframe
+                                          "cluster"] %>%
+      factor(levels = paste0("C",1:opt$rank_top))
+    tsne.df <- data.frame(tsne_x = tsne_f$Y[,1],
+                          tsne_y = tsne_f$Y[,2],
+                          feat_id = feat_id,
+                          cluster = cluster) # pull out corresponding cluster
+    #### plot and save ####
+    p = ggplot(tsne.df, aes(tsne_x, tsne_y, color = cluster)) +
+      geom_point() +
+      scale_color_manual(values = colors.NMF$NMF.consensus) + # color by NMF scheme
+      labs(title = "tSNE Clustering on significant Driver Features", # title
+           subtitle = "Clustered across all samples") + # subtitle, describing the dataset
+      geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + # plot 0,0 axes in black
+      theme_minimal() +
+      theme(plot.title = element_text(face="bold")) # increase title fontsize / bold
+    # ggsave("/opt/input/tmp.png", plot=p, device="png") # for manual docker testing
+    ggsave(paste0(prefix, "tSNE_driverFeatures.pdf"),
+           plot=p, device = "pdf") # saveas pdf
+    ggsave(paste0(prefix, "tSNE_driverFeatures.png"),
+           plot=p, device = "png") # as png
+  } else {
+    cat("\nWARNING: TSNE clustering failed on Driver Features.") # try again on driver-features
+  }
 } else {
-  cat("\nWARNING: TSNE clustering failed on Driver Features.") # try again on driver-features
+  cat(glue("\n\n####################\nNo Driver Features-- TSNE Driver-Feature comparison will be skipped.\n\n"))
 }
-
 
 ###########################################################
 ##         Tar all Files

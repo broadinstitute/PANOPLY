@@ -225,7 +225,7 @@ task panoply_cmap_ssgsea {
 
   command {
     set -euo pipefail
-    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
+    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output} -z /home/pgdac/
   }
 
   output {
@@ -278,7 +278,7 @@ task panoply_cmap_annotate_ssgsea {
   command {
     set -euo pipefail
 
-    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output}
+    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output} -z /home/pgdac/
 
     # assemble results into tar file
     find * -regextype posix-extended -regex "^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^.*.log.txt$|^.*parameters.txt$" -print0 | tar -cvf ${outFile} --null -T -

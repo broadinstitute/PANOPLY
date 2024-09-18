@@ -1,0 +1,36 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.disk_space": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.feature_fdr": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.gene_column": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.groups_file": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.max_annot_levels": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.memory": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.nclust": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.nmf_results": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.num_preemtions": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.num_threads": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.output_prefix": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.pval_signif": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.top_n_features": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_nmf_postprocess",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_nmf_postprocess/6",
+    "methodVersion": 6,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_nmf_postprocess",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.feature_matrix_w": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.membership": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

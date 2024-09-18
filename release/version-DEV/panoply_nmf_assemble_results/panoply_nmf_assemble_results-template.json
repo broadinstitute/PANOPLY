@@ -1,0 +1,39 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.disk_space": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.memory": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.mo_nmf_figures": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.mo_nmf_report": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.mo_nmf_results": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.mo_nmf_ssgsea_report": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.mo_nmf_ssgsea_tar": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.num_preemptions": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.num_threads": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.output_reports_tar": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.output_results_tar": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.sankey_report": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.sankey_tar": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.so_nmf_figures": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.so_nmf_report": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.so_nmf_results": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.so_nmf_ssgsea_report": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.so_nmf_ssgsea_tar": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_nmf_assemble_results",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_nmf_assemble_results/13",
+    "methodVersion": 13,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_nmf_assemble_results",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.nmf_reports": "",
+    "panoply_nmf_assemble_results_workflow.panoply_nmf_assemble_results.nmf_results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

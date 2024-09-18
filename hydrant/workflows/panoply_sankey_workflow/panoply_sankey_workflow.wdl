@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey/versions/7/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_report/versions/1/plain-WDL/descriptor" as sankey_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey/versions/9/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_report/versions/3/plain-WDL/descriptor" as sankey_report_wdl
 
 
 workflow panoply_sankey_workflow {
@@ -40,7 +40,6 @@ workflow panoply_sankey_workflow {
     input:
       sankey_tar=sankey.tar_out,
       annot_of_comparison=annot_column,
-      primary_dataype_label=annot_label_primary,
       
       label=label
   }

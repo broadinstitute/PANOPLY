@@ -20,7 +20,7 @@ task panoply_blacksheep {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+        Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
         --module blacksheep \
         --master_yaml ${master_yaml} \
         ${"--blacksheep_apply_filtering " + apply_filtering} \
@@ -29,7 +29,7 @@ task panoply_blacksheep {
         ${"--blacksheep_fraction_samples_cutoff " + fraction_samples_cutoff} \
         ${"--blacksheep_fdr_value " + fdr_value}
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "final_output_params.yaml"
+        Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "final_output_params.yaml"
 
         if [ "${groups_file}" != "" ]; then
             cp ${groups_file} "blacksheep"

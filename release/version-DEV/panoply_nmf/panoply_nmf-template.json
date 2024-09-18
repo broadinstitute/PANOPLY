@@ -1,0 +1,42 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_nmf_workflow.panoply_nmf.disk_space": "",
+    "panoply_nmf_workflow.panoply_nmf.exclude_2": "",
+    "panoply_nmf_workflow.panoply_nmf.gene_column": "",
+    "panoply_nmf_workflow.panoply_nmf.kmax": "",
+    "panoply_nmf_workflow.panoply_nmf.kmin": "",
+    "panoply_nmf_workflow.panoply_nmf.memory": "",
+    "panoply_nmf_workflow.panoply_nmf.nmf_method": "",
+    "panoply_nmf_workflow.panoply_nmf.nrun": "",
+    "panoply_nmf_workflow.panoply_nmf.num_preemtions": "",
+    "panoply_nmf_workflow.panoply_nmf.num_threads": "",
+    "panoply_nmf_workflow.panoply_nmf.ome_gcts": "",
+    "panoply_nmf_workflow.panoply_nmf.ome_labels": "",
+    "panoply_nmf_workflow.panoply_nmf.organism_id": "",
+    "panoply_nmf_workflow.panoply_nmf.output_prefix": "",
+    "panoply_nmf_workflow.panoply_nmf.sd_filt_min": "",
+    "panoply_nmf_workflow.panoply_nmf.sd_filt_mode": "",
+    "panoply_nmf_workflow.panoply_nmf.seed": "",
+    "panoply_nmf_workflow.panoply_nmf.yaml_file": "",
+    "panoply_nmf_workflow.panoply_nmf.z_score": "",
+    "panoply_nmf_workflow.panoply_nmf.z_score_mode": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_nmf",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_nmf/7",
+    "methodVersion": 7,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_nmf",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_nmf_workflow.panoply_nmf.nclust": "",
+    "panoply_nmf_workflow.panoply_nmf.preprocess_figs": "",
+    "panoply_nmf_workflow.panoply_nmf.results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
