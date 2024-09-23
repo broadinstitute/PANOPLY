@@ -207,7 +207,11 @@ if (!is.null(opt$yaml_file)) {
   yaml_colors = yaml_out$groups.colors # get colors from YAML
   for (annot in annots.is_discrete) { # for each discrete-annotation we intend to plot
     if (!is.null( yaml_colors[[annot]] )) { # if the annotation has colors assigned in the YAML file
-      colors[[annot]] <- unlist(yaml_colors[[annot]]) # overwrite the automatic values with the YAML values
+      for (annot_val in names(yaml_colors[[annot]])) { # for each annotation-value that has a YAML color
+        if (!is.na(colors[[annot]][annot_val])) { # if that annotation-value exists in our data
+          colors[[annot]][[annot_val]] <- yaml_colors[[annot]][[annot_val]] # overwrite the automatic color with the YAML color
+        }
+      }
     }
   }
 }
