@@ -268,6 +268,16 @@ groups.full = merge(groups, NMF.annots, by='row.names') %>% # append NMF.annots 
 
 #### assign colors for NMF annotations ####
 colors.full.NMF = set_annot_colors(NMF.annots, continuous.return_function = TRUE)
+# manually override NMF.cluster.membership to range from 0 to 1
+pal = khroma::color('iridescent') # use the khroma iridescent palette
+colors.full.NMF$NMF.cluster.membership$colors = circlize::colorRamp2(seq(0, 1, # range from 0 to 1
+                                                                         length.out = attr(pal, "max")), # with max-colors number of elements
+                                                                     pal(attr(pal, "max"))) # color-function
+# manually override NMF.core.member w/ NMF.cluster.membership color-palette
+colors.full.NMF$NMF.core.member$colors[1] = colors.full.NMF$NMF.cluster.membership$colors(0.75)
+colors.full.NMF$NMF.core.member$colors[2] = colors.full.NMF$NMF.cluster.membership$colors(0.95)
+# pull out the color vectors, named with values
+# consider: this should probably happen in set_annot_color()
 colors.NMF = sapply(colors.full.NMF, function(annot) {
   annot_colors = annot$colors
   names(annot_colors) = annot$vals
