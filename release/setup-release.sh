@@ -136,6 +136,15 @@ configure_primary_workflow() {
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
   fi
+  
+  if [ "$wf" == "panoply_nmf_workflow" ]; then
+    # configure panoply_nmf_workflow with template for paired-array input
+    cat $wf-template.json |  \
+      jq '.inputs."panoply_nmf_workflow.ome_pairs" = $val' --arg val '[ { "left":"prot", "right":this.proteome_ss }, { "left":"pSTY", "right":this.phosphoproteome_ss }, { "left":"acK", "right":this.acetylome_ss }, { "left":"ubK", "right":this.ubiquitylome_ss }, { "left":"RNA", "right":this.rna_ss }, { "left":"CNA", "right":this.cna_ss } ]' \
+      > new-template.json
+    mv new-template.json $wf-template.json  
+    put_method_config $ws $wp $wf
+  fi
 } 
 
 
@@ -184,6 +193,9 @@ installMethod() {
   if [[ ("$type" = "workflows") && ("$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow") ]]; then
     # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
     configure_primary_workflow $wkspace_pipelines $project $meth
+  elif [[ ("$meth" = "panoply_nmf_workflow") ]]; then
+    # also configure panoply_nmf_workflows to have paired-array template
+    configure_primary_workflow $wkspace_all $project $meth
   else
     put_method_config $wkspace_all $project $meth
   fi
