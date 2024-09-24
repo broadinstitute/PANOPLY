@@ -141,7 +141,7 @@ panoply_mimp:
   transcript_id_col: "refseq_mrna_id"           # name of column in mutation MAF file that indicates transcript identifier
 
 panoply_ptm_normalization:
-  accession_number_colname: 'accession_number'
+  accession_number_colname: 'id.description'
   accession_numbers_colname: 'accession_numbers'    # set to NULL if not present
   accession_numbers_separator: '|'                  # ignored if accession_numbers_colname is NULL
   score_colname: 'scoreUnique'                      # set to NULL if absent; ignored if accession_numbers_colname is NULL
