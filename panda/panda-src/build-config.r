@@ -310,7 +310,12 @@ load_unzipped_files <- function(){
     zip.name <- tail( unlist( strsplit( input.zip, split = '/' ) ), 1 )
     return(zip.name)
   }
-  input.zip.name <- smart_readline( prompt = "\n$$ Enter uploaded zip file name (test.zip): ",
+  # list of zip-files
+  cat(paste(glue("Available zip-files:"),
+            paste( system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("zip$", ., value=T), collapse = '\n'), 
+            sep,
+            sep = '\n'))
+  input.zip.name <- smart_readline( prompt = "\n$$ Enter name of zip file containing input data: ",
                                     custom_condition = function(input.zip.name) { file.exists( process_zip(input.zip.name) ) },
                                     custom_warning = printX ("ERROR", glue("Zip file not found in workspace bucket")),
                                     exit_message = stnd_exit_message) # ensure that zip file exists
@@ -1040,7 +1045,7 @@ sample_set_sanity_check <- function( sample.sets ){
   
   exist.ss <- setdiff (exist.ss, 'all')  # always include 'all' -- keeps samples synchronized
   if ( !( identical( character(), exist.ss ) ) ){
-    overlap.flags <- names( sample.sets ) %in% exist.ss
+    overlap.flags <- sapply(names( sample.sets ), function(x) {any(grepl(x, exist.ss, ignore.case=T))}) # check if set already exists, non-case-sensitive
     if ( any( overlap.flags ) ){
       overlap.ssets <- names( sample.sets )[overlap.flags]
       warning <- glue ("WARNING. Sample sets -- {overlap.ssets} -- already exist.")
@@ -1050,9 +1055,13 @@ sample_set_sanity_check <- function( sample.sets ){
       if (overwrite) {
         # delete existing sample sets, including 'all'
         # "echo y" automates the "y(es)/no" prompt needed to confirm deletion
-        sapply (overlap.ssets, 
-                function (s) 
-                  system ( glue ( "echo y | fissfc sset_delete -w {terra.wkspace} -p {globals$project} -e {s}" ))
+        sapply (overlap.ssets, # for each set which overlaps existing sets
+                function (s)  {
+                  dup.groups = exist.ss[grepl(s, exist.ss, ignore.case=T)] # identify the sets that would be clobbered
+                  for (dup.group in dup.groups) { # and delete them from terra
+                    system ( glue ( "echo y | fissfc sset_delete -w {terra.wkspace} -p {globals$project} -e {dup.group}" ))
+                  }
+                }
         )
       } else {
         print( glue( "\n\n.. Aborting sample subset definition\n") )
@@ -1121,7 +1130,7 @@ define_sample_sets <- function( all.groups, typemap.csv ){
     fil_val <- unlist (strsplit (fil_val, split=';'))
     
     sample.sets[[name]]$fil_col <- fil_col
-    sample.sets[[name]]$fil_val <- fil_val
+    sample.sets[[name]]$fil_val <- paste(fil_val, collapse=';') # reconcatenate into a single string
     
     # add pathway databases and parameters as set-specific parameters for every set
     for (x in names (typemap.gmt))  
