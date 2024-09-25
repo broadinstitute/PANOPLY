@@ -494,9 +494,10 @@ validate_gene_id <- function(ome) {
       # check whether user is inputting a gene.id.col, or a prot.id.col and prot.id.type
       id.col.type = smart_readline( prompt = paste(glue("\n$$ To create a Gene ID column for {toupper(ome)}, please choose to either:"),
                                                    "\t1) Select an existing annotation column with HUGO Gene Symbols",
-                                                   "\t2) Convert protein IDs to HUGO Gene Symbol \n",
+                                                   "\t2) Convert protein IDs to HUGO Gene Symbol",
+                                                   "\t3) Proceed without a gene-symbol column, at your own risk \n",
                                                    sep = "\n"),
-                                    custom_condition = function(input) { input %in% c(1,2) },
+                                    custom_condition = function(input) { input %in% c(1,2,3) },
                                     custom_warning = stnd_custom_warning,
                                     exit_message = stnd_exit_message )
       if(is.null(id.col.type)) stop()
@@ -506,7 +507,10 @@ validate_gene_id <- function(ome) {
         valid_id = gene_id_column_select(ome, gct, gene.id.col.default) #select column w/ gene IDs
       else if (id.col.type==2) 
         valid_id = gene_id_column_create(ome, gct, gene.id.col.default, protein.id.col) # convert protein IDs to gene IDs
-      else { printX("ERROR", "This shouldn't have happened!"); stop() }
+      else if (id.col.type==3) {
+        printX("WARNING", glue("Skipping check for gene-symbol column in {toupper(ome)} data. Proceed with caution; many PANOPLY modules require this column"))
+        valid_id = TRUE # skip check entirely
+      } else { printX("ERROR", "This shouldn't have happened!"); stop() }
     }
   }
   
@@ -715,13 +719,19 @@ verify_group_validity <- function( groups.cols, typemap.csv ){
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- sort(unique( annot[[groups.cols[group.idx]]] ))
-    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
+    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){
+      # display an appropriate warning
+      if ( length( groups.vals ) > max.categories ) tmp = glue("more than {max.categories} categories")
+      if ( length( groups.vals ) <= 1 ) tmp = "1 or fewer unique categories"
+      printX ("WARNING", glue("The '{groups.cols[group.idx]}' annotation has {tmp} ({length( groups.vals )}), and will not be used as a categorical variable."))
       # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
       # if column has > max.categories, drop from groups.cols, 
       #   but, if numeric, treat as a continuous column and add to groups.cols.continuous
       drop <- c( drop, group.idx )
-      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) 
+      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) {
         cont <- c (cont, group.idx)
+        printX ("INFO", glue("The '{groups.cols[group.idx]}' annotation will be included as a continuous variable."))
+      }
     }
   }
   if ( length( cont ) > 0 ) groups.cols.continuous <- groups.cols[cont]
