@@ -62,7 +62,8 @@ create_values_input = function(gct, GeneSymbol_column, apply_identifiers_filter,
 create_groupsfile_annotations = function(gct, groups_file, SampleID_column, data_values){
   
   annotations = read.csv(groups_file, stringsAsFactors = F, na.strings=c("", "NA")) %>%
-    mutate_all(function(x) gsub("_","-",x)) %>%
+    mutate(across(c(everything(),-!!SampleID_column), # mutate across all annotation values, BUT NOT THE SAMPLE.ID COLUMN
+                  function(x) gsub("_","-",x))) %>%
     column_to_rownames(SampleID_column)
   annotations[is.na(annotations)] = "NA"
   

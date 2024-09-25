@@ -1,15 +1,14 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/6/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/42/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/7/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_workflow/versions/28/plain-WDL/descriptor" as so_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_mo_nmf_gct/versions/9/plain-WDL/descriptor" as mo_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/8/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_make_pairs_workflow/versions/6/plain-WDL/descriptor" as make_pairs_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/21/plain-WDL/descriptor" as assemble_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_so_nmf_sankey_workflow/versions/7/plain-WDL/descriptor" as so_nmf_sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/3/plain-WDL/descriptor" as select_pairs
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/16/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/64/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/15/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/46/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/16/plain-WDL/descriptor" as immune_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/27/plain-WDL/descriptor" as assemble_wdl
+
 
 
 workflow panoply_unified_workflow {
@@ -19,132 +18,106 @@ workflow panoply_unified_workflow {
   File? ubiquityl_ome
   File? rna_data      #version 1.3 only!
   File? cna_data
-  File? sample_annotation
   File yaml
   String job_id
   String run_cmap
-  String run_nmf #'true' or 'false'
+  Boolean run_mo_nmf #'true' or 'false'
+  Boolean run_so_nmf #'true' or 'false'
   String? run_ptmsea
+
+  File groups_file
+  File? groups_file_blacksheep
+  File? groups_file_immune
+  File? groups_file_nmf
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
   String? filterProteomics # "true" or "false"
 
-  
-  Array[File] omes = ["${prote_ome}", "${phospho_ome}", "${acetyl_ome}", "${ubiquityl_ome}"]
-  Array[File] data = ["${rna_data}", "${cna_data}"]
-  
-  # Turn the type data (RNA+CNA) into an array of pairs:
-  call make_pairs_wdl.panoply_make_pairs_workflow as type_pairs {
-    input:
-      files = data,
-      suffix = "-subset.gct"
+  # Organize omics data into pairs
 
+  Array[Pair[String?, File?]] ome_pairs_input =
+    [ ("proteome", prote_ome),
+      ("phosphoproteome", phospho_ome),
+      ("acetylome", acetyl_ome),
+      ("ubiquitylome", ubiquityl_ome) ]
+  call select_pairs.panoply_select_all_pairs as ome_pairs { # select extant pairs
+    input:
+        pairs_input = ome_pairs_input
   }
 
-  # Make the array of ome pairs to input into normalize:
-  call make_pairs_wdl.panoply_make_pairs_workflow as ome_pairs {
+  Array[Pair[String?, File?]] geneome_pairs_input =
+    [ ("rna", rna_data),
+      ("cna", cna_data) ]
+  call select_pairs.panoply_select_all_pairs as geneome_pairs { # select extant pairs
     input:
-      files = omes,
-      suffix = "-subset.gct"
-
+        pairs_input = geneome_pairs_input
   }
 
   ### NORMALIZE:
   ### Normalize the data first so downstream modules (NMF etc) can run in parallel to main:
-  scatter (pair in ome_pairs.zipped) {
-    if ("${pair.right}" != "") {
-      call norm_filt_wdl.panoply_normalize_filter_workflow as norm_filt {
-        input:
-          input_pome="${pair.right}",
-          ome_type="${pair.left}",
-          job_identifier="${job_id}-${pair.left}",
-          yaml="${yaml}",
-          normalizeProteomics=normalizeProteomics,
-          filterProteomics=filterProteomics
-      }
-    }
-  }
-
-  # Make an array of pairs from the normalized data for input to main and other modules:
-  call make_pairs_wdl.panoply_make_pairs_workflow as norm_filt_pairs {
-    input:
-      files = norm_filt.filtered_data_table,
-      suffix = "-filtered_table-output.gct"
-
-  }
-
-  ### MAIN:
-  scatter (pair in norm_filt_pairs.zipped) {
-    if ("${pair.right}" != "") {
-        call main_wdl.panoply_main as pome {
-          input:
-            ## include all required arguments from above
-            input_pome="${pair.right}",
-            ome_type="${pair.left}",
-            job_identifier="${job_id}-${pair.left}",
-            run_ptmsea="${run_ptmsea}",
-            run_cmap = "${run_cmap}",
-            run_nmf = "false",
-            input_cna="${cna_data}",
-            input_rna="${rna_data}",
-            sample_annotation="${sample_annotation}",
-            yaml="${yaml}"
-        }
-        
-      
+  scatter (pair in ome_pairs.pairs) {
+    call norm_filt_wdl.panoply_normalize_filter_workflow as norm_filt {
+      input:
+        input_pome="${pair.right}",
+        ome_type="${pair.left}",
+        job_identifier="${job_id}-${pair.left}",
+        yaml="${yaml}",
+        normalizeProteomics=normalizeProteomics,
+        filterProteomics=filterProteomics
     }
   }
   
+  # Zip Normalization / Filter Output into a labelled Array 
+  Array[Pair[String,File]] ome_pairs_norm_filt = zip(norm_filt.output_ome_type , norm_filt.filtered_data_table)
+  
+  # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for NMF & Blacksheep use:
+  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,geneome_pairs.pairs])
 
-  # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for Blacksheep use:
-  Array[Pair[String?,File?]] all_pairs = flatten([norm_filt_pairs.zipped,type_pairs.zipped])
+
+  ### MAIN:
+  scatter (pair in ome_pairs_norm_filt) {
+    call main_wdl.panoply_main as pome {
+      input:
+        ## include all required arguments from above
+        input_pome=pair.right,
+        ome_type=pair.left,
+        job_identifier="${job_id}-${pair.left}",
+        run_ptmsea="${run_ptmsea}",
+        run_cmap = "${run_cmap}",
+        run_nmf = "false",
+        input_cna=cna_data,
+        input_rna=rna_data,
+        groups_file=groups_file,
+        yaml=yaml
+    }
+  }
   
   ### BLACKSHEEP:
   scatter (pair in all_pairs) {
-    if ("${pair.right}" != "") {
-      call blacksheep_wdl.panoply_blacksheep_workflow as outlier {
-        input:
-          input_gct = "${pair.right}",
-          master_yaml = "${yaml}",
-          output_prefix = "${pair.left}",
-          type = "${pair.left}"
-      }
+    call blacksheep_wdl.panoply_blacksheep_workflow as outlier {
+      input:
+        input_gct = "${pair.right}",
+        master_yaml = "${yaml}",
+        output_prefix = "${pair.left}",
+        type = "${pair.left}",
+        groups_file="${if defined(groups_file_blacksheep) then groups_file_blacksheep else groups_file}"
     }
-  }
-  
-  ### Single-ome NMF
-  call so_nmf_wdl.panoply_so_nmf_workflow as so_nmf {
-    input:
-      yaml = yaml,
-      job_id = job_id,
-      prote_ome = norm_filt.filtered_data_table[0],
-      phospho_ome = norm_filt.filtered_data_table[1],
-      acetyl_ome = norm_filt.filtered_data_table[2],
-      ubiquityl_ome = norm_filt.filtered_data_table[3],
-      rna_data = rna_data,
-      cna_data = cna_data,
-      run_sankey = "false" # run sankey_workflow separately
   }
 
-  ### Multi-omics NMF:
-  if ( run_nmf == "true" ){
-    call mo_nmf_wdl.panoply_mo_nmf_gct_workflow as mo_nmf {
+  ### NMF (Multi-omic and Single-omic):
+  if ( run_mo_nmf || run_so_nmf ){
+    call nmf_wdl.panoply_nmf_workflow as nmf {
       input:
-        yaml_file = yaml,
-        label = job_id,
-        omes = norm_filt.filtered_data_table,
-        rna_ome = rna_data,
-        cna_ome = cna_data
+        ome_pairs = all_pairs,
+
+        label = job_id,                     # default parameters & figure colors
+        yaml_file = yaml,                   # default parameters & figure colors
+        groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",
+
+        run_mo_nmf = run_mo_nmf,            # toggle for Multi-omic NMF
+        run_so_nmf = run_so_nmf             # toggle for Single-omic NMF
     }
-  }
-  
-  ### NMF Sankey Diagrams (SO and MO nmf)
-  call so_nmf_sankey_wdl.panoply_so_nmf_sankey_workflow as all_nmf_sankey {
-  input:
-    so_nmf_tar = so_nmf.nmf_results,
-    mo_nmf_tar = mo_nmf.nmf_clust, #will exist if mo_nmf was run
-    label = job_id
   }
   
   ### IMMUNE:
@@ -156,7 +129,8 @@ workflow panoply_unified_workflow {
           type="rna",
           yaml=yaml,
           analysisDir=job_id,
-          label=job_id
+          label=job_id,
+          groupsFile="${if defined(groups_file_immune) then groups_file_immune else groups_file}"
     }
   }
   
@@ -176,14 +150,8 @@ workflow panoply_unified_workflow {
       assoc_report = pome.association_report,
       blacksheep_tar = outlier.blacksheep_tar,
       blacksheep_report = outlier.blacksheep_report,
-      so_nmf_results = so_nmf.nmf_results,
-      so_nmf_reports = so_nmf.nmf_reports,
-      so_nmf_sankey_results = all_nmf_sankey.sankey_tar,
-      so_nmf_sankey_report = all_nmf_sankey.sankey_report,
-      mo_nmf_tar = mo_nmf.nmf_clust,
-      mo_nmf_report = mo_nmf.nmf_clust_report,
-      mo_nmf_ssgsea_tar = mo_nmf.nmf_ssgsea,
-      mo_nmf_ssgsea_report = mo_nmf.nmf_ssgsea_report,
+      nmf_results = nmf.nmf_results,
+      nmf_reports = nmf.nmf_reports,
       immune_tar = immune.outputs,
       immune_report = immune.report
 

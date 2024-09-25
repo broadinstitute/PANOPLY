@@ -32,11 +32,11 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('--nmf_results',"opt/input/luad_NMF_restructure_proteome_NMF_results.tar.gz",
+                       # args = c('--nmf_results',"opt/input/test-so_nmf-CNA_NMF_results.tar.gz",
                        #          '--rank_top',"5",
-                       #          '-g',"opt/input/groups-subset.csv",
+                       #          # '-g',"opt/input/groups-subset.csv",
                        #          '-y',"opt/input/master-parameters.yaml",
-                       #          '-x',"odg_test")
+                       #          '-x',"test")
 )
 
 
@@ -147,6 +147,17 @@ sample_id_col = "Sample.ID" # id column used in groups file
 gct_expr_comb = parse_gctx(file_expr_comb)
 gct_expr_comb_nn = parse_gctx(file_expr_comb_nn)
 
+if ( !is.null(opt$gene_col) && # if we have a gene-symbol column
+     opt$gene_col %in% names(gct_expr_comb@rdesc) ) { # AND it exists in our GCT
+  gene_col_toggle = TRUE # add toggle indicating extant gene_col
+} else { # otherwise
+  if ( !is.null(opt$gene_col) ) # if it should have existed, print a warning
+    cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
+               "' was not found in the rdesc. Gene-annotations assumed missing.\n\n"))
+  gene_col_toggle = FALSE # add toggle indicating missing gene_col
+}
+write.table(gene_col_toggle, file = "gene_col_toggle.txt", quote = FALSE, col.names = FALSE, row.names = FALSE) # write gene-column toggle to .txt file, to determine if ssGSEA can be run
+
 #### Annotations / Groups File Pre-processing ####
 if (!is.null(opt$groups_file)) { # if we have a groups file
   #### import groups file ####
@@ -196,7 +207,11 @@ if (!is.null(opt$yaml_file)) {
   yaml_colors = yaml_out$groups.colors # get colors from YAML
   for (annot in annots.is_discrete) { # for each discrete-annotation we intend to plot
     if (!is.null( yaml_colors[[annot]] )) { # if the annotation has colors assigned in the YAML file
-      colors[[annot]] <- unlist(yaml_colors[[annot]]) # overwrite the automatic values with the YAML values
+      for (annot_val in names(yaml_colors[[annot]])) { # for each annotation-value that has a YAML color
+        if (!is.na(colors[[annot]][annot_val])) { # if that annotation-value exists in our data
+          colors[[annot]][[annot_val]] <- yaml_colors[[annot]][[annot_val]] # overwrite the automatic color with the YAML color
+        }
+      }
     }
   }
 }
@@ -253,6 +268,16 @@ groups.full = merge(groups, NMF.annots, by='row.names') %>% # append NMF.annots 
 
 #### assign colors for NMF annotations ####
 colors.full.NMF = set_annot_colors(NMF.annots, continuous.return_function = TRUE)
+# manually override NMF.cluster.membership to range from 0 to 1
+pal = khroma::color('iridescent') # use the khroma iridescent palette
+colors.full.NMF$NMF.cluster.membership$colors = circlize::colorRamp2(seq(0, 1, # range from 0 to 1
+                                                                         length.out = attr(pal, "max")), # with max-colors number of elements
+                                                                     pal(attr(pal, "max"))) # color-function
+# manually override NMF.core.member w/ NMF.cluster.membership color-palette
+colors.full.NMF$NMF.core.member$colors[1] = colors.full.NMF$NMF.cluster.membership$colors(0.75)
+colors.full.NMF$NMF.core.member$colors[2] = colors.full.NMF$NMF.cluster.membership$colors(0.95)
+# pull out the color vectors, named with values
+# consider: this should probably happen in set_annot_color()
 colors.NMF = sapply(colors.full.NMF, function(annot) {
   annot_colors = annot$colors
   names(annot_colors) = annot$vals
@@ -383,7 +408,7 @@ consensusmap(res, filename = paste0(prefix, "consensusMap.png")) # idk what make
 ## ComplexHeatmap version
 hm = Heatmap(matrix = res@consensus, # plot normalized heatmap
              col = colorRampPalette(c('blue', 'blue4','darkred', 'red'))(100), # colorscale for heatmap
-             top_annotation = HeatmapAnnotation(df=NMF.annots,
+             top_annotation = HeatmapAnnotation(df=NMF.annots[colnames(res@consensus),],
                                                 col=colors.NMF, na_col="#f7f7f7",
                                                 show_legend=TRUE), # hide annotation legend
              show_heatmap_legend = T, show_column_names = T, # show heatmap & sample IDs
@@ -672,7 +697,7 @@ driver.features.df = lapply(driver.features.list, function(df) {
     dplyr::select(c(!ends_with(".over.rest"), # annotation columns
                     starts_with("P.Value."))) %>% # and p-value column
     dplyr::rename("pval" = starts_with("P.value.")) %>% # rename pvalue column for Easy Stacking
-    dplyr::mutate(pval = ifelse("pval" %in% names(.), pval, NA), # define a pvalue column if our t-test failed
+    dplyr::mutate(pval = { if ("pval" %in% names(.)) pval else NA }, # define a pvalue column if our t-test failed
                   !!paste0("signif_at_",opt$feature_fdr) := pval < opt$feature_fdr) # add boolean column indicating significance at chosen FDR
 }) %>% do.call(rbind, .) # rbind list into dataframe
 
@@ -715,7 +740,7 @@ WriteXLS(driver.features.list.bh,
          row.names=F, BoldHeaderRow=T, AutoFilter=T)
 
 #### Write Excel File, subset to Kinase Only ####
-if ( opt$gene_col %in% gct_expr_comb@rdesc ) { # if we have our gene-column, assume ENZYME annotations were added
+if ( gene_col_toggle ) { # if we have our gene-column annotation, create XLSX subsetted to kinase/phosphotase
   driver.features.list.kinase = lapply(driver.features.list.bh, function(df) {
     filter(df, grepl('2\\.7\\.1[0-2]|3\\.1\\.3\\.(16|48)', ENZYME)) # subset each DF of driver-features to kinases only
   })
@@ -724,9 +749,6 @@ if ( opt$gene_col %in% gct_expr_comb@rdesc ) { # if we have our gene-column, ass
            FreezeRow=1, FreezeCol=1,
            SheetNames=make.unique(substr(names(driver.features.list.kinase), 1, 20)),
            row.names=F, BoldHeaderRow=T, AutoFilter=T)
-} else {
-  cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
-             "' was not found in the rdesc. Gene-annotations assumed missing.\n\n"))
 }
 
 ###########################################################
@@ -823,13 +845,16 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                   names_from='cluster', # create column for each cluster with driver features
                   values_from='observed', values_fill=0) %>% # fill with observed (1) if driver-feature was seen in cluster & fill wtih missing with 0 instead of NA if driver was NOT seen in cluster
       column_to_rownames('id') # convert feature-id to rowname
-    
-    p <- upset(upset.mat, # create upset-plot
-               point.size = 4, text.scale = 1.5, nintersects = NA,
-               nsets = dim(upset.mat)[2])
-    
-    pdf(paste0(prefix, "driverFeatures_UpSet.pdf")); p; dev.off(); # plot as PDF
-    png(paste0(prefix, "driverFeatures_UpSet.png")); p; dev.off(); # plot as PNG
+    if (all( dim(upset.mat)>1) ) { # if we have... more than one cluster (columns) OR feature (rows) to plot
+      p <- upset(upset.mat, # create upset-plot
+                 point.size = 4, text.scale = 1.5, nintersects = NA,
+                 nsets = dim(upset.mat)[2])
+      
+      pdf(paste0(prefix, "driverFeatures_UpSet.pdf")); p; dev.off(); # plot as PDF
+      png(paste0(prefix, "driverFeatures_UpSet.png")); p; dev.off(); # plot as PNG
+    } else {
+      cat("\nWARNING: No overlap between cluster driver-features to plot.\n") # try again on driver-features
+    }
   }
   
   ###########################################################
@@ -874,9 +899,14 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
   driver.features.topNFeat <- driver.features.sigFeatOnly %>% # take significant driver-features
     group_by(cluster) %>% # group by cluster
     slice_min(order_by = bh.pval, # order by p-value
-              n = opt$top_n_features) %>% # select n features with lowest p-values
+              n = opt$top_n_features, # select n features with lowest p-values
+              with_ties = TRUE) %>% # allow ties, if multiple drivers have the same p-value; note that if multiple features have the same score, this could cause issues
     ungroup() # ungroup
-  
+  # add a warning, if certain clusters have >2x the number of top-features
+  if (any( table(driver.features.topNFeat$cluster) > opt$top_n_features*2 )) {
+    tmp = table(driver.features.topNFeat$cluster)
+    cat(glue("\nWARNING: More than {opt$top_n_features*2} top driver-features were selected for expression-plotting in some clusters (largest cluster: {names(tmp)[which.max(tmp)]} with {max(tmp)} features), indicating many driver-features with identical t-scores / p-values.\n")) # try again on driver-features
+  }
   
   #### make Boxplot PDF for each cluster. ####
   cat(glue("\n\n####################\nDriver Features-- Top {opt$top_n_features} Expression Boxplots\n\n"))
@@ -891,12 +921,14 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                            # sample.id = gct_expr_comb@cid, # get corresponding sample name (unnecessary but convenient)
                            cluster = NMF.annots[gct_expr_comb@cid, # in the order of the samples
                                                 'NMF.consensus']) #get cluster membership
+      if (nrow(expr.df)==0) next # if we have no data to plot, skip this feature
+      
       annot.df = driver.features.sigFeatOnly %>%
         filter(cluster==!!cluster) %>% # filter to driver-features in cluster
         filter(id==ft) # filter annotations to relevant driver-feature
       
       # boxplot title
-      if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
+      if (gene_col_toggle) { # if we have the gene column, use it for the boxplot title
         boxplot.title = glue('Expression of {annot.df[[opt$gene_col]]} in {annot.df$ome_type} ({annot.df$id_og})')
       } else { # otherwise just use the feature ID
         boxplot.title = glue('Expression of feature {annot.df$id_og} ({annot.df$ome_type})')
@@ -909,7 +941,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
       
       #### create boxplot ####
       p <- ggplot(expr.df, aes(x = cluster, y = ft.expression)) + # boxplot with ft-expression by ome
-        geom_boxplot(color = boxplot.colors, # boxplots of expression data
+        geom_boxplot(color = boxplot.colors[sort(unique(expr.df$cluster))], # grab only the colors for clusters that appear in our dataframe
                      width = 0.25) + 
         geom_hline(yintercept = 0, color='grey', linetype='dashed') + # add dashed line at 0
         labs(x = "NMF Basis", y = "Feature Expression", # x axis and y axis labels
@@ -935,7 +967,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
     cat(glue("\n\n##### Heatmap for {cluster}\n\n"))
     driverFeats = filter(driver.features.topNFeat, cluster==!!cluster)$id # get vector of driver features we wanna plot 
     
-    if (!is.null(opt$gene_col)) { # if we have the gene column
+    if (gene_col_toggle) { # if we have the gene column
       goi = filter(driver.features.sigFeatOnly, id %in% driverFeats) %>%
         .[[opt$gene_col]] %>% unique() # and identify unique genes
       ft_list = lapply(goi, function(gene) {
@@ -960,19 +992,20 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
     for (i in 1:length(ft_list)) {
       fts = ft_list[[i]]
       
-      if (!is.null(opt$gene_col)) { # if we have the gene column, use it for the boxplot title
+      if (gene_col_toggle) { # if we have the gene column, use it for the boxplot title
         hm.title = glue('Expression of Driver Features for Gene {goi[i]}')
       } else { # otherwise just use the feature ID
         hm.title = glue('Expression of Driver Feature {fts}')
       }
       
       mat = gct_expr_comb@mat[fts,,drop=F]
+      if (nrow(mat)==0) next # if we have no data to plot, skip this feature
       # generate heatmap
       hm <- Heatmap(matrix = mat, # plot normalized heatmap
                     top_annotation = HeatmapAnnotation(df=annot_df,
                                                        col=c(colors, colors.NMF), na_col="#f7f7f7",
                                                        show_legend=FALSE), # hide annotation legend
-                    name = goi[i],
+                    # name = goi[i],
                     cluster_rows = T, row_dend_side = 'left',
                     show_row_names = TRUE, row_names_side = "right",
                     column_title = hm.title, column_title_rot = 0, # add column title and rotation

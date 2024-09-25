@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data/versions/9/plain-WDL/descriptor" as normalize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_filter/versions/7/plain-WDL/descriptor" as filter_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_report/versions/7/plain-WDL/descriptor" as normalize_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data/versions/11/plain-WDL/descriptor" as normalize_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_filter/versions/9/plain-WDL/descriptor" as filter_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_ms_data_report/versions/9/plain-WDL/descriptor" as normalize_report_wdl
 
 workflow panoply_normalize_filter_workflow {
 	File input_pome
@@ -62,7 +62,8 @@ workflow panoply_normalize_filter_workflow {
   	}
 
   	output {
-  		File filtered_data_table = panoply_filter.outputs
+  		String output_ome_type = ome_type
+        File filtered_data_table = panoply_filter.outputs
   		File filtered_tar = panoply_filter.output_tar
   		File normalize_report = panoply_normalize_ms_data_report.report
 

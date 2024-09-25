@@ -3,6 +3,7 @@
   "inputs": {
     "panoply_ssgsea_report_workflow.panoply_ssgsea_report.cfg_yaml": "",
     "panoply_ssgsea_report_workflow.panoply_ssgsea_report.disk_space": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.is_ptmsigdb": "",
     "panoply_ssgsea_report_workflow.panoply_ssgsea_report.label": "",
     "panoply_ssgsea_report_workflow.panoply_ssgsea_report.memory": "",
     "panoply_ssgsea_report_workflow.panoply_ssgsea_report.num_preemptions": "",
@@ -13,8 +14,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_ssgsea_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_ssgsea_report/6",
-    "methodVersion": 6,
+    "methodUri": "agora://broadcptacdev/panoply_ssgsea_report/10",
+    "methodVersion": 10,
     "sourceRepo": "agora"
   },
   "name": "panoply_ssgsea_report",

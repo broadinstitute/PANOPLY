@@ -17,8 +17,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_ptm_normalization",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_ptm_normalization/7",
-    "methodVersion": 7,
+    "methodUri": "agora://broadcptacdev/panoply_ptm_normalization/9",
+    "methodVersion": 9,
     "sourceRepo": "agora"
   },
   "name": "panoply_ptm_normalization",

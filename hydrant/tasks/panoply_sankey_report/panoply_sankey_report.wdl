@@ -12,13 +12,10 @@ task panoply_sankey_report {
     String label
     File sankey_tar
 
-    String? primary_dataype_label
-
-
     command {
         set -euo pipefail
 
-        Rscript /prot/proteomics/Projects/PGDAC/src/sankey-renderRMD.R "${annot_of_comparison}" "${sankey_tar}" "${label}" "${primary_dataype_label}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey-renderRMD.R "${annot_of_comparison}" "${sankey_tar}" "${label}"
     }
 
     output {
@@ -26,7 +23,7 @@ task panoply_sankey_report {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_sankey_report:test"
+        docker : "broadcptacdev/panoply_sankey_report:latest"
         memory : select_first ([memory, 10]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
         cpu   : select_first ([num_threads, 1]) + ""

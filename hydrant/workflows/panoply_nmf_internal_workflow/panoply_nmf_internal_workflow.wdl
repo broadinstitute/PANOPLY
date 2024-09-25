@@ -3,9 +3,9 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_balance_omes/versions/7/plain-WDL/descriptor" as panoply_nmf_balance_omes_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf/versions/6/plain-WDL/descriptor" as panoply_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/5/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/7/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_report/versions/3/plain-WDL/descriptor" as panoply_nmf_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as panoply_ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/12/plain-WDL/descriptor" as panoply_ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/8/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
 
 ################################################
@@ -17,9 +17,12 @@ workflow panoply_nmf_internal_workflow {
     Array[File]+ ome_gcts			# array of GCT files
     Array[String]+ ome_labels		# labels corresponding to those GCT files
 
-	File gene_set_database
 	File? yaml_file
 	File? groups_file
+
+	## ssGSEA parameters
+	Boolean? run_ssgsea=true
+	File? gene_set_database
 
 	## Balance Toggle
 	Boolean? balance_omes
@@ -31,6 +34,7 @@ workflow panoply_nmf_internal_workflow {
 	String? sd_filt_mode
 	String? z_score			# true / false
 	String? z_score_mode
+	String? gene_column
 	
 	## NMF Parameters
 	Int? kmin
@@ -63,6 +67,7 @@ workflow panoply_nmf_internal_workflow {
 			sd_filt_mode=sd_filt_mode,
 			z_score=z_score,
 			z_score_mode=z_score_mode,
+			gene_column=gene_column,
 			## NMF Parameters
             kmin=kmin,
             kmax=kmax,
@@ -75,6 +80,7 @@ workflow panoply_nmf_internal_workflow {
 		input:
 			nmf_results=nmf.results,
 			nclust=nmf.nclust,
+			gene_column=gene_column,
 			output_prefix=label,
 			groups_file=groups_file,
 			yaml_file=yaml_file
@@ -88,23 +94,30 @@ workflow panoply_nmf_internal_workflow {
 			label=label
 	}
 
-	call panoply_ssgsea_wdl.panoply_ssgsea {
-		input:
-			input_ds=postprocess.feature_matrix_w,
-			gene_set_database=gene_set_database,
-			yaml_file=yaml_file,
-			output_prefix=label,
- 			mode="abs.max",
-			weight=1,
-			
-	}
+	if ( run_ssgsea && postprocess.ssgsea_viable ) { # if we want to AND are able to run ssGSEA
+		call panoply_ssgsea_wdl.panoply_ssgsea {
+			input:
+				input_ds=postprocess.feature_matrix_w,
+				gene_set_database=gene_set_database,
+				gene_col=gene_column,
+				tolerate_min_overlap_err="true", # tolerate having < min_overlap genes in common with gene_set_database, since W-matrix feature space may be small for some ome-types
+				yaml_file=yaml_file,
+				output_prefix=label,
+	 			mode="abs.max",
+				weight=1,
+				
+		}
 
-    call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
-		input:
-			tarball=panoply_ssgsea.results,
-			cfg_yaml=yaml_file,
-			label=label
-		
+	    if ( !panoply_ssgsea.ssgsea_min_overlap_err ) { # only generate report if we have valid results
+		    call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
+				input:
+					tarball=panoply_ssgsea.results,
+					cfg_yaml=yaml_file,
+					label=label
+				
+			}
+	    }
+
 	}
 
 	output {
@@ -114,8 +127,8 @@ workflow panoply_nmf_internal_workflow {
 		File nmf_membership=postprocess.membership	## .tsv with membership results
 		File nmf_report=panoply_nmf_report.report 	## report file
 
-		File nmf_ssgsea_tar=panoply_ssgsea.results
-		File nmf_ssgsea_report=panoply_ssgsea_report.report
+		File? nmf_ssgsea_tar=panoply_ssgsea.results
+		File? nmf_ssgsea_report=panoply_ssgsea_report.report
         
 		File? nmf_balance_filter=balance.pdf
 		File? nmf_preprocess_figures=nmf.preprocess_figs

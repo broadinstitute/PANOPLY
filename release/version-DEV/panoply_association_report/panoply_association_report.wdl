@@ -7,7 +7,7 @@ task panoply_association_report {
     Int? num_threads
     Int? num_preemptions
 
-    File input_tar
+    Array[File] ssgsea_assoc_tars
     File master_yaml
     String label
     String type
@@ -17,12 +17,15 @@ task panoply_association_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+        Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
         --module association_report \
         --master_yaml ${master_yaml} \
         ${"--fdr_value " + fdr_value}
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd_association.r "${input_tar}" "final_output_params.yaml" "${label}" "${type}"
+        # compile tars into useable format, equivalent to scatter_processing() in panoply_downloads
+        bash /prot/proteomics/Projects/PGDAC/src/compile_tars.sh ${sep=' ' ssgsea_assoc_tars}
+
+        Rscript /prot/proteomics/Projects/PGDAC/src/rmd_association.r "ssgsea_assoc.tar" "final_output_params.yaml" "${label}" "${type}"
     }
 
     output {

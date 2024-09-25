@@ -38,10 +38,10 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('-d',"/opt/input/phosphoproteome-subset.gct",
-                       #          '-o',"pSTY",
+                       # args = c('-d',"/opt/input/precovid_prot-pr_plasma_bloodall_n218x1417.gct,/opt/input/precovid_trans_plasma_bloodall_n807x20526.gct,/opt/input/precovid_met_plasma_bloodall_n836x1719.gct",
+                       #          '-o',"prot,trans,meta",
                        #          '-y','/opt/input/master-parameters.yaml',
-                       #          '-x',"odg_pSTY")
+                       #          '-x',"precovid_NMF_all_timepoints-mo_nmf")
                        )
 
 
@@ -157,7 +157,9 @@ for (ome in ome_labels) {
     comb_rdesc = data.frame(id = paste(ome, ome_gcts[[ome]]@rid, sep="_"), # initialize rdesc with id column
                             id_og = ome_gcts[[ome]]@rid, # initialize rdesc with id column
                             ome_type = ome) %>% # and ome
-      mutate(!!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]]) # add opt$gene_col column from rdesc
+      { if ( !is.null(ome_gcts[[ome]]@rdesc[[opt$gene_col]]) ) { # if we have a gene symbol column
+        mutate(., !!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]]) # add that geneSymbol column in
+      } else { mutate(., !!opt$gene_col := NA) } } # otherwise create an NA column
     comb_mat_raw = ome_gcts[[ome]]@mat # initialize matrix
     rownames(comb_mat_raw) = comb_rdesc$id
   } else { # after the first instance
@@ -165,12 +167,14 @@ for (ome in ome_labels) {
     # merge cdescs, prioritizing first entry
     comb_cdesc = merge(comb_cdesc, ome_gcts[[ome]]@cdesc, all=TRUE) %>% # merge cdescs across all shared columns, keeping all data
       distinct(id, .keep_all = TRUE) # filter out duplicated CIDs based on the id column
-    # append new rdesc
-    comb_rdesc = rbind(comb_rdesc, # append new entries to the end of the combined rdesc
-                       data.frame(id = paste(ome, ome_gcts[[ome]]@rid, sep="_"), # initialize rdesc with id column
-                                  id_og = ome_gcts[[ome]]@rid, # initialize rdesc with id column
-                                  ome_type = ome) %>% # ome-output_prefix
-                         mutate(!!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]])) # add opt$gene_col column from rdesc # and ome
+    # create & append new rdesc
+    rdesc_tmp = data.frame(id = paste(ome, ome_gcts[[ome]]@rid, sep="_"), # initialize rdesc with id column
+                           id_og = ome_gcts[[ome]]@rid, # initialize rdesc with id column
+                           ome_type = ome) %>% # and ome
+      { if ( !is.null(ome_gcts[[ome]]@rdesc[[opt$gene_col]]) ) { # if we have a gene symbol column
+        mutate(., !!opt$gene_col := ome_gcts[[ome]]@rdesc[[opt$gene_col]]) # add that geneSymbol column in
+      } else { mutate(., !!opt$gene_col := NA) } } # otherwise create an NA column
+    comb_rdesc = rbind(comb_rdesc,  rdesc_tmp) # append new entries to the end of the combined rdesc
     # append matrices, based on shared samples / CIDs
     shared_samples <- intersect(colnames(comb_mat_raw), colnames(ome_gcts[[ome]]@mat))
     if (length(shared_samples)==0) stop(paste("The GCT for",ome,"does not share any samples in common with previously loaded GCTs"))
@@ -191,6 +195,10 @@ if( !is.null(opt$gene_col) & !is.null(opt$organism) ){ # if we have the required
   if ( is.null(comb_rdesc[[opt$gene_col]]) ) { # sanity check that gene-column is IN the rdesc
     cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
                "' was not found in the rdesc. Gene-annotations cannot be added.\n\n"))
+    } else if ( all(is.na(comb_rdesc[[opt$gene_col]])) ) { # if all geneSymbols are NA, drop the geneSymbol column
+      cat(paste0("\nWARNING: Gene Symbol Column '", opt$gene_col,
+                 "' was not present in any -ome's rdesc. Gene-annotations will not be added.\n\n"))
+      comb_rdesc[[opt$gene_col]]=NULL
     } else {  # if the gene_column is in the rdesc
       # load AnnotationDBI & organism package
       library(AnnotationDbi)

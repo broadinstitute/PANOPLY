@@ -23,8 +23,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_quilts",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_quilts/5",
-    "methodVersion": 5,
+    "methodUri": "agora://broadcptacdev/panoply_quilts/7",
+    "methodVersion": 7,
     "sourceRepo": "agora"
   },
   "name": "panoply_quilts",

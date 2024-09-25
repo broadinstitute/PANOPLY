@@ -10,5 +10,5 @@ RUN set -ex \
 # NB: Ubuntu does not include zip
 #     LightGBM (used in Spectronaut) requires clang
 
-COPY packages/Spectronaut_18.1.deb /packages/Spectronaut_18.1.deb
-RUN dpkg -i /packages/Spectronaut_18.1.deb
+COPY packages/Spectronaut_19.0.240606.62635.deb /packages/Spectronaut_19.0.240606.62635.deb
+RUN dpkg -i /packages/Spectronaut_19.0.240606.62635.deb

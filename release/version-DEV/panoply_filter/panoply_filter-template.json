@@ -27,8 +27,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_filter",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_filter/7",
-    "methodVersion": 7,
+    "methodUri": "agora://broadcptacdev/panoply_filter/9",
+    "methodVersion": 9,
     "sourceRepo": "agora"
   },
   "name": "panoply_filter",

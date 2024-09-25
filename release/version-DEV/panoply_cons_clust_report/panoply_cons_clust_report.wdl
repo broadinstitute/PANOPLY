@@ -15,7 +15,7 @@ task panoply_cons_clust_report {
     command {
         set -euo pipefail
 
-        /usr/bin/Rscript /prot/proteomics/Projects/PGDAC/src/rmd-cons-clust.r "${tar_file}" "${yaml_file}" "${label}" "${type}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/rmd-cons-clust.r "${tar_file}" "${yaml_file}" "${label}" "${type}"
     }
 
     output {
