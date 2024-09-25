@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis/versions/8/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_report/versions/8/plain-WDL/descriptor" as immune_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis/versions/9/plain-WDL/descriptor" as immune_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_report/versions/9/plain-WDL/descriptor" as immune_report_wdl
 
 workflow panoply_immune_analysis_workflow {
     File inputData

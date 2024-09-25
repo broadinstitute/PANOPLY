@@ -29,8 +29,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_unified_assemble_results",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_unified_assemble_results/26",
-    "methodVersion": 26,
+    "methodUri": "agora://broadcptacdev/panoply_unified_assemble_results/27",
+    "methodVersion": 27,
     "sourceRepo": "agora"
   },
   "name": "panoply_unified_assemble_results",

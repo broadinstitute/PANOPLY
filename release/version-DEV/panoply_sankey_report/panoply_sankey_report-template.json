@@ -7,15 +7,14 @@
     "panoply_sankey_report_workflow.panoply_sankey_report.memory": "",
     "panoply_sankey_report_workflow.panoply_sankey_report.num_preemptions": "",
     "panoply_sankey_report_workflow.panoply_sankey_report.num_threads": "",
-    "panoply_sankey_report_workflow.panoply_sankey_report.primary_dataype_label": "",
     "panoply_sankey_report_workflow.panoply_sankey_report.sankey_tar": ""
   },
   "methodConfigVersion": 1,
   "methodRepoMethod": {
     "methodName": "panoply_sankey_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_sankey_report/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptacdev/panoply_sankey_report/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_sankey_report",

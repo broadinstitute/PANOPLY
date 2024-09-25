@@ -7,6 +7,7 @@
     "panoply_sankey_workflow.panoply_sankey.annot_files": "",
     "panoply_sankey_workflow.panoply_sankey.annot_label_primary": "",
     "panoply_sankey_workflow.panoply_sankey.annot_prefix": "",
+    "panoply_sankey_workflow.panoply_sankey.color_str": "",
     "panoply_sankey_workflow.panoply_sankey.disk_space": "",
     "panoply_sankey_workflow.panoply_sankey.id_column": "",
     "panoply_sankey_workflow.panoply_sankey.label": "",
@@ -18,8 +19,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_sankey",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_sankey/8",
-    "methodVersion": 8,
+    "methodUri": "agora://broadcptacdev/panoply_sankey/10",
+    "methodVersion": 10,
     "sourceRepo": "agora"
   },
   "name": "panoply_sankey",

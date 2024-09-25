@@ -28,6 +28,7 @@
     "panoply_ssgsea_workflow.panoply_ssgsea.sample_norm_type": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.seqwin_col": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.statistic": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.tolerate_min_overlap_err": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.weight": "",
     "panoply_ssgsea_workflow.panoply_ssgsea.yaml_file": ""
   },
@@ -35,14 +36,15 @@
   "methodRepoMethod": {
     "methodName": "panoply_ssgsea",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_ssgsea/10",
-    "methodVersion": 10,
+    "methodUri": "agora://broadcptacdev/panoply_ssgsea/13",
+    "methodVersion": 13,
     "sourceRepo": "agora"
   },
   "name": "panoply_ssgsea",
   "namespace": "broadcptacdev",
   "outputs": {
-    "panoply_ssgsea_workflow.panoply_ssgsea.results": ""
+    "panoply_ssgsea_workflow.panoply_ssgsea.results": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.ssgsea_min_overlap_err": ""
   },
   "prerequisites": {},
   "rootEntityType": "sample_set"
