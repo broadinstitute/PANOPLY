@@ -13,6 +13,7 @@ RUN sed -i 's/mran.microsoft.com\/snapshot\/2020-04-24/packagemanager.rstudio.co
 
 # devtools dependencies
 RUN apt-get install -y libxml2-dev  # required for R-package 'XML'
+RUN apt-get install -y libgit2-dev  # required for R-package 'gert'
 RUN apt-get install -y pandoc  # rmarkdown
 RUN apt-get install -y libfontconfig1-dev  # font config library for R-package kableExtra
 RUN apt-get install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
@@ -104,8 +105,8 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
         p_install( Rtsne ); \
         p_install( WriteXLS );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
-# Install devtools directly from crane, NOT from mirror repository
-RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
+# Install devtools
+RUN R -e 'install.packages( "devtools" )'
 RUN R -e 'devtools::install_version("khroma", version="1.11.0", repos = "https://packagemanager.posit.co/cran/2023-11-01")' # install NEWER version of khroma (color-management) so that palettes can be loaded automatically
 RUN R -e "devtools::install_github(c('Displayr/flipU', 'Displayr/flipFormat', 'Displayr/flipTime'))" # for sankeyNetwork()
 
