@@ -96,7 +96,6 @@ configure_primary_workflow() {
       jq '.inputs."panoply_main.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_main.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_main.run_cmap" = $val' --arg val "\"false\"" |  \
-      jq '.inputs."panoply_main.run_ptmsea" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_main.annotation_pathway_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_main.geneset_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_main.ptm_db" = $val' --arg val "this.ptmseaDB" > new-template.json
