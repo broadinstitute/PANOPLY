@@ -1,0 +1,29 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_association_report_workflow.panoply_association_report.disk_space": "",
+    "panoply_association_report_workflow.panoply_association_report.fdr_value": "",
+    "panoply_association_report_workflow.panoply_association_report.label": "",
+    "panoply_association_report_workflow.panoply_association_report.master_yaml": "",
+    "panoply_association_report_workflow.panoply_association_report.memory": "",
+    "panoply_association_report_workflow.panoply_association_report.num_preemptions": "",
+    "panoply_association_report_workflow.panoply_association_report.num_threads": "",
+    "panoply_association_report_workflow.panoply_association_report.ssgsea_assoc_tars": "",
+    "panoply_association_report_workflow.panoply_association_report.type": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_association_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_association_report/22",
+    "methodVersion": 22,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_association_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_association_report_workflow.panoply_association_report.report_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

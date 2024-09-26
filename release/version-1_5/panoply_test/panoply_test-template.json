@@ -1,0 +1,28 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_test_workflow.panoply_test.acetyl_ome": "",
+    "panoply_test_workflow.panoply_test.disk_space": "",
+    "panoply_test_workflow.panoply_test.memory": "",
+    "panoply_test_workflow.panoply_test.num_preemptions": "",
+    "panoply_test_workflow.panoply_test.num_threads": "",
+    "panoply_test_workflow.panoply_test.phospho_ome": "",
+    "panoply_test_workflow.panoply_test.prote_ome": "",
+    "panoply_test_workflow.panoply_test.ubiquityl_ome": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_test",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_test/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_test",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_test_workflow.panoply_test.ome_pairs_full": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
