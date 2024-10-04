@@ -60,10 +60,10 @@ proteome.types <- c(
   "ubiquitylome"
 )
 
-required.genomics.types <- c(
-  "cna",
-  "rna"
-)
+# required.genomics.types <- c(
+#   "cna",
+#   "rna"
+# )
 
 required.cols <- c(
   "Sample.ID",
@@ -532,8 +532,8 @@ validate_input <- function () {
   if (!modules.workspace) {
     if ( all (names (typemap.gct) %in% proteome.types == FALSE) )
       stop( printX ("ERROR", "No proteomics dataset specified") )
-    if ( ! all (required.genomics.types %in% names (typemap.gct)) )
-      stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
+    # if ( ! all (required.genomics.types %in% names (typemap.gct)) )
+    #   stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
   }
   
   printX ("INFO", "Validating sample IDs in all files")
