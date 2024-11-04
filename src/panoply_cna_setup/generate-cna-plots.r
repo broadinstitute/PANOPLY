@@ -63,9 +63,9 @@ Plot_cis_trans_effect <- function(cna_mrna,cna_protein,genelocate,chromLength,ou
     y <- abs(cna_protein)
     spe_protein <- apply(y,2,sum)
 
-    maxM <- max(spe_mrna)
-    maxP <- max(spe_protein)
-    maxO <- min(ov)
+    maxM <- max(spe_mrna, na.rm=T)
+    maxP <- max(spe_protein, na.rm=T)
+    maxO <- min(ov, na.rm=T)
     maxS <- max(maxM,maxP)
 
     png(outputfile,height=480*8,width=480*11,res=300,type='cairo')
