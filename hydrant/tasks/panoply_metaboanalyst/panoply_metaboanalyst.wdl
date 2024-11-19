@@ -1,12 +1,25 @@
 #
-# Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
+# Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
 
 task panoply_metaboanalyst {
-	File input_gct
+	File meta_gct
+	String? meta_id_type
+	File? omic_gct
+	String? ome_type
+	String? gene_column
+	String? gene_id_type
+
+	String? anal_type
+	String? pval_comb
+
+	Int? max_annot_levels
+	String? pval_signif
+	Int? top_n_networks
 
 	String output_prefix="results_metaboanalyst"
-	File? yaml_file
+	File? groups_file
+	File yaml_file
 
 	Int? memory
 	Int? disk_space
@@ -15,27 +28,25 @@ task panoply_metaboanalyst {
 	
 	command {
 		set -euo pipefail
-		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-u " + z_score} ${"-v " + z_score_mode} ${"-a " + gene_column} ${"-i " + organism_id} ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-e " + exclude_2} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+
+		Rscript /prot/proteomics/Projects/PGDAC/src/MetaboAnalyst_script.R '--metabolome_gct' ${meta_gct} ${'--meta_id_type ' + meta_id_type} ${'--ome_gct ' + omic_gct} ${'--ome_type ' + ome_type} ${'--gene_column ' + gene_column} ${'--gene_id_type ' + gene_id_type} ${'--groups_file ' + groups_file} ${"--max_annot_levels " + max_annot_levels} ${"--anal_type " + anal_type} ${"--pval_comb " + pval_comb} ${"--pval_signif " + pval_signif} ${"--top_n_networks " + top_n_networks} ${"--output_prefix " + output_prefix} ${"--yaml " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 	}
 
 	output {
-		File results="${output_prefix}_NMF_results.tar.gz" # tar w/ expr GCT files + res.rank & parameters .Rdata files
-		Int nclust=read_int("nmf_best_rank.txt")
-		File? preprocess_figs="NMF_preprocessing_figures.tar.gz"
+		File results="${output_prefix}_MetaboAnalyst.tar.gz" # tar w/ outut files
 	}
 
 	runtime {
 		docker : "broadcptacdev/panoply_metaboanalyst:latest"
 		memory : select_first ([memory, 32]) + "GB"
-		disks : "local-disk " + select_first ([disk_space, 20]) + " HDD"
+		disks : "local-disk  " + select_first ([disk_space, 20]) + " HDD"
 		cpu : select_first ([num_threads, 32]) + ""
 		preemptible : select_first ([num_preemtions, 0])
 	}
 
 	meta {
 		author : "C.M. Williams"
-		email : "wcorinne@broadinstitute.org"
+		email : "proteogenomics@broadinstitute.org"
 	}
 
 }

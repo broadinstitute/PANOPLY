@@ -19,14 +19,14 @@ option_list <- list(
   # make_option( c("-w", "--pathway_gmt"), action='store', type='character',  dest='pathway_gmt', help='GMT file containing pathways of interest.'),
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest.'),
   #### Analysis ####
-  make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='geneSymbol'),
+  make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='10'),
   make_option( c("-a", "--anal_type"), action='store', type='character', dest='anal_type', help='Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis).'), 
   make_option( c("-b", "--pval_comb"), action='store', type='character', dest='pval_comb', help='Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).'), 
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
   make_option( c("-k", "--top_n_networks"), action='store', type='numeric', dest='top_n_networks', help='Top N networks to plot.'), 
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
-  make_option( c("-f", "--output_directory"), action='store', type='character',  dest='output_dir', help='Directory to output files to.',  default = '.'),
+  make_option( c("-f", "--output_directory"), action='store', type='character',  dest='output_dir', help='Directory to output files to.',  default = 'results/'),
   make_option( c("-y", "--yaml"), action="store", dest='yaml_file', type="character", help="Path to .yaml file with parameters."),
   make_option( c("-z", "--libdir"), action="store", dest='lib_dir', type="character", help="the src directory.", default='/prot/proteomics/Projects/PGDAC/src')
   #### ####
@@ -35,23 +35,23 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # for testing arguments
-                       args = c(
-                         '--metabolome_gct',"opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                         '-n',"hmdb_id",
-                         # '--ome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
-                         # '-t',"prot",
-                         '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
-                         '-t',"RNA",
-                         # '-g',"opt/input/sample-info.csv",
-                         '-g',"opt/input/groups-subset.csv",
-                         '-l',"10",
-                         '-a',"ORA",
-                         '-b',"pvalp",
-                         '-p',"0.05",
-                         '-k',"10",
-                         '-y',"opt/input/master-parameters.yaml",
-                         '-x',"ODG_v2_2",
-                         '-f',"/opt/input/")
+                       # args = c(
+                       #   '--metabolome_gct',"opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
+                       #   '-n',"hmdb_id",
+                       #   '--ome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
+                       #   '-t',"prot",
+                       #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
+                       #   # '-t',"RNA",
+                       #   # '-g',"opt/input/sample-info.csv",
+                       #   '-g',"opt/input/groups-subset.csv",
+                       #   '-l',"10",
+                       #   '-a',"ORA",
+                       #   '-b',"pvalp",
+                       #   '-p',"0.05",
+                       #   '-k',"10",
+                       #   '-y',"opt/input/master-parameters.yaml",
+                       #   # '-f',"/opt/input/prelim_results",
+                       #   '-x',"ODG_v2_2")
 )
 opt = opt_cmd # ToDo: Add YAML parameters (temporarily setting opt straight from command-line params)
 
@@ -79,9 +79,10 @@ overwrite_rid = function(gct, new_rid, allow_dups=F) {
   return(gct)
 }
 
+if(!dir.exists(opt$output_dir)) dir.create(opt$output_dir) # create output directory if it does not exist
+
 max_hm_pathways = 50
 print_internal_placemarks = FALSE # toggle to print placemarkers for Enrichment Analysis on each Annotation Subvalue (will not suppress warnings)
-
 
 ################################
 ####      Read In Data      ####
@@ -253,7 +254,7 @@ gct.to.qea.input = function(gct, annot_of_interest, value_of_interest, annots = 
   return(list(mat = mat,
               cls = cls))
 }
-q.ea = function(mat, cls, pathways, uniq.len = NULL) {
+q.ea = function(mat, cls, pathways, uniq.len = NULL, p.val.min=2.3233E-11) {
   if (dim(mat)[1] != length(cls)) stop(glue("Matrix ({dim(mat)[1]}) and CLS vector ({length(cls)}) have differing dimensions. Please ensure that your matrix has samples for rows and columns for features, and that your CLS has an entry for every sample."))
   if (!is.numeric(cls)) stop(glue("CLS vector is not numeric! Please supply a binary numeric vector to annotate your samples."))
   
@@ -280,13 +281,13 @@ q.ea = function(mat, cls, pathways, uniq.len = NULL) {
                   Expected = gt.res[, 3],
                   Enrichment.Ratio = Observed/Expected) %>% # Enrichment.Ratio
     dplyr::mutate(Test.Type = "QEA",
-                  Raw.P.Value =  gt.res[, 1],
-                  neg.LogFC.P.Value = -log10(Raw.P.Value),
+                  Raw.P.Value =  gt.res[, 1] %>% ifelse(.==0, p.val.min, .), # add a minimum p-value of 2.3233E-11, to avoid -log(P.Value)
+                  neg.Log.P.Value = -log10(Raw.P.Value),
                   Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
                   BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
     dplyr::filter(N.Hits>0) %>% # filter to valid hits
     dplyr::arrange(Raw.P.Value) %>% # sort in order of significance
-    dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs
+    # dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs # DONT round before combination
     column_to_rownames("ID") # add rownames back
   
   return(list(df = res.df,
@@ -329,7 +330,7 @@ gct.to.ora.input = function(gct, annot_of_interest, value_of_interest, annots = 
   }
   return(df)
 }
-o.ea = function(queries, pathways, uniq.len=NULL, uniq.count=NULL) {
+o.ea = function(queries, pathways, uniq.len=NULL, uniq.count=NULL, p.val.min=2.3233E-11) {
   # calculate analysis metrics to be used later
   current.universe <- unique(unlist(lapply(pathways, function(p) {p$entries}))) # get all unique entries in pathway
   # if we aren't limiting the feature-space (i.e. only hsa: or only cpd: / gl:), calculate size of featurespace
@@ -345,7 +346,8 @@ o.ea = function(queries, pathways, uniq.len=NULL, uniq.count=NULL) {
   
   # perform hypergeometric test (equal end of fisher exact test)
   p.val = phyper(pathway.hits.num - 1, uniq.len, uniq.count - uniq.len,
-                 length(queries.subset), lower.tail = F)
+                 length(queries.subset), lower.tail = F) %>%
+    ifelse(.==0, p.val.min, .) # add a minimum p-value (2.3233E-11), to avoid -log(P.Value)=Inf
   
   res.df = data.frame(ID = sapply(pathways, function(p) {p$ID}),
                       Pathway.Name = sapply(pathways, function(p) {p$name}),
@@ -356,12 +358,12 @@ o.ea = function(queries, pathways, uniq.len=NULL, uniq.count=NULL) {
                   Enrichment.Ratio = Observed/Expected) %>% # Enrichment.Ratio
     dplyr::mutate(Test.Type = "ORA",
                   Raw.P.Value = p.val,
-                  neg.LogFC.P.Value = -log10(Raw.P.Value),
+                  neg.Log.P.Value = -log10(Raw.P.Value),
                   Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
                   BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
     dplyr::filter(N.Hits>0) %>% # filter to valid hits
     dplyr::arrange(Raw.P.Value) %>% # sort in order of significance
-    dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs
+    # dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs # DONT round before combination
     column_to_rownames('ID')
   
   return(list(df = res.df,
@@ -579,7 +581,7 @@ for (annot_of_interest in names(annots)) {
                         Test.Type = opt$anal_type) %>%
           # add combined p-value and adjust accordingly
           dplyr::mutate(Raw.P.Value = comb.pval,
-                        neg.LogFC.P.Value = -log10(Raw.P.Value),
+                        neg.Log.P.Value = -log10(Raw.P.Value),
                         Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
                         BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
           dplyr::arrange(Raw.P.Value) %>% # sort in order of significance
@@ -590,7 +592,10 @@ for (annot_of_interest in names(annots)) {
                               res.meta$hits[all.paths], res.ome$hits[all.paths])
       }
     } else {
-      res.df = res.meta$df
+      res.df = res.meta$df %>%
+        rownames_to_column("ID") %>% # save rownames in a column
+        dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs
+        column_to_rownames("ID") # add rownames back
       res.fin.hits = res.meta$hits
     }
     
@@ -627,7 +632,7 @@ for (annot_of_interest in names(annots)) {
     
     
     #### Exporting Results ####
-    res.df.list[[value_of_interest]] = res.fin.df
+    res.df.list[[make.names(value_of_interest)]] = res.fin.df
     
     fn = glue("{opt$output_prefix}_{opt$anal_type}_metabolome_")
     if (multiomic) fn = paste0(fn, glue("with.{opt$ome_type}_by.{opt$pval_comb}_")) # add multiomic info
@@ -644,7 +649,7 @@ for (annot_of_interest in names(annots)) {
     #### logP vs Impact ####
     if (has_topology) {
       # make 'volcano' plot
-      ggplot(res.fin.df, aes(x = Impact.DC, y = neg.LogFC.P.Value, color = neg.LogFC.P.Value)) + 
+      ggplot(res.fin.df, aes(x = Impact.DC, y = neg.Log.P.Value, color = neg.Log.P.Value)) + 
         geom_point() +
         ylab("-log(P-Value)")+
         xlab("Impact (Degree Centrality)")
@@ -656,11 +661,11 @@ for (annot_of_interest in names(annots)) {
     #### Enrichment Ratio ####
     enrichment_metric = "Impact.CC"
     plot_df = head(res.fin.df,opt$top_n_networks) %>%
-      dplyr::arrange(neg.LogFC.P.Value)
+      dplyr::arrange(neg.Log.P.Value)
     # make 'volcano' plot
     ggplot(plot_df, aes(x = !!sym(enrichment_metric),
                         y = factor(Pathway.Name, level = Pathway.Name), # sort by order of appearance
-                        size = neg.LogFC.P.Value)) + 
+                        size = neg.Log.P.Value)) + 
       geom_point() + 
       ylab("Pathway")+
       xlab(enrichment_metric)
@@ -715,7 +720,7 @@ for (annot_of_interest in names(annots)) {
     }) %>% { unique(unlist(.)) } # get only the unique elements
   }
   
-  value_col = 'neg.LogFC.P.Value'
+  value_col = 'neg.Log.P.Value'
   heatmap_df = dplyr::select(res.df.long, c('Pathway.Name', !!value_col, 'Annot.Subvalue')) %>%
     pivot_wider(id_cols = c('Pathway.Name'), names_from = 'Annot.Subvalue',
                 values_from = value_col) %>%
@@ -735,7 +740,7 @@ for (annot_of_interest in names(annots)) {
   fn = paste0(fn, glue("{make.names(annot_of_interest)}_heatmap.pdf"))
   pdf(file.path(opt$output_dir,fn),
       width = dim(heatmap_df)[2]*8/25.4+8, # adapt to width of heatmap + 4
-      height = dim(heatmap_df)[1]*8/25.4+2) # adapt to height of heatmap + 2 inches for header/footer
+      height = dim(heatmap_df)[1]*8/25.4+4) # adapt to height of heatmap + 2 inches for header/footer
   # generate heatmap
   hm.title = glue("{opt$output_prefix} {opt$anal_type} Results\nTop Significant Pathways for {annot_of_interest}")
   # hm.subtitle = glue("{value_col}")
@@ -775,6 +780,20 @@ for (annot_of_interest in names(annots)) {
   #### more figures...? ####
   
 }
+
+
+
+###########################################################
+##         Tar all Files
+###########################################################
+cat(glue("\n\n####################\nTarring Files\n\n"))
+fn = paste0(opt$output_prefix,'_MetaboAnalyst.tar.gz')
+
+pwd = getwd()
+setwd(opt$output_dir)
+tar(tarfile = fn, compression = "gzip", tar="tar") # compress files in output directory
+file.copy(fn, pwd, overwrite = T)
+setwd(pwd)
 
 
 
