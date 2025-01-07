@@ -23,7 +23,7 @@ option_list <- list(
   make_option( c("-a", "--anal_type"), action='store', type='character', dest='anal_type', help='Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis).'), 
   make_option( c("-b", "--pval_comb"), action='store', type='character', dest='pval_comb', help='Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).'), 
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
-  make_option( c("-k", "--top_n_networks"), action='store', type='numeric', dest='top_n_networks', help='Top N networks to plot.'), 
+  make_option( c("-k", "--top_n_networks"), action='store', type='numeric', dest='top_n_networks', help='Top N networks to plot per annot subvalue.'), 
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
   make_option( c("-f", "--output_directory"), action='store', type='character',  dest='output_dir', help='Directory to output files to.',  default = 'results/'),
@@ -34,27 +34,62 @@ option_list <- list(
 
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
-                       # for testing arguments
+                       # # for testing arguments
                        # args = c(
                        #   '--metabolome_gct',"opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                       #   '-n',"hmdb_id",
+                       # #   '-n',"hmdb_id",
                        #   '--ome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
                        #   '-t',"prot",
-                       #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
-                       #   # '-t',"RNA",
-                       #   # '-g',"opt/input/sample-info.csv",
+                       # #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
+                       # #   # '-t',"RNA",
+                       # #   # '-g',"opt/input/sample-info.csv",
                        #   '-g',"opt/input/groups-subset.csv",
-                       #   '-l',"10",
-                       #   '-a',"ORA",
-                       #   '-b',"pvalp",
-                       #   '-p',"0.05",
-                       #   '-k',"10",
+                       # #   '-l',"15",
+                       # #   '-a',"QEA",
+                       # #   '-b',"pvalp",
+                       # #   '-p',"0.01",
+                       # #   '-k',"15",
                        #   '-y',"opt/input/master-parameters.yaml",
-                       #   # '-f',"/opt/input/prelim_results",
-                       #   '-x',"ODG_v2_2")
+                       # #   # '-f',"/opt/input/prelim_results",
+                       #   '-x',"ODG_v3")
 )
-opt = opt_cmd # ToDo: Add YAML parameters (temporarily setting opt straight from command-line params)
 
+#### Parse YAML Arguments ####
+opt = opt_cmd # initialize options with command line options
+if ( !is.null(opt$yaml_file) ) {
+  #### read in yaml ####
+  library(yaml)
+  yaml_out <- read_yaml(opt$yaml_file)
+  #### locate the NMF-postprocessing parameters section ####
+  if ( !is.null(yaml_out$panoply_metaboanalyst) ) { # if we have an NMF parameters section
+    yaml_metaboanalyst =  yaml_out$panoply_metaboanalyst # read in those parameters
+  } else { # otherwise, stop
+    stop(glue("The parameter file '{opt$yaml_file}' does not contain a MetaboAnalyst parameters section. Please check that the yaml file contains the appropraite 'panoply_metaboanalyst' section."))
+  }
+  #### overwrite the command-line parameters ####
+  # global parameters
+  if (is.null(opt$gene_col)) opt$gene_col = yaml_out$global_parameters$gene_mapping$gene_id_col
+  # postprocessing parameters
+  if (is.null(opt$meta_id_type)) opt$meta_id_type = yaml_metaboanalyst$meta_id_type
+  if (is.null(opt$gene_id_type)) opt$gene_id_type = yaml_metaboanalyst$gene_id_type
+  if (is.null(opt$max_annot_levels)) opt$max_annot_levels = yaml_metaboanalyst$max_annot_levels
+  if (is.null(opt$anal_type)) opt$anal_type = yaml_metaboanalyst$anal_type
+  if (is.null(opt$pval_comb)) opt$pval_comb = yaml_metaboanalyst$pval_comb
+  if (is.null(opt$pval_signif)) opt$pval_signif = yaml_metaboanalyst$pval_signif
+  if (is.null(opt$top_n_networks)) opt$top_n_networks = yaml_metaboanalyst$top_n_networks
+} else { # if no YAML was provieded
+  # check if any necessary parameters are missing
+  if( any(sapply(list(opt$meta_id_type, 
+                      # opt$gene_col, opt$gene_id_type, # allow gene_col and gene_id_type to be missing, since omic GCT is optional
+                      opt$max_annot_levels, opt$anal_type, opt$pval_comb, opt$pval_signif, opt$top_n_networks), 
+                 is.null)) ) { # if we have at least one missing parameter
+    stop("Master Parameter yaml-file is missing. Please either provide a master-parameters file, or manually provide all NMF parameters.") # error and stop
+  }
+}
+# ensure output directory exists
+if(!dir.exists(opt$output_dir)) dir.create(opt$output_dir) # create output directory if it does not exist
+# save opt to .Rdata object
+save(file = file.path(opt$output_dir, "metaboanalyst_opt.Rdata"), opt)
 
 
 library(glue)
@@ -65,8 +100,12 @@ library(ActivePathways)
 library(AnnotationDbi)
 library(org.Hs.eg.db)
 library(igraph)
+library(d3r)
 library(readxl)
 library(ComplexHeatmap)
+
+library(rjson)
+library(jsonlite)
 
 library(SimDesign) # for quiet() function
 
@@ -79,7 +118,6 @@ overwrite_rid = function(gct, new_rid, allow_dups=F) {
   return(gct)
 }
 
-if(!dir.exists(opt$output_dir)) dir.create(opt$output_dir) # create output directory if it does not exist
 
 max_hm_pathways = 50
 print_internal_placemarks = FALSE # toggle to print placemarkers for Enrichment Analysis on each Annotation Subvalue (will not suppress warnings)
@@ -164,6 +202,20 @@ if (multiomic) {
 }
 
 
+#### Write Networks to JSON ####
+if (!is.null(graph_list)) {
+  pthw_json = list()
+  for (pthw in names(graph_list)) {
+    pthw_json[[pthw]] = d3r::d3_igraph(igrf = graph_list[[pthw]], json = FALSE)
+  }
+  
+  exportJSON <- toJSON(pthw_json)
+  write_json(exportJSON, path="networks.JSON")
+  file.copy('networks.JSON', opt$output_dir) # copy network JSON to output directory
+}
+
+#### Initialize Network Annotation list ####
+network_annots = list()
 
 
 ################################
@@ -224,6 +276,10 @@ if (multiomic) {
   meta_input = meta_val
 }
 
+#### get full universe of IDs ####
+all_features = meta_input@rid
+if (multiomic) { all_features = c(all_features, ome_input@rid) }
+
 
 ################################
 ####  Perform Enrichement   ####
@@ -249,7 +305,7 @@ gct.to.qea.input = function(gct, annot_of_interest, value_of_interest, annots = 
   # optionally save input dataset to a file
   if (write_to_file) {
     write.csv(data.frame(cls = cls, mat),
-              file=glue("{prefix}_QEA_input_{make.names(annot_of_interest)}_{make.names(value_of_interest)}_vs_{make.names(value_of_interest)}_not.csv"))
+              file=glue("{prefix}_QEA_input_{make.names(annot_of_interest)}_{value_of_interest.name}_vs_{value_of_interest.name}_not.csv"))
   }
   return(list(mat = mat,
               cls = cls))
@@ -325,7 +381,7 @@ gct.to.ora.input = function(gct, annot_of_interest, value_of_interest, annots = 
                   P.Value = out_df[['P.Value']],
                   adj.P.Val = out_df[['adj.P.Val']])
   if (write_to_file) {
-    write.table(df, file=glue("{prefix}_logFC_signFeat_{make.names(annot_of_interest)}_{make.names(value_of_interest)}_vs_{make.names(value_of_interest)}_not.tsv"),
+    write.table(df, file=glue("{prefix}_logFC_signFeat_{make.names(annot_of_interest)}_{value_of_interest.name}_vs_{value_of_interest.name}_not.tsv"),
                 sep = '\t', quote=FALSE, row.names = FALSE)
   }
   return(df)
@@ -439,6 +495,12 @@ plot.network = function(g, hits, logFC_df,
 ####      Data Analysis     ####
 ################################
 
+# initialize log object to keep track of which annotations have what files
+log_file = data.frame(annot.name = character(0),
+                      subvalue.name = character(0), # valid unique subvalue name (for file lookup)
+                      subvalue.value = character(0), # original subvaluename
+                      valid.subvalue = logical(0),
+                      valid.results = logical(0))
 
 cat("\n\n####################\nEnrichment Analysis\n\n")
 for (annot_of_interest in names(annots)) {
@@ -448,12 +510,26 @@ for (annot_of_interest in names(annots)) {
   # otherwise run analysis for every unique annotation subvalue
   cat(glue("\n\n####################\nAnalyzing '{annot_of_interest}' Annotation \n####################\n\n"))
   
+  #### Set Up Log-File / Directory ####
+  # initialize log_file with all FALSE
+  log_file.tmp = data.frame(annot.name = annot_of_interest,
+                            subvalue.name = make.names(sort(unique(annots[[annot_of_interest]]))), # valid unique subvalue name (for file lookup)
+                            subvalue.value = sort(unique(annots[[annot_of_interest]])), # original subvaluename
+                            # use subvalue.name as row.names for quick lookup / edits
+                            row.names = make.names(sort(unique(annots[[annot_of_interest]]))), # valid unique subvalue name (for file lookup)
+                            valid.subvalue = FALSE,
+                            valid.results = FALSE)
+  
   annot_dir = file.path(opt$output_dir, glue("results_{make.names(annot_of_interest)}"))
   dir.create(annot_dir)
   
+  #### Run Enrichment on subvalues ####
   res.df.list = list() # initialize empty list for res.fin.df results
-  for (value_of_interest in sort(unique(annots[[annot_of_interest]]))) {
+  network_annots[[annot_of_interest]] = list() # initialize empty list for pathway network-annotations
+  for (value_of_interest.name in rownames(log_file.tmp)) {
+    value_of_interest = log_file.tmp[value_of_interest.name,"subvalue.value"] # get original annot value for use in analysis
     if (is.na(value_of_interest) || value_of_interest=="") { cat(glue("\nSkipping '{value_of_interest}' annotation.\n\n")); next }
+    log_file.tmp[value_of_interest.name,"valid.subvalue"] = TRUE # mark subvalue as a valid subvalue
     
     ################################
     ####   Enrichment Analysis  ####
@@ -470,6 +546,7 @@ for (annot_of_interest in names(annots)) {
                       uniq.len = sapply(pathways, function(p) {p$cmpd.counts}))
       
       if (!multiomic && dim(res.meta$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant metabolite enrichments.\n\n")); next }
+      
       # calculate genomic enrichment
       if (multiomic) {
         if(print_internal_placemarks) cat(glue("\n\n####################\nOverrepresenation Analysis on {opt$ome_type}\n\n"))
@@ -525,6 +602,7 @@ for (annot_of_interest in names(annots)) {
       }
       
     }
+    log_file.tmp[value_of_interest.name,"valid.results"] = TRUE # mark subvalue as having enrichments
     
     #### Combine P-Values ####
     if (multiomic) {
@@ -588,7 +666,7 @@ for (annot_of_interest in names(annots)) {
           dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs
           column_to_rownames("ID") # add rownames back
         # merge hits into a single list, ordered by all.paths
-        res.fin.hits = mapply(function(hits.m, hits.g) {c(hits.m, hits.g)},
+        res.fin.hits = mapply(function(hits.m, hits.g) {c(as.vector(hits.m), as.vector(hits.g))}, # force vector format to avoid empty lists if one dataset is empty
                               res.meta$hits[all.paths], res.ome$hits[all.paths])
       }
     } else {
@@ -598,6 +676,57 @@ for (annot_of_interest in names(annots)) {
         column_to_rownames("ID") # add rownames back
       res.fin.hits = res.meta$hits
     }
+    
+    
+    #### Wrangle Pathway-Network Annotations into a list ####
+    if(print_internal_placemarks) cat("\n\n####################\nWrangling Pathway Network-Annotations\n\n")
+    network_annots_tmp = list() # initialize empty list for this annotation's network-annotations
+    if (exists("pthw_json")) { # if we have pathway information
+      for (pthw in names(pthw_json)) {
+        network_annots_pthw_tmp = dplyr::select(pthw_json[[pthw]]$nodes, c(id, names))
+        network_annots_pthw_tmp$entries = sapply(network_annots_pthw_tmp$names, function (names) {
+          strsplit(names, " ", fixed = TRUE) %>% unlist() # unlist entries
+        })
+        network_annots_pthw_tmp$hits.all = sapply(network_annots_pthw_tmp$entries, function (entries) {
+          hits.sign = all_features[which(all_features %in% entries)] %>% as.character() 
+          return(hits.sign)
+        })
+        ## if we have logFC data, get the significant features + corresponding logFC values
+        if(exists("logFC_df")) {
+          # add all significant hits
+          network_annots_pthw_tmp$hits.sign = sapply(network_annots_pthw_tmp$entries, function (entries) {
+            logFC_df$id[which(logFC_df$id %in% entries)] %>% as.character() 
+          })
+          # add logFC of all significant hits
+          network_annots_pthw_tmp$logFC.all.sign = sapply(network_annots_pthw_tmp$entries, function (entries) {
+            logFC_df$logFC[which(logFC_df$id %in% entries)] %>% as.numeric() 
+          })
+          # add feature ID with highest logFC
+          network_annots_pthw_tmp$hit.absmax = sapply(network_annots_pthw_tmp$entries, function (entries) {
+            logFC.tmp = logFC_df[which(logFC_df$id %in% entries),]
+            logFC = logFC.tmp[which.max(abs(logFC.tmp$logFC)), 'id']
+            return(as.character(logFC))
+          })
+          # add abs.max logFC
+          network_annots_pthw_tmp$logFC.absmax = sapply(network_annots_pthw_tmp$entries, function (entries) {
+            logFC.tmp = logFC_df[which(logFC_df$id %in% entries),]
+            logFC = logFC.tmp[which.max(abs(logFC.tmp$logFC)), 'logFC']
+            if(length(logFC)==0) logFC = NA # add NA placeholder if there were no logFC values
+            return(as.numeric(logFC))
+          })
+        } else {
+          network_annots_pthw_tmp = network_annots_pthw_tmp %>%
+            mutate(hits.sign = "no ORA performed",
+                   logFC.all.sign = NA,
+                   hit.absmax = NA,
+                   logFC.absmax = NA)
+        }
+        
+        network_annots_tmp[[pthw]] = network_annots_pthw_tmp
+        
+      }
+    }
+    network_annots[[annot_of_interest]][[value_of_interest.name]] = network_annots_tmp
     
     #### Topological Measurements ####
     if (has_topology) {
@@ -632,11 +761,11 @@ for (annot_of_interest in names(annots)) {
     
     
     #### Exporting Results ####
-    res.df.list[[make.names(value_of_interest)]] = res.fin.df
+    res.df.list[[value_of_interest.name]] = res.fin.df
     
     fn = glue("{opt$output_prefix}_{opt$anal_type}_metabolome_")
     if (multiomic) fn = paste0(fn, glue("with.{opt$ome_type}_by.{opt$pval_comb}_")) # add multiomic info
-    fn = paste0(fn, glue("{make.names(annot_of_interest)}_{make.names(value_of_interest)}_results.csv"))
+    fn = paste0(fn, glue("{make.names(annot_of_interest)}_{value_of_interest.name}_results.csv"))
     write.csv(res.fin.df, file = file.path(annot_dir,fn))
     
     
@@ -654,7 +783,7 @@ for (annot_of_interest in names(annots)) {
         ylab("-log(P-Value)")+
         xlab("Impact (Degree Centrality)")
       # save to file
-      fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{make.names(value_of_interest)}_negLogFC_vs_Impact.png")
+      fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{value_of_interest.name}_negLogFC_vs_Impact.png")
       ggsave(file.path(annot_dir, fn))
     }
     
@@ -670,24 +799,32 @@ for (annot_of_interest in names(annots)) {
       ylab("Pathway")+
       xlab(enrichment_metric)
     # save to file
-    fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{make.names(value_of_interest)}_EnrichemntRatio.png")
+    fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{value_of_interest.name}_EnrichemntRatio.png")
     ggsave(file.path(annot_dir, fn))
     
     
     #### Network Graphs ####
     if (!is.null(graph_list)) {
-      val_dir = file.path(annot_dir, glue("networks_{make.names(value_of_interest)}"))
+      val_dir = file.path(annot_dir, glue("networks_{value_of_interest.name}"))
       dir.create(val_dir)
       
       for (p in rownames(head(res.fin.df,opt$top_n_networks))) { # create network plot for top opt$top_n_networks networks
         plot.network(g = graph_list[[p]], hits = res.fin.hits[[p]], logFC_df = logFC_df,
                      title = res.fin.df[p, 'Pathway.Name'],
-                     write_to_file = T, prefix=glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{make.names(value_of_interest)}_{p}"),
+                     write_to_file = T, prefix=glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{value_of_interest.name}_{p}"),
                      out.dir = val_dir)
       }
     }
   }
   
+  #### Add to Log File (even if there was no enrichment) ####
+  rownames(log_file.tmp) = NULL # drop rownames
+  log_file = rbind(log_file, log_file.tmp) # append tmp logfile to logfile
+  
+  ################################
+  #### Compile Results ####
+  ################################
+  # skip compilation if nothing had enrichment
   if (length(res.df.list)==0) { cat(glue("\n\n####################\nNo significant enrichments found for '{annot_of_interest}' annotation.\n\n")); next }
   
   #### Exporting Full-Annot Excel ####
@@ -699,7 +836,7 @@ for (annot_of_interest in names(annots)) {
                      ExcelFileName=file.path(opt$output_dir,fn),
                      FreezeRow=1, FreezeCol=1,
                      SheetNames=make.unique(substr(names(res.df.list), 1, 20)),
-                     row.names=F, BoldHeaderRow=T, AutoFilter=T)
+                     row.names=T, BoldHeaderRow=T, AutoFilter=T)
   
   
   #### Heatmap of -log(P.Value) for Top Pathways ####
@@ -734,13 +871,6 @@ for (annot_of_interest in names(annots)) {
     filter(Pathway.Name %in% sign_pathways) %>%
     column_to_rownames('Pathway.Name')
   
-  # open PDF to draw heatmap
-  fn = glue("{opt$output_prefix}_{opt$anal_type}_metabolome_")
-  if (multiomic) fn = paste0(fn, glue("with.{opt$ome_type}_by.{opt$pval_comb}_")) # add multiomic info
-  fn = paste0(fn, glue("{make.names(annot_of_interest)}_heatmap.pdf"))
-  pdf(file.path(opt$output_dir,fn),
-      width = dim(heatmap_df)[2]*8/25.4+8, # adapt to width of heatmap + 4
-      height = dim(heatmap_df)[1]*8/25.4+4) # adapt to height of heatmap + 2 inches for header/footer
   # generate heatmap
   hm.title = glue("{opt$output_prefix} {opt$anal_type} Results\nTop Significant Pathways for {annot_of_interest}")
   # hm.subtitle = glue("{value_col}")
@@ -772,20 +902,42 @@ for (annot_of_interest in names(annots)) {
                 heatmap_legend_param = list(title = value_col, legend_width = unit(30, "mm"),
                                             direction = "horizontal"))
 
+  # draw heatmap to PDF
+  fn = glue("{opt$output_prefix}_{opt$anal_type}_metabolome_")
+  if (multiomic) fn = paste0(fn, glue("with.{opt$ome_type}_by.{opt$pval_comb}_")) # add multiomic info
+  fn = paste0(fn, glue("{make.names(annot_of_interest)}_heatmap"))
+  pdf(file.path(opt$output_dir,paste0(fn,'.pdf')),
+      width = dim(heatmap_df)[2]*8/25.4+8, # adapt to width of heatmap + 4
+      height = dim(heatmap_df)[1]*8/25.4+4) # adapt to height of heatmap + 2 inches for header/footer
   draw(hm, padding = unit(c(4, 4, 4, 4), "mm"),
        # column_title = hm.title, # add title
        # column_title_gp = gpar(fontsize = 16, fontface = "bold"), #bold and increase font
        heatmap_legend_side = 'bottom')
   dev.off()
+  # and export to PNG
+  png(file.path(opt$output_dir,paste0(fn,'.png')), units="in", res=300,
+      width = dim(heatmap_df)[2]*8/25.4+8, # adapt to width of heatmap + 4
+      height = dim(heatmap_df)[1]*8/25.4+4) # adapt to height of heatmap + 2 inches for header/footer
+  draw(hm, padding = unit(c(4, 4, 4, 4), "mm"),
+       # column_title = hm.title, # add title
+       # column_title_gp = gpar(fontsize = 16, fontface = "bold"), #bold and increase font
+       heatmap_legend_side = 'bottom')
+  dev.off()
+  
   #### more figures...? ####
   
 }
 
+# write log file
+write.csv(log_file,
+          file = file.path(opt$output_dir, glue("{opt$output_prefix}_log_file.csv")))
+# write pathway network-annotations to JSON
+exportJSON <- toJSON(network_annots)
+write_json(exportJSON, path=file.path(opt$output_dir, glue("{opt$output_prefix}_network_annots.JSON")))
 
-
-###########################################################
-##         Tar all Files
-###########################################################
+################################
+####        Tar File        ####
+################################
 cat(glue("\n\n####################\nTarring Files\n\n"))
 fn = paste0(opt$output_prefix,'_MetaboAnalyst.tar.gz')
 

@@ -129,6 +129,15 @@ panoply_blacksheep:
   fraction_samples_cutoff: 0.3
   fdr_value: 0.05
 
+panoply_metaboanalyst:
+  meta_id_type: "hmdb_id"                       # ID type used for metabolites
+  gene_id_type: "SYMBOL"                        # ID type used for -omic data
+  max_annot_levels: 10                          # max. number of levels in a annotation category to be included in the analysis
+  anal_type: "ORA"                              # Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis)
+  pval_comb: "pvalo"                            # Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).
+  pval_signif: 0.05                             # P-value threshold for significant enrichement
+  top_n_networks: 10                            # Top N networks to plot per annot subvalue
+  
 panoply_mimp:
   groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap
   search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
