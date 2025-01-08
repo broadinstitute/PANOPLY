@@ -478,7 +478,7 @@ function updateVolcano(df, annot_filt, subval_filt) {
   
   // Declare the chart dimensions and margins.
   const width = containerWidth/2*0.95;
-  const height = containerHeight/2;
+  const height = containerHeight/3;
   const marginTop = 20;
   const marginRight = 20;
   const marginBottom = 30;
@@ -595,7 +595,7 @@ function updateNetwork(pthw_id) {
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 30, bottom: 30, left: 40},
     width = containerWidth/2*0.95 - margin.left - margin.right,
-    height = containerHeight/2 - margin.top - margin.bottom;
+    height = containerHeight/3 - margin.top - margin.bottom;
   
   // Create the scales for x and y
   const xScale = d3.scaleLinear()
