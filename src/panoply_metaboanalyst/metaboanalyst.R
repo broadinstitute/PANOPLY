@@ -12,6 +12,7 @@ option_list <- list(
   #### Input Parameters ####
   make_option( c("-m", "--metabolome_gct"), action='store', type='character',  dest='metabolome_gct', help='GCT file containing expression data for the metabolome.'),
   make_option( c("-n", "--meta_id_type"), action='store', type='character', dest='meta_id_type', help='Type of ID type used for metabolites.'),#, default='hmdb_id'),
+  make_option( c("-i", "--meta_id_col"), action='store', type='character', dest='meta_id_col', help='Rdesc column in metabolome GCT containing metabolite IDs.'),#, default='hmdb_id'),
   make_option( c("-o", "--ome_gct"), action='store', type='character',  dest='ome_gct', help='GCT file containing expression data for an additional -ome (e.g. proteome, transcriptome, etc.)'),
   make_option( c("-t", "--ome_type"), action='store', type='character',  dest='ome_type', help='Label for the additional ome-type.'),
   make_option( c("-c", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.', default='geneSymbol'),
@@ -36,9 +37,13 @@ option_list <- list(
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
                        # args = c(
-                       #   '--metabolome_gct',"opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                       # #   '-n',"hmdb_id",
-                       #   '--ome_gct',"opt/input/ODG-v2_2-proteome-SpectrumMill-ratio-QCfilter-NArm-with-NMF.gct",
+                       #   # '--metabolome_gct',"/opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
+                       #   '--metabolome_gct',"/opt/input/ODG-v3-metabolome-polar-log2-median-norm-QCfilter.gct",
+                       #   '-n',"hmdb_id",
+                       #   '-i',"HMDB.ID",
+                       #   # '-n',"kegg_id",
+                       #   # '-i',"KEGG.ID",
+                       #   '--ome_gct',"/opt/input/ODG-v3-proteome-SpectrumMill-ratio-QCfilter-NArm.gct",
                        #   '-t',"prot",
                        # #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
                        # #   # '-t',"RNA",
@@ -71,6 +76,7 @@ if ( !is.null(opt$yaml_file) ) {
   if (is.null(opt$gene_col)) opt$gene_col = yaml_out$global_parameters$gene_mapping$gene_id_col
   # postprocessing parameters
   if (is.null(opt$meta_id_type)) opt$meta_id_type = yaml_metaboanalyst$meta_id_type
+  if (is.null(opt$meta_id_col)) opt$meta_id_col = yaml_metaboanalyst$meta_id_col
   if (is.null(opt$gene_id_type)) opt$gene_id_type = yaml_metaboanalyst$gene_id_type
   if (is.null(opt$max_annot_levels)) opt$max_annot_levels = yaml_metaboanalyst$max_annot_levels
   if (is.null(opt$anal_type)) opt$anal_type = yaml_metaboanalyst$anal_type
@@ -226,21 +232,28 @@ network_annots = list()
 cat("\n\n####################\nMetabolite ID Validation\n\n")
 if (! opt$meta_id_type %in% names(compound_map)) stop(glue("Provided metabolic ID type '{opt$meta_id_type}' is not one of the accepted ID types ({paste(names(compound_map), collapse=', ')})"))
 if (! pathway_id_type$meta %in% names(compound_map)) stop(glue("Mapped metabolic ID type '{pathway_id_type$meta}' is not one of the accepted ID types ({paste(names(compound_map), collapse=', ')})"))
-valid_compounds = gct_meta@rid[which(gct_meta@rid %in% compound_map[[opt$meta_id_type]])]
-if (length(valid_compounds)==0) stop(glue("No IDs in the GCT mapped to valid compounds. Please check that your data uses {opt$meta_id_type} IDs, or select a different ID type."))
+
+# get relevant IDs from rid or rdesc
+if (is.null(opt$meta_id_col)) { cpd_vec = gct_meta@rid } else { cpd_vec = gct_meta@rdesc[[opt$meta_id_col]] }
+
+valid_cpd_rid = gct_meta@rid[which(cpd_vec %in% compound_map[[opt$meta_id_type]])]
+if (length(valid_cpd_rid)==0) stop(glue("No IDs in the GCT mapped to valid compounds. Please check that your data uses {opt$meta_id_type} IDs, or select a different ID type."))
 # subset to valid compound IDs
 # toDo: add lipid ID mapping
-cat(glue("\nOut of {length(gct_meta@rid)} features, {length(valid_compounds)} mapped to valid compound IDs.\n\n"))
-gct_meta_filt = subset_gct(gct_meta, rid=valid_compounds)
+cat(glue("\nOut of {length(cpd_vec)} features, {length(valid_cpd_rid)} mapped to valid compound IDs.\n\n"))
+gct_meta_filt = subset_gct(gct_meta, rid=valid_cpd_rid)
 # map to new ID type if necessary
-if (opt$meta_id_type != pathway_id_type$meta) { # if we need to swap ID types
-  new_rid = compound_map[match(gct_meta_filt@rid, compound_map[[opt$meta_id_type]]), # match subsetted GCT rid to compound map
+if (opt$meta_id_type != pathway_id_type$meta || # if we need to change ID type
+    !is.null(opt$meta_id_col)) { # OR the id column wasn't the rid
+  # get relevant IDs from rid or rdesc
+  if (is.null(opt$meta_id_col)) { cpd_vec_filt = gct_meta_filt@rid } else { cpd_vec_filt = gct_meta_filt@rdesc[[opt$meta_id_col]] }
+  new_rid = compound_map[match(cpd_vec_filt, compound_map[[opt$meta_id_type]]), # match subsetted GCT rid to compound map
                          pathway_id_type$meta] # overwrite with new ID type
   rid_dup = !(new_rid %in% unique(new_rid[duplicated(new_rid)])) # identify duplicated RIDs (covers NA values)
   # overwrite RID and drop duplicated
   tmp = overwrite_rid(gct_meta_filt, new_rid, allow_dups = T) 
   meta_val = subset_gct(tmp, rid_dup)
-  cat(glue("\nOut of {length(gct_meta_filt@rid)} features, {length(meta_val@rid)} had valid and unique {pathway_id_type$meta} IDs.\n\n"))
+  cat(glue("\nOut of {length(cpd_vec_filt)} features, {length(meta_val@rid)} had valid and unique {pathway_id_type$meta} IDs.\n\n"))
   
   # map between IDs and human-readable names
   feature_map = compound_map$name # get compound names
@@ -760,8 +773,9 @@ for (annot_of_interest in names(annots)) {
         
         impact.vec = sapply(names(pathway.hits), function(p) { # for each pathway
           # boolean vector of grouped-entries with hits
-          hit.vec = sapply(pathway_topology_scores[[p]]$entries.grouped, function(entr) {
-            any(stringr::str_detect(entr, pathway.hits[[p]]))
+          entries.sep = sapply(pathway_topology_scores[[p]]$entries.grouped, function(x) {strsplit(x, " ", fixed = TRUE)} )
+          hit.vec = sapply(entries.sep, function(entr) {
+            any(pathway.hits[[p]] %in% entr)
           })
           # take sum of topological measure for the relevant pathway
           sum(pathway_topology_scores[[p]][[glue("{score_type}.list")]][hit.vec])

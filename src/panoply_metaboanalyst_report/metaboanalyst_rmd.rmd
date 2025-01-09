@@ -226,6 +226,7 @@ body {
 .parent {
   display: flex;
   width: 100%;
+  height: 400px;
 }
 .flex-child {
   flex: 1;
@@ -474,11 +475,12 @@ function updateVolcano(df, annot_filt, subval_filt) {
   
   // get width of container object
   const containerWidth = document.querySelector('.parent').offsetWidth
-  const containerHeight = window.innerHeight
+  const containerHeight = document.querySelector('.parent').offsetHeight
+  //const containerHeight = window.innerHeight
   
   // Declare the chart dimensions and margins.
   const width = containerWidth/2*0.95;
-  const height = containerHeight/3;
+  const height = containerHeight;
   const marginTop = 20;
   const marginRight = 20;
   const marginBottom = 30;
@@ -590,20 +592,21 @@ function updateNetwork(pthw_id) {
   
   // get width of container object
   const containerWidth = document.querySelector('.parent').offsetWidth
-  const containerHeight = window.innerHeight
+  const containerHeight = document.querySelector('.parent').offsetHeight
+  //const containerHeight = window.innerHeight
   
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 30, bottom: 30, left: 40},
     width = containerWidth/2*0.95 - margin.left - margin.right,
-    height = containerHeight/3 - margin.top - margin.bottom;
-  
+    height = containerHeight - margin.top - margin.bottom;
+
   // Create the scales for x and y
   const xScale = d3.scaleLinear()
     .domain([d3.min(nodes, d => d.graphics_x), d3.max(nodes, d => d.graphics_x)])  // Domain from data's min and max x values
     .range([0, width]);  // Range from 0 to the SVG width
   const yScale = d3.scaleLinear()
     .domain([d3.min(nodes, d => d.graphics_y), d3.max(nodes, d => d.graphics_y)])  // Domain from data's min and max y values
-    .range([height, 0]);  // Range from SVG height to 0 (SVG's y axis is reversed)
+    .range([0,height]);  // Range from SVG height to 0
   
   // append the svg object to the body of the page
   const svg = d3.select("#div_network")
