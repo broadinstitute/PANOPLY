@@ -659,7 +659,7 @@ function updateNetwork(pthw_id) {
     .attr("class", "node")
     //.style("fill", "#69b3a2")
     .style("fill", function(d) { 
-      const hits = d["hits.all"];
+      //const hits = d["hits.all"];
       const value = d["logFC.absmax"];
       //console.log(hits)
       if (value != null) {
@@ -695,8 +695,8 @@ function updateNetwork(pthw_id) {
       // show tooltip
       tooltip.transition().duration(200).style("opacity", .8);		
             tooltip.html("<b/><u/>" + d.graphics_name + '</u></b>\n' +
-                         "<b/>Hits In Dataset: </b>" + d['hits.all'] + '\n' +
-                         "<b/>Significant Hits: </b>" + d['hits.sign'] + '\n' +
+                         "<b/>Hits In Dataset: </b>" + d['hits.all.hr'] + '\n' +
+                         "<b/>Significant Hits: </b>" + d['hits.sign.hr'] + '\n' +
                          "<b/>LogFC Values: </b>" + d['logFC.all.sign'])
               .style("left", (d3.event.pageX) + "px")
               .style("top", (d3.event.pageY) + "px");
