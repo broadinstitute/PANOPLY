@@ -23,7 +23,7 @@ option_list <- list(
 
 opt <- parse_args( OptionParser(option_list=option_list),
                    #' # for testing arguments
-                   #' args = c('--metaboanalyst_results',"/opt/input/ODG_v3_prelim_MetaboAnalyst 2.tar.gz",
+                   #' args = c('--metaboanalyst_results',"/opt/input/ODG_v3_MetaboAnalyst.tar.gz",
                    #'          '-x',"odg_test")
                    #'          #'-z',"/opt/input/")
                    )
