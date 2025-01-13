@@ -41,7 +41,7 @@ send_df_to_js <- function(df, id="data"){ # send df to javascript variable in js
   cat(
     paste(
     '<script>
-      const ', id,' = ',toJSON(df),';
+      const ', id,' = ',toJSON(df, digits=22),';
     </script>'
     , sep="")
   )
@@ -121,7 +121,7 @@ for (annot_of_interest in unique(log_file$annot.name)) {
 # Log File
 send_df_to_js(log_file, id="log_file") # create JS variable log_file
 if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
-  exportJSON <- toJSON(log_file)
+  exportJSON <- toJSON(log_file, digits=22)
   write_json(exportJSON, path="log_file.JSON")
   file.copy('log_file.JSON', '/opt/input/', overwrite=T)
 }
@@ -129,7 +129,7 @@ if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
 # Results JSON
 send_df_to_js(df_annot, id="json_annot") # create JS variable log_file
 if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
-  exportJSON <- toJSON(df_annot)
+  exportJSON <- toJSON(df_annot, digits=22)
   write_json(exportJSON, path="results.JSON")
   file.copy('results.JSON', '/opt/input/', overwrite=T)
 }
@@ -137,7 +137,7 @@ if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
 # Image Array
 send_df_to_js(imgObj, id='imgArr')
 if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
-  exportJSON <- toJSON(imgObj)
+  exportJSON <- toJSON(imgObj, digits=22)
   write_json(exportJSON, path="heatmaps.JSON")
   file.copy('heatmaps.JSON', '/opt/input/', overwrite=T)
 }
