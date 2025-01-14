@@ -188,8 +188,7 @@ cat(paste(
 
 # Results
 
-
-````{=html}
+```{=html}
 <!-- Load jquery.js -->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
 <!-- Load d3.js -->
@@ -197,10 +196,26 @@ cat(paste(
 <!-- Load DataTables -->
 <link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
 <script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+```
 
-<div class="dropdown-menu" id="dropdown_menu">
+
+```{=html}
+<div class="dropdown-menu" id="dropdown_annot_menu">
+  <b>Annotation: </b>
   <select id="dropdown_annot">
   </select>
+</div>
+<!-- Heatmap Figures -->
+<div class='sticky'>
+<img width=100% name="img_heatmap" />
+</div>
+<div><b>Figure 1:</b> This heatmap shows the -log(P.Value) of the top {n} significant pathways, across each subvalue of this annotation.</div>
+
+<hr>
+
+<!-- Subvalue Figures -->
+<div class="dropdown-menu" id="dropdown_subval_menu">
+  <b>Annot-Subvalue: </b>
   <select id="dropdown_subvalue">
   </select>
 </div>
@@ -213,8 +228,10 @@ cat(paste(
   <!-- Create a div where the graph will take place -->
   <div id="div_network" class='child flex-child'></div>
 </div>
+
+<hr>
     
-    
+<div class='sticky'>
 <table id="myTable" class="display">
     <thead>
       <tr id="table-headers">
@@ -225,9 +242,8 @@ cat(paste(
         <!-- Data will be injected here dynamically -->
     </tbody>
 </table>
-
-<img width=100% height=100% name="img_heatmap" />
-````
+</div>
+```
 
 
 
@@ -249,6 +265,17 @@ body {
   font-size: 0.9rem;
   color: black;
 }
+
+.sticky {
+    width: 100%;
+    height: 400px;
+    overflow: auto;
+}
+hr {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
 
 .parent {
   display: flex;
@@ -274,6 +301,13 @@ body {
   pointer-events: none;
   opacity: 0;
   white-space: pre-wrap;
+}
+
+.axis-label {
+  fill: #000;
+  font-size: 14px;
+  text-anchor: middle;
+  font-weight: bold;
 }
 ```
 
@@ -506,8 +540,8 @@ function updateVolcano(df, annot_filt, subval_filt) {
   const height = containerHeight;
   const marginTop = 20;
   const marginRight = 20;
-  const marginBottom = 30;
-  const marginLeft = 40;
+  const marginBottom = 60;
+  const marginLeft = 60;
 
   // Declare the x (horizontal position) scale.
   const x = d3.scaleLinear()
@@ -529,13 +563,25 @@ function updateVolcano(df, annot_filt, subval_filt) {
   // Add the x-axis.
   svg.append("g")
       .attr("transform", `translate(0,${height - marginBottom})`)
-      .call(d3.axisBottom(x));
+      .call(d3.axisBottom(x))
+      // Add label
+      .append('text')
+      .attr('class', 'axis-label')
+      .text(impact_score)
+      .attr('x', (marginLeft + (width - marginLeft - marginRight) / 2)) // Relative to the x axis.
+      .attr('y', 40)
 
   // Add the y-axis.
   svg.append("g")
       .attr("transform", `translate(${marginLeft},0)`)
-      .call(d3.axisLeft(y));
-
+      .call(d3.axisLeft(y))
+      // Add label
+      .append('text')
+      .attr('class', 'axis-label')
+      .text("-log(P.Value)")
+      .attr('transform', 'rotate(-90)')
+      .attr('x', -(marginTop + (height - marginTop - marginBottom) / 2))
+      .attr('y', -40) // Relative to the y axis.
 
 
   // Append the SVG element.
