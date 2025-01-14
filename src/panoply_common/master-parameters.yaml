@@ -138,6 +138,7 @@ panoply_metaboanalyst:
   pval_comb: "pvalo"                            # Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).
   pval_signif: 0.05                             # P-value threshold for significant enrichement
   top_n_networks: 10                            # Top N networks to plot per annot subvalue
+  top_n_networks: "Impact.DC"                   # Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality).
   
 panoply_mimp:
   groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap

@@ -84,21 +84,26 @@ for (annot_of_interest in unique(log_file$annot.name)) {
     column_to_rownames('subvalue.name') # set unique subvalue names to rownames, for easy lookup
   if (!any(log_file.tmp$valid.results)) next # skip if no annot has valid results
   
-  # if there are valid results
-  res_file = list.files(pattern = glue("_{annot_of_interest}_fullResults.xls$")) # all XLS results
-  #write(res_file, file='/opt/input/tmp.txt', append=TRUE)
-  # sheets <- readxl::excel_sheets(fn)
+  # # if there are valid results
+  # res_file = list.files(pattern = glue("_{annot_of_interest}_fullResults.xls$")) # all XLS results
+  # #write(res_file, file='/opt/input/tmp.txt', append=TRUE)
+  # # sheets <- readxl::excel_sheets(fn)
   
   for(value_of_interest.name in rownames(log_file.tmp)) {
     if(!log_file.tmp[value_of_interest.name,"valid.results"]) next # don't show invalid / blank subvalues
     value_of_interest = log_file.tmp[value_of_interest.name,"subvalue.value"] # get original annot value for use in analysis
+    res_file = list.files(path = glue('results_{annot_of_interest}'),  pattern = glue("_{annot_of_interest}_{value_of_interest.name}_results.csv$"), full.names = T)  # get results CSV file
+
     
-    if( !(value_of_interest.name %in% readxl::excel_sheets(res_file)) ) {
-      stop(glue("Annotation subvalue '{value_of_interest}' should have valid results, but does not appear in the fullResults spreadsheet for annotation '{annot_of_interest}'."))
+    if( length(res_file) <1 ) {
+      stop(glue("Annotation subvalue '{value_of_interest}' should have valid results, but does not have a corresponding CSV in 'results_{annot_of_interest}/'."))
+    }
+    if( length(res_file) >1 ) {
+      stop(glue("Multiple matching results files found for '{value_of_interest}' in the 'results_{annot_of_interest}/'  folder."))
     }
     
-    df.tmp = readxl::read_xls(res_file, sheet = value_of_interest.name) %>%
-      dplyr::rename(Pathway.ID = "...1") %>% # set first column to rownames
+    df.tmp = read.csv(res_file) %>%
+      dplyr::rename(Pathway.ID = "X") %>% # set first column to rownames
       dplyr::mutate(Annot = annot_of_interest,
                     Subvalue = value_of_interest) %>%
       dplyr::select(Annot, Subvalue, Pathway.ID, everything())

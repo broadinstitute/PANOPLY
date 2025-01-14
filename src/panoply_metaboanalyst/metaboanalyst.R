@@ -25,6 +25,7 @@ option_list <- list(
   make_option( c("-b", "--pval_comb"), action='store', type='character', dest='pval_comb', help='Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).'), 
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
   make_option( c("-k", "--top_n_networks"), action='store', type='numeric', dest='top_n_networks', help='Top N networks to plot per annot subvalue.'), 
+  make_option( c("-r", "--impact_metric"), action='store', type='numeric', dest='impact_metric', help="Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality)."), 
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
   make_option( c("-f", "--output_directory"), action='store', type='character',  dest='output_dir', help='Directory to output files to.',  default = 'results/'),
@@ -54,6 +55,7 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        #   '-b',"pvalp",
                        # #   '-p',"0.01",
                        # #   '-k',"15",
+                       #   '-r',"Impact.CC",
                        #   '-y',"opt/input/master-parameters.yaml",
                        # #   # '-f',"/opt/input/prelim_results",
                        #   '-x',"ODG_v3")
@@ -192,7 +194,7 @@ if (multiomic) {
     pathway_list = list(ID = p$id,
                         name = p$name,
                         entries = p$genes,
-                        cmpd.counts = length(p$genes))
+                        cmpd.counts = length(unique(p$genes))) # only take unique values
     return(pathway_list)
   })
   # set pathway IDs
@@ -815,30 +817,32 @@ for (annot_of_interest in names(annots)) {
     #### logP vs Impact ####
     if (has_topology) {
       # make 'volcano' plot
-      ggplot(res.fin.df, aes(x = Impact.DC, y = neg.Log.P.Value, color = neg.Log.P.Value)) + 
+      ggplot(res.fin.df, aes(x = !!opt$impact_metric, y = neg.Log.P.Value, color = neg.Log.P.Value)) + 
         geom_point() +
-        ylab("-log(P-Value)")+
-        xlab("Impact (Degree Centrality)")
+        # xlab("Impact (Degree Centrality)") +
+        ylab("-log(P-Value)")
       # save to file
-      fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{value_of_interest.name}_negLogFC_vs_Impact.png")
+      fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{value_of_interest.name}_negLogFC_vs_{opt$impact_metric}.png")
       ggsave(file.path(annot_dir, fn))
     }
     
-    #### Enrichment Ratio ####
-    enrichment_metric = "Impact.CC"
+    #### Enrichment Ratio-- % Pathway Hits vs Significance ####
     plot_df = head(res.fin.df,opt$top_n_networks) %>%
       dplyr::arrange(neg.Log.P.Value)
     # make 'volcano' plot
-    ggplot(plot_df, aes(x = !!sym(enrichment_metric),
-                        y = factor(Pathway.Name, level = Pathway.Name), # sort by order of appearance
-                        size = neg.Log.P.Value)) + 
-      geom_point() + 
-      ylab("Pathway")+
-      xlab(enrichment_metric)
+    ggplot(plot_df, aes(x = neg.Log.P.Value,
+                        y = factor(Pathway.Name, level = Pathway.Name))) + 
+      geom_point(aes(size = N.Entries/N.Entries), color = 'black', shape=1) + # create outline showing 100%
+      geom_point(aes(size = N.Hits/N.Entries), color = 'red') + # create inner dot showing the % of hits
+      scale_size_continuous(labels = scales::percent,
+                            name = 'Pathway Coverage\n(# Hits / Pathway Entries)') +
+      ylab("Pathway") +
+      xlab("-log(P.Value)")
+      
     # save to file
     fn = glue("{opt$output_prefix}_{make.names(annot_of_interest)}_{value_of_interest.name}_EnrichemntRatio.png")
     ggsave(file.path(annot_dir, fn))
-    
+    # file.copy(file.path(annot_dir, fn), '/opt/input/', overwrite=T)
     
     #### Network Graphs ####
     if (!is.null(graph_list)) {
