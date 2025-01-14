@@ -64,17 +64,28 @@ load(file_metaboanalyst_opt) # load opt list object (panoply_metaboanalyst. para
 # load in log file
 log_file = read.csv(log_file)
 
+# Get Analysis-Type from opt
+anal_type = opt$anal_type
+impact_metric = opt$impact_metric
+
 # counter variable for figures and tables
 fig_count <- 1
 tab_count <- 1
 
 ```
 
+```{r, echo=FALSE}
+if(anal_type=="QEA") {
+  cat("## WARNING:\nReport is configured for multiomic ORA analysis, and figures may not behave properly, when using the metabolite-only pathway database.")
+}
+```
+
 
 ```{r prep_data, include=FALSE}
 
-xls_files = list.files(pattern = "_fullResults.xls")  # locate combined GCT file
-if (length(xls_files) < 1) stop(glue("Tarfile {params$metaboanalyst_results} is missing XLS files with enrichment results."))
+# # check that results exist at all
+# xls_files = list.files(pattern = "_fullResults.xls")  # locate XLS results file
+# if (length(xls_files) < 1) stop(glue("Tarfile {params$metaboanalyst_results} is missing XLS files with enrichment results."))
 
 #### Create df_annot ####
 df_annot = data.frame()
@@ -148,10 +159,16 @@ if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
 }
 
 # Network JSON
+if (file.exists('networks.JSON')) {
+  json_network_val = read_file('networks.JSON')
+} else {
+  json_network_val = 'null'
+}
 cat(paste(
-  '<script>
-    const json_network_str = ',read_file('networks.JSON'),';
-  </script>', sep=""))
+'<script>
+  const json_network_str = ',json_network_val,';
+</script>', sep=""))
+
 # Network Annotations JSON
 network_annots_file = list.files(pattern="._network_annots.JSON$")
 cat(paste(
@@ -159,6 +176,11 @@ cat(paste(
     const json_net_anno_str = ',read_file(network_annots_file),';
   </script>', sep=""))
 
+# Set Impact Score
+cat(paste(
+  '<script>
+    const impact_score = "',opt$impact_metric,'";
+  </script>', sep=""))
 
 ```
 
@@ -266,10 +288,6 @@ console.log(json_network)
 // parse Network Annotations
 const json_net_anno = JSON.parse(json_net_anno_str);
 console.log(json_net_anno)
-
-
-// temporarily set Impact Score statically
-const impact_score = "Impact.BC"
 
 
 

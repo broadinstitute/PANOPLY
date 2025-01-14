@@ -85,6 +85,7 @@ if ( !is.null(opt$yaml_file) ) {
   if (is.null(opt$pval_comb)) opt$pval_comb = yaml_metaboanalyst$pval_comb
   if (is.null(opt$pval_signif)) opt$pval_signif = yaml_metaboanalyst$pval_signif
   if (is.null(opt$top_n_networks)) opt$top_n_networks = yaml_metaboanalyst$top_n_networks
+  if (is.null(opt$impact_metric)) opt$impact_metric = yaml_metaboanalyst$impact_metric
 } else { # if no YAML was provieded
   # check if any necessary parameters are missing
   if( any(sapply(list(opt$meta_id_type, 
