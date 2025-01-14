@@ -194,7 +194,8 @@ if (multiomic) {
     pathway_list = list(ID = p$id,
                         name = p$name,
                         entries = p$genes,
-                        cmpd.counts = length(unique(p$genes))) # only take unique values
+                        cmpd.counts = length(unique(p$genes)) # only take unique values
+                                      + max(sum(p$genes=='NA')-1, 0) ) # but also count every NA as a unique compound
     return(pathway_list)
   })
   # set pathway IDs
