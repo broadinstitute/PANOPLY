@@ -1,0 +1,826 @@
+---
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+params:
+  title: "MetaboAnalyst Results"
+  label: NULL
+  metaboanalyst_results: NULL
+---
+
+---
+title: `r params$title`
+---
+
+# Overview
+
+This document describes the results of the MetaboAnalyst module, which performs metabolic analysis. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_metaboanalyst), or refer to the original [MetaboAnalyst](https://www.metaboanalyst.ca/home.xhtml) software.
+
+
+```{r setup, include=FALSE}
+# R tooles
+library(tidyverse)
+library(glue)
+library(cmapR)
+library(readxl)
+# library(plotly)
+# library(DT) # for JS datatable features
+
+# HTML / RMD tools
+library(knitr)
+library(jsonlite)
+library(htmltools)
+library(kableExtra)
+
+create_tmp_file=FALSE # set to TRUE to make JSON files, useful for testing in CodePen
+send_df_to_js <- function(df, id="data"){ # send df to javascript variable in json format
+  cat(
+    paste(
+    '<script>
+      const ', id,' = ',toJSON(df, digits=22),';
+    </script>'
+    , sep="")
+  )
+}
+
+```
+
+```{r import_data, include=FALSE}
+#### import panoply_nmf tarfile ####
+untar(params$metaboanalyst_results, exdir = getwd()) # untar results in PWD
+# locate necessary inputs from tar, and error if ANY are missing
+file_metaboanalyst_opt = list.files(pattern = 'metaboanalyst_opt.Rdata$') # locate Rdata object containing parameters
+if (length(file_metaboanalyst_opt) != 1) stop(glue("Tarfile {params$metaboanalyst_results} is missing metaboanalyst_opt.Rdata object, containing parameters used in panoply_metaboanalyst."))
+log_file = list.files(pattern="*log_file.csv$") # locate combined GCT file
+if (length(log_file) != 1) stop(glue("Tarfile {params$metaboanalyst_results} is missing logfile of successfully analyzed annotations."))
+
+#### Finish Setup / File Import ####
+# load in panoply_metaboanalyst parameters
+load(file_metaboanalyst_opt) # load opt list object (panoply_metaboanalyst. parameters)
+# load in log file
+log_file = read.csv(log_file)
+
+# Get Analysis-Type from opt
+anal_type = opt$anal_type
+impact_metric = opt$impact_metric
+
+# counter variable for figures and tables
+fig_count <- 1
+tab_count <- 1
+
+```
+
+```{r, echo=FALSE}
+if(anal_type=="QEA") {
+  cat("## WARNING:\nReport is configured for multiomic ORA analysis, and figures may not behave properly, when using the metabolite-only pathway database.")
+}
+```
+
+
+```{r prep_data, include=FALSE}
+
+# # check that results exist at all
+# xls_files = list.files(pattern = "_fullResults.xls")  # locate XLS results file
+# if (length(xls_files) < 1) stop(glue("Tarfile {params$metaboanalyst_results} is missing XLS files with enrichment results."))
+
+#### Create df_annot ####
+df_annot = data.frame()
+for (annot_of_interest in unique(log_file$annot.name)) {
+# for (annot_of_interest in c("NMF.consensus.k3", "NMF.consensus.core.k3", "NMF.consensus.k6", "NMF.consensus.core.k6")) {
+  log_file.tmp = filter(log_file, annot.name==annot_of_interest) %>% # check log for results
+    column_to_rownames('subvalue.name') # set unique subvalue names to rownames, for easy lookup
+  if (!any(log_file.tmp$valid.results)) next # skip if no annot has valid results
+  
+  # # if there are valid results
+  # res_file = list.files(pattern = glue("_{annot_of_interest}_fullResults.xls$")) # all XLS results
+  # #write(res_file, file='/opt/input/tmp.txt', append=TRUE)
+  # # sheets <- readxl::excel_sheets(fn)
+  
+  for(value_of_interest.name in rownames(log_file.tmp)) {
+    if(!log_file.tmp[value_of_interest.name,"valid.results"]) next # don't show invalid / blank subvalues
+    value_of_interest = log_file.tmp[value_of_interest.name,"subvalue.value"] # get original annot value for use in analysis
+    res_file = list.files(path = glue('results_{annot_of_interest}'),  pattern = glue("_{annot_of_interest}_{value_of_interest.name}_results.csv$"), full.names = T)  # get results CSV file
+
+    
+    if( length(res_file) <1 ) {
+      stop(glue("Annotation subvalue '{value_of_interest}' should have valid results, but does not have a corresponding CSV in 'results_{annot_of_interest}/'."))
+    }
+    if( length(res_file) >1 ) {
+      stop(glue("Multiple matching results files found for '{value_of_interest}' in the 'results_{annot_of_interest}/'  folder."))
+    }
+    
+    df.tmp = read.csv(res_file) %>%
+      dplyr::rename(Pathway.ID = "X") %>% # set first column to rownames
+      dplyr::mutate(Annot = annot_of_interest,
+                    Subvalue = value_of_interest) %>%
+      dplyr::select(Annot, Subvalue, Pathway.ID, everything())
+    df_annot = rbind(df_annot, df.tmp)
+  }
+}
+
+#### Heatmap base64 Array ####
+imgObj = list()
+for (annot_of_interest in unique(log_file$annot.name)) {
+  hm_file = list.files(pattern = glue("_{annot_of_interest}_heatmap.png$"))
+  
+  if (length(hm_file)==0) next # don't add anything if it doesn't exist
+  imgObj[[annot_of_interest]] = knitr::image_uri(hm_file) # otherwise convert file to base64 and add to array 
+}
+
+```
+
+```{r generate_jsons, echo=FALSE, results='asis'}
+# Log File
+send_df_to_js(log_file, id="log_file") # create JS variable log_file
+if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
+  exportJSON <- toJSON(log_file, digits=22)
+  write_json(exportJSON, path="log_file.JSON")
+  file.copy('log_file.JSON', '/opt/input/', overwrite=T)
+}
+
+# Results JSON
+send_df_to_js(df_annot, id="json_annot") # create JS variable log_file
+if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
+  exportJSON <- toJSON(df_annot, digits=22)
+  write_json(exportJSON, path="results.JSON")
+  file.copy('results.JSON', '/opt/input/', overwrite=T)
+}
+
+# Image Array
+send_df_to_js(imgObj, id='imgArr')
+if (create_tmp_file) { # create file for JavaScript testing in CodePen.io
+  exportJSON <- toJSON(imgObj, digits=22)
+  write_json(exportJSON, path="heatmaps.JSON")
+  file.copy('heatmaps.JSON', '/opt/input/', overwrite=T)
+}
+
+# Network JSON
+if (file.exists('networks.JSON')) {
+  json_network_val = read_file('networks.JSON')
+} else {
+  json_network_val = 'null'
+}
+cat(paste(
+'<script>
+  const json_network_str = ',json_network_val,';
+</script>', sep=""))
+
+# Network Annotations JSON
+network_annots_file = list.files(pattern="._network_annots.JSON$")
+cat(paste(
+  '<script>
+    const json_net_anno_str = ',read_file(network_annots_file),';
+  </script>', sep=""))
+
+# Set Impact Score
+cat(paste(
+  '<script>
+    const impact_score = "',opt$impact_metric,'";
+  </script>', sep=""))
+
+```
+
+
+
+# Results
+
+```{=html}
+<!-- Load jquery.js -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+<!-- Load DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
+<script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+```
+
+
+```{=html}
+<div class="dropdown-menu" id="dropdown_annot_menu">
+  <b>Annotation: </b>
+  <select id="dropdown_annot">
+  </select>
+</div>
+<!-- Heatmap Figures -->
+<div class='sticky'>
+<img width=100% name="img_heatmap" />
+</div>
+<div><b>Figure 1:</b> This heatmap shows the -log(P.Value) of the top {n} significant pathways, across each subvalue of this annotation.</div>
+
+<hr>
+
+<!-- Subvalue Figures -->
+<div class="dropdown-menu" id="dropdown_subval_menu">
+  <b>Annot-Subvalue: </b>
+  <select id="dropdown_subvalue">
+  </select>
+</div>
+
+<div class='parent'>
+  <!-- Create a div where the graph will take place -->
+  <div id="div_volcano" class='child flex-child'></div>
+
+
+  <!-- Create a div where the graph will take place -->
+  <div id="div_network" class='child flex-child'></div>
+</div>
+
+<hr>
+    
+<div class='sticky'>
+<table id="myTable" class="display">
+    <thead>
+      <tr id="table-headers">
+        <!-- Column headers will be populated here dynamically -->
+      </tr>
+    </thead>
+    <tbody>
+        <!-- Data will be injected here dynamically -->
+    </tbody>
+</table>
+</div>
+```
+
+
+
+```{css, echo=FALSE}
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+  --shadow: rgba(0, 0, 0, 0.05) 0px 6px 10px 0px,
+    rgba(0, 0, 0, 0.1) 0px 0px 0px 1px;
+  --color: #166e67;
+  --gap: 0.5rem;
+  --radius: 5px;
+}
+
+body {
+  margin: 2rem;
+  font-size: 0.9rem;
+  color: black;
+}
+
+.sticky {
+    width: 100%;
+    height: 400px;
+    overflow: auto;
+}
+hr {
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+
+.parent {
+  display: flex;
+  width: 100%;
+  height: 400px;
+}
+.flex-child {
+  flex: 1;
+}
+
+.dropdown-menu {
+  position: relative;
+  display: contents;
+}
+
+/* Tooltip style */
+.tooltip {
+  position: absolute;
+  padding: 5px;
+  background-color: #ddd;
+  color: black;
+  border-radius: 5px;
+  pointer-events: none;
+  opacity: 0;
+  white-space: pre-wrap;
+}
+
+.axis-label {
+  fill: #000;
+  font-size: 14px;
+  text-anchor: middle;
+  font-weight: bold;
+}
+```
+
+```{js, echo=FALSE}
+//// ---- Data Wrangling
+
+
+// parse Networks
+const json_network = JSON.parse(json_network_str);
+console.log(json_network)
+
+// parse Network Annotations
+const json_net_anno = JSON.parse(json_net_anno_str);
+console.log(json_net_anno)
+
+
+
+//// ---- Utility Functions
+function onlyUnique(value, index, array) {
+  return array.indexOf(value) === index;
+}
+function getMax(arr, prop) {
+  var max;
+  for (var i=0 ; i<arr.length ; i++) {
+    if (max == null || parseInt(arr[i][prop]) > parseInt(max))
+      max = arr[i][prop];
+  }
+  return max;
+}
+function removeOptions(selectElement) {
+   var i, L = selectElement.options.length - 1;
+   for(i = L; i >= 0; i--) {
+      selectElement.remove(i);
+   }
+}
+// Function to merge two arrays based on matching `id`
+function mergeJSONObjects(data1, data2, key) {
+    return data1.map(item1 => {
+        // Find the corresponding item from data2 by matching `id`
+        const item2 = data2.find(item => item[key] === item1[key]);
+        
+        // If a matching item is found, merge them, otherwise return item1 as it is
+        return item2 ? { ...item1, ...item2 } : item1;
+    });
+}
+function dropItem(arr, item) {
+  const index = arr.indexOf(item);
+  if (index > -1) { // only splice array when item is found
+    arr.splice(index, 1); // 2nd parameter means remove one item only
+  }
+  return arr
+}
+
+//// ---- Aesthetic Variables
+// bounce_select animation
+var bounce_select = d3.transition()
+  .duration(1000)
+  .ease(d3.easeElastic.period(0.4));
+// define tooltips
+var tooltip = d3.select("body").append("div")	
+.attr("class", "tooltip")				
+.style("opacity", 0);
+
+//// ---- HTML Elements
+const annotMenu = document.getElementById("dropdown_annot");
+const subvalueMenu = document.getElementById("dropdown_subvalue");
+//const toggleArrow = document.getElementById("arrow");
+
+
+
+
+
+//// ---- Set Up Dropdown Menus
+// get unique annot-values
+const all_annots = log_file.map((entry) => entry['annot.name'])
+const annots = all_annots.filter(onlyUnique)
+// add annots to dropdown_annot
+annots.forEach((entry, index, arr) => {
+  annotMenu.options[annotMenu.options.length] = new Option(entry, index);
+})
+// -- Annot Change Event-Listener
+annotMenu.addEventListener("change", function(event) {
+  updateSubvalueMenu()
+  updateHeatmap(annotMenu.options[annotMenu.selectedIndex].text)
+  
+  clearTable(table) // clear table if we change annot
+  clearVolcano() // clear volcano if we change annot
+  clearNetwork() // clear network if we change annot
+});
+
+
+// -- Update subvalue Menu                   
+function updateSubvalueMenu() {
+  // -- clear menu
+  removeOptions(subvalueMenu)
+  // -- add default value
+  subvalueMenu.append( new Option(text="Select Annotation Subvalue",
+                                  value="none"))
+  subvalueMenu.options[0].disabled = true // set first valid result to selected
+  subvalueMenu.options[0].hidden = true // set first valid result to selected
+  subvalueMenu.options[0].selected = true // set first valid result to selected
+  
+  // -- get relevant subvalues
+  var log_subvalue = log_file.filter((entry,index,arr) => entry["annot.name"]==annotMenu.options[annotMenu.selectedIndex].text)
+  
+  // -- add subvlues to subvalueMenu & format
+  log_subvalue.forEach((entry, index, arr) => {
+    // create new option for each subvalue
+    //subvalueMenu.options[subvalueMenu.options.length] = new Option(entry['subvalue.value'], entry['subvalue.name']);
+    subvalueMenu.append( new Option(text=entry['subvalue.value'],
+                                    value=entry['subvalue.name']))
+    
+    // disable subvalue if no valid results
+    subvalueMenu.options[index+1].disabled = !entry['valid.results'] // offset by 1 since we have a default
+    
+    //// select first valid option
+    //var selected_index = arr.map((entry) => entry['valid.results']).findIndex(value => value === true) // get first valid result
+    //subvalueMenu.options[index].selected = index===selected_index // set first valid result to selected
+  });
+  
+  //console.log(subvalueMenu))
+}
+updateSubvalueMenu() // call to initialize
+// -- Subvalue Change Event-Listener
+subvalueMenu.addEventListener("change", function(event) {
+  //console.log(event)
+  updateVolcano(json_annot,
+                annotMenu.options[annotMenu.selectedIndex].text,
+                subvalueMenu.options[subvalueMenu.selectedIndex].text)
+  updateDataTable(table, columnNames,
+                  annotMenu.options[annotMenu.selectedIndex].text,
+                  subvalueMenu.options[subvalueMenu.selectedIndex].text)
+} );
+
+
+
+//// ---- Heatmaps
+function updateHeatmap(annot) {
+    document.img_heatmap.src = imgArr[annot];
+}
+updateHeatmap(log_file[0]['annot.name']) //initialize with first annot
+
+//// ---- Initialize DataTable
+const columnNames = Object.keys(json_annot[0]) // Extract column names from annot-table
+function clearTable(table) {
+  // clear all the elements of the table by searching for NA, which should not exist
+  table
+    .column(columnNames.indexOf("Annot")).search('NA', { exact: true }) // search for NA
+    .column(columnNames.indexOf("Subvalue")).search('NA', { exact: true })  // search for NA
+    .draw()
+}
+function initializeDT(df, columnNames) {
+  // Initialize Headers
+  const tableHeaders = $('#table-headers');
+  // Dynamically generate the table headers 
+  columnNames.forEach(function(column) {
+    tableHeaders.append('<th>' + column.charAt(0).toUpperCase() + column.slice(1) + '</th>'); // Capitalize first letter for display
+  });
+  
+  // identify columns to hide
+  let col_to_filt = ['Annot', 'Subvalue', 'Pathway.ID', 'Test.Type'] 
+      .concat(dropItem(["Impact.BC", "Impact.CC", "Impact.DC"], impact_score))
+  let filt_idx = [];
+  col_to_filt.forEach(entry => filt_idx.push(columnNames.indexOf(entry)))
+  // identify Raw.P.Value column
+  const search_idx = columnNames.indexOf("Pathway.Name")
+  const sort_idx = columnNames.indexOf("Raw.P.Value")
+  
+  // Initialize DataTables
+  const table = new DataTable('#myTable', {
+    scrollY: 300, // scroll height
+    scrollCollapse: true, // collapse height if fewer entries
+    paging: false,
+    lengthChange: false,
+    columnDefs: [
+      { visible: false, targets: filt_idx }, // hide first three columns
+      { searchable: true, targets: search_idx },
+    ], 
+    order: [sort_idx, 'asc'] // sort by p-value
+  });
+  
+  // -- Populate the table body with data
+  df_array = df.map( Object.values ); // convert to array of arrays
+  table.rows.add(df_array).draw(); // add all arrays as rows & draw
+  
+  // hide all rows
+  clearTable(table);
+  
+  return table
+}
+var table = initializeDT(json_annot, columnNames) // set table variable
+
+//// ---- Update DataTable
+function updateDataTable(table, columnNames, annot_filt, subval_filt) {
+  table
+    .column(columnNames.indexOf("Annot")).search(annot_filt, { exact: true })
+    .column(columnNames.indexOf("Subvalue")).search(subval_filt, { exact: true })
+    .draw()
+}
+
+
+
+
+//// ---- Update Volcano Plot
+// function to remove volcano object
+function clearVolcano() {
+  if (document.getElementById("svg_volcano")) { document.getElementById("svg_volcano").remove() }
+  if (document.getElementById("point_vals_volcano")) { document.getElementById("point_vals_volcano").remove() }
+}
+// function to create/update volcano plot
+function updateVolcano(df, annot_filt, subval_filt) {
+  y_val = "neg.Log.P.Value"
+  x_val = impact_score
+  // filter json to annot_filt
+  const df_annot = df.filter((entry,index,arr) => entry["Annot"]===annot_filt )
+  //console.log(json_annot)
+  // further filter json to subval_filt
+  const df_subv = df_annot.filter((entry,index,arr) => entry["Subvalue"]===subval_filt )
+  
+  // if we've already made the thing, remove it
+  clearVolcano()
+  
+  // get width of container object
+  const containerWidth = document.querySelector('.parent').offsetWidth
+  const containerHeight = document.querySelector('.parent').offsetHeight
+  //const containerHeight = window.innerHeight
+  
+  // Declare the chart dimensions and margins.
+  const width = containerWidth/2*0.95;
+  const height = containerHeight;
+  const marginTop = 20;
+  const marginRight = 20;
+  const marginBottom = 60;
+  const marginLeft = 60;
+
+  // Declare the x (horizontal position) scale.
+  const x = d3.scaleLinear()
+      .domain([0, getMax(df_annot, x_val)+0.5]) // use same dimensions for annot
+      .range([marginLeft, width - marginRight]);
+
+  // Declare the y (vertical position) scale.
+  const y = d3.scaleLinear()
+      .domain([0, getMax(df_annot, y_val)+0.5]) // use same dimensions for annot
+      .range([height - marginBottom, marginTop]);
+
+  // Create the SVG container.
+  const svg = d3.create("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .attr("id", "svg_volcano"); // give it an ID so I can remove and refresh
+
+
+  // Add the x-axis.
+  svg.append("g")
+      .attr("transform", `translate(0,${height - marginBottom})`)
+      .call(d3.axisBottom(x))
+      // Add label
+      .append('text')
+      .attr('class', 'axis-label')
+      .text(impact_score)
+      .attr('x', (marginLeft + (width - marginLeft - marginRight) / 2)) // Relative to the x axis.
+      .attr('y', 40)
+
+  // Add the y-axis.
+  svg.append("g")
+      .attr("transform", `translate(${marginLeft},0)`)
+      .call(d3.axisLeft(y))
+      // Add label
+      .append('text')
+      .attr('class', 'axis-label')
+      .text("-log(P.Value)")
+      .attr('transform', 'rotate(-90)')
+      .attr('x', -(marginTop + (height - marginTop - marginBottom) / 2))
+      .attr('y', -40) // Relative to the y axis.
+
+
+  // Append the SVG element.
+  div_volcano.append(svg.node());
+
+  // mouseover text
+  const point_vals = d3.select("#div_volcano")
+    .append("p")
+    .attr("align", "left")
+    .attr("id", "point_vals_volcano")
+    .text("Mouseover points for more info, and click to show Pathway Network!");
+
+  // Add the scatterplot
+  svg.selectAll(".dots")
+      .data(df_subv)
+    .enter().append("circle")
+      .attr("class", "dots")
+      .attr("fill", d => d.type === "A"? "steelblue":"orangered")
+      .attr("fill-opacity", 0.3)
+      .attr("r", 5)
+      .attr("cx", d => x(d[x_val]) )
+      .attr("cy", d => y(d[y_val]) )
+      .on("mouseover", function(d){
+         d3.selectAll(".dots").attr("r", 5) //make sure all the dots are small
+         d3.select(this)
+          .transition(bounce_select)
+          .attr("r", 10);
+        
+        // show tooltip
+        tooltip.transition().duration(200).style("opacity", .8);		
+              tooltip.html("<b/>Pathway: </b>" + d["Pathway.Name"] + '\n' +
+                          "-log(P) = " + d[y_val]+ '\n' +
+                          x_val + " = " + d[x_val])
+                .style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY) + "px");
+      }) // mouseover behavior
+      .on("mouseout", function(d){
+        // remove tooltip
+        tooltip.transition().duration(200).style("opacity", 0);
+      }) // mouseout behavior
+      .on("click", function(d) {
+         //console.log(json)
+         console.log( "clicked " + d["Pathway.Name"] + " (" + d["Pathway.ID"] + ")" )
+         updateNetwork(d["Pathway.ID"])
+      }); // click behavior
+
+}
+
+// updateNetwork()
+// Update Network Plot
+function clearNetwork() {
+  if (document.getElementById("svg_network")) { document.getElementById("svg_network").remove() }
+}
+function updateNetwork(pthw_id) {
+  //console.log(pthw_id)
+  
+  clearNetwork()
+  
+  // pull network info
+  const df_network = json_network[pthw_id]
+  // pull network annotations
+  const df_net_anno = json_net_anno[annotMenu.options[annotMenu.selectedIndex].text][subvalueMenu.options[subvalueMenu.selectedIndex].value][pthw_id]
+  
+  // set up links / nodes objects
+  const links = df_network.links;
+  const nodes = mergeJSONObjects(df_network.nodes, df_net_anno, 'id'); // merge nodes with node-annotations by id
+  //console.log(getMax(nodes, 'graphics_x'))
+  
+  // color-scale for nodes
+  const max_logFC = 3; // logFC will range from -5 to 5 for now
+  const nodeColor = d3.scaleSequential().domain([-max_logFC,max_logFC])
+  .interpolator(d3.interpolateRgbBasis(["#2166AC", "#F7F7F7", "#B2182B"])); // khroma BuRd palette
+  
+  // node size
+  const node_size = 10
+  console.log('test')
+  
+  // get width of container object
+  const containerWidth = document.querySelector('.parent').offsetWidth
+  const containerHeight = document.querySelector('.parent').offsetHeight
+  //const containerHeight = window.innerHeight
+  
+  // set the dimensions and margins of the graph
+  const margin = {top: 10, right: 30, bottom: 30, left: 40},
+    width = containerWidth/2*0.95 - margin.left - margin.right,
+    height = containerHeight - margin.top - margin.bottom;
+
+  // Create the scales for x and y
+  const xScale = d3.scaleLinear()
+    .domain([d3.min(nodes, d => d.graphics_x), d3.max(nodes, d => d.graphics_x)])  // Domain from data's min and max x values
+    .range([0, width]);  // Range from 0 to the SVG width
+  const yScale = d3.scaleLinear()
+    .domain([d3.min(nodes, d => d.graphics_y), d3.max(nodes, d => d.graphics_y)])  // Domain from data's min and max y values
+    .range([0,height]);  // Range from SVG height to 0
+  
+  // append the svg object to the body of the page
+  const svg = d3.select("#div_network")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+      .attr("id", "svg_network") // give it an ID so I can remove and refresh
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+
+  
+  // Define the arrow marker
+  svg.append("defs")
+    .append("marker")
+    .attr("id", "arrowhead")
+    .attr("viewBox", "0 -5 10 10") // the bounding box for the arrowhead
+    .attr("refX", 20) // position of the arrow relative to the line
+    .attr("refY", 0)
+    .attr("orient", "auto")
+    .attr("markerWidth", 6)
+    .attr("markerHeight", 6)
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5") // the path to draw the arrow
+    .attr("class", "arrowhead");
+  
+  
+
+  
+  
+  // Create links (lines connecting nodes)
+  svg.selectAll(".link")
+    .data(links)
+    .enter().append("line")
+    .style("stroke", "#aaa")
+    .attr("class", "link")
+    .attr("x1", d => xScale(nodes[nodes.map(e => e['id']).findIndex(n => n == d.source)].graphics_x))
+    .attr("y1", d => yScale(nodes[nodes.map(e => e['id']).findIndex(n => n == d.source)].graphics_y))
+    .attr("x2", d => xScale(nodes[nodes.map(e => e['id']).findIndex(n => n == d.target)].graphics_x))
+    .attr("y2", d => yScale(nodes[nodes.map(e => e['id']).findIndex(n => n == d.target)].graphics_y))
+    .attr("marker-end", "url(#arrowhead)");;
+  
+  // Initialize the nodes
+  //console.log(nodes)
+  //console.log(nodes[1].graphics_type)
+  const node = svg.selectAll(".node")
+    .data(nodes)
+    //.enter().append("circle")
+    .enter().append(d => d.graphics_type === 'circle'
+                    ? document.createElementNS(d3.namespaces.svg, "circle")
+                    : document.createElementNS(d3.namespaces.svg, "rect"))
+    .attr("class", "node")
+    //.style("fill", "#69b3a2")
+    .style("fill", function(d) { 
+      //const hits = d["hits.all"];
+      const value = d["logFC.absmax"];
+      //console.log(hits)
+      if (value != null) {
+        return nodeColor(value); // use color-scale otherwise
+      } else {
+        return "#BBBBBB";  // use grey if the value is null / undefined
+      }
+    })
+  // circle coords / aesthetics
+    .attr("cx", d => d.graphics_type === 'circle' ? xScale(d.graphics_x) : null)
+    .attr("cy", d => d.graphics_type === 'circle' ? yScale(d.graphics_y) : null)
+    .attr("r", node_size/2 )  // Set radius for circles
+  // square coords / aesthetics
+    .attr("x", d => d.graphics_type === 'circle' ? null : xScale(d.graphics_x)-node_size/2)
+    .attr("y", d => d.graphics_type === 'circle' ? null : yScale(d.graphics_y)-node_size/2)
+    .attr("width", node_size) // Set width for squares
+    .attr("height", node_size) // Set height for squares
+    .on("mouseover", function(d){
+      // circle behavior
+      d3.selectAll(".circles").attr("r", node_size/2) //make sure all the dots are small
+      d3.select(this)
+        .transition(bounce_select)
+        .attr("r", node_size);
+      // square behavior
+      d3.selectAll(".rect") //make sure all the dots are 
+      d3.select(this)
+        .transition(bounce_select)
+        .attr("x", xScale(d.graphics_x)-node_size) // adjust coords to center
+        .attr("y", yScale(d.graphics_y)-node_size)
+        .attr("width", node_size*2) // double size
+        .attr("height", node_size*2);
+      
+      // show tooltip
+      tooltip.transition().duration(200).style("opacity", .8);		
+            tooltip.html("<b/><u/>" + d.graphics_name + '</u></b>\n' +
+                         "<b/>Hits In Dataset: </b>" + d['hits.all.hr'] + '\n' +
+                         "<b/>Significant Hits: </b>" + d['hits.sign.hr'] + '\n' +
+                         "<b/>LogFC Values: </b>" + d['logFC.all.sign'])
+              .style("left", (d3.event.pageX) + "px")
+              .style("top", (d3.event.pageY) + "px");
+    }) // mouseover behavior
+    .on("mouseout", function(d){
+      // circle behavior
+      d3.selectAll(".circles") //make sure all the dots are small
+      d3.select(this)
+        .transition(bounce_select)
+        .attr("r", node_size/2);
+      // square behavior
+      d3.selectAll(".rect") //make sure all the dots are 
+      d3.select(this)
+        .transition(bounce_select)
+        .attr("x", xScale(d.graphics_x)-node_size/2)
+        .attr("y", yScale(d.graphics_y)-node_size/2)
+        .attr("width", node_size)
+        .attr("height", node_size);
+      // remove tooltip
+      tooltip.transition().duration(200).style("opacity", 0);
+    }) // mouseout behavior
+  
+}
+
+```
+
+
+
+***
+
+# Parameters
+    
+Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_mo_nmf).    
+    
+```{r params, include=TRUE, echo=FALSE, warning=T, message=F}
+tab_param <- data.frame(param=names(opt), value=unlist(opt))
+## insert table
+tab_param %>%
+      kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,'**: List of parameters used in ```panoply_metaboanalyst```.')) %>%
+      kable_paper('hover', full_width = F) 
+```
+```{r echo=F}
+## increment
+tab_count <- tab_count + 1
+```
+
+<br>
+
+***
+
+**_Created on `r Sys.time()`_**
+
+***
+
+<br>
