@@ -2,8 +2,10 @@ FROM rocker/r-ver:3.6.3
 MAINTAINER proteogenomics@broadinstitute.org
 
 RUN apt-get update
+RUN apt-get install -y build-essential
 RUN apt-get install -y libssl-dev
 RUN apt-get install -y libcurl4-openssl-dev
+RUN apt-get install -y libgit2-dev
 RUN apt-get install -y jags
 RUN apt-get install -y wget
 
@@ -17,6 +19,7 @@ RUN apt-get install -y pandoc  # rmarkdown
 RUN apt-get install -y libfontconfig1-dev  # font config library for R-package kableExtra
 RUN apt-get install -y libharfbuzz-dev libfribidi-dev  # font config library for R-package systemfonts
 RUN apt-get install -y libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev  # config library for R-package rang
+RUN apt-get install -y libbz2-dev # for metaboanalyst
 
 COPY packages /prot/proteomics/Projects/PGDAC/packages
 
@@ -37,6 +40,9 @@ RUN echo 'if( !requireNamespace( "BiocManager", quietly = TRUE ) ) \
 	"org.Hs.eg.db", \
 	"EnsDb.Hsapiens.v79", \
         "ComplexHeatmap", \
+        "globaltest", \
+        "ActivePathways", \
+        "KEGGgraph", \
         "SummarizedExperiment" ) );' > /tmp/biocpkgs.R \
   && Rscript /tmp/biocpkgs.R
 
@@ -102,12 +108,20 @@ RUN echo 'install.packages( "pacman", repos = "http://cran.us.r-project.org", \
         p_install( rjags ); \
         p_install( UpSetR ); \
         p_install( Rtsne ); \
+        p_install( qs ); \
+        p_install( statmod ); \
+        p_install( igraph ); \
+        p_install( d3r ); \
+        p_install( SimDesign ); \
         p_install( WriteXLS );' > /tmp/packages.R  && Rscript /tmp/packages.R
 
-# Install devtools directly from crane, NOT from mirror repository
-RUN R -e 'install.packages( "devtools", repos = "https://cloud.r-project.org" )'
+# Install devtools from DIFFERENT mirror repository
+RUN R -e 'install.packages("devtools", mirror = "https://mran.microsoft.com/snapshots/2020-12-31")'
 RUN R -e 'devtools::install_version("khroma", version="1.11.0", repos = "https://packagemanager.posit.co/cran/2023-11-01")' # install NEWER version of khroma (color-management) so that palettes can be loaded automatically
-RUN R -e "devtools::install_github(c('Displayr/flipU', 'Displayr/flipFormat', 'Displayr/flipTime'))" # for sankeyNetwork()
+# for sankeyNetwork()
+RUN R -e "devtools::install_github('Displayr/flipU', dependencies = NA, ref='2d348cb00e3135932fde45c3b03bc8092ae936c4')"
+RUN R -e "devtools::install_github('Displayr/flipFormat', dependencies = NA, ref='4f305dc1a331a2f6fa9a620eff5b729914df33b0', upgrade='never')"
+RUN R -e "devtools::install_github('Displayr/flipTime', dependencies = NA, ref='99f2f470a937aaa9990d5a1bdc21e43277935784')"
 
 RUN echo 'install.packages( \
 	"/prot/proteomics/Projects/PGDAC/packages/cmapR_0.99.19.tar.gz", \
