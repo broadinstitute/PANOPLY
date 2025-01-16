@@ -332,7 +332,7 @@ function onlyUnique(value, index, array) {
 function getMax(arr, prop) {
   var max;
   for (var i=0 ; i<arr.length ; i++) {
-    if (max == null || parseInt(arr[i][prop]) > parseInt(max))
+    if (max == null || parseFloat(arr[i][prop]) > parseFloat(max))
       max = arr[i][prop];
   }
   return max;
