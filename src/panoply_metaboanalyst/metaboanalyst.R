@@ -52,7 +52,7 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        #   '-g',"opt/input/groups-subset.csv",
                        # #   '-l',"15",
                        # #   '-a',"QEA",
-                       #   '-b',"pvalp",
+                       #   '-b',"pvalo",
                        # #   '-p',"0.01",
                        # #   '-k',"15",
                        #   '-r',"Impact.CC",
@@ -318,19 +318,30 @@ if (multiomic) { all_features = c(all_features, ome_input@rid) }
 # takes GCT & annot of interest
 # returns transposed matrix & binary numeric cls vector
 gct.to.qea.input = function(gct, annot_of_interest, value_of_interest, annots = NULL,
-                                 write_to_file = F, prefix="results") {
+                            rm_na = TRUE,
+                            write_to_file = F, prefix="results") {
   #### Data Wrangling ####
-  if (is.null(annots)) { annots_fin = gct@cdesc } else {
+  if (is.null(annots)) { annots_sorted = gct@cdesc } else {
     if (sum(gct@cid %in% annots[['Sample.ID']]) == 0 ) stop("No samples had matching IDs in provided annotation table.")  # check that we have overlapping IDs
-    annots_fin = annots[match(gct@cid, annots[['Sample.ID']]),] # reorder to match gct@cid
+    annots_sorted = annots[match(gct@cid, annots[['Sample.ID']]),] # reorder to match gct@cid
   }
+  
+  # drop NA samples, if applicable
+  if (rm_na) {
+    idx.keep = which(! sapply(annots_sorted[[annot_of_interest]], skip.annot)) # exclude any samples that are of a skippable annotation (e.g. NA, "")
+    annots_fin = annots_sorted[idx.keep,]
+    gct_fin = subset_gct(gct, cid = idx.keep)
+  } else {
+    annots_fin = annots_sorted
+    gct_fin = gct
+  }
+  
   # create binary CLS
   cls = annots_fin[[annot_of_interest]] %>%
     { ifelse(!is.na(.) & .==value_of_interest, 1,0) } # NA -> no_<value_of_interest>
-  # toDo: consider whether we want to include NA as "not", or drop them entirely
   
   # pull out matrix and transpose so columns are features
-  mat = as.matrix(t(gct@mat))
+  mat = as.matrix(t(gct_fin@mat))
   # optionally save input dataset to a file
   if (write_to_file) {
     write.csv(data.frame(cls = cls, mat),
@@ -384,22 +395,34 @@ q.ea = function(mat, cls, pathways, uniq.len = NULL, p.val.min=2.3233E-11) {
 # takes GCT & annot of interest
 # returns DF with significant features and LogFC values
 gct.to.ora.input = function(gct, annot_of_interest, value_of_interest, annots = NULL,
-                            significance_cutoff = 0.05,
+                            significance_cutoff = 0.05, rm_na = TRUE,
                             write_to_file = F, prefix="results") {
+  
   #### Data Wrangling ####
-  if (is.null(annots)) { annots_fin = gct@cdesc } else {
+  if (is.null(annots)) { annots_sorted = gct@cdesc } else {
     if (sum(gct@cid %in% annots[['Sample.ID']]) == 0 ) stop("No samples had matching IDs in provided annotation table.")  # check that we have overlapping IDs
-    annots_fin = annots[match(gct@cid, annots[['Sample.ID']]),] # reorder to match gct@cid
+    annots_sorted = annots[match(gct@cid, annots[['Sample.ID']]),] # reorder to match gct@cid
   }
+  
+  # drop NA samples, if applicable
+  if (rm_na) {
+    idx.keep = which(! sapply(annots_sorted[[annot_of_interest]], skip.annot)) # exclude any samples that are of a skippable annotation (e.g. NA, "")
+    annots_fin = annots_sorted[idx.keep,]
+    gct_fin = subset_gct(gct, cid = idx.keep)
+  } else {
+    annots_fin = annots_sorted
+    gct_fin = gct
+  }
+  
   # create binary CLS
   cls = annots_fin[[annot_of_interest]] %>%
-    { ifelse(!is.na(.) & .==value_of_interest, ., glue("{value_of_interest}_not")) } # NA -> no_<value_of_interest>
-  # toDo: consider whether we want to include NA as "not", or drop them entirely
-  
+    { ifelse(!is.na(.) & .==value_of_interest, ., glue("{value_of_interest}_not")) } %>% # NA -> no_<value_of_interest>
+    factor(levels = c(glue("{value_of_interest}_not"), value_of_interest)) # factor cls with _not first, to force order of comparison
+
   #### T-Test ####
   require(limma)
   source('https://raw.githubusercontent.com/broadinstitute/protigy/master/src/modT.R') # for modT.test.2class()
-  d = rownames_to_column(as.data.frame(gct@mat), "feature_id")
+  d = rownames_to_column(as.data.frame(gct_fin@mat), "feature_id")
   out = quiet(modT.test.2class(d, 'tmp', groups=cls, id.col = "feature_id")) # wrapped in quiet() to suppress repeated printouts
   out_df = out$output %>%
     dplyr::arrange(P.Value) %>%
@@ -524,6 +547,14 @@ plot.network = function(g, hits, logFC_df,
 ####      Data Analysis     ####
 ################################
 
+# helper function to determine if annot is blank / should be skipped
+skip.annot = function(value_of_interest) {
+  return( is.na(value_of_interest) ||
+            value_of_interest=="" || # match blank
+            grepl("^[nN]\\.*[aA]\\.*$",value_of_interest) || # match NA / N.A. of any case
+            grepl("^[nN][aA][nN]$",value_of_interest)) # match NaN
+}
+
 # initialize log object to keep track of which annotations have what files
 log_file = data.frame(annot.name = character(0),
                       subvalue.name = character(0), # valid unique subvalue name (for file lookup)
@@ -557,7 +588,7 @@ for (annot_of_interest in names(annots)) {
   network_annots[[annot_of_interest]] = list() # initialize empty list for pathway network-annotations
   for (value_of_interest.name in rownames(log_file.tmp)) {
     value_of_interest = log_file.tmp[value_of_interest.name,"subvalue.value"] # get original annot value for use in analysis
-    if (is.na(value_of_interest) || value_of_interest=="") { cat(glue("\nSkipping '{value_of_interest}' annotation.\n\n")); next }
+    if (skip.annot(value_of_interest)) { cat(glue("\nSkipping '{value_of_interest}' annotation.\n\n")); next }
     log_file.tmp[value_of_interest.name,"valid.subvalue"] = TRUE # mark subvalue as a valid subvalue
     
     ################################
