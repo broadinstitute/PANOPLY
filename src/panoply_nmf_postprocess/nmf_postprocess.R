@@ -568,7 +568,8 @@ cat("\n\n####################\nDriver Features-- W-Matrix Analysis\n\n")
 #### Calculate Feature Scores ####
 ## determine which feature-selection method to use
 for (method in c("kim", "max")) {
-  s <- extractFeatures(basis.mat, method=method)
+  s <- tryCatch(extractFeatures(basis.mat, method=method),
+                error = function(e) {cat(glue("Feature selection method {method} failed with error: {e}")); return(NA)})
   if (sum( sapply(s, function(x) sum(is.na(x))) ) < length(s)) { # if we have at least one cluster with any features
     cat(glue("\nFeature-selection method {method} will be used.\n\n"))
     break
