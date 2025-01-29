@@ -17,6 +17,7 @@ option_list <- list(
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest. If not provided, all annotations in the cdesc will be analyzed.'),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
   #### Post-Processing Parameters ####
+  make_option( c("-m", "--feature_method"), action='store', type='character', dest='feature_method', help='Method for selecting driver features (e.g. kim or max).'), 
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
   make_option( c("-q", "--feature_fdr"), action='store', type='numeric', dest='feature_fdr', help='Max FDR threshold for feature-selection 2-sample T-test.'),
   make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='geneSymbol'),
@@ -92,6 +93,7 @@ if ( !is.null(opt$yaml_file) ) {
   # global parameters
   if (is.null(opt$gene_col)) opt$gene_col = yaml_out$global_parameters$gene_mapping$gene_id_col
   # postprocessing parameters
+  if (is.null(opt$feature_method)) opt$feature_method = yaml_nmf$feature_method
   if (is.null(opt$pval_signif)) opt$pval_signif = yaml_nmf$ora_pval
   if (is.null(opt$feature_fdr)) opt$feature_fdr = yaml_nmf$feature_fdr
   if (is.null(opt$max_annot_levels)) opt$max_annot_levels = yaml_nmf$ora_max_categories
@@ -567,7 +569,12 @@ cat("\n\n####################\nDriver Features-- W-Matrix Analysis\n\n")
 
 #### Calculate Feature Scores ####
 ## determine which feature-selection method to use
-for (method in c("kim", "max")) {
+if (is.null(opt$feature_method)) {
+  feature_methods = c("kim", "max")
+} else {
+  feature_methods = c(opt$feature_method)
+}
+for (method in feature_methods) {
   s <- tryCatch(extractFeatures(basis.mat, method=method),
                 error = function(e) {cat(glue("Feature selection method {method} failed with error: {e}")); return(NA)})
   if (sum( sapply(s, function(x) sum(is.na(x))) ) < length(s)) { # if we have at least one cluster with any features

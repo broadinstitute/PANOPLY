@@ -9,6 +9,7 @@ task panoply_nmf_postprocess {
 	String? gene_column
 	File? groups_file		# for enrichment analysis
 
+	String? feature_method		# Method for selecting driver features (e.g. kim or max)
 	Float? pval_signif		# significant p-value for cluster-enrichement
 	Float? feature_fdr		# fdr threshold for driver-feature t-test
 	Int? max_annot_levels	# max number of annotation-levels to allow for discrete variables
@@ -25,7 +26,7 @@ task panoply_nmf_postprocess {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} ${"-g " + groups_file} ${"-a " + gene_column} ${"-p " + pval_signif} ${"-q " + feature_fdr} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} ${"-g " + groups_file} ${"-a " + gene_column} ${"-m " + feature_method} ${"-p " + pval_signif} ${"-q " + feature_fdr} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 
 	}
 
