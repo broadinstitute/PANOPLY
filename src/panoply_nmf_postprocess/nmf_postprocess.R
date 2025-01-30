@@ -33,9 +33,9 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('--nmf_results',"opt/input/test-so_nmf-CNA_NMF_results.tar.gz",
-                       #          '--rank_top',"5",
-                       #          # '-g',"opt/input/groups-subset.csv",
+                       # args = c('--nmf_results',"opt/input/ODG_v3-mo_nmf_NMF_results.tar.gz",
+                       #          '--rank_top',"6",
+                       #          '-g',"opt/input/groups-subset.csv",
                        #          '-y',"opt/input/master-parameters.yaml",
                        #          '-x',"test")
 )
@@ -794,6 +794,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                            column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                            column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
                            cluster_columns = cluster_cols, #optionally cluster columns
+                           column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']], decreasing=TRUE)],
                            width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                            height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
                            heatmap_legend_param = list(direction = "horizontal"))
