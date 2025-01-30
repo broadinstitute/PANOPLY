@@ -322,6 +322,7 @@ for (cluster_cols in c(TRUE,FALSE)) {
                column_title = "NMF Coefficient Matrix (Normalized Sample-wise)",
                column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
+               column_order = colnames(gct.H.norm@mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
                cluster_columns = cluster_cols, #optionally cluster columns
                width = min(ncol(gct.H.norm@mat), 75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                height = nrow(gct.H.norm@mat)*unit(5, "mm"),
@@ -793,8 +794,8 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                            column_title = "Expression of Significant Driver Features", 
                            column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                            column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
-                           cluster_columns = cluster_cols, #optionally cluster columns
-                           column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']], decreasing=TRUE)],
+                           column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
+                           #cluster_columns = cluster_cols, #optionally cluster columns
                            width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                            height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
                            heatmap_legend_param = list(direction = "horizontal"))
@@ -812,7 +813,8 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                 column_title = "Expression of Significant Driver Features", 
                 column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                 column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
-                cluster_columns = cluster_cols, #optionally cluster columns
+                column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
+                #cluster_columns = cluster_cols, #optionally cluster columns
                 width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                 height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
                 heatmap_legend_param = list(direction = "horizontal"))
@@ -1022,6 +1024,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                     show_heatmap_legend = T, 
                     row_title_rot = 0, # horizontal titles
                     column_split = annot_df[["NMF.consensus"]],
+                    column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
                     width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                     height = min(nrow(mat), 75)*unit(5, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 300mm)
                     heatmap_legend_param = list(direction = "horizontal"))
