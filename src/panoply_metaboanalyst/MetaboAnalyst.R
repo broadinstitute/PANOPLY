@@ -952,11 +952,11 @@ for (annot_of_interest in names(annots)) {
                 cell_fun = function(j, i, x, y, w, h, fill) {
                   if(is.na(sign_df[i, j])) {
                     grid.text("", x, y)
-                  } else if(sign_df[i, j] <0.01) {
-                    grid.text("***", x, y, gp = gpar(fontface = "bold", col = "white"))
-                  } else if(sign_df[i, j] <0.02) {
-                    grid.text("**", x, y, gp = gpar(fontface = "bold", col = "white"))
-                  } else if(sign_df[i, j] <0.05) {
+                  # } else if(sign_df[i, j] <0.01) {
+                  #   grid.text("***", x, y, gp = gpar(fontface = "bold", col = "white"))
+                  # } else if(sign_df[i, j] <0.02) {
+                  #   grid.text("**", x, y, gp = gpar(fontface = "bold", col = "white"))
+                  } else if(sign_df[i, j] <opt$pval_signif ) {
                     grid.text("*", x, y, gp = gpar(fontface = "bold", col = "white"))
                   }
                 }, # add significance stars
