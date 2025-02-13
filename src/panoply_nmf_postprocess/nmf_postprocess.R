@@ -17,6 +17,7 @@ option_list <- list(
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest. If not provided, all annotations in the cdesc will be analyzed.'),
   make_option( c("-a", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.'), # default='geneSymbol'),
   #### Post-Processing Parameters ####
+  make_option( c("-m", "--feature_method"), action='store', type='character', dest='feature_method', help='Method for selecting driver features (e.g. kim or max).'), 
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
   make_option( c("-q", "--feature_fdr"), action='store', type='numeric', dest='feature_fdr', help='Max FDR threshold for feature-selection 2-sample T-test.'),
   make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='geneSymbol'),
@@ -32,9 +33,9 @@ option_list <- list(
 #### Parse Command-Line Arguments ####
 opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
-                       # args = c('--nmf_results',"opt/input/test-so_nmf-CNA_NMF_results.tar.gz",
-                       #          '--rank_top',"5",
-                       #          # '-g',"opt/input/groups-subset.csv",
+                       # args = c('--nmf_results',"opt/input/ODG_v3-mo_nmf_NMF_results.tar.gz",
+                       #          '--rank_top',"6",
+                       #          '-g',"opt/input/groups-subset.csv",
                        #          '-y',"opt/input/master-parameters.yaml",
                        #          '-x',"test")
 )
@@ -92,6 +93,7 @@ if ( !is.null(opt$yaml_file) ) {
   # global parameters
   if (is.null(opt$gene_col)) opt$gene_col = yaml_out$global_parameters$gene_mapping$gene_id_col
   # postprocessing parameters
+  if (is.null(opt$feature_method)) opt$feature_method = yaml_nmf$feature_method
   if (is.null(opt$pval_signif)) opt$pval_signif = yaml_nmf$ora_pval
   if (is.null(opt$feature_fdr)) opt$feature_fdr = yaml_nmf$feature_fdr
   if (is.null(opt$max_annot_levels)) opt$max_annot_levels = yaml_nmf$ora_max_categories
@@ -320,6 +322,7 @@ for (cluster_cols in c(TRUE,FALSE)) {
                column_title = "NMF Coefficient Matrix (Normalized Sample-wise)",
                column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
+               column_order = colnames(gct.H.norm@mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
                cluster_columns = cluster_cols, #optionally cluster columns
                width = min(ncol(gct.H.norm@mat), 75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                height = nrow(gct.H.norm@mat)*unit(5, "mm"),
@@ -567,8 +570,14 @@ cat("\n\n####################\nDriver Features-- W-Matrix Analysis\n\n")
 
 #### Calculate Feature Scores ####
 ## determine which feature-selection method to use
-for (method in c("kim", "max")) {
-  s <- extractFeatures(basis.mat, method=method)
+if (is.null(opt$feature_method)) {
+  feature_methods = c("kim", "max")
+} else {
+  feature_methods = c(opt$feature_method)
+}
+for (method in feature_methods) {
+  s <- tryCatch(extractFeatures(basis.mat, method=method),
+                error = function(e) {cat(glue("Feature selection method {method} failed with error: {e}")); return(NA)})
   if (sum( sapply(s, function(x) sum(is.na(x))) ) < length(s)) { # if we have at least one cluster with any features
     cat(glue("\nFeature-selection method {method} will be used.\n\n"))
     break
@@ -785,7 +794,8 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                            column_title = "Expression of Significant Driver Features", 
                            column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                            column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
-                           cluster_columns = cluster_cols, #optionally cluster columns
+                           column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
+                           #cluster_columns = cluster_cols, #optionally cluster columns
                            width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                            height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
                            heatmap_legend_param = list(direction = "horizontal"))
@@ -803,7 +813,8 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                 column_title = "Expression of Significant Driver Features", 
                 column_title_gp = gpar(fontsize = 16, fontface = "bold"), # format column title as if its a header
                 column_split = annot_df[["NMF.consensus"]], # class vector with grouping for columns
-                cluster_columns = cluster_cols, #optionally cluster columns
+                column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
+                #cluster_columns = cluster_cols, #optionally cluster columns
                 width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                 height = min(max(nrow(mat),5), 100)*unit(1, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 200mm)
                 heatmap_legend_param = list(direction = "horizontal"))
@@ -1013,6 +1024,7 @@ if ( dim(driver.features.sigFeatOnly)[1] > 0 ) { # if we have at least one signi
                     show_heatmap_legend = T, 
                     row_title_rot = 0, # horizontal titles
                     column_split = annot_df[["NMF.consensus"]],
+                    column_order = colnames(mat)[order(annot_df[['NMF.cluster.membership']] + annot_df[['NMF.core.member']], decreasing=TRUE)], # sort by core.member + membership score, to ensure that core members sort higher ([0,1] + 0|1)
                     width = min(ncol(mat),75)*unit(4, "mm"),  # set dimensions to 4mm per col (max 300mm)
                     height = min(nrow(mat), 75)*unit(5, "mm"), # set dimensinos to 1mm per row (min of 10mm, max 300mm)
                     heatmap_legend_param = list(direction = "horizontal"))

@@ -189,6 +189,7 @@ panoply_nmf_postprocess:
 
   #########################
   ## driver features 
+  feature_method: NULL          ## Method for selecting driver features. Leave as NULL to use defaults (i.e. try kim -> use max as backup)
   top_n_features: 25            ## number of driver-features (per cluster) to plot expression data for
 
   #########################
