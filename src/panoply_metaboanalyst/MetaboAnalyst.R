@@ -39,12 +39,12 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
                        # args = c(
                        #   # '--metabolome_gct',"/opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                       #   '--metabolome_gct',"/opt/input/ODG-v3-metabolome-all-log2-median-norm-QCfilter.gct",
-                       #   '-n',"hmdb_id",
-                       #   '-i',"HMDB.ID",
+                       #   '--metabolome_gct',"/opt/input/metab-subset.gct",
+                       #   # '-n',"hmdb_id",
+                       #   # '-i',"HMDB.ID",
                        #   # '-n',"kegg_id",
                        #   # '-i',"KEGG.ID",
-                       #   '--ome_gct',"/opt/input/ODG-v3-proteome-SpectrumMill-ratio-QCfilter-NArm.gct",
+                       #   '--ome_gct',"/opt/input/proteome-subset.gct",
                        #   '-t',"prot",
                        # #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
                        # #   # '-t',"RNA",
@@ -52,13 +52,13 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        #   '-g',"opt/input/groups-subset.csv",
                        # #   '-l',"15",
                        # #   '-a',"QEA",
-                       #   '-b',"pvalo",
+                       #   # '-b',"pvalo",
                        # #   '-p',"0.01",
                        # #   '-k',"15",
-                       #   '-r',"Impact.CC",
+                       #   # '-r',"Impact.CC",
                        #   '-y',"opt/input/master-parameters.yaml",
                        # #   # '-f',"/opt/input/prelim_results",
-                       #   '-x',"ODG_v3")
+                       #   '-x',"sarcoma_v4")
 )
 
 #### Parse YAML Arguments ####
@@ -727,7 +727,7 @@ for (annot_of_interest in names(annots)) {
           column_to_rownames("ID") # add rownames back
         # merge hits into a single list, ordered by all.paths
         res.fin.hits = mapply(function(hits.m, hits.g) {c(as.vector(hits.m), as.vector(hits.g))}, # force vector format to avoid empty lists if one dataset is empty
-                              res.meta$hits[all.paths], res.ome$hits[all.paths])
+                              res.meta$hits[all.paths], res.ome$hits[all.paths], SIMPLIFY = F)
       }
     } else {
       res.df = res.meta$df %>%
