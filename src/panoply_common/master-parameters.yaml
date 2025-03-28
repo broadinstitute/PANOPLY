@@ -89,6 +89,18 @@ panoply_rna_protein_correlation_report:
   fdr: 0.05
 
 
+panoply_clumps_ptm:
+  mapping:
+    variable_sites_col: 'variableSites'   # GCT rdesc column with PTM variable site(s) (e.g. 'T527t')
+    variable_sites_sep: ' '               # Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')
+  diff_exp:
+    min_samples: 5                        # minimum number of samples an annotation-subgroup can have before it is dropped from analysis (5 recommended, 3 absolute minimum)
+    max_annot_levels: 10                  # maximum number of levels an annotation can have and be considered discrete
+    fdr_cutoff: NULL                      # FDR threshold for significant features. Set to NULL to keep all features regardless of significance.
+  analysis:
+    var: True # placeholder variable, delete later
+
+
 panoply_cons_cluster:
   clustering_sd_threshold: 2   # threshold for filtering data before consensus clustering
   clustering_na_threshold: 0.5 # max fraction of missing values for clustering; rest are imputed
