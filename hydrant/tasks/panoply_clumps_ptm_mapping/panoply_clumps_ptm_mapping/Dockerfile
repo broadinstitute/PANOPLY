@@ -7,7 +7,7 @@ RUN tar -xf ncbi-blast-2.16.0+-x64-linux.tar.gz
 ENV PATH="$PATH:/ncbi-blast-2.16.0+/bin"
 
 
-# Downl oad Reference Files
+# Download Reference Files
 RUN wget -P /reference_files/ https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz
 RUN gunzip -c /reference_files/uniprot_sprot.fasta.gz > /reference_files/uniprot_sprot.fasta
 

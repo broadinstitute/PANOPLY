@@ -21,5 +21,5 @@ RUN cd CLUMPS-PTM/; python setup.py install
 
 
 # Install Other Packages
-RUN pip3 install plotting requests cmapPy pyyaml
+RUN pip3 install plotting requests cmapPy pyyaml pprint3x
 

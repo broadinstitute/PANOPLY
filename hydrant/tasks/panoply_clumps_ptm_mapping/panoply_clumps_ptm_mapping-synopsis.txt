@@ -1,1 +1,1 @@
-Perform metabolite pathway analysis from MetaboAnlayst
+Map sequence IDs from some reference type -> Uniprot -> PDB structures.

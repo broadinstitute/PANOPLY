@@ -191,8 +191,8 @@ for (annot_of_interest in names(annots)) {
   
   # write log file
   if (dim(df_full)[1]>0) {
-    write.csv(df_full, sep='\t',
-              file = glue("{opt$output_prefix}_{annot_of_interest}_diff_exp.tsv"))
+    write.table(df_full, sep='\t',
+                file = glue("{opt$output_prefix}_{annot_of_interest}_diff_exp.tsv"))
   } else {
     cat(glue("\nNo significant features found for '{annot_of_interest}' across any ome.\n\n"))
   }

@@ -24,6 +24,7 @@ from cmapPy.pandasGEXpress.write_gct import write
 # import utility functions
 import warnings
 import random
+import pprint
 
 # # import debugging functions
 # import inspect # for debugging
@@ -78,6 +79,7 @@ args = parser.parse_args() # import from command line
 # args = parser.parse_args("-p /opt/input/ODG-v3-phosphoprotome-SpectrumMill-ratio-QCfilter-NArm.gct -u /opt/input/ODG-v3-ubiquitylome-SpectrumMill-ratio-QCfilter-NArm.gct -a /opt/input/ODG-v3-acetylome-SpectrumMill-ratio-QCfilter-NArm.gct -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12".split())
 
 
+
 # ensure that at least one GCT has been provided
 if (args.phosphoproteome_gct==None and \
     args.acetylome_gct==None and \
@@ -94,7 +96,8 @@ with open(args.yaml, 'r') as file:
 # override missing parameters with yaml defaults
 
 if (args.accession_col==None):
-    args.accession_col = yaml_dict['global_parameters']['gene_mapping']['protein_id_col']
+    # args.accession_col = yaml_dict['global_parameters']['gene_mapping']['protein_id_col']
+    args.accession_col = yaml_dict['panoply_ptm_normalization']['accession_number_colname']
 
 if (args.variable_sites_col==None):
     args.variable_sites_col = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_col']
@@ -106,7 +109,10 @@ if (args.gene_column==None):
     args.gene_column = yaml_dict['global_parameters']['gene_mapping']['gene_id_col']
 
 
-# toDo: add printout of parameter selections
+# print parameters
+print('\n\nParameters:')
+pprint.pp(args.__dict__)
+print('\n')
 
 
 ####################################
@@ -121,7 +127,7 @@ PDB_DIR = args.PDB_DIR # directory with PDB database
 REF_DIR = "/reference_files"
 # REF_DIR = "/opt/input"
 FASTA_DIR = "fasta_files"
-OUT_DIR = "/output_files"
+OUT_DIR = "output_files"
 os.makedirs(os.path.join(REF_DIR, FASTA_DIR), exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
 

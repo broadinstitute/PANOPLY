@@ -32,7 +32,7 @@ task panoply_clumps_ptm_diffexp {
 	}
 
 	output {
-		Array[File] list_gct = glob( "${output_prefix}_*_diff_exp.tsv" ) # all differential-expression files
+		Array[File] diff_exp_files = glob( "${output_prefix}_*_diff_exp.tsv" ) # all differential-expression files
 		File log_file = "${output_prefix}_log_file.csv"					 # log file listing which annotations were analyzed
 	}
 
