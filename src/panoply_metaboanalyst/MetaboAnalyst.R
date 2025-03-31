@@ -240,7 +240,7 @@ if (! pathway_id_type$meta %in% names(compound_map)) stop(glue("Mapped metabolic
 # get relevant IDs from rid or rdesc
 if (is.null(opt$meta_id_col)) { cpd_vec = gct_meta@rid } else { cpd_vec = gct_meta@rdesc[[opt$meta_id_col]] }
 
-valid_cpd_rid = gct_meta@rid[which(cpd_vec %in% compound_map[[opt$meta_id_type]])]
+valid_cpd_rid = gct_meta@rid[which( !is.na(cpd_vec) & (cpd_vec %in% compound_map[[opt$meta_id_type]]) )]
 if (length(valid_cpd_rid)==0) stop(glue("No IDs in the GCT mapped to valid compounds. Please check that your data uses {opt$meta_id_type} IDs, or select a different ID type."))
 # subset to valid compound IDs
 # toDo: add lipid ID mapping
