@@ -2,27 +2,31 @@
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
 
-
 task panoply_clumps_ptm {
 	File diff_exp_file
 	File var_sites_file
 
-	File PDB_DIR				# PDB Directory tarfile
+	Array[File]+ PDB_DIR				# PDB Directory in (multiple) tarfiles
 
 	String output_prefix="results"
 	File yaml_file
 
 	Int? memory
 	Int? disk_space
-	Int? num_threads=16 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
+	Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
 	Int? num_preemtions
 	
 	command <<<
 		set -euo pipefail
 		
 		# Unpack the PDB Archive
-		mkdir -p /pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
-		pv ${PDB_DIR} | tar --use-compress-program=pigz -xf - -C /pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb
+		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
+		mkdir -p pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
+		for tar_file in ${sep=" " PDB_DIR}; do
+			tar -xf $tar_file -C pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb
+			rm $tar_file # remove to save disk space
+		done
+		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
 
 		mkdir clumpsptm_runs
 
@@ -35,7 +39,7 @@ task panoply_clumps_ptm {
 			set +e # allow errors, to prevent clumpsptm fails from ending script
 
 			clumpsptm -i ${diff_exp_file} --features phosphoproteome ubiquitylome acetylome \
-				-w logFC --maps ${var_sites_file} --pdbstore /pdbs \
+				-w logFC --maps ${var_sites_file} --pdbstore pdbs \
 				--grouping $group --protein_id id.description \
 				--threads ${num_threads} -v --subset positive --output_dir "clumpsptm_runs/"$group"_pos_results" 2> err.txt
 			
@@ -55,7 +59,7 @@ task panoply_clumps_ptm {
 			set +e # allow errors, to prevent clumpsptm fails from ending script
 
 			clumpsptm -i ${diff_exp_file} --features phosphoproteome ubiquitylome acetylome \
-				-w logFC --maps ${var_sites_file} --pdbstore /pdbs \
+				-w logFC --maps ${var_sites_file} --pdbstore pdbs \
 				--grouping $group --protein_id id.description \
 				--threads ${num_threads} -v --subset negative --output_dir "clumpsptm_runs/"$group"_neg_results" 2> err.txt
 
@@ -83,7 +87,7 @@ task panoply_clumps_ptm {
 	runtime {
 		docker : "broadcptacdev/panoply_clumps_ptm:latest"
 		memory : select_first ([memory, 32]) + "GB"
-		disks : "local-disk  " + select_first ([disk_space, 20]) + " HDD"
+		disks : "local-disk  " + select_first ([disk_space, 100]) + " HDD"
 		cpu : num_threads				# default set in inputs
 		preemptible : select_first ([num_preemtions, 0])
 	}

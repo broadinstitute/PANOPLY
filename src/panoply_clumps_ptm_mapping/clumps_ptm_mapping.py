@@ -25,6 +25,7 @@ from cmapPy.pandasGEXpress.write_gct import write
 import warnings
 import random
 import pprint
+from datetime import datetime
 
 # # import debugging functions
 # import inspect # for debugging
@@ -40,6 +41,9 @@ import pprint
 class IllegalArgumentError(ValueError):
     pass
 
+# configure ProDy to not printout messages, to avoid
+from prody import confProDy
+confProDy(verbosity='error')
 
 ### import command line parameters
 
@@ -49,14 +53,16 @@ parser.add_argument("-a", "--acetylome_gct", type=str, help="Acetylome GCT file"
 parser.add_argument("-u", "--ubiquitylome_gct", type=str, help="Ubiquitylome GCT file")
 
 parser.add_argument("-f", "--FASTA_ref_file", type=str, help="Reference FASTA file with all relevant sequences for your dataset. Used to BLAST against Uniprot sequences.", required=True)
+parser.add_argument("-t", "--FASTA_sep_type", type=str, help="Separator for FASTA sequences in FASTA reference file. Supported values are \"cptac\" for \" \", or \"gencode\" for \"|\".')")
+
 parser.add_argument("-i", "--accession_col", type=str, help="GCT rdesc column with accession IDs. Must match the ID type of the provided FASTA file.")
 parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc column with PTM variable site(s) (e.g. 'T527t')")
 parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')")
 parser.add_argument("-g", "--gene_column", type=str, help="GCT rdesc column with HUGO Gene Symbols")
 
-parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.")
-# parser.add_argument("-f", "--UNIPROT_SWISSPROT", type=str, help="Reference FASTA file with all relevant sequences for your dataset. Used to BLAST against Uniprot sequences.")
-# parser.add_argument("-f", "--SIFTS_DB", type=str, help="Reference FASTA file with all relevant sequences for your dataset. Used to BLAST against Uniprot sequences.")
+parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.", required=True)
+parser.add_argument("--UNIPROT_SWISSPROT", type=str, help="Reference FASTA file with all relevant UNIPROT sequences, to BLAST your sequences to.", required=True)
+parser.add_argument("--SIFTS_DB", type=str, help="SIFTS database containing mapping between UNIPROT IDs and PDB IDs.", required=True)
 
 parser.add_argument("-o", "--output_prefix", type=str, help="Output prefix to prepend to output filenames.", default="")
 parser.add_argument("-y", "--yaml", type=str, help="Path to .yaml file with parameters.", required=True)
@@ -75,7 +81,7 @@ args = parser.parse_args() # import from command line
 #     "-o" "ODG_v3", \
 #     "-y" "/opt/input/master-parameters.yaml",\
 #     "-n" "12"])
-# args = parser.parse_args("-p /opt/input/phosphoproteome-subset.gct -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12 -d".split())
+# args = parser.parse_args("--phosphoproteome_gct /opt/input/var_map_fromOutput_phosphoproteome.gct --acetylome_gct /opt/input/var_map_fromOutput_acetylome.gct --PDB_DIR /pdbs --FASTA_ref_file /opt/input/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams_553smORFs.fasta --FASTA_sep_type cptac --accession_col accession_number --variable_sites_col variableSites_edited --UNIPROT_SWISSPROT /opt/input/Freeze_061721_clumpsptm_ref_uniprot_uniprot_sprot.fasta --SIFTS_DB /opt/input/Freeze_061721_clumpsptm_ref_uniprot_pdb_chain_uniprot.tsv --output_prefix pancan --yaml /opt/input/master-parameters.yaml --num_threads 8 --DEBUG_MODE".split())
 # args = parser.parse_args("-p /opt/input/ODG-v3-phosphoprotome-SpectrumMill-ratio-QCfilter-NArm.gct -u /opt/input/ODG-v3-ubiquitylome-SpectrumMill-ratio-QCfilter-NArm.gct -a /opt/input/ODG-v3-acetylome-SpectrumMill-ratio-QCfilter-NArm.gct -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12".split())
 
 
@@ -108,6 +114,15 @@ if (args.variable_sites_sep==None):
 if (args.gene_column==None):
     args.gene_column = yaml_dict['global_parameters']['gene_mapping']['gene_id_col']
 
+if (args.FASTA_sep_type==None):
+    args.FASTA_sep_type = yaml_dict['panoply_clumps_ptm']['mapping']['FASTA_sep_type']
+
+
+# ensure that FASTA_sep_type is a valid value
+if (args.FASTA_sep_type!='gencode' and \
+    args.FASTA_sep_type!='cptac'):
+    raise IllegalArgumentError("FASTA_sep_type must be either 'gencode' (for '|') or 'cptac' (for ' '); the value '"+args.FASTA_sep_type+"' is not allowed")
+
 
 # print parameters
 print('\n\nParameters:')
@@ -138,9 +153,11 @@ gct_dict = {label: gct for label, gct in gcts_zipped if gct is not None}
 
 # # Reference Files
 # UNIPROT_SWISSPROT = "https://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/complete/uniprot_sprot.fasta.gz"
-UNIPROT_SWISSPROT = "uniprot_sprot.fasta"
+# UNIPROT_SWISSPROT = "uniprot_sprot.fasta"
+UNIPROT_SWISSPROT = args.UNIPROT_SWISSPROT
 # SIFTS_DB = "ftp://ftp.ebi.ac.uk/pub/databases/msd/sifts/flatfiles/tsv/pdb_chain_uniprot.tsv.gz"
-SIFTS_DB = "pdb_chain_uniprot.tsv"
+# SIFTS_DB = "pdb_chain_uniprot.tsv"
+SIFTS_DB = args.SIFTS_DB
 
 # Other Parameters
 n_threads = args.num_threads
@@ -213,8 +230,10 @@ pmap_df = pd.read_csv(FEATURE_FILENAME, sep='\t', index_col=0) # read back in fe
 accn_arr = pmap_df[accn_col].drop_duplicates() # get unique accession numbers
 
 # Import Sifts Data-Base
-sifts_df = pd.read_csv(os.path.join(REF_DIR, "pdb_chain_uniprot.tsv"), comment="#", sep='\t', low_memory=False)
+sifts_df = pd.read_csv(SIFTS_DB, comment="#", sep='\t', low_memory=False)
 
+
+print("#### FILE IMPORT COMPLETE  --- ", datetime.now())
 
 ##################################
 ####   Read in FASTA Files    ####
@@ -224,7 +243,7 @@ sifts_df = pd.read_csv(os.path.join(REF_DIR, "pdb_chain_uniprot.tsv"), comment="
 clumpsptm.mp.split_fastas(
     args.FASTA_ref_file,
     os.path.join(REF_DIR, FASTA_DIR),
-    naming="gencode" # determines which filename-splitting delimiter is used; "cptac"=" ", "gencode"="|"
+    naming=args.FASTA_sep_type # determines which filename-splitting delimiter is used; "cptac"=" ", "gencode"="|"
 )
 individual_fastas_all = glob.glob(os.path.join(REF_DIR, FASTA_DIR, "*"))
 
@@ -234,6 +253,9 @@ pattern = re.compile('|'.join(map(re.escape, accn_arr)))
 filt_in_df = [bool(pattern.search(fasta)) for fasta in individual_fastas_all] # slightly faster than map approach
 #itertools.compress(individual_fastas_all,filt_in_df)
 individual_fastas = list(itertools.compress(individual_fastas_all,filt_in_df))
+
+
+print("\n#### FASTA FILE-SPLITTING COMPLETE  --- ", datetime.now())
 
 if (DEBUG_MODE): # if we're running DEBUG mode, only use a subset of proteins
     print(f"#### WARNING: DEBUG_MODE is currently toggled ON. This setting should NOT be used for full-runs of Clumps-PTM")
@@ -282,7 +304,7 @@ if (DEBUG_MODE): # if we're running DEBUG mode, only use a subset of proteins
 ##################################
 BLAST_DIR = accn_type+"_to_uniprot_blast"
 clumpsptm.mp.blast_sequences(
-    os.path.join(REF_DIR, "uniprot_sprot.fasta"),
+    UNIPROT_SWISSPROT,
     individual_fastas,
     output_dir=REF_DIR,
     n_threads=n_threads,
@@ -290,11 +312,13 @@ clumpsptm.mp.blast_sequences(
     blast_dir_name=BLAST_DIR,
     seq_db_name="uniprot_db"
 )
+print("#### BLAST COMPLETE  --- ", datetime.now())
 
 # collect BLASTed files
 blasted_files_all = glob.glob(os.path.join(REF_DIR, BLAST_DIR, "*")) # find all files in BLAST directory
 # check for empty blasted_files so clumpsptm.mp.get_blast_hits_with_sifts() doesn't fail
 blasted_files = [f for f in blasted_files_all if os.path.getsize(f)!=0]
+
 
 #blasted_files[:10]
 if len(blasted_files) == 0:
@@ -344,6 +368,8 @@ missing_pdbs = check_missing_pdbs(sifts_filt_df)
 
 # Drop PDBs unable to be downloaded
 sifts_filt_df = sifts_filt_df[sifts_filt_df["PDB"].isin(pdbstore.downloaded_pdbs)]
+
+print("#### PDB IMPORT COMPLETE  --- ", datetime.now())
 
 
 
@@ -423,6 +449,8 @@ print("  * {} single PTM sites total in dataset".format(ptm_sing_df_filt.shape[0
 print("  * {} multi PTM sites total in dataset".format(ptm_multi_df_filt.shape[0]))
 
 
+print("#### PTM PREPROCESSING COMPLETE  --- ", datetime.now())
+
 ##################################
 #### Map Site IDX to Uniprot  ####
 ##################################
@@ -485,6 +513,8 @@ ptm_comb_filt_df["uniprot_res"] = ptm_comb_filt_df.apply(_get_hres, 1)
 ptm_comb_filt_df["uniprot_res_i"] = ptm_comb_filt_df.apply(get_uniprot_blast_i, 1)
 ptm_comb_filt_df['uniprot_match'] = ptm_comb_filt_df['acc_res']==ptm_comb_filt_df['uniprot_res']
 
+
+
 print("  * {} matched accession residues and uniprot residues".format(sum(ptm_comb_filt_df['uniprot_match'])))
 
 
@@ -493,6 +523,7 @@ if sum(ptm_comb_filt_df['uniprot_match'])==0:
     raise Exception("No residues matched to Uniprot residues")
 
 
+print("#### PTM MAP-TO-UNIPROT COMPLETE  --- ", datetime.now())
 
 
 ################################################
@@ -557,6 +588,9 @@ if len(accession_numbers_to_use)==0:
 	raise Exception("No valid accession numbers with BLAST hits, SIFTS hits, and matching residues.")
 
 
+print("\n#### PDB HEADER COLLECTION COMPLETE  --- ", datetime.now())
+
+
 ##########################
 #### Get PDB Matches  ####
 ##########################
@@ -577,6 +611,7 @@ with warnings.catch_warnings():
 # see if there's an easy fix you could push...
 
 
+print("#### PDB MATCHING COMPLETE  --- ", datetime.now())
 
 
 
@@ -658,6 +693,14 @@ ptm_comb_filt_match_pdb_df['pdb_res_i'] = ptm_comb_filt_match_pdb_df['pdb_res_i'
 
 ptm_comb_filt_pdb_df.to_csv(os.path.join(OUT_DIR, output_prefix+"full_mapped_sites_to_pdbs.tsv"), sep='\t')
 ptm_comb_filt_match_pdb_df.to_csv(os.path.join(OUT_DIR, output_prefix+"mapped_sites_to_pdbs.tsv"), sep='\t')
+
+
+# add printout to end of file, so we know whether mapping was completed successfully
+if (os.path.exists(os.path.join(OUT_DIR, output_prefix+"mapped_sites_to_pdbs.tsv")) and \
+    os.path.exists(os.path.join(OUT_DIR, output_prefix+"full_mapped_sites_to_pdbs.tsv"))):
+    print("INFO: Successfully wrote mapping files for Clumps PTM!")
+else:
+    raise Exception("Mapping files were not produced. Something has gone terribly wrong!")
 
 # # copy file to local dir
 # shutil.copyfile(os.path.join(REF_DIR, "full_mapped_sites_to_pdbs.tsv"), '/opt/input/full_mapped_sites_to_pdbs.tsv')
