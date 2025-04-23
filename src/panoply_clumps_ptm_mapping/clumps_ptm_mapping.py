@@ -82,7 +82,7 @@ args = parser.parse_args() # import from command line
 #     "-y" "/opt/input/master-parameters.yaml",\
 #     "-n" "12"])
 # args = parser.parse_args("--phosphoproteome_gct /opt/input/var_map_fromOutput_phosphoproteome.gct --acetylome_gct /opt/input/var_map_fromOutput_acetylome.gct --PDB_DIR /pdbs --FASTA_ref_file /opt/input/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams_553smORFs.fasta --FASTA_sep_type cptac --accession_col accession_number --variable_sites_col variableSites_edited --UNIPROT_SWISSPROT /opt/input/Freeze_061721_clumpsptm_ref_uniprot_uniprot_sprot.fasta --SIFTS_DB /opt/input/Freeze_061721_clumpsptm_ref_uniprot_pdb_chain_uniprot.tsv --output_prefix pancan --yaml /opt/input/master-parameters.yaml --num_threads 8 --DEBUG_MODE".split())
-# args = parser.parse_args("-p /opt/input/ODG-v3-phosphoprotome-SpectrumMill-ratio-QCfilter-NArm.gct -u /opt/input/ODG-v3-ubiquitylome-SpectrumMill-ratio-QCfilter-NArm.gct -a /opt/input/ODG-v3-acetylome-SpectrumMill-ratio-QCfilter-NArm.gct -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12".split())
+# args = parser.parse_args("-p /opt/input/ODG-v3-phosphoproteome-SpectrumMill-ratio-QCfilter-NArm.gct -u /opt/input/ODG-v3-ubiquitylome-SpectrumMill-ratio-QCfilter-NArm.gct -a /opt/input/ODG-v3-acetylome-SpectrumMill-ratio-QCfilter-NArm.gct --PDB_DIR /pdbs -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta --UNIPROT_SWISSPROT /opt/input/uniprot_sprot.fasta --SIFTS_DB /opt/input/pdb_chain_uniprot.tsv -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12".split())
 
 
 
