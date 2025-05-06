@@ -99,7 +99,8 @@ panoply_clumps_ptm:
     max_annot_levels: 10                  # maximum number of levels an annotation can have and be considered discrete
     fdr_cutoff: NULL                      # FDR threshold for significant features. Set to NULL to keep all features regardless of significance.
   analysis:
-    var: True # placeholder variable, delete later
+    run_combined: true                    # toggle for running all PTMs combined
+    weight_col: LogFC                     # column from differential-expression dataset to use as weights in ClumpsPTM
 
 
 panoply_cons_cluster:

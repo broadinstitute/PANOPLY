@@ -2,18 +2,22 @@ FROM python:3.9
 MAINTAINER proteogenomics@broadinstitute.org
 
 RUN apt-get update
-RUN apt-get install -y pv zstd pigz
+RUN apt-get install -y parallel
 
 RUN pip config set global.index-url https://packagemanager.posit.co/pypi/2025-01-01/simple
 RUN pip config set global.trusted-host packagemanager.posit.co
 
 
-# # Install Clumps-PTM
-# RUN pip3 install clumps-ptm
+COPY src /prot/proteomics/Projects/PGDAC/src
+
 
 
 # Install Clumps-PTM Dependencies
 RUN pip3 install prody matplotlib pyarrow # buildkit
+
+
+# # Install Clumps-PTM
+# RUN pip3 install clumps-ptm
 
 # Install CLUMPS-PTM from Git Repo
 COPY src/CLUMPS-PTM/ CLUMPS-PTM/

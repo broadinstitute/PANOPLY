@@ -6,79 +6,59 @@ task panoply_clumps_ptm {
 	File diff_exp_file
 	File var_sites_file
 
-	Array[File]+ PDB_DIR				# PDB Directory in (multiple) tarfiles
+	Array[File]+ PDB_DIR						# PDB Directory in (multiple) tarfiles
+
+	String? accession_col						# id column (in var_sites_file / diff_exp_file) with protein accession id
+	String? variable_sites_col					# column (in var_sites_file) with variable sites (e.g. 'T527t')
+
+	Boolean? run_combined						# toggle for running all PTM sites combined
+
+	String? weight_col							# column (in diff_exp_file) with weights to use for clumpsptm
 
 	String output_prefix="results"
 	File yaml_file
+
+	Boolean? DEBUG_MODE=false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
 
 	Int? memory
 	Int? disk_space
 	Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
 	Int? num_preemtions
 	
-	command <<<
+	command {
 		set -euo pipefail
-		
+
 		# Unpack the PDB Archive
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
-		mkdir -p pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
-		for tar_file in ${sep=" " PDB_DIR}; do
-			tar -xf $tar_file -C pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb
-			rm $tar_file # remove to save disk space
-		done
+		pdb_dir=pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
+		mkdir -p $pdb_dir # make PDB directory
+		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep=" " PDB_DIR} # untar each tar file
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
+		parallel -j ${num_threads} 'rm' ::: ${sep=' ' PDB_DIR} # remove tar-files to save space
+		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished removing PDB Tars"
 
 		mkdir clumpsptm_runs
 
-		# drop first row (header) and get all unique values from ID column
-		groups=`tail -n +2 ${diff_exp_file} | awk '{print $3}' | sort -u | sed 's/^"\(.*\)"$/\1/'` # NOTE: fails if we use command {}
-		echo $groups # echo to ensure the file was read properly
+		python -u /prot/proteomics/Projects/PGDAC/src/clumps_ptm_wrapper.py -y ${yaml_file} \
+			--input ${diff_exp_file} --maps ${var_sites_file} --pdbstore pdbs/ \
+			${'--protein_id ' + accession_col} ${'--site_id ' + variable_sites_col} \
+			${'--weight ' + weight_col} ${'--run_combined ' + run_combined} \
+			--threads ${num_threads} \
+			$( [ ${DEBUG_MODE} = true ] && echo "-t" )
 
-		# run separately on positive and negative 
-		for group in $groups; do
-			set +e # allow errors, to prevent clumpsptm fails from ending script
+		# testing arguments
+			# --protein_id ${accession_col} --weight ${weight_col} --threads ${num_threads} --run_combined ${run_combined} # for testing locally
+			# group=1
+			# --features phosphoproteome ubiquitylome acetylome --grouping $group --subset positive --output_dir "clumpsptm_runs/"$group"_pos_results"  # for testing clumpptm
 
-			clumpsptm -i ${diff_exp_file} --features phosphoproteome ubiquitylome acetylome \
-				-w logFC --maps ${var_sites_file} --pdbstore pdbs \
-				--grouping $group --protein_id id.description \
-				--threads ${num_threads} -v --subset positive --output_dir "clumpsptm_runs/"$group"_pos_results" 2> err.txt
-			
-			# check if previous command had an error
-			if [ $? -ne 0 ]; then
-				# if the error message is NOT a "NO RESULTS FOUND" error, stop the script
-				if [ -z `grep -l err.txt -e "ValueError: NO RESULTS FILES FOUND."` ]; then
-					cat err.txt >> /dev/stderr
-					exit 1
-				else # otherwise just print a warning
-					echo "WARNING: No results found for "$group"."
-				fi
-			fi
-		done
-
-		for group in $groups; do
-			set +e # allow errors, to prevent clumpsptm fails from ending script
-
-			clumpsptm -i ${diff_exp_file} --features phosphoproteome ubiquitylome acetylome \
-				-w logFC --maps ${var_sites_file} --pdbstore pdbs \
-				--grouping $group --protein_id id.description \
-				--threads ${num_threads} -v --subset negative --output_dir "clumpsptm_runs/"$group"_neg_results" 2> err.txt
-
-			# check if previous command had an error
-			if [ $? -ne 0 ]; then
-				# if the error message is NOT a "NO RESULTS FOUND" error, stop the script
-				if [ -z `grep -l err.txt -e "ValueError: NO RESULTS FILES FOUND."` ]; then
-					cat err.txt >> /dev/stderr
-					exit 1
-				else # otherwise just print a warning
-					echo "WARNING: No results found for "$group"."
-				fi
-			fi
-		done
-
-		set -euo pipefail # turn error catching back on
+		tsv_files=`find clumpsptm_runs/ -type f -name '*.tsv'`
+		if [ -z $tsv_files ]; then
+			echo "ERROR: No valid results across any comparison for ${output_prefix}."
+  			exit 1
+		fi
 
 		tar -czf ${output_prefix}_clumps_runs.tar -C clumpsptm_runs/ . # tar results
-	>>>
+	}
 
 	output {
 		File results="${output_prefix}_clumps_runs.tar" # all differential-expression files

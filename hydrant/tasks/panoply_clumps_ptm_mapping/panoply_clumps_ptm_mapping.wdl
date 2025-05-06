@@ -27,7 +27,7 @@ task panoply_clumps_ptm_mapping {
 	String output_prefix="results"
 	File yaml_file
 
-	Boolean? DEBUG_MODE			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
+	Boolean? DEBUG_MODE=false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
 
 	Int? memory
 	Int? disk_space
@@ -38,13 +38,13 @@ task panoply_clumps_ptm_mapping {
 		set -euo pipefail
 
 		# Unpack the PDB Archive
+		home_dir=`pwd` # record PWD
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
-		mkdir -p pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
-		for tar_file in ${sep=" " PDB_DIR}; do
-			tar -xf $tar_file -C pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb
-			rm $tar_file # remove to save disk space
-		done
+		pdb_dir=pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
+		mkdir -p $pdb_dir; cd $pdb_dir; # make PDB directory and change directories
+		parallel -j ${num_threads} 'tar -xf' ::: ${sep=" " PDB_DIR} # untar each tar file
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
+		cd $home_dir # change back to starting directory
 
 		# Run Mapping Scripts 
 		python /prot/proteomics/Projects/PGDAC/src/clumps_ptm_mapping.py --PDB_DIR pdbs \
