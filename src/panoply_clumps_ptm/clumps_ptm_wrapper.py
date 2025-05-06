@@ -183,7 +183,10 @@ for group in groups:
         try:
             main()
             # subprocess.run(sys.argv)
-        except ValueError: # if we get a value error
-            print("## WARNING: NO RESULTS FILES FOUND FOR GROUP '"+str(group)+"'") # print a warning and move on
+        except ValueError as e: # if we get a value error
+            if str(e) != 'NO RESULTS FILES FOUND.':
+                raise
+            else:
+                print("## WARNING: NO RESULTS FILES FOUND FOR GROUP '"+str(group)+"'") # print a warning and move on
 
 
