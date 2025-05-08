@@ -89,15 +89,13 @@ args = parser.parse_args()
 # # testing arguments manually
 # args = parser.parse_args([
 #     "-y" "/opt/input/master-parameters.yaml",\
-#     "-i" "/opt/input/full_de_cohort_cov_filtTo1-4.tsv", \
-#     "-m" "/opt/input/mapped_sites_to_pdbs.tsv", \
+#     "-i" "/opt/input/filtered/full_de_cohort_cov_filt-to-1-4_filt-to-pdbs_filt-to-acKpSTY.tsv", \
+#     "-m" "/opt/input/filtered/mapped_sites_to_pdbs_filt-to-pdbs.tsv", \
 #     "--pdbstore", "pdbs", \
 #     "--accession_col", "accession_number", \
-#     # "--variable_sites_col", "variableSites_edited", \
 #     "--weight_col", "gsea_rank", \
-    
 #     "-n" "12", \
-#     "-t"
+#     # "-t"
 # ])
 
 
