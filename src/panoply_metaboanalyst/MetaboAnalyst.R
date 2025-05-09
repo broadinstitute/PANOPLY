@@ -636,7 +636,7 @@ for (annot_of_interest in names(annots)) {
     } else if (opt$anal_type == "QEA") {
       if(print_internal_placemarks) cat("\n\n####################\nQuantitative Enrichment Analysis on Metabolome\n\n")
       meta_qea = gct.to.qea.input(meta_input, annot_of_interest, value_of_interest, annots = annots,
-                                  write_to_file = T, glue("{opt$output_prefix}_metabolome"))
+                                  write_to_file = T, prefix=glue("{opt$output_prefix}_metabolome"))
       res.meta = q.ea(meta_qea$mat, meta_qea$cls, pathways, uniq.len = sapply(pathways, function(p) {p$cmpd.counts}))
       if (!multiomic && dim(res.meta$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant metabolite enrichments.\n\n")); next }
       
