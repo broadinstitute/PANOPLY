@@ -4,6 +4,7 @@
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/2/plain-WDL/descriptor" as diffexp_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/9/plain-WDL/descriptor" as mapping_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/7/plain-WDL/descriptor" as analysis_wdl
+#import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/1/plain-WDL/descriptor" as report_wdl
 
 ################################################
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm
@@ -52,7 +53,14 @@ workflow panoply_clumps_ptm_workflow {
 		}
 	}
 
+	#call report_wdl.panoply_clumps_ptm_report as report {
+	#    input:
+	#    	results = analysis.results 			# array of results file from analysis module
+	#    	output_prefix = output_prefix
+	#}
+
 	output{
 	    Array[File] results = analysis.results
+	    #File report = report.report
 	}
 }
