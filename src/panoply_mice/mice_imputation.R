@@ -2,7 +2,7 @@ library(mice)
 library(cmapR)
 library(optparse)
 library(dplyr)
-
+library(glue)
 
 ## read command line arguments
 option_list <- list(
@@ -32,6 +32,11 @@ output_prefix <- opt$output_prefix
 #impute missing values using mice
 mice_imputation <- function(gct_file, na_max=0.4, num_imps=15, seed=2023, num_cores=1, output_prefix = "results"){
   
+  print(paste("## na_max:", na_max))
+  print(paste("## num_imps:", num_imps))
+  print(paste("## seed:", seed))
+  print(paste("## num_cores:", num_cores))
+  
   #code from Stephanie Vartany to run Mice
   # read in data (features x samples)
   # typically MICE does samples x features (feature-wise), but this takes much too long. Stephanie has had good results with sample-wise which we perform here. With parallelization, feature-wise may be possible, but is likely not worth it.
@@ -44,7 +49,9 @@ mice_imputation <- function(gct_file, na_max=0.4, num_imps=15, seed=2023, num_co
   keep <- row.names(data)[rowSums(is.na(data))/dim(data)[2] <= na_max]
   gct_filt <- subset_gct(gct,rid=keep)
   data_filt <- gct_filt@mat
-  data_filt <- data
+  
+  print(glue("## Filtered GCT to features with <{round(na_max*100,2)}% missing values. {dim(data)[1]-dim(data_filt)[1]} features dropped for incompleteness."))
+  
   
   # run mice, this creates a mice-specific output object
   # m is number of iterations, set to 15 (default was 5)
