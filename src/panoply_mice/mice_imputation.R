@@ -7,7 +7,7 @@ library(glue)
 ## read command line arguments
 option_list <- list(
   make_option(c('-f', '--file_path'), type = 'character'),
-  make_option(c('-n', '--na_max'), type = 'numeric'),
+  make_option(c('-n', '--na_max'), type = 'numeric', default = 0.4),
   make_option(c('-m', '--num_imputations'), type = 'integer', default = 15L),
   make_option(c('-c', '--num_cores'), type = 'integer', dest = 'num_cores', default = 1L),
   make_option(c('-s', '--seed'), type = 'integer', dest = 'seed', default = 1L),
