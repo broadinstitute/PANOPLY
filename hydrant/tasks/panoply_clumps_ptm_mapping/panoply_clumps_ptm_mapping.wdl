@@ -38,13 +38,13 @@ task panoply_clumps_ptm_mapping {
 		set -euo pipefail
 
 		# Unpack the PDB Archive
-		home_dir=`pwd` # record PWD
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
 		pdb_dir=pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
-		mkdir -p $pdb_dir; cd $pdb_dir; # make PDB directory and change directories
-		parallel -j ${num_threads} 'tar -xf' ::: ${sep=" " PDB_DIR} # untar each tar file
+		mkdir -p $pdb_dir # make PDB directory
+		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep=" " PDB_DIR} # untar each tar file
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
-		cd $home_dir # change back to starting directory
+		parallel -j ${num_threads} 'rm' ::: ${sep=' ' PDB_DIR} # remove tar-files to save space
+		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished removing PDB Tars"
 
 		# Run Mapping Scripts 
 		python /prot/proteomics/Projects/PGDAC/src/clumps_ptm_mapping.py --PDB_DIR pdbs \
