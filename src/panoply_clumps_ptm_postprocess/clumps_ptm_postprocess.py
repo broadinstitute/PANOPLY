@@ -17,6 +17,7 @@ import argparse
 import yaml
 
 # import utility functions
+import tarfile
 import warnings
 import random
 import re
@@ -44,37 +45,35 @@ class IllegalArgumentError(ValueError):
 ### import command line parameters
 parser = argparse.ArgumentParser(prog = 'ClumpsPTM Postprocessing', description="Script for processing the results of ClumpsPTM")
 
-parser.add_argument("-r", "--results_dir", type=str, help="Directory with results from ClumpsPTM analysis", required=True)
-parser.add_argument("-m", "--mapping_file", type=str, help="ClumpsPTM mapping file with mappings to PDB archive", required=True)
+parser.add_argument("-r", "--results_tar", type=str, help="Directory with results from ClumpsPTM analysis", required=True)
+# parser.add_argument("-m", "--mapping_file", type=str, help="ClumpsPTM mapping file with mappings to PDB archive", required=True)
 
 parser.add_argument("-f", "--fdr_threshold", type=float, help="Threshold for minimum theoretical p-value to consider for FDR")
 
-parser.add_argument("-i", "--accession_col", type=str, help="GCT rdesc column with accession IDs. Must match the ID type of the provided FASTA file.")
-parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc column with PTM variable site(s) (e.g. 'T527t')")
-parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')")
-parser.add_argument("-g", "--gene_column", type=str, help="GCT rdesc column with HUGO Gene Symbols")
+# parser.add_argument("-i", "--accession_col", type=str, help="GCT rdesc column with accession IDs. Must match the ID type of the provided FASTA file.")
+# parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc column with PTM variable site(s) (e.g. 'T527t')")
+# parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')")
+# parser.add_argument("-g", "--gene_column", type=str, help="GCT rdesc column with HUGO Gene Symbols")
 
 
-parser.add_argument("-o", "--output_prefix", type=str, help="Output prefix to prepend to output filenames.", default="")
+parser.add_argument("-o", "--output_prefix", type=str, help="Output prefix to prepend to output filenames.", default="results")
 parser.add_argument("-y", "--yaml", type=str, help="Path to .yaml file with parameters.", required=True)
-
-parser.add_argument("-n", "--num_threads", type=int, help="Number of threads available", default = 1) # assume 1 thread if not provided, just to be extra safe
-parser.add_argument("-d", "--DEBUG_MODE", help="Run in debugging mode; limit the number of FASTA files processed.", action = "store_true")
 
 
 # import from command line
-args = parser.parse_args(
-    ["-r" "/opt/input/NMF.consensus.core.k3", \
-     "-m" "/opt/input/ODG_v3_full_mapped_sites_to_pdbs.tsv", \
-     "-f" "0.1", \
-     # "-i" "id.description", \
-     # "-s" " ", \
-     # "-v" "variableSites", \
-     # "-g" "geneSymbol", \
-     "-o" "ODG_v3", \
-     "-y" "/opt/commons/master-parameters.yaml",\
-     "-n" "12"]
-)
+args = parser.parse_args()
+
+# # optional testing args
+# args = parser.parse_args(
+#     ["-r" "/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
+#      "-f" "0.1", \
+#      # "-i" "id.description", \
+#      # "-s" " ", \
+#      # "-v" "variableSites", \
+#      # "-g" "geneSymbol", \
+#      "-o" "ODG_v3_NMF.consensus.core.k3", \
+#      "-y" "/opt/input/master-parameters.yaml"]
+# )
 
 
 ####   Default Parameter Import   ####
@@ -82,19 +81,19 @@ args = parser.parse_args(
 with open(args.yaml, 'r') as file:
     yaml_dict = yaml.safe_load(file)
 
-# override missing parameters with yaml defaults
-if (args.accession_col==None):
-    # args.accession_col = yaml_dict['global_parameters']['gene_mapping']['protein_id_col']
-    args.accession_col = yaml_dict['panoply_ptm_normalization']['accession_number_colname']
+# # override missing parameters with yaml defaults
+# if (args.accession_col==None):
+#     # args.accession_col = yaml_dict['global_parameters']['gene_mapping']['protein_id_col']
+#     args.accession_col = yaml_dict['panoply_ptm_normalization']['accession_number_colname']
 
-if (args.variable_sites_col==None):
-    args.variable_sites_col = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_col']
+# if (args.variable_sites_col==None):
+#     args.variable_sites_col = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_col']
 
-if (args.variable_sites_sep==None):
-    args.variable_sites_sep = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_sep']
+# if (args.variable_sites_sep==None):
+#     args.variable_sites_sep = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_sep']
 
-if (args.gene_column==None):
-    args.gene_column = yaml_dict['global_parameters']['gene_mapping']['gene_id_col']
+# if (args.gene_column==None):
+#     args.gene_column = yaml_dict['global_parameters']['gene_mapping']['gene_id_col']
 
 
 
@@ -107,14 +106,17 @@ print('\n')
 
 # tmp params
 # ome_types = ['acetylome','ubiquitylome','phosphoproteome']
-ome_types = ['acetylome','phosphoproteome']
+# ome_types = ['acetylome','phosphoproteome']
 
 
 ####################################
 ####   File & Directory Setup   ####
 ####################################
 
-out_dir_figs=os.path.join(args.results_dir,'figures')
+# set up output directories
+os.makedirs(args.output_prefix, exist_ok=True)
+
+out_dir_figs=os.path.join(args.output_prefix,'figures')
 os.makedirs(out_dir_figs, exist_ok=True)
 out_dir_pymol = os.path.join(out_dir_figs,'pymol')
 os.makedirs(out_dir_pymol, exist_ok=True)
@@ -123,19 +125,26 @@ os.makedirs(out_dir_dotplots, exist_ok=True)
 
 
 
+# extract tarfile contents
+tar = tarfile.open(args.results_tar)
+
+tarfile_outdir = args.output_prefix
+tar.extractall(tarfile_outdir)
+
 
 #####################################
 ####   Data Import / Wrangling   ####
 #####################################
 
 
+
 results_list = list()
 
-results_dirs = [os.path.basename(fn) for fn in glob.glob(os.path.join(args.results_dir,"**"))]
+results_dirs = [os.path.basename(fn) for fn in glob.glob(os.path.join(tarfile_outdir,"**"))]
 
 # import TSV results files
 for dir in tqdm(results_dirs):
-    for file in glob.glob(os.path.join(args.results_dir, dir, "*.tsv")):
+    for file in glob.glob(os.path.join(tarfile_outdir, dir, "*.tsv")):
         _df = pd.read_csv(file, sep='\t', index_col=0)
         _df['id'] = dir # use directory as analysis ID
         _df['subval'] = re.sub('^(.+)_(.+?)_results$', '\\1', dir) # use directory as analysis ID
@@ -172,9 +181,9 @@ results_fdrThresh_weight_df = pd.concat(res)
 
 # TODO: the variableSite column gets exploded in the original pass-- and we don't save the original values. Each PTM will appear as if its a single-site PTM in the mapping file.
 
-# Highlight any hits that are derived from a singular peptide
-df = pd.read_csv(args.mapping_file, sep='\t', index_col=0)
-acc_var_df = df[[args.accession_col,args.variable_sites_col]].reset_index().set_index(args.accession_col).drop_duplicates()
+# # Highlight any hits that are derived from a singular peptide
+# df = pd.read_csv(args.mapping_file, sep='\t', index_col=0)
+# acc_var_df = df[[args.accession_col,args.variable_sites_col]].reset_index().set_index(args.accession_col).drop_duplicates()
 # var_site_col = 'tmp'
 # acc_var_df[var_site_col] = acc_var_df[args.accession_col].map(nchar)
 # acc_var_df[variable_sites_col] = [str.split(args.variable_sites_sep) for str in acc_var_df[args.variable_sites_col]] # convert variableSites column into list
@@ -208,11 +217,14 @@ acc_var_df = df[[args.accession_col,args.variable_sites_col]].reset_index().set_
 def plot_pair(group, results_df, n_to_plot=20):
     """Plot paring."""
     ome_types = np.unique(results_df['clumpsptm_sampler']) # get unique feature-types
+    if ('ptm' in ome_types): # if we ran combined
+        np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
+
     fig, axes = plt.subplots(2, len(ome_types), figsize=(10,14)) # TODO: needs to be adjusted if we have additional omes
     # for each feature
     for j,feature in enumerate(ome_types):
-    	# plot pos/neg features
-        for i,direction in enumerate(['neg','pos']):
+    	# plot positive/negative features
+        for i,direction in enumerate(['negative','positive']):
             _df = results_df[results_df['id']=="{}_{}_results".format(group, direction)]
             clumpsptm.vis.dotplot(
                 _df.loc[_df[_df['clumpsptm_sampler']==feature].sort_values(
@@ -226,9 +238,9 @@ def plot_pair(group, results_df, n_to_plot=20):
             axes[i,j].legend().remove()
             axes[i,j].set_yticklabels(axes[i,j].get_yticklabels(), fontsize=14)
             axes[i,j].set_xlabel(r"$-log_{10}$ p-value", fontsize=16)
-            # add pos/neg labels
-            if direction=='pos': direction = "(+)"
-            if direction=='neg': direction = "(-)"
+            # add positive/negative labels
+            if direction=='positive': direction = "(+)"
+            if direction=='negative': direction = "(-)"
             # set title and y-ticks
             axes[i,j].set_title("{} {}".format(feature.capitalize(), direction), fontsize=18)
             axes[i,j].set_yticklabels(axes[i,j].get_yticklabels(), fontsize=14)
@@ -293,10 +305,12 @@ counts_fdr_df.columns = ['< {} FDR'.format(args.fdr_threshold)]
 
 counts_df = counts_df.join(counts_pval_df).join(counts_fdr_df).fillna(0).astype(int).sort_values('NS')
 counts_df = counts_df.reset_index()
-counts_df = counts_df[~counts_df['id'].str.contains("dendro_4")]
 #counts_df = counts_df[counts_df['id'].str.contains('positive') | counts_df['id'].str.contains('negative')].set_index(['id','clumpsptm_sampler'])
 
+# pick -ome to sort data by
 ome_types = np.unique(counts_df['clumpsptm_sampler'])
+if ('ptm' in ome_types):
+    np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
 
 # get _order using first PTM type
 _counts_df = counts_df.reset_index()
@@ -333,7 +347,6 @@ axes[2].set_xlim([0,1200])
 
 plt.tight_layout()
 plt.savefig(os.path.join(out_dir_figs,"clumpsptm_summary_figure.pdf"), dpi=300, bbox_inches='tight')
-
 
 
 

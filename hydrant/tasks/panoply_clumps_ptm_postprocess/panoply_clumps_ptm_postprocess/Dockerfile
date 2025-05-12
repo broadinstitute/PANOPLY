@@ -3,6 +3,12 @@ MAINTAINER proteogenomics@broadinstitute.org
 
 RUN apt-get update
 
+COPY src /prot/proteomics/Projects/PGDAC/src
+
+
+
+
+
 #### Install PyMol
 
 RUN apt-get install -y pymol

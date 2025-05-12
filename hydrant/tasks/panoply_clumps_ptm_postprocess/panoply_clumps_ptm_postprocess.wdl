@@ -2,93 +2,43 @@
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
 
-task panoply_clumps_ptm {
-	File diff_exp_file
-	File var_sites_file
 
-	Array[File]+ PDB_DIR				# PDB Directory in (multiple) tarfiles
+task panoply_clumps_ptm_postprocess {
+	File results_tar							# tar-file with results from panoply_clumps_ptm
+
+	Float? fdr_threshold
 
 	String output_prefix="results"
 	File yaml_file
 
 	Int? memory
 	Int? disk_space
-	Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
+	Int? num_threads
 	Int? num_preemtions
 	
-	command <<<
+	command {
 		set -euo pipefail
-		
-		# Unpack the PDB Archive
-		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
-		mkdir -p pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
-		for tar_file in ${sep=" " PDB_DIR}; do
-			tar -xf $tar_file -C pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb
-			rm $tar_file # remove to save disk space
-		done
-		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
 
-		mkdir clumpsptm_runs
+		python -u /prot/proteomics/Projects/PGDAC/src/clumps_ptm_postprocess.py \
+			--results_tar ${results_tar} -y ${yaml_file} --output_prefix ${output_prefix} \
+			${'--fdr_threshold ' + fdr_threshold}
 
-		# drop first row (header) and get all unique values from ID column
-		groups=`tail -n +2 ${diff_exp_file} | awk '{print $3}' | sort -u | sed 's/^"\(.*\)"$/\1/'` # NOTE: fails if we use command {}
-		echo $groups # echo to ensure the file was read properly
-
-		# run separately on positive and negative 
-		for group in $groups; do
-			set +e # allow errors, to prevent clumpsptm fails from ending script
-
-			clumpsptm -i ${diff_exp_file} --features phosphoproteome ubiquitylome acetylome \
-				-w logFC --maps ${var_sites_file} --pdbstore pdbs \
-				--grouping $group --protein_id id.description \
-				--threads ${num_threads} -v --subset positive --output_dir "clumpsptm_runs/"$group"_pos_results" 2> err.txt
-			
-			# check if previous command had an error
-			if [ $? -ne 0 ]; then
-				# if the error message is NOT a "NO RESULTS FOUND" error, stop the script
-				if [ -z `grep -l err.txt -e "ValueError: NO RESULTS FILES FOUND."` ]; then
-					cat err.txt >> /dev/stderr
-					exit 1
-				else # otherwise just print a warning
-					echo "WARNING: No results found for "$group"."
-				fi
-			fi
-		done
-
-		for group in $groups; do
-			set +e # allow errors, to prevent clumpsptm fails from ending script
-
-			clumpsptm -i ${diff_exp_file} --features phosphoproteome ubiquitylome acetylome \
-				-w logFC --maps ${var_sites_file} --pdbstore pdbs \
-				--grouping $group --protein_id id.description \
-				--threads ${num_threads} -v --subset negative --output_dir "clumpsptm_runs/"$group"_neg_results" 2> err.txt
-
-			# check if previous command had an error
-			if [ $? -ne 0 ]; then
-				# if the error message is NOT a "NO RESULTS FOUND" error, stop the script
-				if [ -z `grep -l err.txt -e "ValueError: NO RESULTS FILES FOUND."` ]; then
-					cat err.txt >> /dev/stderr
-					exit 1
-				else # otherwise just print a warning
-					echo "WARNING: No results found for "$group"."
-				fi
-			fi
-		done
-
-		set -euo pipefail # turn error catching back on
-
-		tar -czf ${output_prefix}_clumps_runs.tar -C clumpsptm_runs/ . # tar results
-	>>>
+		# tar full results
+		tar -czf ${output_prefix}_clumps_ptm_full_results.tar -C ${output_prefix}/ . # tar results
+		# tar just the figures
+		tar -czf ${output_prefix}_clumps_figures.tar -C ${output_prefix}/figures . # tar results
+	}
 
 	output {
-		File results="${output_prefix}_clumps_runs.tar" # all differential-expression files
+		File results="${output_prefix}_clumps_figures.tar"
+		File figures_only="${output_prefix}_clumps_figures.tar"
 	}
 
 	runtime {
-		docker : "broadcptacdev/panoply_clumps_ptm:latest"
+		docker : "broadcptacdev/panoply_clumps_ptm_postprocess:latest"
 		memory : select_first ([memory, 32]) + "GB"
-		disks : "local-disk  " + select_first ([disk_space, 100]) + " HDD"
-		cpu : num_threads				# default set in inputs
+		disks : "local-disk  " + select_first ([disk_space, 20]) + " HDD"
+		cpu : select_first ([num_threads, 32]) + ""
 		preemptible : select_first ([num_preemtions, 0])
 	}
 
@@ -101,6 +51,7 @@ task panoply_clumps_ptm {
 
 ################################################
 ## workflow
-workflow panoply_clumps_ptm_workflow {
-	call panoply_clumps_ptm
+workflow panoply_clumps_ptm_postprocess_workflow {
+	call panoply_clumps_ptm_postprocess {
+	}
 }

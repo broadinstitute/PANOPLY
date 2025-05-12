@@ -46,22 +46,17 @@ task panoply_clumps_ptm {
 			--threads ${num_threads} \
 			$( [ ${DEBUG_MODE} = true ] && echo "-t" )
 
-		# testing arguments
+			# testing arguments
 			# --protein_id ${accession_col} --weight ${weight_col} --threads ${num_threads} --run_combined ${run_combined} # for testing locally
 			# group=1
 			# --features phosphoproteome ubiquitylome acetylome --grouping $group --subset positive --output_dir "clumpsptm_runs/"$group"_pos_results"  # for testing clumpptm
 
-		tsv_files=`find clumpsptm_runs/ -type f -name '*.tsv'`
-		if [ -z $tsv_files ]; then
-			echo "ERROR: No valid results across any comparison for ${output_prefix}."
-  			exit 1
-		fi
 
 		tar -czf ${output_prefix}_clumps_runs.tar -C clumpsptm_runs/ . # tar results
 	}
 
 	output {
-		File results="${output_prefix}_clumps_runs.tar" # all differential-expression files
+		File results="${output_prefix}_clumps_runs.tar"
 	}
 
 	runtime {
