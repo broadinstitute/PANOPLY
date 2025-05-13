@@ -20,6 +20,8 @@ import pprint
 import os
 import sys
 
+# import random
+import json
 
 # configure ProDy to not printout messages, to avoid
 from prody import confProDy
@@ -73,6 +75,8 @@ parser.add_argument('-x', '--xpo', type=str, help='Soft distance threshold (t).'
 # parser.add_argument('-x', '--xpo', default=[6], type=list, help='Soft distance threshold (t).')
 parser.add_argument('-n','--threads', type=str, default="1", help='Number of threads for sampling.') # NOTE: keep everything as string until it's passed to clumpsptm
 
+# parser.add_argument('-r','--seed', type=str, default="2025", help='Random seed to set before running ClumpsPTM.') # doesn't work with random.seed()
+
 # MANAGED BY WRAPPER
 # parser.add_argument('-o','--output_dir', default=".", help='Output directory.')
 # parser.add_argument('-f', '--features', nargs="*", default=None, help='Assays to subset for.') 
@@ -94,9 +98,12 @@ args = parser.parse_args()
 #     "--pdbstore", "pdbs", \
 #     "--accession_col", "accession_number", \
 #     "--weight_col", "gsea_rank", \
-#     "-n" "12", \
+#     "-n", "12", \
+#     # "-r", "2025", \
 #     # "-t"
 # ])
+
+
 
 
 ### import default parameters from YAML
@@ -124,6 +131,9 @@ print('\n\nParameters:')
 pprint.pp(args.__dict__)
 print('\n')
 
+# write args dictionary to a JSON
+with open('params.json', 'w') as f:
+    json.dump(args.__dict__, f)
 
 
 ##################################
@@ -179,6 +189,7 @@ for group in groups:
         print("## RUNNING COMMAND: \'"+' '.join(sys.argv)+"\'")
         # Run CLUMPS-PTM
         try:
+            # random.seed(args.seed) # doesn't work
             main()
             # subprocess.run(sys.argv)
         except ValueError as e: # if we get a value error

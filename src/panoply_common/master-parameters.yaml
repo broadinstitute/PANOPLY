@@ -100,7 +100,9 @@ panoply_clumps_ptm:
     fdr_cutoff: NULL                      # FDR threshold for significant features. Set to NULL to keep all features regardless of significance.
   analysis:
     run_combined: true                    # toggle for running all PTMs combined
-    weight_col: 'logFC'                     # column from differential-expression dataset to use as weights in ClumpsPTM
+    weight_col: 'logFC'                   # column from differential-expression dataset to use as weights in ClumpsPTM
+  postprocess:
+    fdr_thresh: 0.1                       # FDR threshold for figures (NOTE: the ClumpsPTM GitHub is currently hardcoded for a 0.1 threshold, so only the plotting can be easily changed) 
 
 
 panoply_cons_cluster:

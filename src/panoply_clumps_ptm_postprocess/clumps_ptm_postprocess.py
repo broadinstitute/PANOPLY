@@ -81,10 +81,9 @@ args = parser.parse_args()
 with open(args.yaml, 'r') as file:
     yaml_dict = yaml.safe_load(file)
 
-# # override missing parameters with yaml defaults
-# if (args.accession_col==None):
-#     # args.accession_col = yaml_dict['global_parameters']['gene_mapping']['protein_id_col']
-#     args.accession_col = yaml_dict['panoply_ptm_normalization']['accession_number_colname']
+# override missing parameters with yaml defaults
+if (args.fdr_threshold==None):
+    args.fdr_threshold = yaml_dict['panoply_clumps_ptm']['postprocess']['fdr_thresh']
 
 # if (args.variable_sites_col==None):
 #     args.variable_sites_col = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_col']
