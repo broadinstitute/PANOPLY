@@ -87,21 +87,21 @@ parser.add_argument('-n','--threads', type=str, default="1", help='Number of thr
 parser.add_argument('-t','--test', action='store_true', default=False, help='Test run with n=5 proteins.')
 parser.add_argument('-v', '--verbose', action='store_true', default=True, help='Verbosity.') # always run verbose (for now)
 
-args = parser.parse_args()
+# args = parser.parse_args()
 
 
-# # testing arguments manually
-# args = parser.parse_args([
-#     "-y" "/opt/input/master-parameters.yaml",\
-#     "-i" "/opt/input/filtered/full_de_cohort_cov_filt-to-1-4_filt-to-pdbs_filt-to-acKpSTY.tsv", \
-#     "-m" "/opt/input/filtered/mapped_sites_to_pdbs_filt-to-pdbs.tsv", \
-#     "--pdbstore", "pdbs", \
-#     "--accession_col", "accession_number", \
-#     "--weight_col", "gsea_rank", \
-#     "-n", "12", \
-#     # "-r", "2025", \
-#     # "-t"
-# ])
+# testing arguments manually
+args = parser.parse_args([
+    "-y" "/opt/input/master-parameters.yaml",\
+    "-i" "/opt/input/filtered/full_de_cohort_cov_filt-to-1-4_filt-to-pdbs_filt-to-acKpSTY.tsv", \
+    "-m" "/opt/input/filtered/mapped_sites_to_pdbs_filt-to-pdbs.tsv", \
+    "--pdbstore", "pdbs", \
+    "--accession_col", "accession_number", \
+    "--weight_col", "gsea_rank", \
+    "-n", "12", \
+    # "-r", "2025", \
+    # "-t"
+])
 
 
 
@@ -132,7 +132,8 @@ pprint.pp(args.__dict__)
 print('\n')
 
 # write args dictionary to a JSON
-with open('params.json', 'w') as f:
+os.makedirs('clumpsptm_runs')
+with open(os.path.join("clumpsptm_runs",'params.json'), 'w') as f:
     json.dump(args.__dict__, f)
 
 
