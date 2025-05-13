@@ -4,7 +4,8 @@
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/2/plain-WDL/descriptor" as diffexp_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/10/plain-WDL/descriptor" as mapping_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/17/plain-WDL/descriptor" as analysis_wdl
-#import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/1/plain-WDL/descriptor" as report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/1/plain-WDL/descriptor" as postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/1/plain-WDL/descriptor" as report_wdl
 
 ################################################
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm
@@ -51,16 +52,23 @@ workflow panoply_clumps_ptm_workflow {
 	        	yaml_file = yaml_file,
 		        output_prefix = sub(basename(diff_exp), "_diff_exp\\.tsv$", "") # use diffexp file as output prefix (to keep annotation)
 		}
+
+		call postprocess_wdl.panoply_clumps_ptm_postprocess as postprocess {
+		    input:
+		    	results_tar = analysis.results,
+	        	yaml_file = yaml_file,
+		        output_prefix = sub(basename(diff_exp), "_diff_exp\\.tsv$", "") # use diffexp file as output prefix (to keep annotation)
+		}
 	}
 
-	#call report_wdl.panoply_clumps_ptm_report as report {
-	#    input:
-	#    	results = analysis.results 			# array of results file from analysis module
-	#    	output_prefix = output_prefix
-	#}
+	call report_wdl.panoply_clumps_ptm_report as report {
+	    input:
+	    	postprocess_results = postprocess.results, 			# array of results file from postprocess module
+	    	label = output_prefix
+	}
 
 	output{
-	    Array[File] results = analysis.results
-	    #File report = report.report
+	    Array[File] clumps_ptm_results = analysis.results
+	    File clumps_ptm_report = report.report
 	}
 }

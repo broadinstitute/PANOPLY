@@ -30,7 +30,7 @@ task panoply_clumps_ptm_postprocess {
 	}
 
 	output {
-		File results="${output_prefix}_clumps_figures.tar"
+		File results="${output_prefix}_clumps_ptm_full_results.tar"
 		File figures_only="${output_prefix}_clumps_figures.tar"
 	}
 

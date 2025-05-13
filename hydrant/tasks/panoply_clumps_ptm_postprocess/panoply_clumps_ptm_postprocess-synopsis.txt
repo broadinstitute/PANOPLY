@@ -1,1 +1,1 @@
-Run Clumps-PTM algorithm on a single differential-expression results file.
+Generate figures from ClumpsPTM results for one differential-expression file

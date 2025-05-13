@@ -1,0 +1,166 @@
+---
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+params:
+  title: "MetaboAnalyst Results"
+  label: NULL
+  clumps_ptm_results: NULL
+---
+
+---
+title: `r params$title`
+---
+
+# Overview
+
+This document describes the results of the Clumps-PTM module, which performs spatial analysis of PTM sites.
+
+The module looks for nearby clusters of differentially-regulated PTM sites on the same protein.
+- Split into up / down-regulated
+- Looks by isoform (DOUBLE CHECK)
+- Phosphoproteome, Acetylome, Ubiquitylome, or Combined. Potentially flexible for other options
+
+For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_clumps_ptm), or refer to the github for [ClumpsPTM](https://github.com/getzlab/CLUMPS-PTM/)
+
+
+```{r setup, include=FALSE}
+# R tooles
+library(tidyverse)
+library(glue)
+library(cmapR)
+library(readxl)
+# library(plotly)
+# library(DT) # for JS datatable features
+
+# HTML / RMD tools
+library(knitr)
+library(htmltools)
+library(kableExtra)
+
+```
+
+```{r import_data, include=FALSE}
+
+# unlist clumps_ptm_tarfiles 
+clumps_ptm_tars = unlist(strsplit(params$clumps_ptm_results, ","))
+
+#### import panoply_nmf tarfile ####
+results_dirs = list()
+for (tarfile in clumps_ptm_tars) {
+  if (!file.exists(tarfile)) stop(glue("Improperly formatted file-path '{tarfile}'"))
+  
+  dir = gsub("_clumps_ptm_full_results.tar$", "", basename(tarfile)) # get output prefix
+  untar(tarfile, exdir = dir) # untar results in PWD
+  
+  results_dirs = c(results_dirs, dir)
+  
+  # # locate necessary inputs from tar, and error if ANY are missing
+  # log_file = list.files(path = tmpdir, pattern="*log_file.csv$") # locate combined GCT file
+  # if (length(log_file) != 1) stop(glue("Tarfile {tarfile} is missing logfile of successfully analyzed annotations."))
+  
+  #### Finish Setup / File Import ####
+  # # load in log file
+  # log_file = read.csv(log_file)
+  
+  # # Get Analysis-Type from opt
+  # anal_type = opt$anal_type
+  # impact_metric = opt$impact_metric
+  
+}
+
+
+# counter variable for figures and tables
+fig_count <- 1
+tab_count <- 1
+
+```
+
+
+# Results
+
+```{r results, results='asis', echo=FALSE, out.width='100%', out.height='50%'}
+
+for(dir in results_dirs) {
+  cat("  \n## ",  dir, "Results {.tabset}  \n")
+  
+  sub_dirs = list.files(dir, pattern = '_results$')
+  figure_dir = file.path(dir, 'figures')
+  
+  #### Import Files #### 
+  summary_fig = file.path(figure_dir, "clumpsptm_summary_figure.png")
+  if (!file.exists(summary_fig)) stop(glue("Summary figure for '{dir}' results is missing."))
+  
+  dotplot_files = list.files(file.path(figure_dir, 'dotplots'), pattern = ".png")
+  if (length(dotplot_files)==0) stop(glue("No dotplots found for '{dir}' results."))
+  
+  pymol_files = list.files(file.path(figure_dir, 'pymol'))
+  if (length(pymol_files)==0) print(glue("WARNING: No PyMol figures found for '{dir}' results."))
+  
+  
+  for(dotplot in dotplot_files) { # for each dotplot
+    annot = gsub("_dotplot.png$","", dotplot)
+    cat("  \n### ", annot, " \n")
+    
+    #### Dot Plots ####
+    cat(paste0("![Significant Protein Dotplot](", file.path(figure_dir, 'dotplots', dotplot), "){width=100%}"))
+    cat("  \n")
+    cat(glue("**Figure {fig_count}. {annot}** This dotplot shows ClumpsPTM results for the one-v-all comparison of the {annot} annotation."))
+    cat("  \n")
+    fig_count = fig_count+1 #increment figure counter
+  }
+  
+  cat("\n---\n")
+  cat("\n## {-}")
+  #cat("\n## Summary of Analyzed Proteins\n")
+  
+  cat("\n")
+  
+  
+  #### Print Summary Figure ####
+
+  cat(paste0("![Number of Analyzed Proteins](", summary_fig, "){width=100%}"))
+  cat("  \n")
+  cat(glue("**Figure {fig_count}. {annot}** This figure shows the total number of analyzed proteins, as well as the number of significant proteins before and after FDR correction."))
+  cat("  \n")
+  fig_count = fig_count+1 #increment figure counter
+  
+  cat("\n---\n")
+  cat("\n---\n")
+}
+
+```
+
+
+***
+
+# Parameters
+    
+Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_clumps_ptm).    
+    
+```{r params, include=TRUE, echo=FALSE, warning=T, message=F}
+tab_param <- data.frame(param=character(0), value=character(0))
+# tab_param <- data.frame(param=names(opt), value=unlist(opt))
+## insert table
+tab_param %>%
+      kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,'**: List of parameters used in ```panoply_clumps_ptm```.')) %>%
+      kable_paper('hover', full_width = F) 
+```
+```{r echo=F}
+## increment
+tab_count <- tab_count + 1
+```
+
+<br>
+
+***
+
+**_Created on `r Sys.time()`_**
+
+***
+
+<br>

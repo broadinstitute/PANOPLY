@@ -219,7 +219,6 @@ def plot_pair(group, results_df, n_to_plot=20):
     ome_types = np.unique(results_df['clumpsptm_sampler']) # get unique feature-types
     if ('ptm' in ome_types): # if we ran combined
         np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
-
     fig, axes = plt.subplots(2, len(ome_types), figsize=(10,14)) # TODO: needs to be adjusted if we have additional omes
     # for each feature
     for j,feature in enumerate(ome_types):
@@ -254,6 +253,7 @@ def plot_pair(group, results_df, n_to_plot=20):
 for group in np.unique(results_df['subval']):
     plot_pair(group, results_df)
     plt.savefig(os.path.join(out_dir_dotplots, "{}_dotplot.pdf".format(group)), dpi=300, bbox_inches='tight')
+    plt.savefig(os.path.join(out_dir_dotplots, "{}_dotplot.png".format(group)), bbox_inches='tight')
 
 
 
@@ -325,16 +325,18 @@ _order = _counts_df.sort_values(by=['id']).index # sort in order for now
 fig,axes = plt.subplots(1,len(ome_types),figsize=(12,5),sharey=False)
 
 for i,ome in enumerate(ome_types):
-	_counts_df = counts_df.reset_index()
-	_counts_df = _counts_df[_counts_df['clumpsptm_sampler']==ome].set_index("id").loc[_order][['NS', '< {} P-Value'.format(args.fdr_threshold), '< {} FDR'.format(args.fdr_threshold)]]
-	_counts_df.plot(kind='barh', stacked=True, ax=axes[i], linewidth=1, width=0.8, edgecolor='black', color=['lightgrey','orange','red'])
-	# set Axis labels
-	axes[i].set_title(ome, fontsize=16)
-	axes[i].set_ylabel("")
-	axes[i].set_xlabel("# Proteins", fontsize=16)
-	axes[i].legend().remove()
-	if (i>0): 
-		axes[i].set_yticks([])
+    _counts_df = counts_df.reset_index()
+    _counts_df = _counts_df[_counts_df['clumpsptm_sampler']==ome] # subset to sampler
+    __order = _order[np.isin(_order, _counts_df['id'].unique())] # subset order to relevant indices
+    _counts_df = _counts_df.set_index("id").loc[__order][['NS', '< {} P-Value'.format(args.fdr_threshold), '< {} FDR'.format(args.fdr_threshold)]]
+    _counts_df.plot(kind='barh', stacked=True, ax=axes[i], linewidth=1, width=0.8, edgecolor='black', color=['lightgrey','orange','red'])
+    # set Axis labels
+    axes[i].set_title(ome, fontsize=16)
+    axes[i].set_ylabel("")
+    axes[i].set_xlabel("# Proteins", fontsize=16)
+    axes[i].legend().remove()
+    if (i>0): 
+        axes[i].set_yticks([])
 
 # add final legend
 axes[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
@@ -347,6 +349,7 @@ axes[2].set_xlim([0,1200])
 
 plt.tight_layout()
 plt.savefig(os.path.join(out_dir_figs,"clumpsptm_summary_figure.pdf"), dpi=300, bbox_inches='tight')
+plt.savefig(os.path.join(out_dir_figs,"clumpsptm_summary_figure.png"), bbox_inches='tight')
 
 
 
