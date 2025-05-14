@@ -39,12 +39,12 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
                        # args = c(
                        #   # '--metabolome_gct',"/opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                       #   '--metabolome_gct',"/opt/input/ODG-v3-metabolome-all-log2-median-norm-QCfilter.gct",
-                       #   '-n',"hmdb_id",
-                       #   '-i',"HMDB.ID",
+                       #   '--metabolome_gct',"/opt/input/metab-subset.gct",
+                       #   # '-n',"hmdb_id",
+                       #   # '-i',"HMDB.ID",
                        #   # '-n',"kegg_id",
                        #   # '-i',"KEGG.ID",
-                       #   '--ome_gct',"/opt/input/ODG-v3-proteome-SpectrumMill-ratio-QCfilter-NArm.gct",
+                       #   '--ome_gct',"/opt/input/proteome-subset.gct",
                        #   '-t',"prot",
                        # #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
                        # #   # '-t',"RNA",
@@ -52,13 +52,13 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        #   '-g',"opt/input/groups-subset.csv",
                        # #   '-l',"15",
                        # #   '-a',"QEA",
-                       #   '-b',"pvalo",
+                       #   # '-b',"pvalo",
                        # #   '-p',"0.01",
                        # #   '-k',"15",
-                       #   '-r',"Impact.CC",
+                       #   # '-r',"Impact.CC",
                        #   '-y',"opt/input/master-parameters.yaml",
                        # #   # '-f',"/opt/input/prelim_results",
-                       #   '-x',"ODG_v3")
+                       #   '-x',"sarcoma_v4")
 )
 
 #### Parse YAML Arguments ####
@@ -240,7 +240,7 @@ if (! pathway_id_type$meta %in% names(compound_map)) stop(glue("Mapped metabolic
 # get relevant IDs from rid or rdesc
 if (is.null(opt$meta_id_col)) { cpd_vec = gct_meta@rid } else { cpd_vec = gct_meta@rdesc[[opt$meta_id_col]] }
 
-valid_cpd_rid = gct_meta@rid[which(cpd_vec %in% compound_map[[opt$meta_id_type]])]
+valid_cpd_rid = gct_meta@rid[which( !is.na(cpd_vec) & (cpd_vec %in% compound_map[[opt$meta_id_type]]) )]
 if (length(valid_cpd_rid)==0) stop(glue("No IDs in the GCT mapped to valid compounds. Please check that your data uses {opt$meta_id_type} IDs, or select a different ID type."))
 # subset to valid compound IDs
 # toDo: add lipid ID mapping
@@ -636,7 +636,7 @@ for (annot_of_interest in names(annots)) {
     } else if (opt$anal_type == "QEA") {
       if(print_internal_placemarks) cat("\n\n####################\nQuantitative Enrichment Analysis on Metabolome\n\n")
       meta_qea = gct.to.qea.input(meta_input, annot_of_interest, value_of_interest, annots = annots,
-                                  write_to_file = T, glue("{opt$output_prefix}_metabolome"))
+                                  write_to_file = T, prefix=glue("{opt$output_prefix}_metabolome"))
       res.meta = q.ea(meta_qea$mat, meta_qea$cls, pathways, uniq.len = sapply(pathways, function(p) {p$cmpd.counts}))
       if (!multiomic && dim(res.meta$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant metabolite enrichments.\n\n")); next }
       
@@ -727,7 +727,7 @@ for (annot_of_interest in names(annots)) {
           column_to_rownames("ID") # add rownames back
         # merge hits into a single list, ordered by all.paths
         res.fin.hits = mapply(function(hits.m, hits.g) {c(as.vector(hits.m), as.vector(hits.g))}, # force vector format to avoid empty lists if one dataset is empty
-                              res.meta$hits[all.paths], res.ome$hits[all.paths])
+                              res.meta$hits[all.paths], res.ome$hits[all.paths], SIMPLIFY = F)
       }
     } else {
       res.df = res.meta$df %>%
