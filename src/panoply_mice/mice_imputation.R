@@ -15,7 +15,12 @@ option_list <- list(
   # make_option(c('-r', '--rdata_out_file_name'), type = 'character', default = 'imputation_mice_object.RData')
 )
 
-opt <- parse_args(OptionParser(option_list = option_list))
+opt <- parse_args(OptionParser(option_list = option_list),
+                  # args = c("-f", "/Volumes/proteomics_storage_vast/storage_slow/CPTAC3/PGDAC/odg/v4/analysis/PANOPLY/PANOPLY_Input/ODG-v4-phosphoproteome-SpectrumMill-ratio-QCfilter-NArm.gct",
+                  #          "-c", "4",
+                  #          "-x", "test")
+                  )
+
 file_path <- opt$file_path
 na_max <- opt$na_max
 num_imputations <- opt$num_imputations
@@ -40,28 +45,29 @@ mice_imputation <- function(gct_file, na_max=0.4, num_imps=15, seed=2023, num_co
   #code from Stephanie Vartany to run Mice
   # read in data (features x samples)
   # typically MICE does samples x features (feature-wise), but this takes much too long. Stephanie has had good results with sample-wise which we perform here. With parallelization, feature-wise may be possible, but is likely not worth it.
-  gct <- parse_gctx(gct_file)
-  data <- gct@mat
+  gct_full <- parse_gctx(gct_file)
   
-  #filter using na_max
+  #### Filter using na_max ####
   #MICE seems to have optimal results when na_max=0.4, after that it starts to drop off
   #this is likely dataset dependent
-  keep <- row.names(data)[rowSums(is.na(data))/dim(data)[2] <= na_max]
-  gct_filt <- subset_gct(gct,rid=keep)
-  data_filt <- gct_filt@mat
+  keep <- gct_full@rid[rowSums(is.na(gct_full@mat))/dim(gct_full@mat)[2] <= na_max]
+  gct <- subset_gct(gct_full,rid=keep)
   
-  print(glue("## Filtered GCT to features with <{round(na_max*100,2)}% missing values. {dim(data)[1]-dim(data_filt)[1]} features dropped for incompleteness."))
+  # report filtering results & copt into matrix object
+  print(glue("## Filtered GCT to features with <{round(na_max*100,2)}% missing values. {dim(gct_full@mat)[1]-dim(gct@mat)[1]} features dropped for incompleteness."))
+  data <- gct@mat
   
   
-  # run mice, this creates a mice-specific output object
+  #### Run Mice ####
+  # this creates a mice-specific output object
   # m is number of iterations, set to 15 (default was 5)
   # in mice v3.15 and later you can run in parallel using futuremice()
   # set seed so result is the same for the same dataset (for futuremice, use parallelseed)
   print("Imputing using MICE")
   if(num_cores>1){
-    mice_out <- futuremice(data_filt, m=num_imps, parallelseed=seed, n.core=num_cores, print=T)
+    mice_out <- futuremice(data, m=num_imps, parallelseed=seed, n.core=num_cores, print=T)
   }else{
-    mice_out <- mice(data_filt, m=num_imps, seed=seed, print=T)
+    mice_out <- mice(data, m=num_imps, seed=seed, print=T)
   }
   print("Imputation done")
   
@@ -75,8 +81,11 @@ mice_imputation <- function(gct_file, na_max=0.4, num_imps=15, seed=2023, num_co
     summarize(across(.fns = mean)) %>%
     select(-c('.id', '.imp'))
   avg_imp_data <- as.data.frame(avg_imp_data)
-  rownames(avg_imp_data) <- rownames(data_filt)
+  rownames(avg_imp_data) <- rownames(data)
   print("Aggregation done")
+  
+  
+  #### Save Data Files ####
   
   #save avg_imp_data to .csv file
   print("Saving imputed data")
