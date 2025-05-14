@@ -4,7 +4,7 @@
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/2/plain-WDL/descriptor" as diffexp_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/10/plain-WDL/descriptor" as mapping_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/17/plain-WDL/descriptor" as analysis_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/1/plain-WDL/descriptor" as postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/2/plain-WDL/descriptor" as postprocess_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/1/plain-WDL/descriptor" as report_wdl
 
 ################################################
