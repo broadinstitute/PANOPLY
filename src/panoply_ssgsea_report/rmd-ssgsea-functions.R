@@ -162,7 +162,8 @@ pw_hm <- function(output.prefix,
                   cw=10,                           ## heatmap cellwidth 
                   ch=10,                           ## heatmap cellheight
                   
-                  normalize_names = FALSE,          ## Toggle for normalizing pathway names (e.g. "HALLMARK_MITOTIC_SPINDLE" -> "Mitotic Spindle")
+                  remove_prefix = FALSE,           ## Toggle to remove common prefixes for names (e.g. "HALLMARK_MITOTIC_SPINDLE" -> "MITOTIC_SPINDLE")
+                  normalize_names = FALSE,        ## Toggle for normalizing pathway names (e.g. "MITOTIC_SPINDLE" -> "Mitotic Spindle")
                   
                   colors = c("#347db6", "#6babd0", "#afd3e6", '#FFFFFF', "#f6bda4", "#e48169", "#c33d3e") , ## default color-scale for heatmap (taken from Vega RdBu)
                   na.col = 'grey50',
@@ -287,7 +288,7 @@ pw_hm <- function(output.prefix,
       #                                 'proliferation'='palegreen3', 'cellular component'='snow4', 'metabolic'='khaki', 
       #                                 'DNA damage'='darkmagenta', 'pathway'='tan3'))
       gaps_row <- cumsum(table(annotation_row$Category))
-      if (is.hallmark) { # if is hallmark
+      if (is.hallmark) { # if is hallmark (legacy behavior)
         rownames(mat.filt) <- sub('^HALLMARK_', '',  rownames(mat.filt))
         rownames(annotation_row) <- sub('^HALLMARK_', '',  rownames(annotation_row))
       }
@@ -297,7 +298,7 @@ pw_hm <- function(output.prefix,
       gaps_row=NULL
     }   
     
-    if (normalize_names) {
+    if (remove_prefix) {
       # remove common prefixes (e.g. "KEGG_MEDICUS_<pathway>" -> "<pathway>")
       prefixes = unique(gsub("^(.+?)_.+$", "\\1", rownames(mat.filt)))
       while ( dim(mat.filt)[1]>1 && length(prefixes)==1) { # if there's only one common prefix (ASSUMING WE HAVE MORE THAN ONE PATHWAY)
@@ -305,6 +306,8 @@ pw_hm <- function(output.prefix,
         if (!is.null(annotation_row)) rownames(annotation_row) <- sub(glue('^{prefixes}_'), '',  rownames(annotation_row)) # prune it annotations
         prefixes = unique(gsub("^(.+?)_.+$", "\\1", rownames(mat.filt))) # check for another common prefix
       }
+    }
+    if (normalize_names) {
       # replace underscores with spaces
       rownames(mat.filt) = gsub("_", " ", rownames(mat.filt))
       if (!is.null(annotation_row)) rownames(annotation_row) = gsub("_", " ", rownames(annotation_row))
