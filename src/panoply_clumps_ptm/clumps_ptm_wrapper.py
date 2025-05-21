@@ -20,6 +20,7 @@ import pprint
 import os
 import sys
 
+from datetime import datetime
 # import random
 import json
 
@@ -75,7 +76,7 @@ parser.add_argument('-x', '--xpo', type=str, help='Soft distance threshold (t).'
 # parser.add_argument('-x', '--xpo', default=[6], type=list, help='Soft distance threshold (t).')
 parser.add_argument('-n','--threads', type=str, default="1", help='Number of threads for sampling.') # NOTE: keep everything as string until it's passed to clumpsptm
 
-# parser.add_argument('-r','--seed', type=str, default="2025", help='Random seed to set before running ClumpsPTM.') # doesn't work with random.seed()
+# parser.add_argument('-r','--seed', type=str, default=None, help='Random seed to use in ClumpsPTM. WARNING: Only works for single-threaded processes.') 
 
 # MANAGED BY WRAPPER
 # parser.add_argument('-o','--output_dir', default=".", help='Output directory.')
@@ -87,21 +88,21 @@ parser.add_argument('-n','--threads', type=str, default="1", help='Number of thr
 parser.add_argument('-t','--test', action='store_true', default=False, help='Test run with n=5 proteins.')
 parser.add_argument('-v', '--verbose', action='store_true', default=True, help='Verbosity.') # always run verbose (for now)
 
-# args = parser.parse_args()
+args = parser.parse_args()
 
 
-# testing arguments manually
-args = parser.parse_args([
-    "-y" "/opt/input/master-parameters.yaml",\
-    "-i" "/opt/input/filtered/full_de_cohort_cov_filt-to-1-4_filt-to-pdbs_filt-to-acKpSTY.tsv", \
-    "-m" "/opt/input/filtered/mapped_sites_to_pdbs_filt-to-pdbs.tsv", \
-    "--pdbstore", "pdbs", \
-    "--accession_col", "accession_number", \
-    "--weight_col", "gsea_rank", \
-    "-n", "12", \
-    # "-r", "2025", \
-    # "-t"
-])
+# # testing arguments manually
+# args = parser.parse_args([
+#     "-y" "/opt/input/master-parameters.yaml",\
+#     "-i" "/opt/input/filtered/full_de_cohort_cov_filt-to-1-4_filt-to-pdbs_filt-to-acKpSTY.tsv", \
+#     "-m" "/opt/input/filtered/mapped_sites_to_pdbs_filt-to-pdbs.tsv", \
+#     "--pdbstore", "pdbs", \
+#     "--accession_col", "accession_number", \
+#     "--weight_col", "gsea_rank", \
+#     "-n", "12", \
+#     # "-r", "2025", \
+#     "-t"
+# ])
 
 
 
@@ -109,6 +110,11 @@ args = parser.parse_args([
 ### import default parameters from YAML
 with open(args.yaml, 'r') as file:
     yaml_dict = yaml.safe_load(file)
+
+
+# if (args.seed==None):  # SEED DOES NOT WORK
+#     args.seed = datetime.now().strftime("%H%M%S") # set seed to current time
+#     # args.seed = datetime.now().strftime("%Y%m%d%H%M%S") # seeds that are too long will fail
 
 
 # override missing parameters with yaml defaults
@@ -172,6 +178,7 @@ for group in groups:
             '--subset', direction,
             # other parameters
             '--threads', str(args.threads),
+            # '--seed', str(args.seed), # SEED ONLY WORKS FOR SINGLE-THREAD
             '--output_dir', os.path.join("clumpsptm_runs",str(group)+"_"+direction+"_results")
         ]
         # advanced
@@ -190,7 +197,6 @@ for group in groups:
         print("## RUNNING COMMAND: \'"+' '.join(sys.argv)+"\'")
         # Run CLUMPS-PTM
         try:
-            # random.seed(args.seed) # doesn't work
             main()
             # subprocess.run(sys.argv)
         except ValueError as e: # if we get a value error
