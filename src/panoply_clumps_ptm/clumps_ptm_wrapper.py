@@ -138,7 +138,7 @@ pprint.pp(args.__dict__)
 print('\n')
 
 # write args dictionary to a JSON
-os.makedirs('clumpsptm_runs')
+os.makedirs('clumpsptm_runs', exist_ok=True) # you already make this in the WDL
 with open(os.path.join("clumpsptm_runs",'params.json'), 'w') as f:
     json.dump(args.__dict__, f)
 
