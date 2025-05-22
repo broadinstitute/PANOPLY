@@ -28,6 +28,7 @@ workflow panoply_main {
   String? run_ptmsea # "true" or "false"
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
+  String? run_omicsev = "true"
 
   ## inputs
   File input_pome
@@ -127,15 +128,18 @@ workflow panoply_main {
     }
     
     ### Omics EV
-    call omicsev_wdl.panoply_omicsev {
-      input:
-        yaml_file = yaml,
-        STANDALONE = standalone,
-        do_function_prediction = false,
-        panoply_harmonize_tar_file = panoply_harmonize.outputs,
-        label = job_identifier,
-        ome_type = ome_type
+    if ( run_omicsev == "true" ){ 
+      call omicsev_wdl.panoply_omicsev {
+        input:
+          yaml_file = yaml,
+          STANDALONE = standalone,
+          do_function_prediction = false,
+          panoply_harmonize_tar_file = panoply_harmonize.outputs,
+          label = job_identifier,
+          ome_type = ome_type
+      }
     }
+
 
     ### Sample QC
     call sampleqc_wdl.panoply_sampleqc {

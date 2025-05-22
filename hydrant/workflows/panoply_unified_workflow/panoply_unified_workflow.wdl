@@ -85,6 +85,7 @@ workflow panoply_unified_workflow {
         job_identifier="${job_id}-${pair.left}",
         run_ptmsea="${run_ptmsea}",
         run_cmap = "${run_cmap}",
+        run_omicsev = "${if pair.left=='proteome' then true else false}",
         run_nmf = "false",
         input_cna=cna_data,
         input_rna=rna_data,
