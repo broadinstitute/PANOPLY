@@ -63,12 +63,12 @@ workflow panoply_clumps_ptm_workflow {
 
 	call report_wdl.panoply_clumps_ptm_report as report {
 	    input:
-	    	postprocess_results = postprocess.results, 			# array of results file from postprocess module
+	    	postprocess_results = postprocess.results, 			 # array of results AND figures from postprocess module
 	    	label = output_prefix
 	}
 
 	output{
-	    Array[File] clumps_ptm_results = analysis.results
+	    Array[File] clumps_ptm_results = postprocess.results     # array of results AND figures from postprocess module
 	    File clumps_ptm_report = report.report
 	}
 }
