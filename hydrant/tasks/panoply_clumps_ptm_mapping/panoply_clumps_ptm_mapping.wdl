@@ -15,16 +15,19 @@ task panoply_clumps_ptm_mapping {
 	Array[File]+ PDB_DIR = [ PDB_ref_bucket + "pdbs_0.tar", PDB_ref_bucket + "pdbs_1.tar", PDB_ref_bucket + "pdbs_2.tar", PDB_ref_bucket + "pdbs_3.tar", PDB_ref_bucket + "pdbs_4.tar", PDB_ref_bucket + "pdbs_5.tar", PDB_ref_bucket + "pdbs_6.tar", PDB_ref_bucket + "pdbs_7.tar", PDB_ref_bucket + "pdbs_8.tar", PDB_ref_bucket + "pdbs_9.tar", PDB_ref_bucket + "pdbs_a.tar", PDB_ref_bucket + "pdbs_b.tar", PDB_ref_bucket + "pdbs_c.tar", PDB_ref_bucket + "pdbs_d.tar", PDB_ref_bucket + "pdbs_e.tar", PDB_ref_bucket + "pdbs_f.tar", PDB_ref_bucket + "pdbs_g.tar", PDB_ref_bucket + "pdbs_h.tar", PDB_ref_bucket + "pdbs_i.tar", PDB_ref_bucket + "pdbs_j.tar", PDB_ref_bucket + "pdbs_k.tar", PDB_ref_bucket + "pdbs_l.tar", PDB_ref_bucket + "pdbs_m.tar", PDB_ref_bucket + "pdbs_n.tar", PDB_ref_bucket + "pdbs_o.tar", PDB_ref_bucket + "pdbs_p.tar", PDB_ref_bucket + "pdbs_q.tar", PDB_ref_bucket + "pdbs_r.tar", PDB_ref_bucket + "pdbs_s.tar", PDB_ref_bucket + "pdbs_t.tar", PDB_ref_bucket + "pdbs_u.tar", PDB_ref_bucket + "pdbs_v.tar", PDB_ref_bucket + "pdbs_w.tar", PDB_ref_bucket + "pdbs_x.tar", PDB_ref_bucket + "pdbs_y.tar", PDB_ref_bucket + "pdbs_z.tar" ]
 
 	# ID Mapping
-	File FASTA_ref_file			# file with FASTA reference sequences, to be blasted against UNIPROT
+	File FASTA_ref_file				# file with FASTA reference sequences, to be blasted against UNIPROT
 	String? FASTA_sep_type			# file with FASTA reference sequences, to be blasted against UNIPROT
 
-	String? accession_col		# rdesc column with protein accession id; must match IDs in FASTA_ref_file
-	String? variable_sites_col	# rdesc column with variable sites (e.g. 'T527t')
-	String? variable_sites_sep	# seperator for variable sites
+	String? accession_col			# rdesc column with protein accession id; must match IDs in FASTA_ref_file
 	String? gene_column
 
-	File UNIPROT_SWISSPROT		# file with UNIPROT sequences, to be blasted to
-	File SIFTS_DB				# SIFTS database with mapping between UNIPROT and PDB IDs
+	String? variable_sites_col		# rdesc column with variable sites (e.g. 'T527t')
+	String? variable_sites_sep		# seperator for variable sites
+	Boolean? keep_multi_sites		# should multi-site PTMs be mapped to PDBs
+	Boolean? filter_duplicate_sites	# should multi-site PTMs that were also observed as single-sites be filtered out
+
+	File UNIPROT_SWISSPROT			# file with UNIPROT sequences, to be blasted to
+	File SIFTS_DB					# SIFTS database with mapping between UNIPROT and PDB IDs
 
 
 
@@ -56,6 +59,7 @@ task panoply_clumps_ptm_mapping {
 		--FASTA_ref_file ${FASTA_ref_file} ${'--FASTA_sep_type ' + FASTA_sep_type}  \
 		${'--accession_col ' + accession_col} ${'--gene_column ' + gene_column} \
 		${'--variable_sites_col ' + variable_sites_col} ${'--variable_sites_sep ' + '"' + variable_sites_sep + '"'} \
+		${'--keep_multi_sites ' + keep_multi_sites} ${'--filter_duplicate_sites ' + '"' + filter_duplicate_sites + '"'} \
 		--UNIPROT_SWISSPROT ${UNIPROT_SWISSPROT} --SIFTS_DB ${SIFTS_DB} \
 		--output_prefix ${output_prefix} --yaml ${yaml_file} --num_threads ${num_threads} \
 		$( [ ${DEBUG_MODE} = true ] && echo "--DEBUG_MODE" )

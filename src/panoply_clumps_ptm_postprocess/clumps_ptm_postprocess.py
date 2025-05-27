@@ -4,7 +4,7 @@ import pandas as pd
 import os
 import sys
 import clumpsptm
-# import pymol
+import pymol
 from tqdm import tqdm
 import glob
 from typing import Union
@@ -65,14 +65,16 @@ args = parser.parse_args()
 
 # # optional testing args
 # args = parser.parse_args(
-#     ["-r" "/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
-#      "-f" "0.1", \
-#      # "-i" "id.description", \
-#      # "-s" " ", \
-#      # "-v" "variableSites", \
-#      # "-g" "geneSymbol", \
-#      "-o" "ODG_v3_NMF.consensus.core.k3", \
-#      "-y" "/opt/input/master-parameters.yaml"]
+#     ["-r", "/opt/input/pancan_2021_clumps_runs.tar", \
+#     #"/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
+#      "-f", "0.1", \
+#      # "-i", "id.description", \
+#      # "-s", " ", \
+#      # "-v", "variableSites", \
+#      # "-g", "geneSymbol", \
+#      "-o", "Pancan2021", \
+#      #"ODG_v3_NMF.consensus.core.k3", \
+#      "-y", "/opt/input/master-parameters.yaml"]
 # )
 
 
@@ -98,7 +100,7 @@ if (args.fdr_threshold==None):
 
 # print parameters
 print('\n\nParameters:')
-pprint.pp(args.__dict__)
+pprint.pprint(args.__dict__)
 print('\n')
 
 
@@ -217,12 +219,12 @@ def plot_pair(group, results_df, n_to_plot=20):
     """Plot paring."""
     ome_types = np.unique(results_df['clumpsptm_sampler']) # get unique feature-types
     if ('ptm' in ome_types): # if we ran combined
-        np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
+        ome_types = np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
     fig, axes = plt.subplots(2, len(ome_types), figsize=(10,14)) # TODO: needs to be adjusted if we have additional omes
     # for each feature
     for j,feature in enumerate(ome_types):
     	# plot positive/negative features
-        for i,direction in enumerate(['negative','positive']):
+        for i,direction in enumerate(['positive', 'negative']):
             _df = results_df[results_df['id']=="{}_{}_results".format(group, direction)]
             clumpsptm.vis.dotplot(
                 _df.loc[_df[_df['clumpsptm_sampler']==feature].sort_values(
@@ -262,23 +264,26 @@ for group in np.unique(results_df['subval']):
 ####################################
 
 
-## Creation of Pymol Files
-## --------------------------
+# Creation of Pymol Files
+# --------------------------
 
-# for group in np.unique(results_df['id']):
-#     os.makedirs(os.path.join('figures/pymol', group), exist_ok=True)
+for group in np.unique(results_df['id']):
+    os.makedirs(os.path.join(out_dir_pymol, group), exist_ok=True)
     
-#     for feat in np.unique(results_df['clumpsptm_sampler']):
-#         _df = results_df[(results_df['id']==group) & 
-#                          (results_df['clumpsptm_sampler']==feat)
-#                         ].sort_values('clumpsptm_pval').reset_index()
-#         _df.index = _df.index.astype(str)
-#         _out_dir = os.path.join('figures/pymol',group,feat)
-#         clumpsptm.vis.create_pymols_from_result(_df, out_dir=_out_dir, include_idx_in_name=True)
+    for feat in np.unique(results_df['clumpsptm_sampler']):
+        _df = results_df[(results_df['id']==group) & 
+                         (results_df['clumpsptm_sampler']==feat)
+                        ].sort_values('clumpsptm_pval').reset_index()
+        _df.index = _df.index.astype(str)
+        _out_dir = os.path.join(out_dir_pymol,group,feat)
+        clumpsptm.vis.create_pymols_from_result(_df, out_dir=_out_dir, include_idx_in_name=True)
 
 
-
-
+# # make custom PyMol Figure
+# prot_id = "ENSP00000402103.3"
+# _df = results_df[results_df.index==prot_id]
+# for idx,row in tqdm(_df.iterrows(), total=_df.shape[0]):
+#     clumpsptm.vis.buildPymol_from_result(row, out_dir=os.path.join(out_dir_pymol,row.id,row.clumpsptm_sampler))
 
 
 
@@ -309,7 +314,7 @@ counts_df = counts_df.reset_index()
 # pick -ome to sort data by
 ome_types = np.unique(counts_df['clumpsptm_sampler'])
 if ('ptm' in ome_types):
-    np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
+    ome_types = np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
 
 # get _order using first PTM type
 _counts_df = counts_df.reset_index()
@@ -341,9 +346,21 @@ for i,ome in enumerate(ome_types):
 axes[i].legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
 axes[0].set_yticklabels([x.get_text().replace("_", " ").upper().replace("POS RESULTS","(+)").replace("NEG RESULTS","(-)")  for x in axes[0].get_yticklabels()])
-axes[0].set_xlim([0,1200])
-axes[1].set_xlim([0,1200])
-axes[2].set_xlim([0,1200])
+
+# set axes
+if ('ptm' in ome_types): # if we ran combined
+    tmp = counts_df[counts_df['clumpsptm_sampler']!='ptm'] # set xlim max to the largest number of invdividual-PTM proteins
+    xlim_max = max(tmp.NS + tmp['< 0.1 P-Value'] + tmp['< 0.1 FDR'])
+else:
+    xlim_max = max(counts_df.NS + counts_df['< 0.1 P-Value'] + counts_df['< 0.1 FDR'])
+# set axes for all PTMs
+for i in range(len(ome_types)):
+    axes[i].set_xlim([0,xlim_max+100])
+# override axis for combined plot
+if ('ptm' in ome_types):
+    tmp = counts_df[counts_df['clumpsptm_sampler']=='ptm']
+    xlim_max = max(tmp.NS + tmp['< 0.1 P-Value'] + tmp['< 0.1 FDR'])
+    axes[0].set_xlim([0,xlim_max+100])
 
 
 plt.tight_layout()

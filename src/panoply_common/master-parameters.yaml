@@ -93,6 +93,8 @@ panoply_clumps_ptm:
   mapping:
     variable_sites_col: 'variableSites'   # GCT rdesc column with PTM variable site(s) (e.g. 'T527t')
     variable_sites_sep: ' '               # Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')
+    keep_multi_sites: true                # Should multi-site PTMs be mapped and analyzed?
+    filter_duplicate_sites: false         # Should multi-site PTMs that were also observed as single-sites be filtered out?
     FASTA_sep_type: 'gencode'             # Separator for FASTA sequences in FASTA reference file. Supported values are "cptac" for ' ', or "gencode" for "|"
   diff_exp:
     min_samples: 5                        # minimum number of samples an annotation-subgroup can have before it is dropped from analysis (5 recommended, 3 absolute minimum)

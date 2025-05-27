@@ -38,7 +38,7 @@ task panoply_clumps_ptm_postprocess {
 		docker : "broadcptacdev/panoply_clumps_ptm_postprocess:latest"
 		memory : select_first ([memory, 32]) + "GB"
 		disks : "local-disk  " + select_first ([disk_space, 20]) + " HDD"
-		cpu : select_first ([num_threads, 32]) + ""
+		cpu : select_first ([num_threads, 16]) + ""
 		preemptible : select_first ([num_preemtions, 0])
 	}
 

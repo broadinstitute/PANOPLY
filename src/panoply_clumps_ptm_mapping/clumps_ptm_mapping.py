@@ -1,3 +1,5 @@
+#### Mapping Script for ClumpsPTM
+
 import clumpsptm
 import pandas as pd
 import os
@@ -56,9 +58,13 @@ parser.add_argument("-f", "--FASTA_ref_file", type=str, help="Reference FASTA fi
 parser.add_argument("-t", "--FASTA_sep_type", type=str, help="Separator for FASTA sequences in FASTA reference file. Supported values are \"cptac\" for \" \", or \"gencode\" for \"|\".')")
 
 parser.add_argument("-i", "--accession_col", type=str, help="GCT rdesc column with accession IDs. Must match the ID type of the provided FASTA file.")
+parser.add_argument("-g", "--gene_column", type=str, help="GCT rdesc column with HUGO Gene Symbols")
+
+# PTM Site Management
 parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc column with PTM variable site(s) (e.g. 'T527t')")
 parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')")
-parser.add_argument("-g", "--gene_column", type=str, help="GCT rdesc column with HUGO Gene Symbols")
+parser.add_argument("--keep_multi_sites", type=bool, help="Should multi-site PTMs be mapped?.")
+parser.add_argument("--filter_duplicate_sites", type=bool, help="Should multi-site PTMs be filtered to remove sites that were observed as single-sites?")
 
 parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.", required=True)
 parser.add_argument("--UNIPROT_SWISSPROT", type=str, help="Reference FASTA file with all relevant UNIPROT sequences, to BLAST your sequences to.", required=True)
@@ -69,6 +75,7 @@ parser.add_argument("-y", "--yaml", type=str, help="Path to .yaml file with para
 
 parser.add_argument("-n", "--num_threads", type=int, help="Number of threads available", default = 1) # assume 1 thread if not provided, just to be extra safe
 parser.add_argument("-d", "--DEBUG_MODE", help="Run in debugging mode; limit the number of FASTA files processed.", action = "store_true")
+parser.add_argument("--DEBUG_RNG", type=int, help="RNG seed for debugging.")
 
 
 # import from command line
@@ -76,13 +83,19 @@ args = parser.parse_args() # import from command line
 
 # # testing arguments manually
 # args = parser.parse_args(["-p" "/opt/input/phosphoproteome-subset.gct", \
-#     "-f" "/opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta", \
-#     "-i" "id.description", \
-#     "-o" "ODG_v3", \
-#     "-y" "/opt/input/master-parameters.yaml",\
-#     "-n" "12"])
-# args = parser.parse_args("--phosphoproteome_gct /opt/input/var_map_fromOutput_phosphoproteome.gct --acetylome_gct /opt/input/var_map_fromOutput_acetylome.gct --PDB_DIR /pdbs --FASTA_ref_file /opt/input/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams_553smORFs.fasta --FASTA_sep_type cptac --accession_col accession_number --variable_sites_col variableSites_edited --UNIPROT_SWISSPROT /opt/input/Freeze_061721_clumpsptm_ref_uniprot_uniprot_sprot.fasta --SIFTS_DB /opt/input/Freeze_061721_clumpsptm_ref_uniprot_pdb_chain_uniprot.tsv --output_prefix pancan --yaml /opt/input/master-parameters.yaml --num_threads 8 --DEBUG_MODE".split())
-# args = parser.parse_args("-p /opt/input/ODG-v3-phosphoproteome-SpectrumMill-ratio-QCfilter-NArm.gct -u /opt/input/ODG-v3-ubiquitylome-SpectrumMill-ratio-QCfilter-NArm.gct -a /opt/input/ODG-v3-acetylome-SpectrumMill-ratio-QCfilter-NArm.gct --PDB_DIR /pdbs -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta --UNIPROT_SWISSPROT /opt/input/uniprot_sprot.fasta --SIFTS_DB /opt/input/pdb_chain_uniprot.tsv -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12".split())
+#     "-a" "/opt/input/acetylome-subset.gct", \
+#     "-u" "/opt/input/ubiquitylome-subset.gct", \
+#     "-f" "/opt/input/Gencode_v39.basicPCnr2.642contams.fasta", \
+#     "--PDB_DIR", "/pdbs", \
+#     "--UNIPROT_SWISSPROT", "/opt/input/uniprot_sprot.fasta", \
+#     "--SIFTS_DB", "/opt/input/pdb_chain_uniprot.tsv", \
+#     "-i", "id.description", \
+#     "-o", "ODG_v3", \
+#     "-y", "/opt/input/master-parameters.yaml",\
+#     "--DEBUG_MODE", \
+#     "-n", "12"])
+# # args = parser.parse_args("--phosphoproteome_gct /opt/input/var_map_fromOutput_phosphoproteome.gct --acetylome_gct /opt/input/var_map_fromOutput_acetylome.gct --PDB_DIR /pdbs --FASTA_ref_file /opt/input/RefSeq.20180629_Human_ucsc_hg38_cpdbnr_mito_264contams_553smORFs.fasta --FASTA_sep_type cptac --accession_col accession_number --variable_sites_col variableSites_edited --UNIPROT_SWISSPROT /opt/input/Freeze_061721_clumpsptm_ref_uniprot_uniprot_sprot.fasta --SIFTS_DB /opt/input/Freeze_061721_clumpsptm_ref_uniprot_pdb_chain_uniprot.tsv --output_prefix pancan --yaml /opt/input/master-parameters.yaml --num_threads 8 --DEBUG_MODE".split())
+# # args = parser.parse_args("-p /opt/input/ODG-v3-phosphoproteome-SpectrumMill-ratio-QCfilter-NArm.gct -u /opt/input/ODG-v3-ubiquitylome-SpectrumMill-ratio-QCfilter-NArm.gct -a /opt/input/ODG-v3-acetylome-SpectrumMill-ratio-QCfilter-NArm.gct --PDB_DIR /pdbs -f /opt/input/Ensembl.human.hg19.clean3nr.602contams_20230913.fasta --UNIPROT_SWISSPROT /opt/input/uniprot_sprot.fasta --SIFTS_DB /opt/input/pdb_chain_uniprot.tsv -i id.description -o ODG_v3 -y /opt/input/master-parameters.yaml -n 12".split())
 
 
 
@@ -105,18 +118,23 @@ if (args.accession_col==None):
     # args.accession_col = yaml_dict['global_parameters']['gene_mapping']['protein_id_col']
     args.accession_col = yaml_dict['panoply_ptm_normalization']['accession_number_colname']
 
+if (args.gene_column==None):
+    args.gene_column = yaml_dict['global_parameters']['gene_mapping']['gene_id_col']
+
 if (args.variable_sites_col==None):
     args.variable_sites_col = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_col']
 
-if (args.variable_sites_sep==None):
-    args.variable_sites_sep = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_sep']
+if (args.keep_multi_sites==None):
+    args.keep_multi_sites = yaml_dict['panoply_clumps_ptm']['mapping']['keep_multi_sites']
 
-if (args.gene_column==None):
-    args.gene_column = yaml_dict['global_parameters']['gene_mapping']['gene_id_col']
+if (args.filter_duplicate_sites==None):
+    args.filter_duplicate_sites = yaml_dict['panoply_clumps_ptm']['mapping']['filter_duplicate_sites']
 
 if (args.FASTA_sep_type==None):
     args.FASTA_sep_type = yaml_dict['panoply_clumps_ptm']['mapping']['FASTA_sep_type']
 
+if (args.DEBUG_RNG==None):
+    args.DEBUG_RNG = int(datetime.now().strftime("%H%M%S")) # set seed to current time
 
 # ensure that FASTA_sep_type is a valid value
 if (args.FASTA_sep_type!='gencode' and \
@@ -126,7 +144,7 @@ if (args.FASTA_sep_type!='gencode' and \
 
 # print parameters
 print('\n\nParameters:')
-pprint.pp(args.__dict__)
+pprint.pprint(args.__dict__)
 print('\n')
 
 
@@ -164,6 +182,8 @@ n_threads = args.num_threads
 accn_col = args.accession_col
 ptm_col = args.variable_sites_col
 ptm_split = args.variable_sites_sep
+keep_multi_sites = args.keep_multi_sites
+filter_duplicate_sites = args.filter_duplicate_sites
 gene_col = args.gene_column
 accn_type = 'inputID' # label to use for input ID (e.g. 'ENSEMBL' or 'refseq'). not really used; currently a placeholder.
 unique_id_col = 'rid' # hardcode unique_id_col to "rid" since we're importing a GCT file. If we were using a pre-generated var_site.tsv file, this might be "id" instead.
@@ -176,6 +196,7 @@ output_prefix = args.output_prefix+"_"
 
 
 if (DEBUG_MODE): # if we're running DEBUG mode, warn the user
+    DEBUG_RNG = np.random.RandomState(args.DEBUG_RNG) # create random state from seed
     print(f"#### WARNING: DEBUG_MODE is currently toggled ON. This setting should NOT be used for full-runs of Clumps-PTM")
 
 
@@ -259,7 +280,7 @@ print("\n#### FASTA FILE-SPLITTING COMPLETE  --- ", datetime.now())
 
 if (DEBUG_MODE): # if we're running DEBUG mode, only use a subset of proteins
     print(f"#### WARNING: DEBUG_MODE is currently toggled ON. This setting should NOT be used for full-runs of Clumps-PTM")
-    individual_fastas = random.sample(individual_fastas, DEBUG_N_PROT)
+    individual_fastas = DEBUG_RNG.choice(individual_fastas, DEBUG_N_PROT)
 
 
 
@@ -368,6 +389,8 @@ missing_pdbs = check_missing_pdbs(sifts_filt_df)
 
 # Drop PDBs unable to be downloaded
 sifts_filt_df = sifts_filt_df[sifts_filt_df["PDB"].isin(pdbstore.downloaded_pdbs)]
+if sifts_filt_df.shape[0]==0:
+    raise Exception("No SIFTS hits had matching PDB files")
 
 print("#### PDB IMPORT COMPLETE  --- ", datetime.now())
 
@@ -407,23 +430,31 @@ ptm_sing_df_filt = ptm_sing_df_filt[ptm_sing_df_filt['ptmSite'].apply(lambda x: 
 if ptm_sing_df_filt.shape[0]==0:
 	raise Exception("No single-site ptms in dataset")
 
-# Proteins with multiple PTM sites
-ptm_multi_df = pd.concat((
-    ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="3" and x.split("_")[-4]=="3")].copy(),
-    ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="2" and x.split("_")[-4]=="2")].copy()
-))
+if keep_multi_sites:
+    # Proteins with multiple PTM sites
+    ptm_multi_df = pd.concat((
+        ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="3" and x.split("_")[-4]=="3")].copy(),
+        ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="2" and x.split("_")[-4]=="2")].copy()
+    ))
+    ptm_multi_df.loc[:,"ptmSite"] = ptm_multi_df[ptm_col].apply(grab_ptm_site)
+    ptm_multi_df = ptm_multi_df.explode("ptmSite")
+    # filter out malformed values
+    ptm_multi_df_filt = ptm_multi_df[ptm_multi_df['ptmSite'].notna()] # drop ptmSites that are NA
+    ptm_multi_df_filt = ptm_multi_df_filt[ptm_multi_df_filt['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
+    if ptm_multi_df_filt.shape[0]==0:
+    	warnings.warn("No multi-site ptms in dataset")
+    # optionally filter sites that already exist in single-site data
+    if filter_duplicate_sites:
+        sing_keys = set(zip(ptm_sing_df_filt[accn_col], ptm_sing_df_filt["ptmSite"])) # get all unique PTM Sites in the single-site dataset
+        ptm_multi_df_filt = ptm_multi_df_filt[ # filter out sites from the multisite dataset
+            ~ptm_multi_df_filt[[accn_col,"ptmSite"]].apply(tuple, axis=1).isin(sing_keys) # that had a relevant single-site
+        ]
+    # Combine single-sites with multi-sites
+    ptm_comb_df = pd.concat((ptm_sing_df_filt, ptm_multi_df_filt))
+else:
+    ptm_comb_df = ptm_sing_df_filt
 
-ptm_multi_df.loc[:,"ptmSite"] = ptm_multi_df[ptm_col].apply(grab_ptm_site)
-ptm_multi_df = ptm_multi_df.explode("ptmSite")
 
-# filter out malformed values
-ptm_multi_df_filt = ptm_multi_df[ptm_multi_df['ptmSite'].notna()] # drop ptmSites that are NA
-ptm_multi_df_filt = ptm_multi_df_filt[ptm_multi_df_filt['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
-if ptm_multi_df_filt.shape[0]==0:
-	warnings.warn("No multi-site ptms in dataset")
-
-# Combine & intersect accession numbers
-ptm_comb_df = pd.concat((ptm_sing_df_filt, ptm_multi_df_filt))
 ptm_comb_df = ptm_comb_df[ptm_comb_df[accn_col].isin(mapped_acc_df.index)] # subset to valid accession numbers
 if ptm_comb_df.shape[0]==0:
 	raise Exception("No overlap between database accession-numbers and BLASTed accession numbers")
@@ -446,7 +477,10 @@ ptm_comb_df["acc_res_i"] = ptm_comb_df["ptmSite"].str.slice(1,-1).astype(int)
 
 # print out stats for your database
 print("  * {} single PTM sites total in dataset".format(ptm_sing_df_filt.shape[0]))
-print("  * {} multi PTM sites total in dataset".format(ptm_multi_df_filt.shape[0]))
+if keep_multi_sites:
+    print("  * {} multi PTM sites total in dataset".format(ptm_multi_df_filt.shape[0]))
+else:
+    print("  * Multi PTM sites will be excluded")
 
 
 print("#### PTM PREPROCESSING COMPLETE  --- ", datetime.now())
@@ -596,19 +630,18 @@ print("\n#### PDB HEADER COLLECTION COMPLETE  --- ", datetime.now())
 ##########################
 
 # Code block where warnings are suppressed
-with warnings.catch_warnings():
-    warnings.simplefilter("ignore")
-    clumpsptm.mp.get_pdb_matches(
-        accession_numbers_to_use,
-        ptm_comb_filt2_df,
-        sifts_drop_dup,
-        pdbstore,
-        os.path.join(REF_DIR, "pdb_matches"),
-        n_threads,
-        protein_id = accn_col
-    )
-# toDo: warnings in this are SUPER noisy. currently just suppressing warnings but...
-# see if there's an easy fix you could push...
+# with warnings.catch_warnings():
+#     warnings.simplefilter("ignore")
+clumpsptm.mp.get_pdb_matches(
+    accession_numbers_to_use,
+    ptm_comb_filt2_df,
+    sifts_drop_dup,
+    pdbstore,
+    os.path.join(REF_DIR, "pdb_matches"),
+    n_threads,
+    protein_id = accn_col
+)
+# NOTE: warnings are not an issue in version 3.7.3
 
 
 print("#### PDB MATCHING COMPLETE  --- ", datetime.now())

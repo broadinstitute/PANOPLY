@@ -134,7 +134,7 @@ if (args.run_combined==None):
 
 # print parameters
 print('\n\nParameters:')
-pprint.pp(args.__dict__)
+pprint.pprint(args.__dict__)
 print('\n')
 
 # write args dictionary to a JSON
