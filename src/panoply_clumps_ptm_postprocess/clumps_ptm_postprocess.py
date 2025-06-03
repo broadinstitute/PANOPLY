@@ -65,15 +65,16 @@ args = parser.parse_args()
 
 # # optional testing args
 # args = parser.parse_args(
-#     ["-r", "/opt/input/pancan_2021_clumps_runs.tar", \
-#     #"/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
+#     ["-r", #"/opt/input/pancan_2021_clumps_runs.tar", \
+#     "/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
 #      "-f", "0.1", \
 #      # "-i", "id.description", \
 #      # "-s", " ", \
 #      # "-v", "variableSites", \
 #      # "-g", "geneSymbol", \
-#      "-o", "Pancan2021", \
-#      #"ODG_v3_NMF.consensus.core.k3", \
+#      "-o", #"Pancan2021", \
+#      "ODG_v3_HK1", \
+#      # "ODG_v3_NMF.consensus.core.k3", \
 #      "-y", "/opt/input/master-parameters.yaml"]
 # )
 
@@ -279,12 +280,7 @@ for group in np.unique(results_df['id']):
         clumpsptm.vis.create_pymols_from_result(_df, out_dir=_out_dir, include_idx_in_name=True)
 
 
-# # make custom PyMol Figure
-# prot_id = "ENSP00000402103.3"
-# _df = results_df[results_df.index==prot_id]
-# for idx,row in tqdm(_df.iterrows(), total=_df.shape[0]):
-#     clumpsptm.vis.buildPymol_from_result(row, out_dir=os.path.join(out_dir_pymol,row.id,row.clumpsptm_sampler))
-
+# make custom PyMol Figure (see /Volumes/proteomics_storage_vast/storage_slow/CPTAC3/PGDAC/odg/v4/analysis/PyMol_Figures/pymol_figures.py)
 
 
 #############################
