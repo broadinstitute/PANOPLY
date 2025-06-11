@@ -15,6 +15,7 @@ import ast
 # import general PANOPLY utilities
 import argparse
 import yaml
+# import json
 
 # import utility functions
 import tarfile
@@ -38,6 +39,17 @@ from datetime import datetime
 class IllegalArgumentError(ValueError):
     pass
 
+# create str2bool() for importing args.run_combined parameter
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 # # configure ProDy to not printout messages, to avoid
 # from prody import confProDy
 # confProDy(verbosity='error')
@@ -49,6 +61,9 @@ parser.add_argument("-r", "--results_tar", type=str, help="Directory with result
 # parser.add_argument("-m", "--mapping_file", type=str, help="ClumpsPTM mapping file with mappings to PDB archive", required=True)
 
 parser.add_argument("-f", "--fdr_threshold", type=float, help="Threshold for minimum theoretical p-value to consider for FDR")
+
+parser.add_argument("-p", "--pymol_gen", type=str2bool, help="Should PyMol figures be generated at all?")
+parser.add_argument("-t", "--pymol_upper_limit", type=int, help="Maximum number of PyMol figures that should be generated per annot.")
 
 # parser.add_argument("-i", "--accession_col", type=str, help="GCT rdesc column with accession IDs. Must match the ID type of the provided FASTA file.")
 # parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc column with PTM variable site(s) (e.g. 'T527t')")
@@ -88,6 +103,14 @@ with open(args.yaml, 'r') as file:
 if (args.fdr_threshold==None):
     args.fdr_threshold = yaml_dict['panoply_clumps_ptm']['postprocess']['fdr_thresh']
 
+# override missing parameters with yaml defaults
+if (args.pymol_gen==None):
+    args.pymol_gen = yaml_dict['panoply_clumps_ptm']['postprocess']['pymol_gen']
+
+# override missing parameters with yaml defaults
+if (args.pymol_upper_limit==None):
+    args.pymol_upper_limit = yaml_dict['panoply_clumps_ptm']['postprocess']['pymol_upper_limit']
+
 # if (args.variable_sites_col==None):
 #     args.variable_sites_col = yaml_dict['panoply_clumps_ptm']['mapping']['variable_sites_col']
 
@@ -106,6 +129,7 @@ print('\n')
 
 
 
+
 # tmp params
 # ome_types = ['acetylome','ubiquitylome','phosphoproteome']
 # ome_types = ['acetylome','phosphoproteome']
@@ -115,7 +139,7 @@ print('\n')
 ####   File & Directory Setup   ####
 ####################################
 
-# set up output directories
+## set up output directories
 os.makedirs(args.output_prefix, exist_ok=True)
 
 out_dir_figs=os.path.join(args.output_prefix,'figures')
@@ -127,11 +151,23 @@ os.makedirs(out_dir_dotplots, exist_ok=True)
 
 
 
-# extract tarfile contents
+## extract tarfile contents
 tar = tarfile.open(args.results_tar)
 
 tarfile_outdir = args.output_prefix
 tar.extractall(tarfile_outdir)
+
+
+## import previous parameters
+with open(os.path.join(tarfile_outdir, 'params.yaml')) as file:
+    args_full = yaml.safe_load(file)
+
+# append new parameters
+args_full['postprocess'] = args.__dict__
+
+## overwrite old params with full params
+with open(os.path.join(tarfile_outdir, 'params.yaml'), 'w') as f:
+    yaml.dump(args_full, f)
 
 
 #####################################
@@ -222,6 +258,9 @@ def plot_pair(group, results_df, n_to_plot=20):
     if ('ptm' in ome_types): # if we ran combined
         ome_types = np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
     fig, axes = plt.subplots(2, len(ome_types), figsize=(10,14)) # TODO: needs to be adjusted if we have additional omes
+    # Normalize axes to always be 2D
+    if len(ome_types) == 1:
+        axes = np.array(axes).reshape(2, 1) # reshape if we just have one ome
     # for each feature
     for j,feature in enumerate(ome_types):
     	# plot positive/negative features
@@ -268,16 +307,25 @@ for group in np.unique(results_df['subval']):
 # Creation of Pymol Files
 # --------------------------
 
-for group in np.unique(results_df['id']):
-    os.makedirs(os.path.join(out_dir_pymol, group), exist_ok=True)
-    
-    for feat in np.unique(results_df['clumpsptm_sampler']):
-        _df = results_df[(results_df['id']==group) & 
-                         (results_df['clumpsptm_sampler']==feat)
-                        ].sort_values('clumpsptm_pval').reset_index()
-        _df.index = _df.index.astype(str)
-        _out_dir = os.path.join(out_dir_pymol,group,feat)
-        clumpsptm.vis.create_pymols_from_result(_df, out_dir=_out_dir, include_idx_in_name=True)
+if args.pymol_gen:
+    for group in np.unique(results_df['id']):
+        os.makedirs(os.path.join(out_dir_pymol, group), exist_ok=True)
+        for feat in np.unique(results_df['clumpsptm_sampler']):
+            _df = results_df[(results_df['id']==group) & 
+                             (results_df['clumpsptm_sampler']==feat)
+                            ].sort_values('clumpsptm_pval').reset_index()
+            _df.index = _df.index.astype(str)
+            _df = _df[0:args.pymol_upper_limit] # subset to top pymol_upper_limit results
+            _out_dir = os.path.join(out_dir_pymol,group,feat)
+            clumpsptm.vis.create_pymols_from_result(_df, out_dir=_out_dir, include_idx_in_name=True)
+            # convert PSE to PNG
+            _pse_files = glob.glob(_out_dir+"/*.pse")
+            _png_dir = os.path.join(_out_dir, "PNGs")
+            os.makedirs(_png_dir, exist_ok=True)
+            for fn in _pse_files:
+                fn_png = os.path.splitext(os.path.basename(fn))[0]+'.png'
+                pymol.cmd.draw(4000, 3000)
+                pymol.cmd.png(os.path.join(_png_dir,fn_png))
 
 
 # make custom PyMol Figure (see /Volumes/proteomics_storage_vast/storage_slow/CPTAC3/PGDAC/odg/v4/analysis/PyMol_Figures/pymol_figures.py)
@@ -323,6 +371,8 @@ _order = _counts_df.sort_values(by=['id']).index # sort in order for now
 ## Create figure
 
 fig,axes = plt.subplots(1,len(ome_types),figsize=(12,5),sharey=False)
+if len(ome_types) == 1: # if we just have one ome
+    axes = [axes] # still wrap axes in a list object
 
 for i,ome in enumerate(ome_types):
     _counts_df = counts_df.reset_index()
@@ -349,9 +399,11 @@ if ('ptm' in ome_types): # if we ran combined
     xlim_max = max(tmp.NS + tmp['< 0.1 P-Value'] + tmp['< 0.1 FDR'])
 else:
     xlim_max = max(counts_df.NS + counts_df['< 0.1 P-Value'] + counts_df['< 0.1 FDR'])
+
 # set axes for all PTMs
 for i in range(len(ome_types)):
     axes[i].set_xlim([0,xlim_max+100])
+
 # override axis for combined plot
 if ('ptm' in ome_types):
     tmp = counts_df[counts_df['clumpsptm_sampler']=='ptm']

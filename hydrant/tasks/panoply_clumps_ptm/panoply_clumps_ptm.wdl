@@ -46,7 +46,8 @@ task panoply_clumps_ptm {
 		python -u /prot/proteomics/Projects/PGDAC/src/clumps_ptm_wrapper.py -y ${yaml_file} \
 			--input ${diff_exp_file} --maps ${var_sites_file} --pdbstore pdbs/ \
 			${'--protein_id ' + accession_col} ${'--site_id ' + variable_sites_col} \
-			${'--weight ' + weight_col} ${'--run_combined ' + run_combined} \
+			${'--weight ' + weight_col} \
+			${true="--run_combined true" false="--run_combined false" run_combined} \
 			--threads ${num_threads} \
 			$( [ ${DEBUG_MODE} = true ] && echo "-t" )
 

@@ -43,6 +43,18 @@ from datetime import datetime
 class IllegalArgumentError(ValueError):
     pass
 
+# create str2bool() for importing args.run_combined parameter
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 # configure ProDy to not printout messages, to avoid
 from prody import confProDy
 confProDy(verbosity='error')
@@ -63,8 +75,8 @@ parser.add_argument("-g", "--gene_column", type=str, help="GCT rdesc column with
 # PTM Site Management
 parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc column with PTM variable site(s) (e.g. 'T527t')")
 parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')")
-parser.add_argument("--keep_multi_sites", type=bool, help="Should multi-site PTMs be mapped?.")
-parser.add_argument("--filter_duplicate_sites", type=bool, help="Should multi-site PTMs be filtered to remove sites that were observed as single-sites?")
+parser.add_argument("--keep_multi_sites", type=str2bool, help="Should multi-site PTMs be mapped?.")
+parser.add_argument("--filter_duplicate_sites", type=str2bool, help="Should multi-site PTMs be filtered to remove sites that were observed as single-sites?")
 
 parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.", required=True)
 parser.add_argument("--UNIPROT_SWISSPROT", type=str, help="Reference FASTA file with all relevant UNIPROT sequences, to BLAST your sequences to.", required=True)
@@ -148,6 +160,7 @@ pprint.pprint(args.__dict__)
 print('\n')
 
 
+
 ####################################
 ####   File & Directory Setup   ####
 ####################################
@@ -163,6 +176,12 @@ FASTA_DIR = "fasta_files"
 OUT_DIR = "output_files"
 os.makedirs(os.path.join(REF_DIR, FASTA_DIR), exist_ok=True)
 os.makedirs(OUT_DIR, exist_ok=True)
+
+# save parameters file
+with open(os.path.join(OUT_DIR,'params.yaml'), 'w') as f:
+    # json.dump(args.__dict__, f)
+    yaml.dump(args.__dict__, f) # dump to YAML
+
 
 # GCT dictionary with all provided PTM GCTs
 gcts_zipped = zip(['phosphoproteome', 'acetylome', 'ubiquitylome'], \

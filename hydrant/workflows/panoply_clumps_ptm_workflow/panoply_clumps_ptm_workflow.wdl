@@ -2,10 +2,10 @@
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/4/plain-WDL/descriptor" as diffexp_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/12/plain-WDL/descriptor" as mapping_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/19/plain-WDL/descriptor" as analysis_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/4/plain-WDL/descriptor" as postprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/4/plain-WDL/descriptor" as report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/15/plain-WDL/descriptor" as mapping_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/21/plain-WDL/descriptor" as analysis_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/7/plain-WDL/descriptor" as postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/5/plain-WDL/descriptor" as report_wdl
 
 ################################################
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm
@@ -17,7 +17,11 @@ workflow panoply_clumps_ptm_workflow {
 
 	String PDB_ref_bucket				# Google-Cloud Bucket with PDB Directory split into tarfiles
 
+	String? accession_col
+	String? variable_sites_col
+
 	File? mapping_file					# pre-generated mapping file, to skip mapping module
+	File? mapping_params				# parameter file from mapping
 
 	String? output_prefix
 	File yaml_file
@@ -38,6 +42,8 @@ workflow panoply_clumps_ptm_workflow {
 				acK_gct = acK_gct,
 				ubK_gct = ubK_gct,
 				PDB_ref_bucket = PDB_ref_bucket,
+				accession_col = accession_col,
+				variable_sites_col = variable_sites_col,
 				yaml_file = yaml_file,
 				output_prefix = output_prefix
 		}
@@ -49,6 +55,8 @@ workflow panoply_clumps_ptm_workflow {
 		    	diff_exp_file = diff_exp,
 		    	var_sites_file = "${if defined(mapping_file) then mapping_file else mapping.filt_results}",
 		        PDB_ref_bucket = PDB_ref_bucket,
+				accession_col = accession_col,
+				variable_sites_col = variable_sites_col,
 	        	yaml_file = yaml_file,
 		        output_prefix = sub(basename(diff_exp), "_diff_exp\\.tsv$", "") # use diffexp file as output prefix (to keep annotation)
 		}
@@ -64,6 +72,7 @@ workflow panoply_clumps_ptm_workflow {
 	call report_wdl.panoply_clumps_ptm_report as report {
 	    input:
 	    	postprocess_results = postprocess.results, 			 # array of results AND figures from postprocess module
+	    	mapping_params = "${if defined(mapping_params) then mapping_params else mapping.mapping_params}",
 	    	label = output_prefix
 	}
 

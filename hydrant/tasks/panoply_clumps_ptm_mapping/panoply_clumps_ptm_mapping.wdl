@@ -59,7 +59,8 @@ task panoply_clumps_ptm_mapping {
 		--FASTA_ref_file ${FASTA_ref_file} ${'--FASTA_sep_type ' + FASTA_sep_type}  \
 		${'--accession_col ' + accession_col} ${'--gene_column ' + gene_column} \
 		${'--variable_sites_col ' + variable_sites_col} ${'--variable_sites_sep ' + '"' + variable_sites_sep + '"'} \
-		${'--keep_multi_sites ' + keep_multi_sites} ${'--filter_duplicate_sites ' + '"' + filter_duplicate_sites + '"'} \
+		${true="--keep_multi_sites true" false="--keep_multi_sites false" keep_multi_sites} \
+		${true="--filter_duplicate_sites true" false="--filter_duplicate_sites false" filter_duplicate_sites} \
 		--UNIPROT_SWISSPROT ${UNIPROT_SWISSPROT} --SIFTS_DB ${SIFTS_DB} \
 		--output_prefix ${output_prefix} --yaml ${yaml_file} --num_threads ${num_threads} \
 		$( [ ${DEBUG_MODE} = true ] && echo "--DEBUG_MODE" )
@@ -69,6 +70,7 @@ task panoply_clumps_ptm_mapping {
 		File full_results = "output_files/${output_prefix}_full_mapped_sites_to_pdbs.tsv" # all var-sites with PDB mapping results
 		File filt_results = "output_files/${output_prefix}_mapped_sites_to_pdbs.tsv" # var-sites, filtered to valid PDB mappings
 		File var_sites_file = "output_files/${output_prefix}_var_sites_combined.tsv" # file with all variable sites
+		File mapping_params = "output_files/params.yaml" # parameters file
 	}
 
 	runtime {

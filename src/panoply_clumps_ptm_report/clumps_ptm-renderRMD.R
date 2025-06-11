@@ -15,6 +15,7 @@ suppressPackageStartupMessages(library("optparse"))
 option_list <- list(
   #### clumps_ptm Outputs ####
   make_option( c("-i", "--clumps_ptm_results"), action='store', type='character',  dest='clumps_ptm_results', help='Tar file(s) containing figures and analyses for ClumpsPTM results, comma-separated.'),
+  make_option( c("-m", "--mapping_params"), action='store', type='character',  dest='mapping_params', help='Parameter file with parameters used in panoply_clumps_ptm_mapping.'),
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='label', help='Label associated with this run.'),  # default = 2),
   make_option( c("-z", "--libdir"), action="store", dest='lib_dir', type="character", help="the src directory.", default='/prot/proteomics/Projects/PGDAC/src')
@@ -23,7 +24,8 @@ option_list <- list(
 
 opt <- parse_args( OptionParser(option_list=option_list),
                    #' # for testing arguments
-                   #' args = c('--clumps_ptm_results',"/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_ptm_full_results.tar,/opt/input/ODG_v3_NMF.consensus.core.k6_clumps_ptm_full_results.tar",
+                   #' args = c('--clumps_ptm_results',"/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_ptm_full_results.tar",
+                   #'          '-m',"/opt/input/params.yaml",
                    #'          '-x',"ODG_v3")
                    #'          #'-z',"/opt/input/")
                    )
@@ -37,6 +39,7 @@ rmarkdown::render(file.path(opt$lib_dir,"clumps_ptm_rmd.rmd"),
 # rmarkdown::render("/opt/input/clumps_ptm_rmd.rmd",
                   params = list(title = paste0("Clumps-PTM Report - ", opt$label),
                                 clumps_ptm_results = opt$clumps_ptm_results,
+                                mapping_params = opt$mapping_params,
                                 label = opt$label),
                   output_file = file.path(pwd,fn)
 )

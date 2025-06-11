@@ -6,6 +6,8 @@ task panoply_clumps_ptm_report {
 
     # output(s) from panoply_clumps_ptm_postprocess
     Array[File]+ postprocess_results                ## Tar file(s) with all results from ClumpsPTM
+
+    File? mapping_params                            ## (optional) mapping parameter file, if it's available
     
     Int? memory
     Int? disk_space
@@ -14,7 +16,7 @@ task panoply_clumps_ptm_report {
 
     command {
         set -euo pipefail
-        Rscript /prot/proteomics/Projects/PGDAC/src/clumps_ptm-renderRMD.R -i ${sep="," postprocess_results} ${"-x " + label}
+        Rscript /prot/proteomics/Projects/PGDAC/src/clumps_ptm-renderRMD.R -i ${sep="," postprocess_results} ${"-m " + mapping_params} ${"-x " + label}
     }
 
     output {

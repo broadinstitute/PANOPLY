@@ -7,6 +7,8 @@ task panoply_clumps_ptm_postprocess {
 	File results_tar							# tar-file with results from panoply_clumps_ptm
 
 	Float? fdr_threshold
+	Boolean? pymol_gen
+	Int? pymol_upper_limit
 
 	String output_prefix="results"
 	File yaml_file
@@ -21,7 +23,9 @@ task panoply_clumps_ptm_postprocess {
 
 		python -u /prot/proteomics/Projects/PGDAC/src/clumps_ptm_postprocess.py \
 			--results_tar ${results_tar} -y ${yaml_file} --output_prefix ${output_prefix} \
-			${'--fdr_threshold ' + fdr_threshold}
+			${'--fdr_threshold ' + fdr_threshold} \
+			${true="--pymol_gen true" false="--pymol_gen false" pymol_gen} \
+			${'-t ' + pymol_upper_limit}
 
 		# tar full results
 		tar -czf ${output_prefix}_clumps_ptm_full_results.tar -C ${output_prefix}/ . # tar results
