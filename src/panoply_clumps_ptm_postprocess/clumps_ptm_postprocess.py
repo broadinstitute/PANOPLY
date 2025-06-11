@@ -82,13 +82,14 @@ args = parser.parse_args()
 # args = parser.parse_args(
 #     ["-r", #"/opt/input/pancan_2021_clumps_runs.tar", \
 #     "/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
-#      "-f", "0.1", \
+#      "-f", "0.10", \
 #      # "-i", "id.description", \
 #      # "-s", " ", \
 #      # "-v", "variableSites", \
 #      # "-g", "geneSymbol", \
-#      "-o", #"Pancan2021", \
-#      "ODG_v3_HK1", \
+#      "--pymol_gen", "true",
+#      "--pymol_upper_limit", "10",
+#      "-o", "ODG_v3", \
 #      # "ODG_v3_NMF.consensus.core.k3", \
 #      "-y", "/opt/input/master-parameters.yaml"]
 # )
@@ -128,6 +129,9 @@ pprint.pprint(args.__dict__)
 print('\n')
 
 
+
+pval_col='< {} P-Value'.format(args.fdr_threshold)
+fdr_col='< {} FDR'.format(args.fdr_threshold)
 
 
 # tmp params
@@ -346,10 +350,10 @@ counts_df = results_filt_df.groupby(['id','clumpsptm_sampler']).size().reset_ind
 counts_df.columns = ['NS']
 
 counts_pval_df = results_df[results_df['clumpsptm_pval']<args.fdr_threshold].groupby(['id','clumpsptm_sampler']).size().reset_index().set_index(["id","clumpsptm_sampler"])
-counts_pval_df.columns = ['< {} P-Value'.format(args.fdr_threshold)]
+counts_pval_df.columns = [pval_col]
 
 counts_fdr_df = results_df[results_df['fdr_corr']<args.fdr_threshold].groupby(['id','clumpsptm_sampler']).size().reset_index().set_index(["id","clumpsptm_sampler"])
-counts_fdr_df.columns = ['< {} FDR'.format(args.fdr_threshold)]
+counts_fdr_df.columns = [fdr_col]
 
 counts_df = counts_df.join(counts_pval_df).join(counts_fdr_df).fillna(0).astype(int).sort_values('NS')
 counts_df = counts_df.reset_index()
@@ -378,7 +382,7 @@ for i,ome in enumerate(ome_types):
     _counts_df = counts_df.reset_index()
     _counts_df = _counts_df[_counts_df['clumpsptm_sampler']==ome] # subset to sampler
     __order = _order[np.isin(_order, _counts_df['id'].unique())] # subset order to relevant indices
-    _counts_df = _counts_df.set_index("id").loc[__order][['NS', '< {} P-Value'.format(args.fdr_threshold), '< {} FDR'.format(args.fdr_threshold)]]
+    _counts_df = _counts_df.set_index("id").loc[__order][['NS', pval_col, fdr_col]]
     _counts_df.plot(kind='barh', stacked=True, ax=axes[i], linewidth=1, width=0.8, edgecolor='black', color=['lightgrey','orange','red'])
     # set Axis labels
     axes[i].set_title(ome, fontsize=16)
@@ -396,9 +400,9 @@ axes[0].set_yticklabels([x.get_text().replace("_", " ").upper().replace("POS RES
 # set axes
 if ('ptm' in ome_types): # if we ran combined
     tmp = counts_df[counts_df['clumpsptm_sampler']!='ptm'] # set xlim max to the largest number of invdividual-PTM proteins
-    xlim_max = max(tmp.NS + tmp['< 0.1 P-Value'] + tmp['< 0.1 FDR'])
+    xlim_max = max(tmp.NS + tmp[pval_col] + tmp[fdr_col])
 else:
-    xlim_max = max(counts_df.NS + counts_df['< 0.1 P-Value'] + counts_df['< 0.1 FDR'])
+    xlim_max = max(counts_df.NS + counts_df[pval_col] + counts_df[fdr_col])
 
 # set axes for all PTMs
 for i in range(len(ome_types)):
@@ -407,7 +411,7 @@ for i in range(len(ome_types)):
 # override axis for combined plot
 if ('ptm' in ome_types):
     tmp = counts_df[counts_df['clumpsptm_sampler']=='ptm']
-    xlim_max = max(tmp.NS + tmp['< 0.1 P-Value'] + tmp['< 0.1 FDR'])
+    xlim_max = max(tmp.NS + tmp[pval_col] + tmp[fdr_col])
     axes[0].set_xlim([0,xlim_max+100])
 
 
