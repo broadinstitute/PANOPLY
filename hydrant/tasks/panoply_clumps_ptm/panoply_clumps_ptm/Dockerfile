@@ -27,6 +27,7 @@ RUN pip install packaging "Cython>=3.0" pyarrow
 
 # Install CLUMPS-PTM from Git Repo
 ADD https://github.com/getzlab/CLUMPS-PTM.git /CLUMPS-PTM
+#ADD https://github.com/wcorinne/CLUMPS-PTM.git /CLUMPS-PTM
 RUN pip install -e CLUMPS-PTM/
 
 

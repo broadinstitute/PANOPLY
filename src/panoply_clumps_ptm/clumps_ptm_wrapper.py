@@ -93,12 +93,13 @@ args = parser.parse_args()
 
 # # testing arguments manually
 # args = parser.parse_args([
-#     "-y" "/opt/input/master-parameters.yaml",\
-#     "-i" "/opt/input/filtered/full_de_cohort_cov_filt-to-1-4_filt-to-pdbs_filt-to-acKpSTY.tsv", \
-#     "-m" "/opt/input/filtered/mapped_sites_to_pdbs_filt-to-pdbs.tsv", \
+#     "-y" "/opt/input/master-parameters-noParams.yaml",\
+#     "-i" "/opt/input/ODG_v3_NMF.consensus.core.k3_diff_exp.tsv", \
+#     "-m" "/opt/input/ODG_v3_mapped_sites_to_pdbs.tsv", \
 #     "--pdbstore", "pdbs", \
-#     "--accession_col", "accession_number", \
-#     "--weight_col", "gsea_rank", \
+#     "--accession_col", "id.description", \
+#     "--weight_col", "logFC", \
+#     "--variable_sites_col", "variableSites", \
 #     "-n", "12", \
 #     # "-r", "2025", \
 #     "-t"
@@ -200,9 +201,9 @@ for group in groups:
             main()
             # subprocess.run(sys.argv)
         except ValueError as e: # if we get a value error
-            if str(e) != 'NO RESULTS FILES FOUND.':
-                raise
+            if ( str(e) == 'NO RESULTS FILES FOUND.' or str(e) == 'NO VALID RESULTS FOUND AFTER FILTERING.' ):
+                print("## WARNING: NO RESULTS FOUND FOR GROUP '"+str(group)+"'") # print a warning and move on
             else:
-                print("## WARNING: NO RESULTS FILES FOUND FOR GROUP '"+str(group)+"'") # print a warning and move on
+                raise
 
 

@@ -184,6 +184,7 @@ results_list = list()
 
 results_dirs = [os.path.basename(fn) for fn in glob.glob(os.path.join(tarfile_outdir,"**"))]
 
+
 # import TSV results files
 for dir in tqdm(results_dirs):
     for file in glob.glob(os.path.join(tarfile_outdir, dir, "*.tsv")):
@@ -192,6 +193,10 @@ for dir in tqdm(results_dirs):
         _df['subval'] = re.sub('^(.+)_(.+?)_results$', '\\1', dir) # use directory as analysis ID
         _df['direction'] = re.sub('^(.+)_(.+?)_results$', '\\2', dir) # use directory as analysis ID
         results_list.append(_df)
+
+# check if there are results
+if len(results_list)==0:
+    raise ValueError("No results found for ClumpsPTM run.")
 
 results_df = pd.concat(results_list)
 
