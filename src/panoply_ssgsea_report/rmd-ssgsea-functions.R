@@ -263,6 +263,7 @@ pw_hm <- function(output.prefix,
       rownames(mat)[idx]
     }, fdr, mat )
     keep.idx <- unique(unlist(keep.idx.list))
+    if (length(keep.idx)==0) { cat(glue("## WARNING: No features found with FDR below selected threshold ({fdr.max})")); if (exists("rt")) {cat(glue(" for ID-Type {rt}\n"))}; return() } # stop function if matrix is 0x0; color-gen will error
     
     fdr.filt <- fdr[keep.idx, , drop=F ]
     mat.filt <- mat[keep.idx, , drop=F]
@@ -340,9 +341,9 @@ pw_hm <- function(output.prefix,
     for(rt in rid.type){
       fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
       idx <- grep(glue("^{rt}"), rid)
-      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out, cw, ch)
+      plothm(rdesc[idx, , drop=F], mat[idx, , drop=F], fdr.max, n.max, fn.out, cw, ch)
       fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.png")  
-      plothm(rdesc[idx, ], mat[idx, ], fdr.max, n.max, fn.out, cw, ch)
+      plothm(rdesc[idx, , drop=F], mat[idx, , drop=F], fdr.max, n.max, fn.out, cw, ch)
       
     }
   } else {

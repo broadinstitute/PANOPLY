@@ -1,0 +1,35 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.SMtable": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.analysisDir": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.applyNumratioFilter": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.disk_space": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.exptDesign": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.labelType": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.memory": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.minNumratioFraction": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.ndigits": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.num_preemptions": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.num_threads": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.outFile": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.speciesFilter": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.type": "",
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_parse_sm_table",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_parse_sm_table/21",
+    "methodVersion": 21,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_parse_sm_table",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_parse_sm_table_workflow.panoply_parse_sm_table.outputs": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -14,8 +14,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_nmf_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_nmf_report/4",
-    "methodVersion": 4,
+    "methodUri": "agora://broadcptacdev/panoply_nmf_report/5",
+    "methodVersion": 5,
     "sourceRepo": "agora"
   },
   "name": "panoply_nmf_report",

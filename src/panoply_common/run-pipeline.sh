@@ -591,8 +591,6 @@ case $op in
 #   CNAcorr: run CNA analysis
 #            input must be tar file obtained after CNAsetup
     CNAcorr )   analysisInit "CNAcorr"
-                # this operation is only called from the command line for sequential execution
-                # FireCloud module uses scatter/gather for parallelization, and does not call this operation
                 for f in gene-location.csv chr-length.csv; do cp $data_dir/$f $cna_dir/$f; done
                 (cd $cna_dir;
                 #echo "fdr_cna_corr <- $fdr" >> config.r;

@@ -201,7 +201,7 @@ Please note that all volcano plots are interactive; hover mouse over a given poi
       category = gsub("\\.", " ", category)
       rmd = paste(rmd, '\n###', category)
       
-      combined_file = grep("combined", list.files(file.path(gsea_dir, in_dir), full.names = TRUE), value = TRUE)
+      combined_file = grep("-combined.gct$", list.files(file.path(gsea_dir, in_dir), full.names = TRUE), value = TRUE)
       file = parse.gctx(combined_file)
       
       # if there is only one comparison in GCT, make volcano plot

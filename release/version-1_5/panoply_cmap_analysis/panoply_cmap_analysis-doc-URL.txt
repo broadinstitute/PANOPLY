@@ -1,0 +1,2 @@
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-1_5/release/version-1_5/panoply_cmap_analysis/panoply_cmap_analysis.md
+

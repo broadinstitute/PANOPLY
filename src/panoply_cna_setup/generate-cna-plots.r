@@ -63,137 +63,141 @@ Plot_cis_trans_effect <- function(cna_mrna,cna_protein,genelocate,chromLength,ou
     y <- abs(cna_protein)
     spe_protein <- apply(y,2,sum)
 
-    maxM <- max(spe_mrna)
-    maxP <- max(spe_protein)
-    maxO <- min(ov)
+    maxM <- max(spe_mrna, na.rm=T)
+    maxP <- max(spe_protein, na.rm=T)
+    maxO <- min(ov, na.rm=T)
     maxS <- max(maxM,maxP)
-
-    png(outputfile,height=480*8,width=480*11,res=300,type='cairo')
-
-    layout(matrix(c(1,2,3,4),2,2),heights=c(2,1))
-
-    par(mar=c(0,4,0,0))
-
-    p <- which(cna_mrna!=0)
-    rownum <- nrow(cna_mrna)
-    allcnagene <- colnames(cna_mrna)
-    allovgene <- rownames(cna_mrna)
-
-    la <- 1
-    for(i in c(1:length(p))){
+    
+    for (type in c("png","pdf")) {
+      
+      if (type=="png") png(paste0(outputfile,".png"),height=480*8,width=480*11,res=300,type='cairo')
+      if (type=="pdf") pdf(paste0(outputfile,".pdf"),height=8,width=11)
+      
+      layout(matrix(c(1,2,3,4),2,2),heights=c(2,1))
+      
+      par(mar=c(0,4,0,0))
+      
+      p <- which(cna_mrna!=0)
+      rownum <- nrow(cna_mrna)
+      allcnagene <- colnames(cna_mrna)
+      allovgene <- rownames(cna_mrna)
+      
+      la <- 1
+      for(i in c(1:length(p))){
         po <- p[i]
         rowi <- po %% rownum
         if(rowi == 0){
-            rowi <- rownum
+          rowi <- rownum
         }
         coli <- ceiling(po/rownum)
         cnag <- allcnagene[coli]
         ovg <- allovgene[rowi]
         cnagp <- allgene_locate[allgene_locate[,1]==cnag,5]
         ovgp <- allgene_locate[allgene_locate[,1]==ovg,5]
-    
+        
         if(length(cnagp)==0 || length(ovgp)==0){
-            next
+          next
         }
-    
+        
         cov <- cna_mrna[rowi,coli]
         color <- ifelse(cov>0,"red","green")
-       	if(la==1){
-		plot(cnagp,ovgp,xlim=c(0,allChromlen),ylim=c(0,allChromlen),xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="",pch=20,col=color,cex=0.2)
-            axis(side=2,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
-            abline(h=c(0,chromLength[,4]),v=c(0,chromLength[,4]),col="gray",lty=3)
-            la <- la+1
+        if(la==1){
+          plot(cnagp,ovgp,xlim=c(0,allChromlen),ylim=c(0,allChromlen),xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="",pch=20,col=color,cex=0.2)
+          axis(side=2,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
+          abline(h=c(0,chromLength[,4]),v=c(0,chromLength[,4]),col="gray",lty=3)
+          la <- la+1
         }else{
-            for(u in c(1:length(cnagp))){
-                for(v in c(1:length(ovgp))){
-                    points(cnagp[u],ovgp[v],pch=20,col=color,cex=0.2)
-                }
+          for(u in c(1:length(cnagp))){
+            for(v in c(1:length(ovgp))){
+              points(cnagp[u],ovgp[v],pch=20,col=color,cex=0.2)
             }
+          }
         }
-	}
-
-    par(mar=c(4,4,0,0))
-
-    plot(0,0,xlim=c(0,allChromlen),ylim=c(maxO,maxS),type="n",xaxt="n",frame.plot=F,xlab="",ylab="")
-    axis(side=1,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
-
-    abline(v=c(0,chromLength[,4]),col="gray",lty=3)
-
-    for(i in c(1:length(spe_mrna))){
+      }
+      
+      par(mar=c(4,4,0,0))
+      
+      plot(0,0,xlim=c(0,allChromlen),ylim=c(maxO,maxS),type="n",xaxt="n",frame.plot=F,xlab="",ylab="")
+      axis(side=1,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
+      
+      abline(v=c(0,chromLength[,4]),col="gray",lty=3)
+      
+      for(i in c(1:length(spe_mrna))){
         gg <- names(spe_mrna)[i]
         gg_p <- allgene_locate[allgene_locate[,1]==gg,5]
         if(length(gg_p)==0){
-            next
+          next
         }
         up <- spe_mrna[gg]
         do <- ov[gg]
         for(j in c(1:length(gg_p))){
-            points(gg_p[j],up,cex=0.2,type="h",col="blue")
-            points(gg_p[j],do,cex=0.2,type="h",col="black")
+          points(gg_p[j],up,cex=0.2,type="h",col="blue")
+          points(gg_p[j],do,cex=0.2,type="h",col="black")
         }
-    }
-
-
-    ##############Protein#####################
-    
-    par(mar=c(0,1,0,0))
-
-    p <- which(cna_protein!=0)
-
-    la <- 1
-    for(i in c(1:length(p))){
+      }
+      
+      
+      ##############Protein#####################
+      
+      par(mar=c(0,1,0,0))
+      
+      p <- which(cna_protein!=0)
+      
+      la <- 1
+      for(i in c(1:length(p))){
         po <- p[i]
         rowi <- po %% rownum
         if(rowi == 0){
-            rowi <- rownum
+          rowi <- rownum
         }
         coli <- ceiling(po/rownum)
         cnag <- allcnagene[coli]
         ovg <- allovgene[rowi]
         cnagp <- allgene_locate[allgene_locate[,1]==cnag,5]
         ovgp <- allgene_locate[allgene_locate[,1]==ovg,5]
-    
+        
         if(length(cnagp)==0 || length(ovgp)==0){
-            next
+          next
         }
-    
+        
         cov <- cna_protein[rowi,coli]
         color <- ifelse(cov>0,"red","green")
         if(la==1){
-		plot(cnagp,ovgp,xlim=c(0,allChromlen),ylim=c(0,allChromlen),xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="",pch=20,col=color,cex=0.2)
-            abline(h=c(0,chromLength[,4]),v=c(0,chromLength[,4]),col="gray",lty=3)
-            la <- la+1
+          plot(cnagp,ovgp,xlim=c(0,allChromlen),ylim=c(0,allChromlen),xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="",pch=20,col=color,cex=0.2)
+          abline(h=c(0,chromLength[,4]),v=c(0,chromLength[,4]),col="gray",lty=3)
+          la <- la+1
         }else{
-            for(u in c(1:length(cnagp))){
-                for(v in c(1:length(ovgp))){
-                    points(cnagp[u],ovgp[v],pch=20,col=color,cex=0.2)
-                }
+          for(u in c(1:length(cnagp))){
+            for(v in c(1:length(ovgp))){
+              points(cnagp[u],ovgp[v],pch=20,col=color,cex=0.2)
             }
+          }
         }
-    }
-
-    par(mar=c(4,1,0,0))
-
-
-    plot(0,0,xlim=c(0,allChromlen),ylim=c(maxO,maxS),type="n",xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="")
-    axis(side=1,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
-    abline(v=c(0,chromLength[,4]),col="gray",lty=3)
-
-    for(i in c(1:length(spe_protein))){
+      }
+      
+      par(mar=c(4,1,0,0))
+      
+      
+      plot(0,0,xlim=c(0,allChromlen),ylim=c(maxO,maxS),type="n",xaxt="n",yaxt="n",frame.plot=F,xlab="",ylab="")
+      axis(side=1,at=(chromLength[,4]-chromLength[,2]/2),labels=chrome)
+      abline(v=c(0,chromLength[,4]),col="gray",lty=3)
+      
+      for(i in c(1:length(spe_protein))){
         gg <- names(spe_protein)[i]
         gg_p <- allgene_locate[allgene_locate[,1]==gg,5]
         if(length(gg_p)==0){
-            next
+          next
         }
         up <- spe_protein[gg]
         do <- ov[gg]
         for(j in c(1:length(gg_p))){
-            points(gg_p[j],up,cex=0.2,type="h",col="blue")
-            points(gg_p[j],do,cex=0.2,type="h",col="black")
+          points(gg_p[j],up,cex=0.2,type="h",col="blue")
+          points(gg_p[j],do,cex=0.2,type="h",col="black")
         }
-	}
-
-
-    dev.off()
+      }
+      
+      
+      dev.off()
+    }
 
 }

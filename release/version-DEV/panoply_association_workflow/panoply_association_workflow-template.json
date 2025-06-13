@@ -49,6 +49,7 @@
     "panoply_association_workflow.ssgsea_assoc.sample_norm_type": "",
     "panoply_association_workflow.ssgsea_assoc.seqwin_col": "",
     "panoply_association_workflow.ssgsea_assoc.statistic": "",
+    "panoply_association_workflow.ssgsea_assoc.tolerate_min_overlap_err": "",
     "panoply_association_workflow.ssgsea_assoc.weight": "",
     "panoply_association_workflow.standalone": "",
     "panoply_association_workflow.yaml": ""
@@ -57,8 +58,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_association_workflow",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_association_workflow/5",
-    "methodVersion": 5,
+    "methodUri": "agora://broadcptacdev/panoply_association_workflow/7",
+    "methodVersion": 7,
     "sourceRepo": "agora"
   },
   "name": "panoply_association_workflow",

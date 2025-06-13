@@ -1,0 +1,27 @@
+#
+# Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
+#
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst/versions/2/plain-WDL/descriptor" as metaboanalyst_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst_report/versions/1/plain-WDL/descriptor" as metaboanalyst_report_wdl
+
+################################################
+##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
+workflow panoply_metaboanalyst_workflow {
+	String output_prefix
+
+	call metaboanalyst_wdl.panoply_metaboanalyst {
+	    input:
+	        output_prefix = output_prefix
+	}
+
+	call metaboanalyst_report_wdl.panoply_metaboanalyst_report {
+	    input:
+	        metaboanalyst_results = panoply_metaboanalyst.results,
+	        label = output_prefix
+	}
+
+	output{
+	    File metaboanalyst_tar = panoply_metaboanalyst.results
+	    File metaboanalyst_report = panoply_metaboanalyst_report.report
+	}
+}

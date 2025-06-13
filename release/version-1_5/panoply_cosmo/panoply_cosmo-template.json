@@ -1,0 +1,38 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_cosmo_workflow.STANDALONE": "",
+    "panoply_cosmo_workflow.label": "",
+    "panoply_cosmo_workflow.ome_type": "",
+    "panoply_cosmo_workflow.panoply_cosmo.cpu": "",
+    "panoply_cosmo_workflow.panoply_cosmo.d1_file": "",
+    "panoply_cosmo_workflow.panoply_cosmo.d2_file": "",
+    "panoply_cosmo_workflow.panoply_cosmo.local_disk_gb": "",
+    "panoply_cosmo_workflow.panoply_cosmo.memory": "",
+    "panoply_cosmo_workflow.panoply_cosmo.num_preemptions": "",
+    "panoply_cosmo_workflow.panoply_cosmo.run_cosmo": "",
+    "panoply_cosmo_workflow.panoply_cosmo.sample_file": "",
+    "panoply_cosmo_workflow.panoply_cosmo.sample_label": "",
+    "panoply_cosmo_workflow.panoply_cosmo_report.local_disk_gb": "",
+    "panoply_cosmo_workflow.panoply_cosmo_report.memory": "",
+    "panoply_cosmo_workflow.panoply_cosmo_report.num_preemptions": "",
+    "panoply_cosmo_workflow.panoply_harmonize_tar": "",
+    "panoply_cosmo_workflow.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_cosmo",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_cosmo/5",
+    "methodVersion": 5,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_cosmo",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_cosmo_workflow.cosmo_report": "",
+    "panoply_cosmo_workflow.cosmo_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

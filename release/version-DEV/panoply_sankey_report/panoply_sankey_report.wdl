@@ -12,13 +12,10 @@ task panoply_sankey_report {
     String label
     File sankey_tar
 
-    String? primary_dataype_label
-
-
     command {
         set -euo pipefail
 
-        Rscript /prot/proteomics/Projects/PGDAC/src/sankey-renderRMD.R "${annot_of_comparison}" "${sankey_tar}" "${label}" "${primary_dataype_label}"
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey-renderRMD.R "${annot_of_comparison}" "${sankey_tar}" "${label}"
     }
 
     output {

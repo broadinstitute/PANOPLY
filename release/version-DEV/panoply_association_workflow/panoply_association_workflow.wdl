@@ -1,10 +1,10 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/11/plain-WDL/descriptor" as assoc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/9/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/10/plain-WDL/descriptor" as ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/8/plain-WDL/descriptor" as 	assoc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/12/plain-WDL/descriptor" as assoc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/10/plain-WDL/descriptor" as accum_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/13/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/9/plain-WDL/descriptor" as 	assoc_report_wdl
 
 ################################################
 ##  workflow: panoply_association + panoply_accumulate + panoply_ssgsea + panoply_association_report

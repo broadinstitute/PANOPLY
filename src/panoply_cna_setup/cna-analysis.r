@@ -173,6 +173,6 @@ if (jid == 0) {
   
   # call plotting routine
   cat ('Creating plot ...\n')
-  Plot_cis_trans_effect (cna_mrna, cna_pome, geneloc, chrlength, paste (prefix, '-cna-plot.png', sep=''))
+  Plot_cis_trans_effect (cna_mrna, cna_pome, geneloc, chrlength, paste (prefix, '-cna-plot', sep=''))
 }
 

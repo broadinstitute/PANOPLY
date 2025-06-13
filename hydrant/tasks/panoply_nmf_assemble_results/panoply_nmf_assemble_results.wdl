@@ -51,7 +51,7 @@ task panoply_nmf_assemble_results {
       cp ${mo_nmf_report} nmf_reports/ #copy report to reports
     fi
     ## Multi-omic ssGSEA
-    if [ ${mo_nmf_ssgsea_tar} != '' ]; then
+    if [ ${mo_nmf_ssgsea_report} != '' ]; then
       ## copy in ssgsea results
       mkdir nmf_results/mo_nmf/mo_nmf_ssgsea
       tar -C nmf_results/mo_nmf/mo_nmf_ssgsea -zxf ${mo_nmf_ssgsea_tar} #untar file in appropriate directory
