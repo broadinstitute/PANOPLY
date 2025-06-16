@@ -272,7 +272,7 @@ def plot_pair(group, results_df, n_to_plot=20):
         axes = np.array(axes).reshape(2, 1) # reshape if we just have one ome
     # for each feature
     for j,feature in enumerate(ome_types):
-    	# plot positive/negative features
+        # plot positive/negative features
         for i,direction in enumerate(['positive', 'negative']):
             _df = results_df[results_df['id']=="{}_{}_results".format(group, direction)]
             clumpsptm.vis.dotplot(
@@ -371,9 +371,8 @@ if ('ptm' in ome_types):
 
 # get _order using first PTM type
 _counts_df = counts_df.reset_index()
-_counts_df = _counts_df[_counts_df['clumpsptm_sampler']==ome_types[0]].set_index("id") # TODO: use first PTM for now, but eventually use combined dataset
-# _order = _counts_df.sort_values(by=['NS']).index 
-_order = _counts_df.sort_values(by=['id']).index # sort in order for now
+_counts_df = _counts_df.sort_values(by=['id']) # sort by id value
+_order = list(set(_counts_df.set_index("id").index)) # subset to unique values
 
 
 ### Summary Figure
@@ -386,7 +385,7 @@ if len(ome_types) == 1: # if we just have one ome
 for i,ome in enumerate(ome_types):
     _counts_df = counts_df.reset_index()
     _counts_df = _counts_df[_counts_df['clumpsptm_sampler']==ome] # subset to sampler
-    __order = _order[np.isin(_order, _counts_df['id'].unique())] # subset order to relevant indices
+    __order = [o for o, flag in zip(_order, np.isin(_order, _counts_df['id'].unique())) if flag]
     _counts_df = _counts_df.set_index("id").loc[__order][['NS', pval_col, fdr_col]]
     _counts_df.plot(kind='barh', stacked=True, ax=axes[i], linewidth=1, width=0.8, edgecolor='black', color=['lightgrey','orange','red'])
     # set Axis labels
