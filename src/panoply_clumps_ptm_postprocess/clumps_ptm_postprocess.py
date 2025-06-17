@@ -24,6 +24,7 @@ import random
 import re
 import pprint
 from datetime import datetime
+# from time import sleep
 
 # # import debugging functions
 # import inspect # for debugging
@@ -333,8 +334,13 @@ if args.pymol_gen:
             os.makedirs(_png_dir, exist_ok=True)
             for fn in _pse_files:
                 fn_png = os.path.splitext(os.path.basename(fn))[0]+'.png'
+                pymol.cmd.delete("all")
+                pymol.cmd.load(fn)
+                # pymol.cmd.refresh() # refresh to force image to be loaded before draw
                 pymol.cmd.draw(4000, 3000)
+                # pymol.cmd.ray(600, 600) # ray() rendering produces a better image, but takes MUCH longer than draw()
                 pymol.cmd.png(os.path.join(_png_dir,fn_png))
+                pymol.cmd.refresh() # refresh to force image to fully rendered before moving on
 
 
 # make custom PyMol Figure (see /Volumes/proteomics_storage_vast/storage_slow/CPTAC3/PGDAC/odg/v4/analysis/PyMol_Figures/pymol_figures.py)

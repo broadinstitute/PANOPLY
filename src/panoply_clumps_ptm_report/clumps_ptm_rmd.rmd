@@ -29,6 +29,7 @@ library(yaml)
 # library(DT) # for JS datatable features
 
 # HTML / RMD tools
+library(DT)
 library(knitr)
 library(htmltools)
 library(kableExtra)
@@ -54,6 +55,7 @@ for (tarfile in clumps_ptm_tars) {
 ## Import parameters
 param_dir = results_dirs[[1]] # use params from the first set of results
 # import parameter files
+if ( !file.exists(file.path(param_dir,"params.yaml")) ) stop(glue("Parameter file missing from tarfile '{param_dir}'"))
 parameters = read_yaml(file.path(param_dir,"params.yaml"))
 if (!is.null(params$mapping_params)) {
   parameters$mapping = read_yaml(params$mapping_params)
@@ -173,8 +175,8 @@ for(dir in results_dirs) {
       ## add a divider for each pymol figure
       for (entry in pymol_list) {
         cat(paste(sep='\n',
-                  glue('<div class="pymol-img" data-gene="{entry$gene}" data-direction="{direction}" data-ptm="{entry$ptm}" style="display:none; margin-bottom: 15px;">'),
-                  glue('<p><strong>{entry$gene} ({direction}, {entry$ptm})</strong></p>'),
+                  glue('<div class="pymol-img" data-gene="{entry$gene}" data-direction="{entry$dir}" data-ptm="{entry$ptm}" style="display:none; margin-bottom: 15px;">'),
+                  glue('<p><strong>{entry$gene} ({entry$dir}, {entry$ptm})</strong></p>'),
                   glue('<img src="{entry$fn}" style="max-width: 100%; border: 1px solid #ccc; padding: 5px;" />'),
                   '</div>'))
       }
