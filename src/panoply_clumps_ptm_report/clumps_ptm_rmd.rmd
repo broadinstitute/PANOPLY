@@ -106,7 +106,8 @@ function filterImages(annotID) {
 ```{r results, results='asis', echo=FALSE, out.width='100%', out.height='50%'}
 
 for(dir in results_dirs) {
-  cat("  \n## ",  dir, "Results {.tabset}  \n")
+  id_dir = gsub("\\.", "-", make.names(dir))
+  cat("  \n## ",  dir, paste0("Results {.tabset #",id_dir,"-tabs}  \n"))
   
   sub_dirs = list.files(dir, pattern = '_results$')
   figure_dir = file.path(dir, 'figures')
@@ -122,6 +123,7 @@ for(dir in results_dirs) {
   for(dotplot in dotplot_files) { # for each dotplot
     annot = gsub("_dotplot.png$","", dotplot)
     cat("  \n### ", annot, " \n")
+    id_suffix = gsub("\\.", "-", make.names(paste(dir, annot)))
     
     
     #### Dot Plots ####
@@ -153,24 +155,26 @@ for(dir in results_dirs) {
         bn = basename(fn) # get basename
         res$ptm = gsub(glue("^.+/([^_]+?)/PNGs/{bn}$"), "\\1", fn) # parse PTM type out of directory path
         res$gene = gsub(glue("^\\d+?_(.+?)_{res$ptm}.+?$"), "\\1", bn) # parse gene name out of 
-        res$dir = gsub("^.+?_((positive)|(negative))_results.png$", "\\1", bn)
+        res$dir = gsub("^.+?_((positive)|(negative))_results.png$", "\\1", bn) # parse directionality
         return(res)
       })
       
       genes <- unique(unlist(lapply(pymol_list, function(x) {x$gene} ))) # get all unique genes
       
       ## create dropdown for each gene
+      cat(glue('<div id="pymol-dropdown-{id_suffix}">'))
       cat(paste(sep = "\n",
-      '<label for="gene-select"><strong>Select a gene:</strong></label>',
-      glue('<select id="gene-select-{annot}" onchange="filterImages(\'{annot}\')">'),
-      '<option value="" selected disabled>Select a gene</option>'))
+                '<label for="gene-select"><strong>Select a gene:</strong></label>',
+                glue('<select id="gene-select-{id_suffix}" onchange="filterImages(\'{id_suffix}\')">'),
+                '<option value="" selected disabled>Select a gene</option>'))
       for (gene in sort(genes)) {
         cat(glue('<option value="{gene}">{gene}</option>'))
       }
       cat(paste(sep = "\n",
-      '</select>',
-      #'<hr/>',
-      glue('<div id="pymol-container-{annot}">')))
+                '</select>\n',
+                glue('</div id="pymol-dropdown-{id_suffix}">'))) ## end dropdown menu
+          
+      cat(glue('<div id="pymol-container-{id_suffix}">'))
       
       ## add a divider for each pymol figure
       for (entry in pymol_list) {
@@ -180,7 +184,8 @@ for(dir in results_dirs) {
                   glue('<img src="{entry$fn}" style="max-width: 100%; border: 1px solid #ccc; padding: 5px;" />'),
                   '</div>'))
       }
-      paste("</div>")
+      
+      cat(glue('</div id="pymol-container-{id_suffix}">'))
     }
     
     
@@ -204,13 +209,14 @@ for(dir in results_dirs) {
         ## filter columns
         columns = c(parameters$analysis$accession_col, "geneSymbol", "uniprot", "pdb", "chain", "clumpsptm_sampler", "clumpsptm_pval", "clumpsptm_fdr", parameters$analysis$variable_sites_col)
         # print(setdiff(colnames(pos_table), columns))
-        datatables[[direction]] = select(datatables[[direction]], columns) %>%
+        datatables[[direction]] = select(datatables[[direction]], all_of(columns)) %>%
           rename("PTM-Type" = "clumpsptm_sampler",
                  "P-Value" = "clumpsptm_pval",
                  "FDR Value" = "clumpsptm_fdr")
         
         ## print datatables
-        cat(glue("\n\n<details><summary><strong>{str_to_title(direction)} Results Table</strong></summary>\n\n"))
+        # cat(glue('<div id={paste0("res_table",tab_count)}>'))
+        cat(glue("\n\n<details id={paste0('res_dropdown',tab_count)}><summary><strong>{str_to_title(direction)} Results Table</strong></summary>\n\n"))
         # print(htmltools::tagList(DT::datatable(datatables[[direction]],
         DT::datatable(datatables[[direction]],
                       options = list(scrollX = TRUE, #pageLength = 10, 
@@ -222,17 +228,20 @@ for(dir in results_dirs) {
                       ) %>%
           formatStyle(parameters$analysis$variable_sites_col, "white-space" = "nowrap") %>%
           htmltools::tagList() %>% print()
-        cat("\n</details>\n")
+        cat("\n</details id={paste0('res_dropdown',tab_count)}>\n")
+        # cat(glue('</div id={paste0("res_table",tab_count)}>'))
+        print(htmltools::br()) ## add break at end of table, to prevent weird stacking
         tab_count <- tab_count + 1
       }
     }
-    
   }
+  cat(glue("\n<!-- tabset:{id_dir}-tabs-->\n")) # end tabset (doesn't actually work lmao but I tried)
+  # cat("\n## {-}\n")
   
-  cat("\n## {-}\n")
+  print(htmltools::br())
   cat("\n---\n")
   
-  cat("\n## Summary of Analyzed Proteins\n")
+  cat("\n### Summary of Analyzed Proteins\n")
   
   #### Print Summary Figure ####
 
@@ -242,7 +251,6 @@ for(dir in results_dirs) {
   cat("  \n")
   fig_count = fig_count+1 #increment figure counter
   
-  cat("\n---\n")
   cat("\n---\n")
 }
 
@@ -264,8 +272,8 @@ for (mod in names(parameters)) {
   ## insert table
   tab_param %>%
     kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,glue('**: List of parameters used in ```panoply_clumps_ptm``` ({mod} module).'))) %>%
-    kable_paper('hover', full_width = F) %>%
-    kable_styling(position = "left") %>%
+    kable_paper('hover', full_width = F,) %>%
+    kable_styling(position = "float_left") %>%
     cat()
   cat("\n")
 

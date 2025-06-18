@@ -82,7 +82,7 @@ args = parser.parse_args()
 # # optional testing args
 # args = parser.parse_args(
 #     ["-r", #"/opt/input/pancan_2021_clumps_runs.tar", \
-#     "/opt/input/ODG_v3_NMF.consensus.core.k3_clumps_runs.tar", \
+#     "/opt/input/ODG_v3_edited.tar", \
 #      "-f", "0.10", \
 #      # "-i", "id.description", \
 #      # "-s", " ", \
@@ -267,7 +267,7 @@ def plot_pair(group, results_df, n_to_plot=20):
     ome_types = np.unique(results_df['clumpsptm_sampler']) # get unique feature-types
     if ('ptm' in ome_types): # if we ran combined
         ome_types = np.insert(np.delete(ome_types, ome_types=='ptm'), 0, 'ptm') # move 'ptm' to beginning
-    fig, axes = plt.subplots(2, len(ome_types), figsize=(10,14)) # TODO: needs to be adjusted if we have additional omes
+    fig, axes = plt.subplots(2, len(ome_types), figsize=(12,14), constrained_layout=True)
     # Normalize axes to always be 2D
     if len(ome_types) == 1:
         axes = np.array(axes).reshape(2, 1) # reshape if we just have one ome
@@ -285,7 +285,8 @@ def plot_pair(group, results_df, n_to_plot=20):
                 thresh=args.fdr_threshold,
             )
             # add legend
-            axes[i,j].legend().remove()
+            if (j!=(len(ome_types)-1)): # if we're not on the final figure
+                axes[i,j].legend().remove() # remove legend
             axes[i,j].set_yticklabels(axes[i,j].get_yticklabels(), fontsize=14)
             axes[i,j].set_xlabel(r"$-log_{10}$ p-value", fontsize=16)
             # add positive/negative labels
@@ -294,9 +295,12 @@ def plot_pair(group, results_df, n_to_plot=20):
             # set title and y-ticks
             axes[i,j].set_title("{} {}".format(feature.capitalize(), direction), fontsize=18)
             axes[i,j].set_yticklabels(axes[i,j].get_yticklabels(), fontsize=14)
+    # # add global legend
+    # handles, labels = plt.gca().get_legend_handles_labels()
+    # fig.legend(handles, labels, loc='upper right')
     # plot subplots
     plt.suptitle(group, x=0.55, y=1.025, fontsize=20)
-    plt.tight_layout()
+    # plt.tight_layout() # doesn't work well with the constrained_layout=True param
 
 
 
@@ -305,7 +309,6 @@ for group in np.unique(results_df['subval']):
     plot_pair(group, results_df)
     plt.savefig(os.path.join(out_dir_dotplots, "{}_dotplot.pdf".format(group)), dpi=300, bbox_inches='tight')
     plt.savefig(os.path.join(out_dir_dotplots, "{}_dotplot.png".format(group)), bbox_inches='tight')
-
 
 
 
@@ -319,8 +322,10 @@ for group in np.unique(results_df['subval']):
 
 if args.pymol_gen:
     for group in np.unique(results_df['id']):
+        print("\n#### Results for {}".format(group))
         os.makedirs(os.path.join(out_dir_pymol, group), exist_ok=True)
         for feat in np.unique(results_df['clumpsptm_sampler']):
+            print("## Rendering top {} hits for {}".format(args.pymol_upper_limit, feat))
             _df = results_df[(results_df['id']==group) & 
                              (results_df['clumpsptm_sampler']==feat)
                             ].sort_values('clumpsptm_pval').reset_index()
