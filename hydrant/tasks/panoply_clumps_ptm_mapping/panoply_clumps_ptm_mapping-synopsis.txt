@@ -1,0 +1,1 @@
+Map sequence IDs from some reference type -> Uniprot -> PDB structures.

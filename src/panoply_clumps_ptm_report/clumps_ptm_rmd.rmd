@@ -1,0 +1,297 @@
+---
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float:
+      collapsed: true
+      smooth_scroll: true
+params:
+  title: "MetaboAnalyst Results"
+  label: NULL
+  clumps_ptm_results: NULL
+  mapping_params: NULL
+---
+
+---
+title: `r params$title`
+---
+
+
+```{r setup, include=FALSE}
+# R tooles
+library(tidyverse)
+library(glue)
+library(cmapR)
+library(readxl)
+library(yaml)
+# library(plotly)
+# library(DT) # for JS datatable features
+
+# HTML / RMD tools
+library(DT)
+library(knitr)
+library(htmltools)
+library(kableExtra)
+
+```
+
+```{r import_data, include=FALSE}
+
+# unlist clumps_ptm_tarfiles 
+clumps_ptm_tars = unlist(strsplit(params$clumps_ptm_results, ","))
+
+#### import panoply_nmf tarfile ####
+results_dirs = list()
+for (tarfile in clumps_ptm_tars) {
+  if (!file.exists(tarfile)) stop(glue("Improperly formatted file-path '{tarfile}'"))
+  
+  dir = gsub("_clumps_ptm_full_results.tar$", "", basename(tarfile)) # get output prefix
+  untar(tarfile, exdir = dir) # untar results in PWD
+  
+  results_dirs = c(results_dirs, dir)
+}
+
+## Import parameters
+param_dir = results_dirs[[1]] # use params from the first set of results
+# import parameter files
+if ( !file.exists(file.path(param_dir,"params.yaml")) ) stop(glue("Parameter file missing from tarfile '{param_dir}'"))
+parameters = read_yaml(file.path(param_dir,"params.yaml"))
+if (!is.null(params$mapping_params)) {
+  parameters$mapping = read_yaml(params$mapping_params)
+}
+
+
+# counter variable for figures and tables
+fig_count <- 1
+tab_count <- 1
+
+```
+
+
+# Overview
+
+This document describes the results of the Clumps-PTM workflow, which performs spatial analysis of PTM sites. The algorithm looks for clusters of differentially-regulated PTM sites on a given protein (i.e. '`r parameters$analysis$accession_col`'). 
+
+For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_clumps_ptm), or refer to the github for [ClumpsPTM](https://github.com/getzlab/CLUMPS-PTM/)
+
+
+# Results
+
+
+```{r, include=FALSE}
+# Init Step to make sure that the dependencies are loaded
+htmltools::tagList(DT::datatable(data = data.frame()))
+```
+
+
+
+
+```{js, echo=FALSE}
+function filterImages(annotID) {
+  var selectedGene = document.getElementById("gene-select-" + annotID).value.toLowerCase();
+  <!-- var images = document.getElementsByClassName("pymol-img"); -->
+  
+  var container = document.getElementById("pymol-container-" + annotID);
+  var images = container.getElementsByClassName("pymol-img");
+  
+  for (var i = 0; i < images.length; i++) {
+    var gene = images[i].getAttribute("data-gene").toLowerCase();
+    images[i].style.display = (selectedGene === "" || gene === selectedGene) ? "block" : "none";
+  }
+}
+```
+
+
+```{r results, results='asis', echo=FALSE, out.width='100%', out.height='50%'}
+
+for(dir in results_dirs) {
+  id_dir = gsub("\\.", "-", make.names(dir))
+  cat("  \n## ",  dir, paste0("Results {.tabset #",id_dir,"-tabs}  \n"))
+  
+  sub_dirs = list.files(dir, pattern = '_results$')
+  figure_dir = file.path(dir, 'figures')
+  
+  #### Import Files #### 
+  summary_fig = file.path(figure_dir, "clumpsptm_summary_figure.png")
+  if (!file.exists(summary_fig)) stop(glue("Summary figure for '{dir}' results is missing."))
+  
+  dotplot_files = list.files(file.path(figure_dir, 'dotplots'), pattern = ".png")
+  if (length(dotplot_files)==0) stop(glue("No dotplots found for '{dir}' results."))
+  
+  
+  for(dotplot in dotplot_files) { # for each dotplot
+    annot = gsub("_dotplot.png$","", dotplot)
+    cat("  \n### ", annot, " \n")
+    id_suffix = gsub("\\.", "-", make.names(paste(dir, annot)))
+    
+    
+    #### Dot Plots ####
+    cat("\n#### Dotplots")
+    
+    cat(paste0("![Significant Protein Dotplot](", file.path(figure_dir, 'dotplots', dotplot), "){width=100%}"))
+    cat("  \n")
+    cat(glue("**Figure {fig_count}. {annot}** This dotplot shows the top protiens with clusters of differentially-regulated PTM sites in '{annot}'  samples. Positive results refer to proteins with clusters of upregulated PTMs, and negative results refer to proteins with clusters of downregulated PTMs."))
+    cat("  \n")
+    fig_count = fig_count+1 #increment figure counter
+    
+    
+    
+    #### Print Table ####
+    cat("\n---\n")
+    cat("\n#### Protein Structures\n")
+    print(glue("Pymol figures for the top {parameters$postprocess$pymol_upper_limit} significant proteins in each test can be viewed below. Modifyable Pymol (.pse) files can be found in the 'figures/pymol/' directory of the results tarfile.\n"))
+    
+    ## load in files
+    pymol_files = list.files(c(file.path(figure_dir, 'pymol', glue("{annot}_positive_results")),
+                               file.path(figure_dir, 'pymol', glue("{annot}_negative_results"))),
+                     pattern=".png", recursive = T, full.names = T) # pull any PNGs
+    if (length(pymol_files)==0) {
+      print(glue("\n**WARNING:** No PyMol figures found for '{annot}' results.\n"))
+    } else {
+      # compile pymol figure object
+      pymol_list = lapply(pymol_files, function(fn) {
+        res = list(fn = fn)
+        bn = basename(fn) # get basename
+        res$ptm = gsub(glue("^.+/([^_]+?)/PNGs/{bn}$"), "\\1", fn) # parse PTM type out of directory path
+        res$gene = gsub(glue("^\\d+?_(.+?)_{res$ptm}.+?$"), "\\1", bn) # parse gene name out of 
+        res$dir = gsub("^.+?_((positive)|(negative))_results.png$", "\\1", bn) # parse directionality
+        return(res)
+      })
+      
+      genes <- unique(unlist(lapply(pymol_list, function(x) {x$gene} ))) # get all unique genes
+      
+      ## create dropdown for each gene
+      cat(glue('<div id="pymol-dropdown-{id_suffix}">'))
+      cat(paste(sep = "\n",
+                '<label for="gene-select"><strong>Select a gene:</strong></label>',
+                glue('<select id="gene-select-{id_suffix}" onchange="filterImages(\'{id_suffix}\')">'),
+                '<option value="" selected disabled>Select a gene</option>'))
+      for (gene in sort(genes)) {
+        cat(glue('<option value="{gene}">{gene}</option>'))
+      }
+      cat(paste(sep = "\n",
+                '</select>\n',
+                glue('</div id="pymol-dropdown-{id_suffix}">'))) ## end dropdown menu
+          
+      cat(glue('<div id="pymol-container-{id_suffix}">'))
+      
+      ## add a divider for each pymol figure
+      for (entry in pymol_list) {
+        cat(paste(sep='\n',
+                  glue('<div class="pymol-img" data-gene="{entry$gene}" data-direction="{entry$dir}" data-ptm="{entry$ptm}" style="display:none; margin-bottom: 15px;">'),
+                  glue('<p><strong>{entry$gene} ({entry$dir}, {entry$ptm})</strong></p>'),
+                  glue('<img src="{entry$fn}" style="max-width: 100%; border: 1px solid #ccc; padding: 5px;" />'),
+                  '</div>'))
+      }
+      
+      cat(glue('</div id="pymol-container-{id_suffix}">'))
+    }
+    
+    
+    #### Print Datatables ####
+    cat("\n---\n")
+    cat("\n#### Data Tables")
+    
+    ## load in files
+    datatables = list()
+    
+    ## wrangle and plot both datatables
+    for (direction in c("positive", "negative")) {
+      ## read in data
+      datatable_fn = file.path(dir, glue("{annot}_{direction}_results"), "clumpsptm_output.tsv")
+      if (!file.exists(datatable_fn)) {
+        print(glue("WARNING: No {direction} result found for '{dir}' annotation '{annot}'"))
+      } else datatables[[direction]] <- read.delim(datatable_fn)
+      
+      ## if we have data for this direction
+      if (!is.null(datatables[[direction]])) { # if we have a datatable for this direction
+        ## filter columns
+        columns = c(parameters$analysis$accession_col, "geneSymbol", "uniprot", "pdb", "chain", "clumpsptm_sampler", "clumpsptm_pval", "clumpsptm_fdr", parameters$analysis$variable_sites_col)
+        # print(setdiff(colnames(pos_table), columns))
+        datatables[[direction]] = select(datatables[[direction]], all_of(columns)) %>%
+          rename("PTM-Type" = "clumpsptm_sampler",
+                 "P-Value" = "clumpsptm_pval",
+                 "FDR Value" = "clumpsptm_fdr")
+        
+        ## print datatables
+        # cat(glue('<div id={paste0("res_table",tab_count)}>'))
+        cat(glue("\n\n<details id={paste0('res_dropdown',tab_count)}><summary><strong>{str_to_title(direction)} Results Table</strong></summary>\n\n"))
+        # print(htmltools::tagList(DT::datatable(datatables[[direction]],
+        DT::datatable(datatables[[direction]],
+                      options = list(scrollX = TRUE, #pageLength = 10, 
+                                     order = list(list(which(names(datatables[[direction]])=="FDR Value"), 'asc'))), # sort by nominal pval
+                      caption = htmltools::tags$caption(
+                        style = 'caption-side: top; text-align: left;',
+                        htmltools::strong(glue::glue("Table {tab_count}.")),
+                        glue::glue("Results for proteins with {direction}ly regulated PTM sites in {annot} samples."))
+                      ) %>%
+          formatStyle(parameters$analysis$variable_sites_col, "white-space" = "nowrap") %>%
+          htmltools::tagList() %>% print()
+        cat("\n</details id={paste0('res_dropdown',tab_count)}>\n")
+        # cat(glue('</div id={paste0("res_table",tab_count)}>'))
+        print(htmltools::br()) ## add break at end of table, to prevent weird stacking
+        tab_count <- tab_count + 1
+      }
+    }
+  }
+  cat(glue("\n<!-- tabset:{id_dir}-tabs-->\n")) # end tabset (doesn't actually work lmao but I tried)
+  # cat("\n## {-}\n")
+  
+  print(htmltools::br())
+  cat("\n---\n")
+  
+  cat("\n### Summary of Analyzed Proteins\n")
+  
+  #### Print Summary Figure ####
+
+  cat(paste0("![Number of Analyzed Proteins](", summary_fig, "){width=100%}"))
+  cat("  \n")
+  cat(glue("**Figure {fig_count}. {annot}** This figure shows the total number of analyzed proteins, as well as the number of significant proteins before and after FDR correction."))
+  cat("  \n")
+  fig_count = fig_count+1 #increment figure counter
+  
+  cat("\n---\n")
+}
+
+```
+
+***
+
+# Parameters
+    
+Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_clumps_ptm).    
+    
+```{r params, results="asis", include=TRUE, echo=FALSE, warning=T, message=F}
+tab_param <- data.frame(param=character(0), value=character(0)) # parameters are imported earlier
+
+for (mod in names(parameters)) {
+  param_set = parameters[[mod]] %>% # grab relevant parameter set
+    lapply(function(p) { if(is.null(p)) { return("NULL") } else { return(p) } })
+  tab_param <- data.frame(param=names(param_set), value=unlist(param_set))
+  ## insert table
+  tab_param %>%
+    kbl(row.names =FALSE, caption=paste0('**Table ', tab_count,glue('**: List of parameters used in ```panoply_clumps_ptm``` ({mod} module).'))) %>%
+    kable_paper('hover', full_width = F,) %>%
+    kable_styling(position = "float_left") %>%
+    cat()
+  cat("\n")
+
+  ## increment
+  tab_count <- tab_count + 1
+}
+
+if (length(results_dirs)>1) {
+  print(glue("**NOTE:** Parameters taken from '{param_dir}' results directory. If multiple runs with different params were combined in this report, this will not be reflected in the parameters table."))
+}
+```
+
+<br>
+
+***
+
+**_Created on `r Sys.time()`_**
+
+***
+
+<br>
