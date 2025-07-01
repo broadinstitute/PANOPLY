@@ -20,8 +20,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_nmf_postprocess",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_nmf_postprocess/6",
-    "methodVersion": 6,
+    "methodUri": "agora://broadcptacdev/panoply_nmf_postprocess/8",
+    "methodVersion": 8,
     "sourceRepo": "agora"
   },
   "name": "panoply_nmf_postprocess",
@@ -29,7 +29,8 @@
   "outputs": {
     "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.feature_matrix_w": "",
     "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.membership": "",
-    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.results": ""
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.results": "",
+    "panoply_nmf_postprocess_workflow.panoply_nmf_postprocess.ssgsea_viable": ""
   },
   "prerequisites": {},
   "rootEntityType": "sample_set"

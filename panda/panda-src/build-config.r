@@ -60,10 +60,10 @@ proteome.types <- c(
   "ubiquitylome"
 )
 
-required.genomics.types <- c(
-  "cna",
-  "rna"
-)
+# required.genomics.types <- c(
+#   "cna",
+#   "rna"
+# )
 
 required.cols <- c(
   "Sample.ID",
@@ -310,7 +310,12 @@ load_unzipped_files <- function(){
     zip.name <- tail( unlist( strsplit( input.zip, split = '/' ) ), 1 )
     return(zip.name)
   }
-  input.zip.name <- smart_readline( prompt = "\n$$ Enter uploaded zip file name (test.zip): ",
+  # list of zip-files
+  cat(paste(glue("Available zip-files:"),
+            paste( system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("zip$", ., value=T), collapse = '\n'), 
+            sep,
+            sep = '\n'))
+  input.zip.name <- smart_readline( prompt = "\n$$ Enter name of zip file containing input data: ",
                                     custom_condition = function(input.zip.name) { file.exists( process_zip(input.zip.name) ) },
                                     custom_warning = printX ("ERROR", glue("Zip file not found in workspace bucket")),
                                     exit_message = stnd_exit_message) # ensure that zip file exists
@@ -489,9 +494,10 @@ validate_gene_id <- function(ome) {
       # check whether user is inputting a gene.id.col, or a prot.id.col and prot.id.type
       id.col.type = smart_readline( prompt = paste(glue("\n$$ To create a Gene ID column for {toupper(ome)}, please choose to either:"),
                                                    "\t1) Select an existing annotation column with HUGO Gene Symbols",
-                                                   "\t2) Convert protein IDs to HUGO Gene Symbol \n",
+                                                   "\t2) Convert protein IDs to HUGO Gene Symbol",
+                                                   "\t3) Proceed without a gene-symbol column, at your own risk \n",
                                                    sep = "\n"),
-                                    custom_condition = function(input) { input %in% c(1,2) },
+                                    custom_condition = function(input) { input %in% c(1,2,3) },
                                     custom_warning = stnd_custom_warning,
                                     exit_message = stnd_exit_message )
       if(is.null(id.col.type)) stop()
@@ -501,7 +507,10 @@ validate_gene_id <- function(ome) {
         valid_id = gene_id_column_select(ome, gct, gene.id.col.default) #select column w/ gene IDs
       else if (id.col.type==2) 
         valid_id = gene_id_column_create(ome, gct, gene.id.col.default, protein.id.col) # convert protein IDs to gene IDs
-      else { printX("ERROR", "This shouldn't have happened!"); stop() }
+      else if (id.col.type==3) {
+        printX("WARNING", glue("Skipping check for gene-symbol column in {toupper(ome)} data. Proceed with caution; many PANOPLY modules require this column"))
+        valid_id = TRUE # skip check entirely
+      } else { printX("ERROR", "This shouldn't have happened!"); stop() }
     }
   }
   
@@ -523,8 +532,8 @@ validate_input <- function () {
   if (!modules.workspace) {
     if ( all (names (typemap.gct) %in% proteome.types == FALSE) )
       stop( printX ("ERROR", "No proteomics dataset specified") )
-    if ( ! all (required.genomics.types %in% names (typemap.gct)) )
-      stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
+    # if ( ! all (required.genomics.types %in% names (typemap.gct)) )
+    #   stop( printX ("ERROR", glue ("Genomics data ({paste (required.genomics.types, collapse='/')}) missing")) )
   }
   
   printX ("INFO", "Validating sample IDs in all files")
@@ -710,13 +719,19 @@ verify_group_validity <- function( groups.cols, typemap.csv ){
   annot <- read_annot()
   for ( group.idx in 1:length( groups.cols ) ){
     groups.vals <- sort(unique( annot[[groups.cols[group.idx]]] ))
-    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){  
+    if ( length( groups.vals ) > max.categories || length( groups.vals ) <= 1 ){
+      # display an appropriate warning
+      if ( length( groups.vals ) > max.categories ) tmp = glue("more than {max.categories} categories")
+      if ( length( groups.vals ) <= 1 ) tmp = "1 or fewer unique categories"
+      printX ("WARNING", glue("The '{groups.cols[group.idx]}' annotation has {tmp} ({length( groups.vals )}), and will not be used as a categorical variable."))
       # drop if column has <= 1 unique values (ie column not present, or is identical for all samples)
       # if column has > max.categories, drop from groups.cols, 
       #   but, if numeric, treat as a continuous column and add to groups.cols.continuous
       drop <- c( drop, group.idx )
-      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) 
+      if (length( groups.vals ) > max.categories && is.numeric (groups.vals)) {
         cont <- c (cont, group.idx)
+        printX ("INFO", glue("The '{groups.cols[group.idx]}' annotation will be included as a continuous variable."))
+      }
     }
   }
   if ( length( cont ) > 0 ) groups.cols.continuous <- groups.cols[cont]
@@ -1040,7 +1055,7 @@ sample_set_sanity_check <- function( sample.sets ){
   
   exist.ss <- setdiff (exist.ss, 'all')  # always include 'all' -- keeps samples synchronized
   if ( !( identical( character(), exist.ss ) ) ){
-    overlap.flags <- names( sample.sets ) %in% exist.ss
+    overlap.flags <- sapply(names( sample.sets ), function(x) {any(grepl(x, exist.ss, ignore.case=T))}) # check if set already exists, non-case-sensitive
     if ( any( overlap.flags ) ){
       overlap.ssets <- names( sample.sets )[overlap.flags]
       warning <- glue ("WARNING. Sample sets -- {overlap.ssets} -- already exist.")
@@ -1050,9 +1065,13 @@ sample_set_sanity_check <- function( sample.sets ){
       if (overwrite) {
         # delete existing sample sets, including 'all'
         # "echo y" automates the "y(es)/no" prompt needed to confirm deletion
-        sapply (overlap.ssets, 
-                function (s) 
-                  system ( glue ( "echo y | fissfc sset_delete -w {terra.wkspace} -p {globals$project} -e {s}" ))
+        sapply (overlap.ssets, # for each set which overlaps existing sets
+                function (s)  {
+                  dup.groups = exist.ss[grepl(s, exist.ss, ignore.case=T)] # identify the sets that would be clobbered
+                  for (dup.group in dup.groups) { # and delete them from terra
+                    system ( glue ( "echo y | fissfc sset_delete -w {terra.wkspace} -p {globals$project} -e {dup.group}" ))
+                  }
+                }
         )
       } else {
         print( glue( "\n\n.. Aborting sample subset definition\n") )
@@ -1121,7 +1140,7 @@ define_sample_sets <- function( all.groups, typemap.csv ){
     fil_val <- unlist (strsplit (fil_val, split=';'))
     
     sample.sets[[name]]$fil_col <- fil_col
-    sample.sets[[name]]$fil_val <- fil_val
+    sample.sets[[name]]$fil_val <- paste(fil_val, collapse=';') # reconcatenate into a single string
     
     # add pathway databases and parameters as set-specific parameters for every set
     for (x in names (typemap.gmt))  

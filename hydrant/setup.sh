@@ -35,6 +35,11 @@ copySrc() {
   cp -R $panoply/src/$task/* $panoply/hydrant/tasks/$task/$task/src/.;
 }
 
+addTimestampDockerfile() {
+  echo -e "$not Adding timestamp to docker dir...";
+  date > $panoply/hydrant/tasks/$task/$task/src/build-date.txt;
+}
+
 
 # copies appropriate dockerfile to the task
 dockerTemplate() {
@@ -115,7 +120,7 @@ displayUsage() {
   echo "                     [-m [base_task]:[tag]] "
   echo "                     [-n [docker_namespace]] "
   echo "                     [-g [docker_tag_num]] "
-  echo "                     [-y] [-b] [-h] [-x] [-z] [-P]"
+  echo "                     [-y] [-b] [-h] [-x] [-z] [-T] [-P]"
   echo ""
   echo "==============================================="
   echo "| -t | string | Task name"
@@ -138,13 +143,14 @@ displayUsage() {
   echo "| -x | flag   | Do not prune dockers from local system before building"
   echo "| -z | flag   | Cleanup task directory"
   echo "| -e | falg   | Cleanup hydrant and 'tasks' directory"
+  echo "| -T | flag   | Add timestamp to Dockerfile build"
   echo "| -P | flag   | Print full docker build log"
   echo "| -h | flag   | Print Usage"
   echo "==============================================="
   exit
 }
 
-while getopts ":t:c:w:n:m:g:d:praesfybuxzPh" opt; do
+while getopts ":t:c:w:n:m:g:d:praesfybuxzTPh" opt; do
     case $opt in
         t) task="$OPTARG"; wf_name="$task";;
         p) p_flag="true";;
@@ -164,6 +170,7 @@ while getopts ":t:c:w:n:m:g:d:praesfybuxzPh" opt; do
         a) a_flag="true";;
         x) x_flag="true";; ##if calling from update.sh
         z) z_flag="true";;
+        T) T_flag="true";;
         P) P_flag="--progress=plain";;
         h) displayUsage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
@@ -244,6 +251,11 @@ main()
   if [[ $y_flag == "true" ]]; then
     copySrc;
   fi 
+
+  ## add timestamp to dockerfile
+  if [[ $T_flag == "true" ]]; then
+    addTimestampDockerfile;
+  fi
 
   ## docker tag
   if [[ -z $docker_tag ]]; then

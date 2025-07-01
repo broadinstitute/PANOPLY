@@ -89,6 +89,26 @@ panoply_rna_protein_correlation_report:
   fdr: 0.05
 
 
+panoply_clumps_ptm:
+  mapping:
+    variable_sites_col: 'variableSites'   # GCT rdesc column with PTM variable site(s) (e.g. 'T527t')
+    variable_sites_sep: ' '               # Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')
+    keep_multi_sites: true                # Should multi-site PTMs be mapped and analyzed?
+    filter_duplicate_sites: true          # Should multi-site PTMs that were also observed as single-sites be filtered out?
+    FASTA_sep_type: 'gencode'             # Separator for FASTA sequences in FASTA reference file. Supported values are "cptac" for ' ', or "gencode" for "|"
+  diff_exp:
+    min_samples: 5                        # minimum number of samples an annotation-subgroup can have before it is dropped from analysis (5 recommended, 3 absolute minimum)
+    max_annot_levels: 10                  # maximum number of levels an annotation can have and be considered discrete
+    fdr_cutoff: NULL                      # FDR threshold for significant features. Set to NULL to keep all features regardless of significance.
+  analysis:
+    run_combined: true                    # toggle for running all PTMs combined
+    weight_col: 'logFC'                   # column from differential-expression dataset to use as weights in ClumpsPTM
+  postprocess:
+    fdr_thresh: 0.1                       # FDR threshold for figures (NOTE: the ClumpsPTM GitHub is currently hardcoded for a 0.1 threshold, so only the plotting can be easily changed) 
+    pymol_gen: true                       # Should PyMol figures be generated at all?
+    pymol_upper_limit: 10                 # Maximum number of PyMol figures that should be generated per annot. 
+
+
 panoply_cons_cluster:
   clustering_sd_threshold: 2   # threshold for filtering data before consensus clustering
   clustering_na_threshold: 0.5 # max fraction of missing values for clustering; rest are imputed
@@ -129,6 +149,17 @@ panoply_blacksheep:
   fraction_samples_cutoff: 0.3
   fdr_value: 0.05
 
+panoply_metaboanalyst:
+  meta_id_type: "hmdb_id"                       # ID type used for metabolites
+  meta_id_col: NULL                             # Rdesc column in Metabolite GCT with meta_id_type IDs (use NULL for rid)
+  gene_id_type: "SYMBOL"                        # ID type used for -omic data
+  max_annot_levels: 10                          # max. number of levels in a annotation category to be included in the analysis
+  anal_type: "ORA"                              # Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis)
+  pval_comb: "pvalo"                            # Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).
+  pval_signif: 0.05                             # P-value threshold for significant enrichement
+  top_n_networks: 10                            # Top N networks to plot per annot subvalue
+  impact_metric: "Impact.DC"                   # Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality).
+  
 panoply_mimp:
   groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap
   search_engine: "SpectrumMill"                 # name of search engine used to process phospho data. Options are "SpectrumMill" or "other"
@@ -178,6 +209,7 @@ panoply_nmf_postprocess:
 
   #########################
   ## driver features 
+  feature_method: NULL          ## Method for selecting driver features. Leave as NULL to use defaults (i.e. try kim -> use max as backup)
   top_n_features: 25            ## number of driver-features (per cluster) to plot expression data for
 
   #########################

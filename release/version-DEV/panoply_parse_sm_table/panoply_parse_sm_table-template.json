@@ -21,8 +21,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_parse_sm_table",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_parse_sm_table/9",
-    "methodVersion": 9,
+    "methodUri": "agora://broadcptacdev/panoply_parse_sm_table/10",
+    "methodVersion": 10,
     "sourceRepo": "agora"
   },
   "name": "panoply_parse_sm_table",

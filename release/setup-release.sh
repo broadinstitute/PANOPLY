@@ -96,7 +96,6 @@ configure_primary_workflow() {
       jq '.inputs."panoply_main.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_main.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_main.run_cmap" = $val' --arg val "\"false\"" |  \
-      jq '.inputs."panoply_main.run_ptmsea" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_main.annotation_pathway_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_main.geneset_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_main.ptm_db" = $val' --arg val "this.ptmseaDB" > new-template.json
@@ -123,8 +122,11 @@ configure_primary_workflow() {
       # jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_unified_workflow.groups_file" = $val' --arg val "this.groups_ss" |  \
       jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
-      jq '.inputs."panoply_unified_workflow.run_nmf" = $val' --arg val "\"true\"" |  \
-      jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
+      jq '.inputs."panoply_unified_workflow.run_mo_nmf" = $val' --arg val "false" |  \
+      jq '.inputs."panoply_unified_workflow.run_so_nmf" = $val' --arg val "true" |  \
+      jq '.inputs."panoply_unified_workflow.nmf.run_sankey" = $val' --arg val "true" |  \
+      jq '.inputs."panoply_unified_workflow.nmf.run_ssgsea" = $val' --arg val "true" |  \
+      # jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.nmf.gene_set_database" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.geneset_db" = $val' --arg val "this.gseaDB" |  \
       jq '.inputs."panoply_unified_workflow.pome.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
@@ -133,6 +135,15 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.ubiquityl_ome" = $val' --arg val "this.ubiquitylome_ss" |  \
       jq '.inputs."panoply_unified_workflow.pome.annotation_pathway_db" = $val' --arg val "this.gseaDB" > new-template.json
+    mv new-template.json $wf-template.json  
+    put_method_config $ws $wp $wf
+  fi
+  
+  if [ "$wf" == "panoply_nmf_workflow" ]; then
+    # configure panoply_nmf_workflow with template for paired-array input
+    cat $wf-template.json |  \
+      jq '.inputs."panoply_nmf_workflow.ome_pairs" = $val' --arg val '[ { "left":"prot", "right":this.proteome_ss }, { "left":"pSTY", "right":this.phosphoproteome_ss }, { "left":"acK", "right":this.acetylome_ss }, { "left":"ubK", "right":this.ubiquitylome_ss }, { "left":"RNA", "right":this.rna_ss }, { "left":"CNA", "right":this.cna_ss } ]' \
+      > new-template.json
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
   fi
@@ -184,6 +195,9 @@ installMethod() {
   if [[ ("$type" = "workflows") && ("$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow") ]]; then
     # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
     configure_primary_workflow $wkspace_pipelines $project $meth
+  elif [[ ("$meth" = "panoply_nmf_workflow") ]]; then
+    # also configure panoply_nmf_workflows to have paired-array template
+    configure_primary_workflow $wkspace_all $project $meth
   else
     put_method_config $wkspace_all $project $meth
   fi
@@ -343,7 +357,7 @@ do
   if [ "$lat" != "NO_DOCKER" ]; then
     # build release docker
     echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-    docker build --rm --no-cache -t $release_dns/$mod:$release_tag .
+    docker build --pull --no-cache -t $release_dns/$mod:$release_tag .
     docker images | grep "$mod"
     docker push $release_dns/$mod:$release_tag
   fi
