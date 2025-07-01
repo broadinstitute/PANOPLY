@@ -31,13 +31,15 @@ task panoply_ssgsea {
 		# run ssgsea/ptm-sea
 		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${default=NA output_prefix} -n ${default=NA sample_norm_type} -w ${default=NA weight} -c ${default=NA correl_type} -t ${default=NA statistic} -s ${default=NA output_score_type} -p ${default=NA nperm} -m ${default=NA min_overlap} ${"-q " + tolerate_min_overlap_err} -g ${default=NA global_fdr} -z /home/pgdac
 
-		# set wdl variable 'output_prefix' to the value specified in the yaml file,
-		# if not specified via cmd line 
-		output_prefix_local="results"
 
-		# archive result files
-		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^.*.log.txt$|^.*parameters.txt$"
-		
+		## tar results
+
+		# copy ${input_ds} to PWD, so it gets tarred with outputs
+		cp ${input_ds} .
+		input_fn=`basename ${input_ds}`
+
+		# create regex to locate relevant outputs to tar
+		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^${input_fn}$|^.*.log.txt$|^.*parameters.txt$"
 		find * -regextype posix-extended -regex $result_regexpr -print0 | tar -czvf ${output_prefix}.tar.gz --null -T -
 		}
 
