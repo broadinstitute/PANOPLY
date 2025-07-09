@@ -1,0 +1,2 @@
+FROM broadcptacdev/panoply_ssgsea:latest
+MAINTAINER proteogenomics@broadinstitute.org

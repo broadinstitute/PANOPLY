@@ -5,8 +5,6 @@ workflow panoply_spectronaut {
 
 task spectronaut {
   input {
-    String license_key
-
     String experiment_name
     File? analysis_settings
     File? condition_setup
@@ -59,13 +57,11 @@ task spectronaut {
     fi
     #find path within the docker 
     # run spectronaut
-    spectronaut -activate ${license_key}
     ${"dotnet /usr/lib/spectronaut/SpectronautCMD.dll --importEnzymeDB "+ enzyme_database}
     /usr/bin/spectronaut ${if direct_DIA then "-direct" else ""} ${"-s " + analysis_settings} \
         ${"-con " + condition_setup} -n ${experiment_name} -o $out_dir \
         -fasta ${fasta} ${"-fasta " + fasta_1} ${"-a " + spectral_library} ${"-a " + spectral_library_1} \
         ${"-rs " + report_schema} ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} ${"-j " + json_settings} -d data -setTemp $sn_temp
-    spectronaut -deactivate
 
     zip -r $out_zip $out_dir -x \*.zip
 

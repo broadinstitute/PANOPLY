@@ -1,0 +1,1 @@
+Convert GCT to gene-centric or single-site-centric, typically used for ssGSEA.

@@ -1,13 +1,13 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/1/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/14/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/58/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/13/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/30/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/14/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/25/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/19/plain-WDL/descriptor" as select_pairs
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/37/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/67/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_blacksheep_workflow/versions/51/plain-WDL/descriptor" as blacksheep_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_workflow/versions/15/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_immune_analysis_workflow/versions/47/plain-WDL/descriptor" as immune_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/28/plain-WDL/descriptor" as assemble_wdl
 
 
 
@@ -85,6 +85,7 @@ workflow panoply_unified_workflow {
         job_identifier="${job_id}-${pair.left}",
         run_ptmsea="${run_ptmsea}",
         run_cmap = "${run_cmap}",
+        run_omicsev = "${if pair.left=='proteome' then true else false}",
         run_nmf = "false",
         input_cna=cna_data,
         input_rna=rna_data,
@@ -144,17 +145,19 @@ workflow panoply_unified_workflow {
       norm_report = norm_filt.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,
+      ssgsea_rna_report = pome.ssgsea_rna_report,
+      ssgsea_ome_report = pome.ssgsea_ome_report,
       omicsev_report = pome.omicsev_report,
       cosmo_report = pome.cosmo_report,
       sampleqc_report = pome.sample_qc_report,
       assoc_report = pome.association_report,
+      ptmsea_ome_report = pome.ptmsea_ome_report,
       blacksheep_tar = outlier.blacksheep_tar,
       blacksheep_report = outlier.blacksheep_report,
       nmf_results = nmf.nmf_results,
       nmf_reports = nmf.nmf_reports,
       immune_tar = immune.outputs,
       immune_report = immune.report
-
   }
   
   output {

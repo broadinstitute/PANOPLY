@@ -14,7 +14,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cmap_anal
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_check_yaml_default/versions/9/plain-WDL/descriptor" as check_yaml_default_wdl
 
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_workflow/versions/4/plain-WDL/descriptor" as assoc_workflow
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_workflow/versions/9/plain-WDL/descriptor" as panoply_ssgsea_workflow_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/11/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/20/plain-WDL/descriptor" as download_wdl
@@ -28,6 +28,7 @@ workflow panoply_main {
   String? run_ptmsea # "true" or "false"
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
+  String? run_omicsev = "true"
 
   ## inputs
   File input_pome
@@ -72,11 +73,12 @@ workflow panoply_main {
   if (defined(input_rna) && defined(input_cna)) {
 
     ### Single-Sample GSEA (on RNA)
-    call ssgsea_wdl.panoply_ssgsea as ssgsea_rna {
+    call panoply_ssgsea_workflow_wdl.panoply_ssgsea_workflow as ssgsea_rna {
       input:
-        input_ds = input_rna,
-        gene_set_database = geneset_db,
-        output_prefix = job_identifier,
+        preprocess_gct=false, # assumes geneSymbol for id col
+        input_ds=input_rna,
+        gene_set_database=geneset_db,
+        output_prefix=job_identifier,
         level = "gc",
         yaml_file = yaml
     }
@@ -127,15 +129,18 @@ workflow panoply_main {
     }
     
     ### Omics EV
-    call omicsev_wdl.panoply_omicsev {
-      input:
-        yaml_file = yaml,
-        STANDALONE = standalone,
-        do_function_prediction = false,
-        panoply_harmonize_tar_file = panoply_harmonize.outputs,
-        label = job_identifier,
-        ome_type = ome_type
+    if ( run_omicsev == "true" ){ 
+      call omicsev_wdl.panoply_omicsev {
+        input:
+          yaml_file = yaml,
+          STANDALONE = standalone,
+          do_function_prediction = false,
+          panoply_harmonize_tar_file = panoply_harmonize.outputs,
+          label = job_identifier,
+          ome_type = ome_type
+      }
     }
+
 
     ### Sample QC
     call sampleqc_wdl.panoply_sampleqc {
@@ -202,14 +207,16 @@ workflow panoply_main {
   #############################
 
   ### Single-Sample GSEA (on pome)
-  call ssgsea_wdl.panoply_ssgsea as ssgsea_ome {
+  call panoply_ssgsea_workflow_wdl.panoply_ssgsea_workflow as ssgsea_ome {
     input:
-      input_ds = input_pome,
-      gene_set_database = geneset_db,
-      output_prefix = job_identifier,
+      preprocess_gct=true,
+      input_ds=input_pome,
+      gene_set_database=geneset_db,
+      output_prefix=job_identifier,
       level = "gc",
       yaml_file = yaml
   }
+
 
   ### Association Analysis
   call assoc_workflow.panoply_association_workflow {
@@ -253,11 +260,12 @@ workflow panoply_main {
     }
 
     if ( check_ptmsea_default.param_boolean ){
-      call ssgsea_wdl.panoply_ssgsea as ptmsea_ome {
+      call panoply_ssgsea_workflow_wdl.panoply_ssgsea_workflow as ptmsea_ome {
         input:
-          input_ds = input_pome,
-          gene_set_database = ptm_db,
-          output_prefix = job_identifier,
+          preprocess_gct=true,
+          input_ds=input_pome,
+          gene_set_database=ptm_db,
+          output_prefix=job_identifier,
           level = "ssc",
           yaml_file = yaml
       }
@@ -291,10 +299,13 @@ workflow panoply_main {
     File panoply_full = panoply_download.full
     File? rna_corr_report = panoply_rna_protein_correlation_report.report
     File? cna_corr_report = panoply_cna_correlation_report.report
+    File? ssgsea_rna_report = ssgsea_rna.report
+    File? ssgsea_ome_report = ssgsea_ome.report
     File? omicsev_report = panoply_omicsev.report
     File? cosmo_report = panoply_cosmo_workflow.cosmo_report
     File? sample_qc_report = panoply_sampleqc_report.report
     File association_report = panoply_association_workflow.report
+    File? ptmsea_ome_report = ptmsea_ome.report
     File? so_nmf_report = so_nmf.nmf_report
     File? so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report
     File? cmap_output = run_cmap_analysis.outputs

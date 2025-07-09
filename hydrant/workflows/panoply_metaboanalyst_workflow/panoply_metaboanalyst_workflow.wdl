@@ -5,7 +5,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboana
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst_report/versions/1/plain-WDL/descriptor" as metaboanalyst_report_wdl
 
 ################################################
-##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
+##  workflow: panoply_metaboanalyst + panoply_metaboanalyst_report
 workflow panoply_metaboanalyst_workflow {
 	String output_prefix
 

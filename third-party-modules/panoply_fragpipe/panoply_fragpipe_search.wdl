@@ -102,8 +102,9 @@ task fragpipe {
     fi
     
     #headless version 
-    /fragpipe/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-msfragger /MSFragger-3.8/MSFragger-3.8.jar --config-philosopher /usr/local/bin/philosopher --config-ionquant /IonQuant-1.9.8/IonQuant-1.9.8.jar --config-python /opt/conda/envs/fragpipe/bin/python
-
+    /fragpipe-23.0/bin/fragpipe --headless --workflow $frag_workflow --manifest $frag_manifest --workdir "out" --config-tools-folder /utils --config-diann  /fragpipe-23.0/tools/diann/1.8.2_beta_8/linux/diann-1.8.1.8 --config-python /opt/conda/envs/fragpipe/bin/python
+    
+    
     cd ..
     zip -r $out_zip $projdir/out -x \*.zip
     zip -r $proc_data_zip $projdir/data -x \*.zip
@@ -118,7 +119,7 @@ task fragpipe {
   }
 
   runtime {
-    docker: "broadcptacdev/panoply_fragpipe:latest"
+    docker: "broadcptacdev/panoply_fragpipe:v23"
     cpuPlatform : "AMD Rome"
     memory: "${ram_gb}GB"
     bootDiskSizeGb: 512
@@ -131,4 +132,3 @@ task fragpipe {
     author: "Khoi Pham Munchic"
     email : "kpham@broadinstitute.org"
   }
-}

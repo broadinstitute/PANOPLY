@@ -3,8 +3,9 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/10/plain-WDL/descriptor" as assoc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/8/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/6/plain-WDL/descriptor" as ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/7/plain-WDL/descriptor" as 	assoc_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_preprocess_gct/versions/4/plain-WDL/descriptor" as preprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/15/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/9/plain-WDL/descriptor" as 	assoc_report_wdl
 
 ################################################
 ##  workflow: panoply_association + panoply_accumulate + panoply_ssgsea + panoply_association_report
@@ -24,7 +25,8 @@ workflow panoply_association_workflow {
 	String? duplicate_gene_policy
 	String? gene_id_col
 
-	String geneset_db
+	File geneset_db
+	# Boolean is_ptmsigdb
 
 
 	call assoc_wdl.panoply_association as assoc {
@@ -49,13 +51,20 @@ workflow panoply_association_workflow {
 
 	Array[File] list_gct_assoc = accumulate_assoc.list_gct
 	scatter (f in list_gct_assoc){
-		call ssgsea_wdl.panoply_ssgsea as ssgsea_assoc {
+		## Preprocess GCT (optional) // Convert GCT to gene-centric or single-site-centric
+		call preprocess_wdl.panoply_preprocess_gct as preprocess {
 		input:
 			input_ds = "${f}",
-			gene_set_database = geneset_db,
-			output_prefix = job_identifier,
 			level = "gc",
 			mode = "abs.max", # association contrasts are log-transformed signed p-values and should be combined by abs.max
+			yaml_file = yaml
+		}
+		## Run ssGSEA
+		call ssgsea_wdl.panoply_ssgsea as ssgsea_assoc {
+		input:
+			input_ds = preprocess.result,
+			gene_set_database = geneset_db,
+			output_prefix = job_identifier,
 			yaml_file = yaml
 		}
 	}
