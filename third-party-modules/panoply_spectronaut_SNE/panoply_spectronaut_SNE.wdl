@@ -8,15 +8,19 @@ task spectronaut_SNE {
 
     String experiment_name
     File fasta
+    Directory files_folder
+    Boolean sne_out=false
+
+    # Specify an additional FASTA
     File? fasta_1
-    File? condition_setup
+    File? settings_schema
+
+    # Specify report schema outputs
     File? report_schema
     File? report_schema_1
     File? report_schema_2
 
-    Boolean sne_out=false
-
-    Directory files_folder
+   
     File? file_of_files
 
     Int num_preemptions=0
@@ -57,7 +61,7 @@ task spectronaut_SNE {
           ${"-rs " + report_schema} ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} -setTemp $sn_temp
     else
         /usr/bin/spectronaut combine -o $out_dir -d data \
-          -fasta ${fasta} ${"-fasta " + fasta_1} ${"-con " + condition_setup} ${"-rs " + report_schema} \
+          -fasta ${fasta} ${"-fasta " + fasta_1} ${"-s " + settings_schema} ${"-rs " + report_schema} \
           ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} -n ${experiment_name} -setTemp $sn_temp
     fi
 
