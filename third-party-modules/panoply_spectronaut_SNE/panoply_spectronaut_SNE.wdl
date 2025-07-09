@@ -1,27 +1,26 @@
 version development
-workflow panoply_spectronaut { 
-  call spectronaut
+workflow panoply_spectronaut_SNE { 
+  call spectronaut_SNE
 }
 
-task spectronaut {
+task spectronaut_SNE {
   input {
+
     String experiment_name
-    File? analysis_settings
-    File? condition_setup
-    # search databases -- upto 2 fasta files can be provided
-    File fasta       
+    File fasta
+    Directory files_folder
+    Boolean sne_out=false
+
+    # Specify an additional FASTA
     File? fasta_1
-    # spectral libraries -- upto 2 can be provided; if none specified, perform DirectDIA
-    File? enzyme_database
-    File? spectral_library
-    File? spectral_library_1
-    # report schema -- upto 3 can be provided
+    File? settings_schema
+
+    # Specify report schema outputs
     File? report_schema
     File? report_schema_1
     File? report_schema_2
-    File? json_settings
 
-    Directory files_folder
+   
     File? file_of_files
 
     Int num_preemptions=0
@@ -32,8 +31,7 @@ task spectronaut {
 
   Array[File] files = if defined(file_of_files) then read_lines(select_first([file_of_files])) else []
   Boolean directory_input = if defined(file_of_files) then false else true
-  Boolean direct_DIA = if defined(spectral_library) then false else true
-  String raw_files = if directory_input then files_folder else sep(' -r ', files)
+  String sne_files = if directory_input then files_folder else sep(' -sne ', files)
   
   command {
     set -euo pipefail
@@ -55,22 +53,22 @@ task spectronaut {
       mkdir data
       cp ${sep(' ', files)} data
     fi
-    #find path within the docker 
+    
     # run spectronaut
-    ${"dotnet /usr/lib/spectronaut/SpectronautCMD.dll --importEnzymeDB "+ enzyme_database}
-    /usr/bin/spectronaut ${if direct_DIA then "-direct" else ""} ${"-s " + analysis_settings} \
-        ${"-con " + condition_setup} -n ${experiment_name} -o $out_dir \
-        -fasta ${fasta} ${"-fasta " + fasta_1} ${"-a " + spectral_library} ${"-a " + spectral_library_1} \
-        ${"-rs " + report_schema} ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} ${"-j " + json_settings} -d data -setTemp $sn_temp
+    if [[ "${sne_out}" = "true" ]]
+    then
+        /usr/bin/spectronaut manageSNE --merge -o $out_dir -d data -n ${experiment_name} \
+          ${"-rs " + report_schema} ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} -setTemp $sn_temp
+    else
+        /usr/bin/spectronaut combine -o $out_dir -d data \
+          -fasta ${fasta} ${"-fasta " + fasta_1} ${"-s " + settings_schema} ${"-rs " + report_schema} \
+          ${"-rs " + report_schema_1} ${"-rs " + report_schema_2} -n ${experiment_name} -setTemp $sn_temp
+    fi
 
-    zip -r $out_zip $out_dir -x \*.zip
-
-    # directory structure after completion of run ($working_dir = /root):
-    #   /root/data/                                         input data
-    #        /$out_dir/[timestamp]_${experiment_name}/      output
-    #        /$out_zip                                      output zip file
+    zip -r $out_zip $out_dir -x \*.zip 
 
     mv $out_zip /$cromwell_root/
+    
   }
 
   output {
@@ -88,9 +86,7 @@ task spectronaut {
   }
 
   meta {
-    author: "D. R. Mani"
+    author: "Simone Gohsman"
     email : "proteogenomics@broadinstitute.org"
   }
 }
-
-

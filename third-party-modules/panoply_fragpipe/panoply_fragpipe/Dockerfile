@@ -29,27 +29,32 @@ RUN pip install lxml
 
 RUN set -ex \
     && mkdir ThermoRawFileParser && cd ThermoRawFileParser \
-    && curl -LOk https://github.com/compomics/ThermoRawFileParser/releases/download/v1.4.3/ThermoRawFileParser1.4.3.zip \
-    && unzip ThermoRawFileParser1.4.3.zip \
-    && rm ThermoRawFileParser1.4.3.zip && cd -
+    && curl -LOk https://github.com/compomics/ThermoRawFileParser/releases/download/v1.4.5/ThermoRawFileParser1.4.5.zip \
+    && unzip ThermoRawFileParser1.4.5.zip \
+    && rm ThermoRawFileParser1.4.5.zip && cd -
 
-ADD src/FragPipe-20.0.zip /
-RUN unzip FragPipe-20.0.zip \
-    && rm FragPipe-20.0.zip \
-    && chmod 755 /fragpipe/bin/fragpipe
+ADD src/FragPipe-23.0-linux.zip /
+RUN unzip FragPipe-23.0-linux.zip \
+    && rm FragPipe-23.0-linux.zip \
+    && chmod 755 /fragpipe-23.0/bin/fragpipe
 
 RUN set -ex \
     && cd /usr/local/bin \
-    && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v5.0.0/philosopher_v5.0.0_linux_amd64.zip \
-    && unzip philosopher_v5.0.0_linux_amd64.zip && rm philosopher_v5.0.0_linux_amd64.zip \
+    && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v5.1.0/philosopher_v5.1.0_linux_amd64.zip \
+    && unzip philosopher_v5.1.0_linux_amd64.zip && rm philosopher_v5.1.0_linux_amd64.zip \
     && chmod 755 philosopher \
     && cd -
 
-ADD src/IonQuant-1.9.8.zip /
-RUN unzip IonQuant-1.9.8.zip && rm IonQuant-1.9.8.zip && chmod 755 /IonQuant-1.9.8/IonQuant-1.9.8.jar
- 
-ADD src/MSFragger-3.8.zip /
-RUN unzip MSFragger-3.8.zip && rm MSFragger-3.8.zip && chmod 755 /MSFragger-3.8/MSFragger-3.8.jar
+RUN mkdir utils && cd utils
+
+ADD src/IonQuant-1.11.9.zip /
+RUN unzip IonQuant-1.11.9.zip && rm IonQuant-1.11.9.zip && mv /IonQuant-1.11.9 /utils && chmod 755 /utils/IonQuant-1.11.9/IonQuant-1.11.9.jar
+
+ADD src/MSFragger-4.2.zip /
+RUN unzip MSFragger-4.2.zip && rm MSFragger-4.2.zip && mv /MSFragger-4.2 /utils && chmod 755 /utils/MSFragger-4.2/MSFragger-4.2.jar 
+
+ADD src/diaTracer-1.2.5.zip /
+RUN unzip diaTracer-1.2.5.zip && rm diaTracer-1.2.5.zip && mv /diaTracer-1.2.5 /utils && chmod 755 /utils/diaTracer-1.2.5/diaTracer-1.2.5.jar 
 
 COPY src/collect_psm.sh /usr/local/bin/
 COPY src/package.sh /usr/local/bin/
