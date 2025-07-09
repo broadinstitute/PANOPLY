@@ -34,12 +34,13 @@ task panoply_preprocess_gct {
 		# prepare GCT file
 		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${default=NA level} -t ${default=NA id_type} -o ${default=NA id_type_out} -a ${default=NA acc_type} -s ${default=NA seqwin_col} --gene_symbol_column ${default=NA gene_col} -k ${default=NA humanize_gene}  -v ${default=NA SGT_col} -d ${default=NA loc} -m ${default=NA mode} -r "${default=NA mod_res}" -p '${default=NA mod_type}' -u TRUE -z /home/pgdac/src
 
-		mv `cat fn.out` '${output_prefix}_out.gct' # rename the output file from preprocessGCR.R
+		mkdir file_output
+		mv `cat fn.out` file_output/ # move the output file from preprocessGCR.R into a folder
 	}
 
 	output {
 		# Outputs defined here
-		File result='${output_prefix}_out.gct'
+		File result=glob('file_output/*.gct')[0]
 	}
 
 	runtime {

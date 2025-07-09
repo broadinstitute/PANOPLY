@@ -36,10 +36,9 @@ task panoply_ssgsea {
 
 		# copy ${input_ds} to PWD, so it gets tarred with outputs
 		cp ${input_ds} .
-		input_fn=`basename ${input_ds}`
 
 		# create regex to locate relevant outputs to tar
-		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^${input_fn}$|^.*.log.txt$|^.*parameters.txt$"
+		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^${basename(input_ds)}$|^.*.log.txt$|^.*parameters.txt$"
 		find * -regextype posix-extended -regex $result_regexpr -print0 | tar -czvf ${output_prefix}.tar.gz --null -T -
 		}
 
