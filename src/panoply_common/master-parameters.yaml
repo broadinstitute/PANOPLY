@@ -255,7 +255,6 @@ panoply_preprocess_gct:
  mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
  residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
  ptm: p                         ## Type of modification, e.g "p" or "ac".
- preprocess_gct: TRUE           ## If FALSE nothing will be done; probably needed for to make this step optional in WDL.
  
 ################################
 ## ssSGEA report

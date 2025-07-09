@@ -13,7 +13,8 @@ do
   # get the group from the relevant parameters.txt file 
   group="$( echo -e "$( grep "input gct" $dir_name/$index/*parameters.txt | \
     cut -d ':' -f 2 | tr -d '[:space:]')" | \
-    rev | cut -d '.' -f2- | rev )"
+    xargs -n1 basename | sed 's/\.[^.]*$//' )" # trim to basename and prune extension
+    #rev | cut -d '.' -f2- | rev )"
   # make a new directory with the group label, and remove tmp-index directory
   mkdir -p $dir_name/"ssgsea-$group";
   cp -r $dir_name/$index/* $dir_name/"ssgsea-$group"/.;

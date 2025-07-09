@@ -1,12 +1,11 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_balance_omes/versions/7/plain-WDL/descriptor" as panoply_nmf_balance_omes_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf/versions/6/plain-WDL/descriptor" as panoply_nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/7/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_report/versions/3/plain-WDL/descriptor" as panoply_nmf_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/12/plain-WDL/descriptor" as panoply_ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_report/versions/8/plain-WDL/descriptor" as panoply_ssgsea_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_balance_omes/versions/9/plain-WDL/descriptor" as panoply_nmf_balance_omes_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf/versions/8/plain-WDL/descriptor" as panoply_nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_postprocess/versions/9/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_report/versions/5/plain-WDL/descriptor" as panoply_nmf_report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea_workflow/versions/7/plain-WDL/descriptor" as panoply_ssgsea_workflow_wdl
 
 ################################################
 ##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
@@ -86,7 +85,7 @@ workflow panoply_nmf_internal_workflow {
 			yaml_file=yaml_file
 	}
 
-	call panoply_nmf_report_wdl.panoply_nmf_report {
+	call panoply_nmf_report_wdl.panoply_nmf_report as report {
         input:
 			nmf_results=nmf.results,
 			nclust=nmf.nclust,
@@ -95,9 +94,10 @@ workflow panoply_nmf_internal_workflow {
 	}
 
 	if ( run_ssgsea && postprocess.ssgsea_viable ) { # if we want to AND are able to run ssGSEA
-		call panoply_ssgsea_wdl.panoply_ssgsea {
+		call panoply_ssgsea_workflow_wdl.panoply_ssgsea_workflow as ssgsea {
 			input:
 				input_ds=postprocess.feature_matrix_w,
+				preprocess_gct=true,
 				gene_set_database=gene_set_database,
 				gene_col=gene_column,
 				tolerate_min_overlap_err="true", # tolerate having < min_overlap genes in common with gene_set_database, since W-matrix feature space may be small for some ome-types
@@ -105,19 +105,9 @@ workflow panoply_nmf_internal_workflow {
 				output_prefix=label,
 	 			mode="abs.max",
 				weight=1,
+				output_prefix=label
 				
 		}
-
-	    if ( !panoply_ssgsea.ssgsea_min_overlap_err ) { # only generate report if we have valid results
-		    call panoply_ssgsea_report_wdl.panoply_ssgsea_report {
-				input:
-					tarball=panoply_ssgsea.results,
-					cfg_yaml=yaml_file,
-					label=label
-				
-			}
-	    }
-
 	}
 
 	output {
@@ -125,10 +115,10 @@ workflow panoply_nmf_internal_workflow {
 		Int  nmf_nclust=nmf.nclust					## number of clusters
 		File nmf_figures=postprocess.results		## tar file with figures & analysis & parameters
 		File nmf_membership=postprocess.membership	## .tsv with membership results
-		File nmf_report=panoply_nmf_report.report 	## report file
+		File nmf_report=report.report 	## report file
 
-		File? nmf_ssgsea_tar=panoply_ssgsea.results
-		File? nmf_ssgsea_report=panoply_ssgsea_report.report
+		File? nmf_ssgsea_tar=ssgsea.results
+		File? nmf_ssgsea_report=ssgsea.report
         
 		File? nmf_balance_filter=balance.pdf
 		File? nmf_preprocess_figures=nmf.preprocess_figs
