@@ -31,7 +31,7 @@ scatter_processing()
     mkdir -p $dir_name/$index && tar xf ${array[index]} -C $dir_name/$index;
     group="$( echo -e "$( grep "input gct" $dir_name/$index/*parameters.txt | \
       cut -d ':' -f 2 | tr -d '[:space:]')" | \
-      rev | cut -d '.' -f2- | rev )"
+      xargs -n1 basename | sed 's/\.[^.]*$//' )" # trim to basename and prune extension
     mkdir -p $dir_name/"ssgsea-$group";
     cp -r $dir_name/$index/* $dir_name/"ssgsea-$group"/.;
     rm -rf $dir_name/$index;

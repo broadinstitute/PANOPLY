@@ -7,6 +7,9 @@ task panoply_unified_assemble_results {
   Array[File?] norm_report
   Array[File?] rna_corr_report
   Array[File?] cna_corr_report
+  Array[File?] ssgsea_rna_report
+  Array[File?] ssgsea_ome_report
+  Array[File?] ptmsea_ome_report
   Array[File?] omicsev_report
   Array[File?] cosmo_report
   Array[File?] sampleqc_report
@@ -76,6 +79,21 @@ task panoply_unified_assemble_results {
     if [ ${sep='' cna_corr_report} != '' ]; then
       cp ${sep=' ' cna_corr_report} results/proteogenomics_analysis/all_html_reports
       mv ${sep=' ' cna_corr_report} reports/proteogenomics_analysis
+    fi
+
+    if [ ${sep='' ssgsea_rna_report} != '' ]; then
+      cp ${sep=' ' ssgsea_rna_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' ssgsea_rna_report} reports/proteogenomics_analysis
+    fi
+
+    if [ ${sep='' ssgsea_ome_report} != '' ]; then
+      cp ${sep=' ' ssgsea_ome_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' ssgsea_ome_report} reports/proteogenomics_analysis
+    fi
+
+    if [ ${sep='' ptmsea_ome_report} != '' ]; then
+      cp ${sep=' ' ptmsea_ome_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' ptmsea_ome_report} reports/proteogenomics_analysis
     fi
 
     if [ ${sep='' omicsev_report} != '' ]; then
