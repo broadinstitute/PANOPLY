@@ -245,8 +245,10 @@ pw_hm <- function(output.prefix,
     
     ## add significance star annotation
     anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
-    for(i in 1:ncol(mat.filt)) # for each ssGSEA test
-      anno.row[keep.idx.list[[i]], i] <- '*' # add a significance star to every significant test
+    for(i in 1:ncol(mat.filt)) { # for each ssGSEA test
+      idx.signif = which(fdr.filt[, i] < fdr.max) # determine which of the displayed features are significant
+      anno.row[idx.signif, i] <- '*' # add a significance star to every significant test
+    }
     
     ## get min / max values
     max.val = ceiling( max( abs(mat.filt), na.rm=T) )
