@@ -11,10 +11,14 @@ options( warn = -1, stringsAsFactors=F )
 option_list <- list(
   make_option( c("-t", "--tar_file"), action='store', type='character',  dest='tar_file', help='Path to panoply_ssgsea result file.'),
   make_option( c("-l", "--label"), action='store', type='character',  dest='label', help="label/file prefix used in ssgsea GCT files.", default='NA'),
-  make_option( c("-f", "--fdr"), action='store', type='character',  dest='fdr', help="max. FDR", default='NA'),
-  make_option( c("-n", "--top_n"), action='store', type='character',  dest='top_n', help="Max. number of significant hits to plot/label", default='NA'),
+  make_option( c("-f", "--fdr"), action='store', type='double',  dest='fdr', help="max. FDR"),
+  make_option( c("-n", "--top_n"), action='store', type='integer',  dest='top_n', help="Max. number of significant hits to plot/label"),
+  make_option( c("-c", "--cluster_rows"), action='store', type='logical',  dest='cluster_rows', help="If TRUE, rows will be clustered using distance matrix, with ser.meth as seriation method."),
+  make_option( c("-m", "--ser_meth"), action='store', type='character',  dest='ser_meth', help="Seriation method used for clustering rows. The default in pw_hm() is 'ARSA'"),
+  make_option( c("-g", "--geneset_groups_file"), action='store', type='character',  dest='geneset_groups_file', help="CSV file containing a mapping between all genesets, and some category they should be grouped into in the heatmap."),
+  # make_option( c("-p", "--ptmsigdb"), action='store', type='logical',  dest='ptmsigdb', help='PTMsigDB?', default = FALSE),
+  make_option( c("-s", "--split_by_prefix"), action='store', type='logical',  dest='split_by_prefix', help="If TRUE, separate heatmaps will be created for pathways with unique prefixes '<prefix>-<pathway_name>'. On by default for PTM-SEA pathways; can be manually overridden with this parameter."),
   make_option( c("-y", "--yaml_file"), action='store', type='character',  dest='yaml_file', help='yaml parameter file.', default = NA),
-  make_option( c("-p", "--ptmsigdb"), action='store', type='logical',  dest='ptmsigdb', help='PTMsigDB?', default = FALSE),
   make_option( c("-z", "--libdir"), action='store', type='character',  dest='libdir', help='Folder to source from.', default = 'NA')
 )
 
@@ -30,10 +34,12 @@ parse_param_ssgsea_report <- function(cmd_option_list, yaml_section='panoply_ssg
   # parse command line parameters
   opt_cmd <- parse_args( OptionParser(option_list=option_list) ,
                          # ## optional testing arguments
-                         # args = c("--tar_file", "/opt/input/ODG_v3-NMF.k3.core-proteome-KEGGpathways.tar.gz",
-                         #          "--label", "KEGG_MetaboAnalyst",
-                         #          "--yaml_file", "/opt/input/master-parameters.yaml",
-                         #          "--libdir", "/script_source")
+                         # args = c("--tar_file", "/Users/wcorinne/Downloads/panoply_ssgsea_report_input/ODG_v3-NMF.k3.core-pSTY-ptmsig.tar.gz",
+                         #          "--label", "ODG_pSTY",
+                         #          "--yaml_file", "/Users/wcorinne/Downloads/panoply_ssgsea_report_input/master-parameters.yaml",
+                         #          # "--geneset_groups_file", "/opt/input/mitocarta_geneset_groups.csv",
+                         #          # "--libdir", "/home/pgdac/src/")
+                         #          "--libdir", "/Users/wcorinne/Git/panoply-sandbox/src/panoply_ssgsea_report")
                          )
   
   ############################################################
@@ -79,7 +85,11 @@ parse_param_ssgsea_report <- function(cmd_option_list, yaml_section='panoply_ssg
       ## updated params
       opt <- opt_yaml
       
-    }    
+    } else {
+      warning("WARNING: YAML file does not exist. Using command-line parameters only.")
+      ## no yaml file
+      opt <- opt_cmd
+    }
   } else {
     ## no yaml file
     opt <- opt_cmd
@@ -91,8 +101,11 @@ parse_param_ssgsea_report <- function(cmd_option_list, yaml_section='panoply_ssg
   opt$label <- as.character(opt$label)
   opt$fdr <- as.numeric(opt$fdr)
   opt$top_n <- as.numeric(opt$top_n)
-  opt$ptmsigdb <- as.logical(opt$ptmsigdb)
-  opt$libdir <- as.character(opt$libdir)
+  opt$cluster_rows <- as.logical(opt$cluster_rows)
+  opt$ser_meth <- as.character(opt$ser_meth)
+  if(!is.null(opt$geneset_groups_file)) opt$geneset_groups_file <- as.character(opt$geneset_groups_file) # either retain NULL, or coerce character
+  # opt$ptmsigdb <- as.logical(opt$ptmsigdb)
+  if(!is.null(opt$split_by_prefix)) opt$split_by_prefix <- as.logical(opt$split_by_prefix) # either retain NULL, or coerce character
   
   return(opt)
 } 
@@ -115,20 +128,24 @@ p_load(kableExtra)
 
 #### Create Figures & Rdata object for RMD repoort ####
 
-tar.file=opt$tar_file
+tar_file=opt$tar_file
 label=opt$label
-fdr=opt$fdr
-top.n=opt$top_n
+fdr.max=opt$fdr
+n.max=opt$top_n
+cluster.rows <- opt$cluster_rows
+ser.meth <- opt$ser_meth
+geneset_groups_file=opt$geneset_groups_file
+split.by.prefix=opt$split_by_prefix
 
-#tmp.dir <- tempdir()
-tmp.dir <- 'tmp'
+tmp.dir <- tempdir()
+# tmp.dir <- 'tmp'
 wd <- getwd()
 
 # ## prepare log file
 # logfile=paste0(label, '_rmd-', label.rmd)
 # start.time <- Sys.time()
 # cat(paste(rep('#', 40), collapse=''),'\n##', paste0(start.time), '--\'rmd_', label.rmd,'\'--\n\n', file=logfile )
-# cat('## parameters\ntar file:', tar.file, '\ntmp dir:', tmp.dir, '\nlabel:', label, '\nlog file:', logfile, '\n', file=logfile, append=T)
+# cat('## parameters\ntar file:', tar_file, '\ntmp dir:', tmp.dir, '\nlabel:', label, '\nlog file:', logfile, '\n', file=logfile, append=T)
 
 
 ## #################################
@@ -136,7 +153,7 @@ wd <- getwd()
 if(!dir.exists(tmp.dir))
   dir.create(tmp.dir)
 # cat('\n## Extracting tar file to', tmp.dir, '\n', file=logfile, append=T)
-untar(tar.file, exdir=tmp.dir)
+untar(tar_file, exdir=tmp.dir)
 
 #####################################
 ## identify -combinded.gct
@@ -153,7 +170,10 @@ if(file.exists(param))
   param <- readLines(param)
 
 ## create the figure
-pw_hm(gct.comb, fdr.max=fdr, n.max=top.n, ptmsigdb=opt$ptmsigdb)
+pw_hm(output.prefix=gct.comb, fdr.max=fdr.max, n.max=n.max,
+      geneset_groups_file = geneset_groups_file,
+      split.by.prefix = split.by.prefix,#, ptmsigdb=opt$ptmsigdb)
+      cluster.rows = cluster.rows, ser.meth = ser.meth)
 
 ## copy to tmp.dir
 fn.png <- dir('.', pattern='.png$')
@@ -168,8 +188,8 @@ rmarkdown::render(file.path(opt$libdir, "ssgsea_rmd.rmd"),
                   #"/script_source/ssgsea_rmd.rmd",
                   params = list(title = paste0("ssGSEA Report - ", label),
                                 label = label,
-                                fdr = fdr,
-                                top.n = top.n,
+                                fdr = fdr.max,
+                                top_n = n.max,
                                 param = param,
                                 fn.png = file.path(pwd, fn.png)),
                   output_file = file.path(pwd,paste0(label,"_ssGSEA_rmd.html")))

@@ -156,16 +156,19 @@ pw_hm <- function(output.prefix,
                   fdr.max = 0.05,                  ## max. FDR
                   n.max = NULL,                    ## maximal number of signatures to label each side of the volcano plots
                                                    ## ignired if set to NULL
-                  ptmsigdb=T,                      ## if TRUE and PTMsigDB was used, separate heatmaps for the different 
-                                                   ## PTMsigDB catagories witll be created (_KINASE, _PERT, _PATH, etc)
-                  ser.meth='ARSA',                 ## Seriation method used to arrange the matrix. Only used if
+                  split.by.prefix = NULL,          ## if TRUE, separate heatmaps will be created for pathways with unique prefixes "<prefix>-<pathway_name>"
+                                                   ## (e.g. 'KINASE-PSP_CDC7' will be grouped with other 'KINASE' pathways)
+                                                   ## generalized replacement for the `ptmsigdb` parameter; will automatically be set to TRUE if ptmsigdb is detected
+                  cluster.rows=TRUE,               ## Toggle for clustering rows using distance matrix, with ser.meth as seriation method
+                  ser.meth='ARSA',                 ## Seriation method used to (attempt to) arrange the matrix.
                   cw=10,                           ## heatmap cellwidth 
                   ch=10,                           ## heatmap cellheight
                   
                   remove_prefix = FALSE,           ## Toggle to remove common prefixes for names (e.g. "HALLMARK_MITOTIC_SPINDLE" -> "MITOTIC_SPINDLE")
-                  normalize_names = FALSE,        ## Toggle for normalizing pathway names (e.g. "MITOTIC_SPINDLE" -> "Mitotic Spindle")
+                  normalize_names = FALSE,         ## Toggle for normalizing pathway names (e.g. "MITOTIC_SPINDLE" -> "Mitotic Spindle")
                   
                   colors = c("#347db6", "#6babd0", "#afd3e6", '#FFFFFF', "#f6bda4", "#e48169", "#c33d3e") , ## default color-scale for heatmap (taken from Vega RdBu)
+                                                   ## Use "legacy" for blue -> orange colors scheme
                   na.col = 'grey50',
                   # number_color = NULL,
                   
@@ -175,10 +178,15 @@ pw_hm <- function(output.prefix,
 ){
   library(pacman)
   p_load(RColorBrewer)
-  p_load(pheatmap)
+  # p_load(pheatmap)
   p_load(seriation)
   p_load(glue)
   p_load(tidyverse)
+  # new dependencies
+  p_load(ComplexHeatmap)
+  p_load(circlize)
+  p_load(grid)
+  p_load(gridExtra)
   
   #### import ssGSEA results ####
   if(class(output.prefix) == 'character'){
@@ -218,7 +226,8 @@ pw_hm <- function(output.prefix,
   ## helper function
   plothm <- function(rdesc, mat, fdr.max, n.max, fn.out, cw, ch){
     
-    #### Identify Top Genesets below FDR threshold ####
+    #### Data Filtering ####
+    ## Identify top genesets below FDR thresh
     fdr <- rdesc[,grep('^fdr.pvalue', colnames(rdesc)), drop=F] 
     keep.idx.list <- lapply(1:ncol(fdr), function(i, fdr, mat){
      # cat(i)
@@ -235,42 +244,42 @@ pw_hm <- function(output.prefix,
     ## filter dataframes to those genesets
     fdr.filt <- fdr[keep.idx, , drop=F ]
     mat.filt <- mat[keep.idx, , drop=F]
-    rdesc.filt <- rdesc[keep.idx,]
-    
-    #### Process Annotations ####
+    rdesc.filt <- rdesc[keep.idx, , drop=F]
     
     ## add 'C' if column names are all numeric
     if(sum( is.na( suppressWarnings(as.numeric(colnames(mat.filt))) ) ) == 0) # suppress warning of as.numeric(), since we EXPECT this to be characters most of the time
       colnames(mat.filt) <- paste0('C', colnames(mat.filt))
     
-    ## add significance star annotation
-    anno.row <- matrix('', nrow=nrow(mat.filt), ncol=ncol(mat.filt), dimnames = dimnames(mat.filt))
-    for(i in 1:ncol(mat.filt)) { # for each ssGSEA test
-      idx.signif = which(fdr.filt[, i] < fdr.max) # determine which of the displayed features are significant
-      anno.row[idx.signif, i] <- '*' # add a significance star to every significant test
-    }
+    
+    #### Heatmap Colors ####
     
     ## get min / max values
     max.val = ceiling( max( abs(mat.filt), na.rm=T) )
     min.val = -max.val
     
-    color.breaks = seq( min.val, max.val, length.out=100 )
     
-    ## heatmap color
+    ## color scale
     # colors = c("#2166AC", "#5DA3CB", "#BBDAEA", "#F7F7F7", "#FAC9B0", "#E0775E", "#B2182B") # paul tol RdBu (khroma::color('BuRd')(7))
     # colors = c("#2166AC", "#3783BB", "#5DA3CB", "#92C5DE", "#F7F7F7", "#F4A582", "#E0775E", "#CA4841", "#B2182B") # paul tol RdBu middle colors removed
     # colors = c("#347db6", "#6babd0", "#afd3e6", "#e0e9ef", '#FFFFFF', "#f7e4d9", "#f6bda4", "#e48169", "#c33d3e") # taken from the vega red-blue color-palette
     # colors <- rev(RColorBrewer::brewer.pal(7, "RdBu")) # taken from RColorBrewer RdBu (reversed)
     # colors <- c("#2166AC", "#67A9CF", "#F7F7F7", "#EF8A62", "#B2182B") # taken from RColorBrewer RdBu (reversed), middle colors removed
-    color.hm <- colorRampPalette(colors)(99) # taken from the vega red-blue color-palette
+    # color.hm <- colorRampPalette(colors)(99) # taken from the vega red-blue color-palette
     
-    ## reorder rows
-    if('geneset_groups' %in% colnames(rdesc.filt)){ # if we added groups to our genesets
-      ord.idx <- order(rdesc.filt$geneset_groups) # order by those cateogries
+    if (length(colors)==1 && colors == "legacy") colors = c('cyan','darkblue', 'grey90', 'orange', 'yellow')
+    
+    ## color mapping
+    color.breaks = seq( min.val, max.val, length.out=length(colors) )
+    col_fun <- circlize::colorRamp2(color.breaks, colors)
+    
+    
+    #### Row Reordering ####
+    if(!cluster.rows){ # if we turn off row-clustering
+      ord.idx <- 1:dim(mat.filt)[1] # retain original order
     } else { # otherwise attempt to cluster rows
-      ord.idx = tryCatch({
+      ord.idx = tryCatch({ # always attempt to order rows; row_split will take care of groupings
         dist.row <- dist(mat.filt, method = 'euclidean') %>% # find distances
-          seriate(dist.row, method = ser.meth) # compute order
+          seriate(method = ser.meth) # compute order
         get_order(dist.row) # sort by that order
       }, error = function(e) { # if that fails
         message ("Could not cluster data-base signatures; heatmap rows will be left unsorted.\n")
@@ -278,99 +287,146 @@ pw_hm <- function(output.prefix,
       })
     }
     mat.filt <- mat.filt[ord.idx, , drop=F]
-    anno.row <- anno.row[ord.idx, , drop=F]
+    fdr.filt <- fdr.filt[ord.idx, , drop=F]
+    rdesc.filt <- rdesc.filt[ord.idx, , drop=F]
     
-    #### import process-categories, if available ####
-    if('geneset_groups' %in% colnames(rdesc.filt)){
-      rdesc.filt <- rdesc.filt[ord.idx, ]
-      annotation_row <- matrix(rdesc.filt$geneset_groups, ncol=1, dimnames = list(rownames(rdesc.filt), c('Category')))
-      annotation_row <- data.frame(annotation_row)
-      annotation_colors = list(Category = as.vector(unique(geneset_groups_df[c("geneset_groups", "geneset_groups_colors")]))$geneset_groups_colors) # convert dataframe into named list of named vectors
-      # annotation_colors <- list(Category=c('signaling'='skyblue2', 'immune'='coral2', 'development'='peachpuff', 
-      #                                 'proliferation'='palegreen3', 'cellular component'='snow4', 'metabolic'='khaki', 
-      #                                 'DNA damage'='darkmagenta', 'pathway'='tan3'))
-      gaps_row <- cumsum(table(annotation_row$Category))
-      if (is.hallmark) { # if is hallmark (legacy behavior)
-        rownames(mat.filt) <- sub('^HALLMARK_', '',  rownames(mat.filt))
-        rownames(annotation_row) <- sub('^HALLMARK_', '',  rownames(annotation_row))
-      }
-    } else {
-      annotation_row <- NULL
-      annotation_colors <- NULL
-      gaps_row=NULL
-    }   
     
+    #### Rowname Formatting ####
     if (remove_prefix) {
       # remove common prefixes (e.g. "KEGG_MEDICUS_<pathway>" -> "<pathway>")
       prefixes = unique(gsub("^(.+?)_.+$", "\\1", rownames(mat.filt)))
       while ( dim(mat.filt)[1]>1 && length(prefixes)==1) { # if there's only one common prefix (ASSUMING WE HAVE MORE THAN ONE PATHWAY)
         rownames(mat.filt) <- sub(glue('^{prefixes}_'), '',  rownames(mat.filt)) # prune it from matrix
-        if (!is.null(annotation_row)) rownames(annotation_row) <- sub(glue('^{prefixes}_'), '',  rownames(annotation_row)) # prune it annotations
         prefixes = unique(gsub("^(.+?)_.+$", "\\1", rownames(mat.filt))) # check for another common prefix
       }
     }
+    if (is.hallmark) rownames(mat.filt) <- sub('^HALLMARK_', '',  rownames(mat.filt)) # if is hallmark, also prune prefix (legacy behavior)
+    
     if (normalize_names) {
       # replace underscores with spaces
       rownames(mat.filt) = gsub("_", " ", rownames(mat.filt))
-      if (!is.null(annotation_row)) rownames(annotation_row) = gsub("_", " ", rownames(annotation_row))
       # replace underscores with spaces
       rownames(mat.filt) = str_to_title(rownames(mat.filt))
-      if (!is.null(annotation_row)) rownames(annotation_row) = str_to_title(rownames(annotation_row))
     }
     
-    # #### Creata Heatmap ####
-    # try(pheatmap(mat.filt, 
-    #              cluster_cols = F, 
-    #              cluster_rows=F, 
-    #              col=color.hm, 
-    #              breaks = color.breaks, filename = fn.out, 
-    #              display_numbers = anno.row, #number_color = number_color,
-    #              na_col = na.col, cellwidth = cw, cellheight = ch, 
-    #              annotation_row = annotation_row ,
-    #              annotation_colors = annotation_colors,
-    #              gaps_row = gaps_row,
-    #              ...))
     
     
+    #### Pathway Groupings (if provided) ####
+    row_ha <- NULL
+    row_split <- NULL
+    if ('geneset_groups' %in% colnames(rdesc.filt)) {
+      row_split <- rdesc.filt$geneset_groups
+      # Optionally, add color annotation
+      group_colors <- unique(geneset_groups_df$geneset_groups_colors)
+      names(group_colors) <- unique(geneset_groups_df$geneset_groups)
+      row_ha <- rowAnnotation(
+        Category = row_split,
+        col = list(Category = group_colors)
+      )
+    }
     
-    #### Creata Heatmap ####
-    try(pheatmap(mat.filt, 
-                 cluster_cols = F, 
-                 cluster_rows=F, 
-                 col=color.hm, 
-                 breaks = color.breaks, filename = fn.out, 
-                 display_numbers = anno.row, #number_color = number_color,
-                 na_col = na.col, cellwidth = cw, cellheight = ch, 
-                 annotation_row = annotation_row ,
-                 annotation_colors = annotation_colors,
-                 gaps_row = gaps_row,
-                 ...))
+    ## add significance star annotation
+    cell_fun <- function(j, i, x, y, width, height, fill) {
+      if (fdr.filt[i, j] < fdr.max) {
+        gb = textGrob("*")
+        gb_w = convertWidth(grobWidth(gb), "mm")
+        gb_h = convertHeight(grobHeight(gb), "mm")
+        grid.text("*", x, y - gb_h*0.5 + gb_w*0.4)
+      }
+    }
+
+    #### Create Heatmap #### 
+    # Draw the heatmap
+    ht <- Heatmap(
+      mat.filt,
+      name = "NES",
+      col = col_fun,
+      cluster_rows = FALSE, # using distance matrix and seriation method earlier in the code
+      cluster_columns = FALSE,
+      show_row_names = TRUE,
+      show_column_names = TRUE,
+      na_col = na.col,
+      row_split = row_split,
+      row_title=NULL,
+      left_annotation = row_ha,
+      cell_fun = cell_fun,
+      width = unit(ncol(mat.filt) * cw*1.5, "point"),
+      height = unit(nrow(mat.filt) * ch*1.5, "point")
+    )
+    # Create heatmap (without legends)
+    ht_fig <- draw(ht, 
+                   show_heatmap_legend = FALSE, 
+                   show_annotation_legend = FALSE)
+    ht_grob = grid.grabExpr(draw(ht,
+                                 show_heatmap_legend = FALSE, 
+                                 show_annotation_legend = FALSE))
+    # # Wrap in left-aligned viewport
+    # ht_left_justified <- grobTree(
+    #   ht_grob,
+    #   vp = viewport(x = unit(0, "npc"), just = "left")
+    # )
     
+    # Create legend(s) figure
+    base_legend = ComplexHeatmap::Legend(title = "NES", col_fun = col_fun) # get NES legend (used in both legends)
+    min_legend_width = ComplexHeatmap::width.Legends(ComplexHeatmap::Legend(title = "NES", col_fun = col_fun))
+    if (!is.null(row_ha)) {
+      lgd_fig <- packLegend(base_legend,
+                            ComplexHeatmap::Legend(title = "Category", at = names(group_colors), legend_gp = gpar(fill = group_colors)),
+                            direction = "vertical")
+      max_legend_text = max_text_width( c("Category", names(group_colors)) ) # get max text_width of groups
+    } else {
+      lgd_fig <- base_legend
+      max_legend_text = max_text_width( "Category" ) # use the word "Category" as placeholder for max text_width
+    }
+    lgd_grob = grid.grabExpr(draw(lgd_fig, x=unit(0.95, "npc"), just="right")) # align legend as far to the right as possible
+    
+    #### Plot Heatmap & Legend #### 
+    for (ext in c('.pdf', '.png')) { ## create pdf and png
+      padding = 1 # padding to add to the width of each figure
+      hm_width = convertX(unit(ncol(mat.filt) * cw*1.5, "point"), 'inches', valueOnly = TRUE) + # heatmap width
+        convertX(ComplexHeatmap::max_text_width(rownames(mat.filt)), 'inches', valueOnly = TRUE) # rowname label width, +1 for padding
+      lgd_width = convertX(min_legend_width, 'inches', valueOnly = TRUE) + # add minimum legend width
+        convertX(max_legend_text, 'inches', valueOnly = TRUE) # add max legend text-length
+      width = hm_width+lgd_width + padding # calculate total width + padding
+        
+      height = convertX(unit(nrow(mat.filt) * ch*1.5, "point"), 'inches', valueOnly = TRUE) + # heatmap height
+        convertX(ComplexHeatmap::max_text_width(colnames(mat.filt)),'inches', valueOnly = TRUE) + padding # column-name text, + 1 for padding
+      if (ext=='.pdf') pdf(paste0(fn.out,ext), width = width, height = height)
+      if (ext=='.png') png(paste0(fn.out,ext), width = width, height = height, units = 'in', res=300)
+      
+      ## plot heatmap and legend side-by-side
+      grid.arrange(ht_grob, lgd_grob, ncol=2, widths=c(hm_width,lgd_width))
+      
+      dev.off()
+    }
     
   }
   
   ################################################################
-  ## PTMsigDB: separate heatmaps for different categories
-  if(is.null(n.max)) n.max <- 'all'
-  if(ptmsigdb){ ## split categories
-    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique  
-    for(rt in rid.type){
-      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-      idx <- grep(glue("^{rt}"), rid)
-      plothm(rdesc[idx, , drop=F], mat[idx, , drop=F], fdr.max, n.max, fn.out, cw, ch)
-      fn.out=glue("heatmap_{rt}_max.fdr_{fdr.max}_n.max_{n.max}.png")  
-      plothm(rdesc[idx, , drop=F], mat[idx, , drop=F], fdr.max, n.max, fn.out, cw, ch)
-      
-    }
-  } else {
-    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.pdf")  
-    tryCatch(plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch),
-             error = function(cond) {
-               message("Unable to plot heatmaps, with the following Error:")
-               message(paste(cond, "\n"))
-             })
-    fn.out=glue("heatmap_max.fdr_{fdr.max}_n.max_{n.max}.png")  
-    tryCatch(plothm(rdesc, mat, fdr.max, n.max, fn.out, cw, ch),
+  ## Plot Heatmaps
+  
+  ## check if dataset is PTM-SEA
+  is_ptmsea = mean(grepl("^[A-Z]+-PSP_", rid)) > 0.5  # Heuristic: at least 50% of rids match the PTM-SEA pattern
+  ## split into multiple heatmaps based on pathway prefixes, if we have ptmsea
+  if (is.null(split.by.prefix) && is_ptmsea) split.by.prefix=TRUE # if we didn't set split.by.prefix explicitly, use heuristic to determine if we wanna split
+  if (!is.null(split.by.prefix) && split.by.prefix) { # if split.by.prefix
+    rid.type <- sub('^(.*?)-.*', '\\1', rid) %>% unique # split rid into groups according to prefixes
+  } else { rid.type = "" }
+  
+  ## if na.max is NULL, use 'all' for n.max label in filename
+  if(is.null(n.max)) { n.max.fn <- 'all' } else { n.max.fn = n.max }
+  
+  ## plot heatmaps
+  for (rt in rid.type) {
+    idx <- grep(glue("^{rt}"), rid) # filter dataset to pathway-grouping
+    rt.fn = ifelse(rt=="", rt, paste0('_',rt)) # label for filename
+    
+    ## plot heatmap as PDF and PNG
+    fn.out=glue("heatmap{rt.fn}_max.fdr_{fdr.max}_n.max_{n.max.fn}")
+    tryCatch(plothm(rdesc[idx, , drop=F], mat[idx, , drop=F],
+                    fdr.max, n.max,
+                    fn.out,
+                    cw, ch),
              error = function(cond) {
                message("Unable to plot heatmaps, with the following Error:")
                message(paste(cond, "\n"))
@@ -393,10 +449,15 @@ process_geneset_groups <- function(geneset_groups_file=NULL,
   # if we have a groups file
   if (!is.null(geneset_groups_file)) {
     # use that groups.file to set the groups
-    df = read.csv(geneset_groups_file)
+    df = tryCatch({ read.csv(geneset_groups_file) }, error = function(e) { # if that fails
+            warning (glue("Could not read in geneset-groupings file '{geneset_groups_file}' as a CSV. Genesets will be left ungrouped.\n"))
+            return (NULL)
+          })
+    if (is.null(df)) return(NULL) # return null if geneset groupings file is missing
+                  
     if ( dim(df)[2]!=2  ) {
       cat("WARNING: Geneset groups file is formatted incorrectly; must have two columns, with genesets in the first column and geneset-groupings in the second.") # warn user about geneset
-      return(NULL)
+      return(NULL) # return null if geneset groupings file is malformed
     }
     # if all checks were passed, convert to named vector
     geneset_groups = tibble::deframe(df)
@@ -483,6 +544,7 @@ process_geneset_groups <- function(geneset_groups_file=NULL,
   }
   geneset_groups_df = mutate(geneset_groups_df,
                              geneset_groups_colors = geneset_groups_colors[geneset_groups])
+  rownames(geneset_groups_df) = names(geneset_groups) # reassign rownames
   
   return( geneset_groups_df )
   

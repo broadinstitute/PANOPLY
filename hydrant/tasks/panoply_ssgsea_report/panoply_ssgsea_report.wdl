@@ -5,8 +5,16 @@ task panoply_ssgsea_report {
 
   File tarball
   File cfg_yaml
-  Boolean? is_ptmsigdb
   String label
+
+  # Heatmap Parameters
+  Float? fdr
+  Int? top_n
+  Boolean? cluster_rows
+  String? ser_meth
+  Boolean? split_by_prefix
+
+  File? geneset_groups_file
 
   Int? memory
   Int? disk_space
@@ -15,7 +23,12 @@ task panoply_ssgsea_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/ssgsea-renderRMD.R -t ${tarball} -l ${label} -y ${cfg_yaml} -z /home/pgdac/src/ -p ${default=FALSE is_ptmsigdb}
+    Rscript /home/pgdac/src/ssgsea-renderRMD.R -t ${tarball} -l ${label} \
+      ${"-g " + geneset_groups_file} \
+      ${true="-s TRUE" false="-s FALSE" split_by_prefix} \
+      ${"-f " + fdr} ${"-n " + top_n} \
+      ${true="-c TRUE" false="-c FALSE" cluster_rows} ${"-m " + ser_meth} \
+      -y ${cfg_yaml} -z /home/pgdac/src/
   }
 
   output {

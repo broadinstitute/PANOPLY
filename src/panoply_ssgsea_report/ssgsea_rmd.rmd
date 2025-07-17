@@ -12,7 +12,7 @@ params:
   # rdata: NULL
   label: NULL
   fdr: NULL
-  top.n: NULL
+  top_n: NULL
   opt: NULL
   # gct.comb: NULL
   param: NULL
@@ -41,7 +41,7 @@ p_load(kableExtra)
 label = params$label
 label.rmd = params$label.rmd
 fdr = params$fdr
-top.n = params$top.n
+top_n = params$top_n
 param = params$param
 fn.png = params$fn.png
 
@@ -70,7 +70,7 @@ The heatmap in **Figure `r fig_count`** depicts normalized enrichment scores (NE
 
 ***
 
-```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Normalized enrichment scores (NES) of gene sets across columns of the input data matrix. Asterisks indicate gene sets with FDR < ', fdr,'. Shown are up to ', top.n,' most significant gene sets per column.'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Normalized enrichment scores (NES) of gene sets across columns of the input data matrix. Asterisks indicate gene sets with FDR < ', fdr,'. Shown are up to ', top_n,' most significant gene sets per column.'), echo=FALSE}
 knitr::include_graphics(fn.png)
 ```
 
