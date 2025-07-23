@@ -406,7 +406,7 @@ pw_hm <- function(output.prefix,
   ## Plot Heatmaps
   
   ## check if dataset is PTM-SEA
-  is_ptmsea = mean(grepl("^[A-Z]+-PSP_", rid)) > 0.5  # Heuristic: at least 50% of rids match the PTM-SEA pattern
+  is_ptmsea = mean(grepl("^(PERT-PSP)|(PERT-P100-PRM)|(PERT-P100-DIA)|(PATH-WP)|(PATH-NP)|(KINASE-PSP)|(DISEASE-PSP)_.+?$", rid)) > 0.9  # Heuristic: at least 90% of rids fit the PTM-SEA prefixes. realistically, should be 100%, but adding flexibility in case the database changes slightly
   ## split into multiple heatmaps based on pathway prefixes, if we have ptmsea
   if (is.null(split.by.prefix) && is_ptmsea) split.by.prefix=TRUE # if we didn't set split.by.prefix explicitly, use heuristic to determine if we wanna split
   if (!is.null(split.by.prefix) && split.by.prefix) { # if split.by.prefix
