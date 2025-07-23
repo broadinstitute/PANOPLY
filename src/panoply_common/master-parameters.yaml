@@ -261,6 +261,10 @@ panoply_preprocess_gct:
 panoply_ssgsea_report:
   fdr: 0.05                     ## max. FDR
   top_n: 20                     ## max. number of significant hits to plot/label
+  cluster_rows: TRUE            ## If TRUE, rows will be clustered using distance matrix, with ser.meth as seriation method
+  ser_meth: 'ARSA'              ## Seriation method used for clustering rows. The default in pw_hm() is 'ARSA'
+  split_by_prefix: NULL         ## If TRUE, separate heatmaps will be created for pathways with unique prefixes '<prefix>-<pathway_name>'.
+                                ## turned on by default for PTM-SEA pathways, but can be manually overridden with this parameter.
 
 ###################################
 ## DEV_ parameters for developers 
