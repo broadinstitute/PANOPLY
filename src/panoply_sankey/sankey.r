@@ -53,7 +53,7 @@ library('flipU')
 library('flipTransformations')
 library('networkD3') # needed for sankeyNetwork()
 # source('https://raw.githubusercontent.com/Displayr/flipPlots/master/R/sankeydiagram.R') # current version requires Sum() function from the Displayr/verbs package, which is not compatible with R version 3.6.3
-source('https://raw.githubusercontent.com/Displayr/flipPlots/72cc55f75558e97e611c0c448e5b59a70e69bd15/R/sankeydiagram.R') # pull stable commit
+source('/sankeydiagram.R') # source sankeydiagram script (downloaded in the docker, from stable commit: https://raw.githubusercontent.com/Displayr/flipPlots/72cc55f75558e97e611c0c448e5b59a70e69bd15/R/sankeydiagram.R)
 # NOTE: the full flipPlots package requires a newer version of R, which is why ONLY the sankeydiagram.R file is loaded
 
 library(htmlwidgets) #must be 1.2.0, don't try to p_load

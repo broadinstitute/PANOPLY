@@ -77,7 +77,7 @@ library(SimDesign) # for quiet() function
 ###################################################
 
 #### Source Files ####
-source('https://raw.githubusercontent.com/broadinstitute/protigy/master/src/modT.R') # for modT.test.2class()
+source('/prot/proteomics/Projects/Protigy/modT.R') # sourcing code from Protigy for modT.test.2class(); file is downloaded in panoply_utils docker
 
 #### Parameter Wrangling ####
 

@@ -39,17 +39,17 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
                        # args = c(
                        #   # '--metabolome_gct',"/opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                       #   '--metabolome_gct',"/opt/input/metab-subset.gct",
+                       #   '--metabolome_gct',"/opt/input/ODG-v3-metabolome-all-log2-median-norm-QCfilter.gct",
                        #   # '-n',"hmdb_id",
-                       #   # '-i',"HMDB.ID",
+                       #   '-i',"HMDB.ID",
                        #   # '-n',"kegg_id",
                        #   # '-i',"KEGG.ID",
-                       #   '--ome_gct',"/opt/input/proteome-subset.gct",
+                       #   '--ome_gct',"/opt/input/ODG-v3-proteome-SpectrumMill-ratio-QCfilter-NArm.gct",
                        #   '-t',"prot",
                        # #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
                        # #   # '-t',"RNA",
                        # #   # '-g',"opt/input/sample-info.csv",
-                       #   '-g',"opt/input/groups-subset.csv",
+                       #   '-g',"opt/input/ODG-v3-sample-annotation.csv",
                        # #   '-l',"15",
                        # #   '-a',"QEA",
                        #   # '-b',"pvalo",
@@ -58,7 +58,7 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        #   # '-r',"Impact.CC",
                        #   '-y',"opt/input/master-parameters.yaml",
                        # #   # '-f',"/opt/input/prelim_results",
-                       #   '-x',"sarcoma_v4")
+                       #   '-x',"ODG_v3")
 )
 
 #### Parse YAML Arguments ####
@@ -421,7 +421,7 @@ gct.to.ora.input = function(gct, annot_of_interest, value_of_interest, annots = 
 
   #### T-Test ####
   require(limma)
-  source('https://raw.githubusercontent.com/broadinstitute/protigy/master/src/modT.R') # for modT.test.2class()
+  source('/prot/proteomics/Projects/Protigy/modT.R') # sourcing code from Protigy for modT.test.2class(); file is downloaded in panoply_utils docker
   d = rownames_to_column(as.data.frame(gct_fin@mat), "feature_id")
   out = quiet(modT.test.2class(d, 'tmp', groups=cls, id.col = "feature_id")) # wrapped in quiet() to suppress repeated printouts
   out_df = out$output %>%
@@ -598,8 +598,12 @@ for (annot_of_interest in names(annots)) {
     #### Calculate Single-omic Enrichments ####
     if (opt$anal_type == "ORA") {
       if(print_internal_placemarks) cat("\n\n####################\nOverrepresenation Analysis on Metabolome\n\n")
-      meta_ora = gct.to.ora.input(meta_input, annot_of_interest, value_of_interest, annots = annots,
-                                  write_to_file = T, prefix = glue("{opt$output_prefix}_metabolome"))
+      meta_ora = tryCatch(gct.to.ora.input(meta_input, annot_of_interest, value_of_interest, annots = annots,
+                                           write_to_file = T, prefix = glue("{opt$output_prefix}_metabolome")),
+                          error = function(e) {
+                            if (e == "No residual degrees of freedom in linear model fits") { return(NULL) } else { stop(e) }
+                          })
+      if (is.null(meta_ora)) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; linear model could not be fit for metabolome.\n\n")); next }
       meta_ora_vec = meta_ora$id
       res.meta = o.ea(meta_ora_vec, pathways,
                       uniq.count = unique.cmpd,
@@ -610,8 +614,12 @@ for (annot_of_interest in names(annots)) {
       # calculate genomic enrichment
       if (multiomic) {
         if(print_internal_placemarks) cat(glue("\n\n####################\nOverrepresenation Analysis on {opt$ome_type}\n\n"))
-        ome_ora = gct.to.ora.input(ome_input, annot_of_interest, value_of_interest, annots = annots,
-                                   write_to_file = T, prefix = glue("{opt$output_prefix}_{opt$ome_type}"))
+        ome_ora = tryCatch(gct.to.ora.input(ome_input, annot_of_interest, value_of_interest, annots = annots,
+                                            write_to_file = T, prefix = glue("{opt$output_prefix}_{opt$ome_type}")),
+                           error = function(e) {
+                             if (e == "No residual degrees of freedom in linear model fits") { return(NULL) } else { stop(e) }
+                           })
+        if (is.null(ome_ora)) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; linear model could not be fit for additional -ome.\n\n")); next }
         ome_ora_vec = ome_ora$id
         res.ome = o.ea(ome_ora_vec, pathways,
                        uniq.count = unique.gene,

@@ -12,6 +12,9 @@ RUN ln -sf /usr/local/share/phantomjs-2.1.1-linux-x86_64/bin/phantomjs /usr/loca
 RUN touch /tmp/openssl.cnf # create necessary config file
 ENV OPENSSL_CONF /tmp/openssl.cnf # set relevant environmental variable for config file
 
+## get stable commit of sankeydiagram.R
+RUN wget https://raw.githubusercontent.com/Displayr/flipPlots/72cc55f75558e97e611c0c448e5b59a70e69bd15/R/sankeydiagram.R
+
 COPY src /prot/proteomics/Projects/PGDAC/src
 
 
