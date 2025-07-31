@@ -274,7 +274,8 @@ pw_hm <- function(output.prefix,
     
     
     #### Row Reordering ####
-    if(!cluster.rows){ # if we turn off row-clustering
+    if( dim(mat.filt)[1]==1 || # if we have a single element in our matrix (clustering will stall otherwise)
+        !cluster.rows){ # if we turn off row-clustering
       ord.idx <- 1:dim(mat.filt)[1] # retain original order
     } else { # otherwise attempt to cluster rows
       ord.idx = tryCatch({ # always attempt to order rows; row_split will take care of groupings
@@ -406,7 +407,7 @@ pw_hm <- function(output.prefix,
   ## Plot Heatmaps
   
   ## check if dataset is PTM-SEA
-  is_ptmsea = mean(grepl("^(PERT-PSP)|(PERT-P100-PRM)|(PERT-P100-DIA)|(PATH-WP)|(PATH-NP)|(KINASE-PSP)|(DISEASE-PSP)_.+?$", rid)) > 0.9  # Heuristic: at least 90% of rids fit the PTM-SEA prefixes. realistically, should be 100%, but adding flexibility in case the database changes slightly
+  is_ptmsea = mean(grepl("^(PERT-)|(PATH-)|(KINASE-)|(DISEASE-).*_.+?$", rid)) > 0.8  # Heuristic: at least 90% of rids fit the PTM-SEA prefixes. realistically, should be 100%, but adding flexibility in case the database changes slightly
   ## split into multiple heatmaps based on pathway prefixes, if we have ptmsea
   if (is.null(split.by.prefix) && is_ptmsea) split.by.prefix=TRUE # if we didn't set split.by.prefix explicitly, use heuristic to determine if we wanna split
   if (!is.null(split.by.prefix) && split.by.prefix) { # if split.by.prefix

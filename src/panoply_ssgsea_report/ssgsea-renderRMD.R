@@ -34,12 +34,12 @@ parse_param_ssgsea_report <- function(cmd_option_list, yaml_section='panoply_ssg
   # parse command line parameters
   opt_cmd <- parse_args( OptionParser(option_list=option_list) ,
                          # ## optional testing arguments
-                         # args = c("--tar_file", "/Users/wcorinne/Downloads/panoply_ssgsea_report_input/ODG_v3-NMF.k3.core-pSTY-ptmsig.tar.gz",
-                         #          "--label", "ODG_pSTY",
-                         #          "--yaml_file", "/Users/wcorinne/Downloads/panoply_ssgsea_report_input/master-parameters.yaml",
+                         # args = c("--tar_file", "/opt/input/ODG_v3-Association-Type.Grade-PTM-SEA.tar.gz",
+                         #          "--label", "ODG_PTM-SEA",
+                         #          "--yaml_file", "/opt/input/master-parameters.yaml",
                          #          # "--geneset_groups_file", "/opt/input/mitocarta_geneset_groups.csv",
-                         #          # "--libdir", "/home/pgdac/src/")
-                         #          "--libdir", "/Users/wcorinne/Git/panoply-sandbox/src/panoply_ssgsea_report")
+                         #          "--libdir", "/home/pgdac/src/")
+                         #          # "--libdir", "/Users/wcorinne/Git/panoply-sandbox/src/panoply_ssgsea_report")
                          )
   
   ############################################################
@@ -177,6 +177,7 @@ pw_hm(output.prefix=gct.comb, fdr.max=fdr.max, n.max=n.max,
 
 ## copy to tmp.dir
 fn.png <- dir('.', pattern='.png$')
+if ( length(fn.png)==0 ) stop("No heatmap figures were created. Something likely went wrong in pw_hm().")
 file.copy(fn.png, tmp.dir)
 
 
