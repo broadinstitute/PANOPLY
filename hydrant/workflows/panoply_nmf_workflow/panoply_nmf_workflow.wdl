@@ -32,11 +32,18 @@ workflow panoply_nmf_workflow {
 	String? z_score_mode
 	
 	## NMF Parameters
-	Int? kmin
-	Int? kmax
-	String? exclude_2		# true / false
+	# multiomic
+	Int? mo_kmin
+	Int? mo_kmax
+	String? mo_exclude_2		# true / false
+	Int? mo_nrun				# Number of NMF runs with different starting seeds.
+	# single-omic
+	Int? so_kmin
+	Int? so_kmax
+	String? so_exclude_2		# true / false
+	Int? so_nrun				# Number of NMF runs with different starting seeds.
+	# retained for both
 	String? nmf_method		# options in the YAML
-	Int? nrun				# Number of NMF runs with different starting seeds.
 	String? seed			# 'random' for random seed, or numeric for explicit seed
 
 	## Module Toggles
@@ -71,11 +78,11 @@ workflow panoply_nmf_workflow {
 					z_score_mode=z_score_mode,
 
 					## NMF Parameters
-		            kmin=kmin,
-		            kmax=kmax,
-		            exclude_2=exclude_2,
+		            kmin=so_kmin,
+		            kmax=so_kmax,
+		            exclude_2=so_exclude_2,
 		            nmf_method=nmf_method,
-		            nrun=nrun,
+		            nrun=so_nrun,
 		            seed=seed
 			}
 		}
@@ -101,11 +108,11 @@ workflow panoply_nmf_workflow {
 				z_score_mode=z_score_mode,
 
 				## NMF Parameters
-	            kmin=kmin,
-	            kmax=kmax,
-	            exclude_2=exclude_2,
+	            kmin=mo_kmin,
+	            kmax=mo_kmax,
+	            exclude_2=mo_exclude_2,
 	            nmf_method=nmf_method,
-	            nrun=nrun,
+	            nrun=mo_nrun,
 	            seed=seed
 		}
 	}
