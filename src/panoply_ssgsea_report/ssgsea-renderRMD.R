@@ -34,8 +34,8 @@ parse_param_ssgsea_report <- function(cmd_option_list, yaml_section='panoply_ssg
   # parse command line parameters
   opt_cmd <- parse_args( OptionParser(option_list=option_list) ,
                          # ## optional testing arguments
-                         # args = c("--tar_file", "/opt/input/ODG_v3-Association-Type.Grade-PTM-SEA.tar.gz",
-                         #          "--label", "ODG_PTM-SEA",
+                         # args = c("--tar_file", "/opt/input/ODG_v3_proteome.tar.gz",
+                         #          "--label", "ODG_v3",
                          #          "--yaml_file", "/opt/input/master-parameters.yaml",
                          #          # "--geneset_groups_file", "/opt/input/mitocarta_geneset_groups.csv",
                          #          "--libdir", "/home/pgdac/src/")
@@ -132,7 +132,7 @@ tar_file=opt$tar_file
 label=opt$label
 fdr.max=opt$fdr
 n.max=opt$top_n
-cluster.rows <- opt$cluster_rows
+cluster.rows <- opt$cluster_rows; if (length(cluster.rows)==0) cluster.rows=F # if we didn't set cluster_rows, set to FALSE (legacy behavior)
 ser.meth <- opt$ser_meth
 geneset_groups_file=opt$geneset_groups_file
 split.by.prefix=opt$split_by_prefix
