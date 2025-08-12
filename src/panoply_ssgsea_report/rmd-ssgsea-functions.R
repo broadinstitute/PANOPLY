@@ -328,7 +328,7 @@ pw_hm <- function(output.prefix,
     
     ## add significance star annotation
     cell_fun <- function(j, i, x, y, width, height, fill) {
-      if (fdr.filt[i, j] < fdr.max) {
+      if (!is.na(fdr.filt[i, j] ) && fdr.filt[i, j] < fdr.max) {
         gb = textGrob("*")
         gb_w = convertWidth(grobWidth(gb), "mm")
         gb_h = convertHeight(grobHeight(gb), "mm")
