@@ -276,8 +276,8 @@ colors.full.NMF$NMF.cluster.membership$colors = circlize::colorRamp2(seq(0, 1, #
                                                                          length.out = attr(pal, "max")), # with max-colors number of elements
                                                                      pal(attr(pal, "max"))) # color-function
 # manually override NMF.core.member w/ NMF.cluster.membership color-palette
-colors.full.NMF$NMF.core.member$colors[which(colors.full.NMF$NMF.core.member$vals=='TRUE')] = colors.full.NMF$NMF.cluster.membership$colors(0.75)
-colors.full.NMF$NMF.core.member$colors[which(colors.full.NMF$NMF.core.member$vals=='FALSE')] = colors.full.NMF$NMF.cluster.membership$colors(0.95)
+colors.full.NMF$NMF.core.member$colors[which(colors.full.NMF$NMF.core.member$vals=='FALSE')] = colors.full.NMF$NMF.cluster.membership$colors(0.75)
+colors.full.NMF$NMF.core.member$colors[which(colors.full.NMF$NMF.core.member$vals=='TRUE')] = colors.full.NMF$NMF.cluster.membership$colors(0.95)
 # pull out the color vectors, named with values
 # consider: this should probably happen in set_annot_color()
 colors.NMF = sapply(colors.full.NMF, function(annot) {
