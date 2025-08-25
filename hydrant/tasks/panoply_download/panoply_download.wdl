@@ -4,20 +4,25 @@
 task panoply_download
 {
   File association_tar
+  Array[File] ssgsea_assoc_tars
   File ssgsea_ome_tar
-  File? cna_corr_tar # non-standalone tar with genomic-only-modyle outputs
-  File? ssgsea_rna_tar
-  File? ptmsea
+  File? blacksheep_tar
   File? so_nmf_results
   File? so_nmf_figures
   File? so_nmf_ssgsea_tar
+
+  File? immune_analysis_tar
+  File? ptmsea
+
   File? omicsev_tar
   File? cosmo_tar
-  String output_prefix
+  File? cna_corr_tar # non-standalone tar with genomic-only-modyle outputs
+
   String analysisDir
+  String output_prefix
+  
   String summary_tar = "panoply_main_summary.tar"
   String full_tar = "panoply_main_full.tar"
-  Array[File] ssgsea_assoc_tars
   String ssgsea_assoc_dir = "ssgsea_assoc"
 
   Int? memory
@@ -46,7 +51,8 @@ task panoply_download
         -a ${analysisDir} \
         -s ${ssgsea_assoc_dir} \
         ${"-g" + cna_corr_tar} \
-        ${"-r" + ssgsea_rna_tar} \
+        ${"-b" + blacksheep_tar} \
+        ${"-i" + immune_analysis_tar} \
         ${"-p" + ptmsea} \
         ${"-n" + so_nmf_results} \
         ${"-f" + so_nmf_figures} \

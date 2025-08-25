@@ -4,12 +4,13 @@ set -e # exit upon error condition
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-while getopts ":t:g:o:r:a:s:p:n:f:m:e:c:" opt; do
+while getopts ":t:g:o:b:i:a:s:p:n:f:m:e:c:" opt; do
     case $opt in
         t) association_tar="$OPTARG";;
         g) cna_corr_tar="$OPTARG";;
         o) ssgsea_ome="$OPTARG";;
-        r) ssgsea_rna="$OPTARG";;
+        b) blacksheep_tar="$OPTARG";;
+        i) immune_analysis_tar="$OPTARG";;
         a) analysis_dir="$OPTARG";;
         s) ssgsea_assoc="$OPTARG";;
         p) ptmsea="$OPTARG";;
@@ -47,8 +48,11 @@ dir_create()
   mkdir -p association_tar && tar xf $association_tar -C association_tar --strip-components 1
   mkdir -p ssgsea_ome && tar xf $ssgsea_ome -C ssgsea_ome
   # optional genomics-required modules
-  if [[ ! -z $ssgsea_rna ]]; then
-    mkdir -p ssgsea_rna && tar xf $ssgsea_rna -C ssgsea_rna
+  if [[ ! -z $blacksheep_tar ]]; then
+    mkdir -p blacksheep_tar && tar xf $blacksheep_tar -C blacksheep_tar
+  fi
+  if [[ ! -z $immune_analysis_tar ]]; then
+    mkdir -p immune_analysis_tar && tar xf $immune_analysis_tar -C immune_analysis_tar
   fi
   if [[ ! -z $cna_corr_tar ]]; then
     mkdir -p cna_corr_tar && tar xf $cna_corr_tar -C cna_corr_tar --strip-components 1
@@ -98,6 +102,14 @@ collect()
     cp -r cna_corr_tar/* $full_path/.;
     rm -rf cna_corr_tar;
   fi
+  if [ -d "blacksheep_tar/" ]; then
+    cp -r blacksheep_tar/* $full_path/.;
+    rm -rf blacksheep_tar;
+  fi
+  if [ -d "immune_analysis_tar/" ]; then
+    cp -r immune_analysis_tar/* $full_path/.;
+    rm -rf immune_analysis_tar;
+  fi
   if [ -d "omicsev_tar/" ]; then
     cp -r omicsev_tar/* $full_path/.;
     rm -rf omicsev_tar;
@@ -115,14 +127,6 @@ collect()
   cp -r $ssgsea_assoc/* $summ_path/$ssgsea_assoc/.;
 
   rm -rf ssgsea_ome $ssgsea_assoc;
-
-  if [ -d "ssgsea_rna/" ]; then
-    cp -r ssgsea_rna $full_path/ssgsea_rna/;
-    mkdir -p $summ_path/ssgsea_rna;
-    cp -r ssgsea_rna/* $summ_path/ssgsea_rna/.;
-    rm -rf ssgsea_rna;
-  fi
-
 
   if [[ ! -z $ptmsea ]]; then
     cp -r ptmsea $full_path/ptmsea/;

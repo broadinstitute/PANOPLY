@@ -15,7 +15,15 @@ workflow panoply_clumps_ptm_workflow {
 	File? acK_gct
 	File? ubK_gct
 
-	String PDB_ref_bucket				# Google-Cloud Bucket with PDB Directory split into tarfiles
+	File groupsFile
+
+	## Default Database Files		
+	# Google-Cloud Bucket with PDB Directory, split into tarfiles
+	String? PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars/"
+	# Uniprot FASTA reference file
+	File? UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
+	# SIFTS database
+	File? SIFTS_DB = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/pdb_chain_uniprot.tsv"
 
 	String? accession_col
 	String? variable_sites_col
@@ -31,6 +39,7 @@ workflow panoply_clumps_ptm_workflow {
 			pSTY_gct = pSTY_gct,
 			acK_gct = acK_gct,
 			ubK_gct = ubK_gct,
+			groupsFile = groupsFile,
 			yaml_file = yaml_file,
 			output_prefix = output_prefix
 	}
@@ -42,6 +51,8 @@ workflow panoply_clumps_ptm_workflow {
 				acK_gct = acK_gct,
 				ubK_gct = ubK_gct,
 				PDB_ref_bucket = PDB_ref_bucket,
+				UNIPROT_SWISSPROT = UNIPROT_SWISSPROT,
+				SIFTS_DB = SIFTS_DB,
 				accession_col = accession_col,
 				variable_sites_col = variable_sites_col,
 				yaml_file = yaml_file,

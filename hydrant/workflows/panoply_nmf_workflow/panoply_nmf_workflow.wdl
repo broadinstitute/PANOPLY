@@ -1,10 +1,10 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/2/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/19/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/10/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/15/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/3/plain-WDL/descriptor" as select_pairs
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/24/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/12/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/17/plain-WDL/descriptor" as assemble_wdl
 
 
 ################################################
@@ -26,25 +26,28 @@ workflow panoply_nmf_workflow {
 	File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
 	
 	## Preprocess Parameters
-	Float? sd_filt_min
-	String? sd_filt_mode
-	String? z_score			# true / false
-	String? z_score_mode
+	Float? mo_sd_filt_min
+	Float? so_sd_filt_min
+	String? mo_sd_filt_mode
+	String? so_sd_filt_mode
+	String? mo_z_score			# true / false
+	String? so_z_score			# true / false
+	String? mo_z_score_mode
+	String? so_z_score_mode
 	
 	## NMF Parameters
-	# multiomic
 	Int? mo_kmin
-	Int? mo_kmax
-	String? mo_exclude_2		# true / false
-	Int? mo_nrun				# Number of NMF runs with different starting seeds.
-	# single-omic
 	Int? so_kmin
+	Int? mo_kmax
 	Int? so_kmax
+	String? mo_exclude_2		# true / false
 	String? so_exclude_2		# true / false
+	Int? mo_nrun				# Number of NMF runs with different starting seeds.
 	Int? so_nrun				# Number of NMF runs with different starting seeds.
-	# retained for both
-	String? nmf_method		# options in the YAML
-	String? seed			# 'random' for random seed, or numeric for explicit seed
+	String? mo_seed			# 'random' for random seed, or numeric for explicit seed
+	String? so_seed			# 'random' for random seed, or numeric for explicit seed
+	String? mo_nmf_method		# options in the YAML
+	String? so_nmf_method		# options in the YAML
 
 	## Module Toggles
 	Boolean run_so_nmf
@@ -72,18 +75,18 @@ workflow panoply_nmf_workflow {
 					groups_file=groups_file,
 
 					## Preprocess Parameters
-					sd_filt_min=sd_filt_min,
-					sd_filt_mode=sd_filt_mode,
-					z_score=z_score,
-					z_score_mode=z_score_mode,
+					sd_filt_min=so_sd_filt_min,
+					sd_filt_mode=so_sd_filt_mode,
+					z_score=so_z_score,
+					z_score_mode=so_z_score_mode,
 
 					## NMF Parameters
 		            kmin=so_kmin,
 		            kmax=so_kmax,
 		            exclude_2=so_exclude_2,
-		            nmf_method=nmf_method,
+		            nmf_method=so_nmf_method,
 		            nrun=so_nrun,
-		            seed=seed
+		            seed=so_seed
 			}
 		}
 	}
@@ -102,18 +105,18 @@ workflow panoply_nmf_workflow {
 				groups_file=groups_file,
 
 				## Preprocess Parameters
-				sd_filt_min=sd_filt_min,
-				sd_filt_mode=sd_filt_mode,
-				z_score=z_score,
-				z_score_mode=z_score_mode,
+				sd_filt_min=mo_sd_filt_min,
+				sd_filt_mode=mo_sd_filt_mode,
+				z_score=mo_z_score,
+				z_score_mode=mo_z_score_mode,
 
 				## NMF Parameters
 	            kmin=mo_kmin,
 	            kmax=mo_kmax,
 	            exclude_2=mo_exclude_2,
-	            nmf_method=nmf_method,
+	            nmf_method=mo_nmf_method,
 	            nrun=mo_nrun,
-	            seed=seed
+	            seed=mo_seed
 		}
 	}
 

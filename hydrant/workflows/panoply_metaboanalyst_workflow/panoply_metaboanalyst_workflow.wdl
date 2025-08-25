@@ -7,11 +7,22 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboana
 ################################################
 ##  workflow: panoply_metaboanalyst + panoply_metaboanalyst_report
 workflow panoply_metaboanalyst_workflow {
+	File meta_gct
+	File? omic_gct
+	String? ome_type
+
 	String output_prefix
+	File groups_file
+	File yaml_file
 
 	call metaboanalyst_wdl.panoply_metaboanalyst {
 	    input:
-	        output_prefix = output_prefix
+	    	meta_gct = meta_gct,
+	    	omic_gct = omic_gct,
+	    	ome_type = ome_type,
+	        output_prefix = output_prefix,
+	        groups_file = groups_file,
+	        yaml_file = yaml_file
 	}
 
 	call metaboanalyst_report_wdl.panoply_metaboanalyst_report {
