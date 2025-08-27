@@ -38,7 +38,7 @@ task panoply_ptm_normalization {
     }
 
     output {
-        File tar_out = "${output_prefix}-proteome-relative-norm.gct"
+        File gct_out = "${output_prefix}-proteome-relative-norm.gct"
     }
 
     runtime {

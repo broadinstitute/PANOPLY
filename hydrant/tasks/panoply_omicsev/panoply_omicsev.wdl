@@ -20,9 +20,9 @@ task panoply_omicsev {
 	Boolean? rna_log_transformed
   Boolean? do_function_prediction
     
-  Int? cpu
   Int? memory
-  Int? local_disk_gb
+  Int? disk_space
+  Int? num_threads
   Int? num_preemptions
 
   command {
@@ -98,7 +98,7 @@ task panoply_omicsev {
         /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_run_OmicsEV.R \
         dataset \
         sample_list.tsv \
-        ${default=6 cpu} \
+        ${default=6 num_threads} \
         protein \
         x2.tsv \
         $(cat do_function_prediction.txt) \
@@ -116,9 +116,9 @@ task panoply_omicsev {
     runtime {
     	docker: "broadcptacdev/panoply_omicsev:latest"
         memory: "${if defined(memory) then memory else '96'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
+        disks : "local-disk ${if defined(disk_space) then disk_space else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
-        cpu: "${if defined(cpu) then cpu else '6'}"
+        cpu : "${if defined(num_threads) then num_threads else '6'}"
     }
     output {
         File report = "omicsev_" + label + ".html"

@@ -1,6 +1,6 @@
 task panoply_mimp {
-    Float? ram_gb
-    Int? local_disk_gb
+    Float? memory
+    Int? disk_space
     Int? num_preemptions
 
     File mutation_file
@@ -48,8 +48,8 @@ task panoply_mimp {
 
     runtime {
         docker : "broadcptacdev/panoply_mimp:latest"
-        memory: "${if defined(ram_gb) then ram_gb else '2'}GB"
-        disks : "local-disk ${if defined(local_disk_gb) then local_disk_gb else '10'} HDD"
+        memory: "${if defined(memory) then memory else '2'}GB"
+        disks : "local-disk ${if defined(disk_space) then disk_space else '10'} HDD"
         preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
     }
 

@@ -23,7 +23,7 @@ task panoply_ssgsea {
 	Int? memory
 	Int? disk_space
 	Int? num_threads
-	Int? num_preemtions
+	Int? num_preemptions
 	
 	command {
 		set -euo pipefail
@@ -53,7 +53,7 @@ task panoply_ssgsea {
 		memory : select_first ([memory, 8]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " HDD"
 		cpu : select_first ([num_threads, 8]) + ""
-		preemptible : select_first ([num_preemtions, 2])
+		preemptible : select_first ([num_preemptions, 2])
 		}
 
 	meta {
