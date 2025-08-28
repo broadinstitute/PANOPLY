@@ -22,7 +22,7 @@ p_load(tidyr)
 
 normalize_ptm <- function (proteome.gct, ptm.gct, output.prefix=NULL, 
                            try.all.accession.numbers=TRUE,        # try hard to find a match (using accession_numbers)
-                           accession_number='accession_number',   # column with protein/PTM accession number
+                           accession_number='id.description',   # column with protein/PTM accession number
                            accession_numbers='accession_numbers', # accession_numbers for protein/PTM group
                            accession_sep='|',                     # separator for each accession number in accession_numbers
                            score='scoreUnique',                   # column with protein scores
@@ -59,7 +59,7 @@ normalize_ptm <- function (proteome.gct, ptm.gct, output.prefix=NULL,
   
   # writes and returns updated GCT
   file.prefix <- ifelse (!is.null (output.prefix), output.prefix,
-                         unlist(strsplit(PTM.gct, split = '.gct', fixed = TRUE))[1])
+                         unlist(strsplit(ptm.gct, split = '.gct', fixed = TRUE))[1])
   
   write.gct (PTM.norm, paste(file.prefix, '-proteome-relative-norm.gct', sep = ''), 
              appenddim = FALSE, precision=ndigits)
@@ -162,6 +162,8 @@ normalize_by_gene_symbol <- function (PTM, proteome, gene_symbol, mode) {
   # create merged data table
   PTM.melt <- data.frame ( melt.gct (PTM) )
   prot.melt <- data.frame ( melt.gct (proteome) )
+  PTM.melt[,"gene_symbol"] = PTM.melt[,gene_symbol]
+  prot.melt[,"gene_symbol"] = prot.melt[,gene_symbol]
   
   # Combine multiple proteins per gene symbol using specified mode
   prot.melt.combined <- aggregate(value ~ gene_symbol + id.y, data = prot.melt, FUN = function(x) {
@@ -180,14 +182,8 @@ normalize_by_gene_symbol <- function (PTM, proteome, gene_symbol, mode) {
   })
   
   # Merge PTM data with combined protein data by gene symbol
-  prot.melt.data.only <- data.frame(prot.melt.combined$id.y, prot.melt.combined[,gene_symbol], prot.melt.combined$value)
+  prot.melt.data.only <- data.frame(prot.melt.combined$id.y, prot.melt.combined$gene_symbol, prot.melt.combined$value)
   colnames (prot.melt.data.only) <- c ('id.y', gene_symbol, 'value.prot')
-  
-  # Add gene symbol to PTM data if not present
-  if (!gene_symbol %in% colnames(PTM@rdesc)) {
-    warning(paste("Gene symbol column '", gene_symbol, "' not found in PTM data. Using accession number matching instead."))
-    return(normalize(PTM, proteome, "accession_number"))
-  }
   
   data <- merge (PTM.melt, prot.melt.data.only, by = c('id.y', gene_symbol))
   
