@@ -19,11 +19,15 @@ workflow panoply_unified_workflow {
   File? ubiquityl_ome
   File? nglyco_ome
   File? methyl_ome
+
   File? metabol_ome
+
   File? rna_data      #version 1.3 only!
   File? cna_data
+
   File yaml
   String job_id
+  
   String run_cmap
   Boolean run_mo_nmf #'true' or 'false'
   Boolean run_so_nmf #'true' or 'false'

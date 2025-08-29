@@ -2,22 +2,21 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation/versions/7/plain-WDL/descriptor" as rna_prot_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_internal/versions/1/plain-WDL/descriptor" as panoply_main_internal
+## Proteogenomic
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_harmonize/versions/7/plain-WDL/descriptor" as harmonize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc/versions/8/plain-WDL/descriptor" as sampleqc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation/versions/7/plain-WDL/descriptor" as rna_prot_corr_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation_report/versions/6/plain-WDL/descriptor" as rna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_setup/versions/7/plain-WDL/descriptor" as cna_setup_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation/versions/7/plain-WDL/descriptor" as cna_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation_report/versions/6/plain-WDL/descriptor" as rna_corr_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation_report/versions/6/plain-WDL/descriptor" as cna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc_report/versions/5/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cmap_analysis/versions/6/plain-WDL/descriptor" as cmap_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_check_yaml_default/versions/9/plain-WDL/descriptor" as check_yaml_default_wdl
-
+## Sample-QC
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc/versions/8/plain-WDL/descriptor" as sampleqc_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc_report/versions/5/plain-WDL/descriptor" as sampleqc_report_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/11/plain-WDL/descriptor" as cosmo_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
-
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_internal/versions/1/plain-WDL/descriptor" as panoply_main_internal
-
+## Support
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/23/plain-WDL/descriptor" as download_wdl
 
 
@@ -38,10 +37,10 @@ workflow panoply_main {
 
   File groups_file
   File? groups_file_association
+  File? groups_file_blacksheep
   File? groups_file_cmap_enrichment
   File? groups_file_immune
   File? groups_file_nmf
-  File? groups_file_blacksheep
 
   File? cna_corr_groupsFile # DO NOT use groups_file by default
 
@@ -53,12 +52,9 @@ workflow panoply_main {
   String subset_bucket = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets"
   
   ## global params
-  Int? ndigits
   Float? na_max
   Float? sample_na_max
-  Float? min_numratio_fraction
   Float? nmiss_factor
-  Float? sd_filter_threshold
   String? duplicate_gene_policy
   String? gene_id_col
   String? organism
@@ -210,12 +206,8 @@ workflow panoply_main {
       groups_file_blacksheep = groups_file_blacksheep,
       groups_file_immune = groups_file_immune,
       groups_file_nmf = groups_file_nmf,
-      ndigits = ndigits,
-      na_max = na_max,
       sample_na_max = sample_na_max,
-      min_numratio_fraction = min_numratio_fraction,
       nmiss_factor = nmiss_factor,
-      sd_filter_threshold = sd_filter_threshold,
       duplicate_gene_policy = duplicate_gene_policy,
       gene_id_col = gene_id_col,
       organism = organism,
@@ -251,13 +243,13 @@ workflow panoply_main {
     File panoply_full = panoply_download.full
 
     # multiomic analyses
+    File? cmap_output = run_cmap_analysis.outputs
+    File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
     File? rna_corr_report = panoply_rna_protein_correlation_report.report
     File? cna_corr_report = panoply_cna_correlation_report.report
     File? omicsev_report = panoply_omicsev.report
     File? cosmo_report = panoply_cosmo_workflow.cosmo_report
     File? sample_qc_report = panoply_sampleqc_report.report
-    File? cmap_output = run_cmap_analysis.outputs
-    File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
 
     # single-omic analyses
     File association_report = main_internal.association_report

@@ -29,15 +29,10 @@ workflow panoply_main_internal {
   File? groups_file_nmf
   
   ## global params
-  Int? ndigits
-  Float? na_max
   Float? sample_na_max
-  Float? min_numratio_fraction
   Float? nmiss_factor
-  Float? sd_filter_threshold
   String? duplicate_gene_policy
   String? gene_id_col
-  String? organism
 
   String standalone = "false"
   String geneset_db #this.gseaDB

@@ -151,14 +151,14 @@ panoply_blacksheep:
 
 panoply_metaboanalyst:
   meta_id_type: "hmdb_id"                       # ID type used for metabolites
-  meta_id_col: NULL                             # Rdesc column in Metabolite GCT with meta_id_type IDs (use NULL for rid)
+  meta_id_col: "metab_ids"                      # Rdesc column in Metabolite GCT with meta_id_type IDs (use NULL for rid)
   gene_id_type: "SYMBOL"                        # ID type used for -omic data
   max_annot_levels: 10                          # max. number of levels in a annotation category to be included in the analysis
   anal_type: "ORA"                              # Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis)
   pval_comb: "pvalo"                            # Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).
   pval_signif: 0.05                             # P-value threshold for significant enrichement
   top_n_networks: 10                            # Top N networks to plot per annot subvalue
-  impact_metric: "Impact.DC"                   # Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality).
+  impact_metric: "Impact.DC"                    # Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality).
   
 panoply_mimp:
   groups_file_path: NULL                        # groups file is optional, if provided will add annotation tracks to heatmap

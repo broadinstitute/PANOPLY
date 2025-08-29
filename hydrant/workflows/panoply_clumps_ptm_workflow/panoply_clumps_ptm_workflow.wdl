@@ -31,7 +31,7 @@ workflow panoply_clumps_ptm_workflow {
 	File? mapping_file					# pre-generated mapping file, to skip mapping module
 	File? mapping_params				# parameter file from mapping
 
-	String? output_prefix
+	String output_prefix
 	File yaml_file
 
 	call diffexp_wdl.panoply_clumps_ptm_diffexp as diffexp {

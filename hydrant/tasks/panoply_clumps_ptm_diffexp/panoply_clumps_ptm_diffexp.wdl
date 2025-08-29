@@ -12,8 +12,8 @@ task panoply_clumps_ptm_diffexp {
 	File groupsFile
 	String? sample_id_col
   	Float? fdr_cutoff
-	Float? min_samples
-	Float? max_annot_levels
+	Int? min_samples
+	Int? max_annot_levels
 
 	String output_prefix="results"
 	File yaml_file
@@ -21,7 +21,7 @@ task panoply_clumps_ptm_diffexp {
 	Int? memory
 	Int? disk_space
 	Int? num_threads
-	Int? num_preemtions
+	Int? num_preemptions
 	
 	command {
 		set -euo pipefail
@@ -41,7 +41,7 @@ task panoply_clumps_ptm_diffexp {
 		memory : select_first ([memory, 32]) + "GB"
 		disks : "local-disk  " + select_first ([disk_space, 20]) + " HDD"
 		cpu : select_first ([num_threads, 32]) + ""
-		preemptible : select_first ([num_preemtions, 0])
+		preemptible : select_first ([num_preemptions, 0])
 	}
 
 	meta {

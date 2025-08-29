@@ -27,7 +27,7 @@ task panoply_clumps_ptm {
 	Int? memory
 	Int? disk_space
 	Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
-	Int? num_preemtions
+	Int? num_preemptions
 	
 	command {
 		set -euo pipefail
@@ -69,7 +69,7 @@ task panoply_clumps_ptm {
 		memory : select_first ([memory, 32]) + "GB"
 		disks : "local-disk  " + select_first ([disk_space, 100]) + " HDD"
 		cpu : num_threads				# default set in inputs
-		preemptible : select_first ([num_preemtions, 0])
+		preemptible : select_first ([num_preemptions, 0])
 	}
 
 	meta {

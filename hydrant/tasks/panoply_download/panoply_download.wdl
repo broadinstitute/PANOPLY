@@ -1,12 +1,11 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_download
-{
+task panoply_download {
   File association_tar
+  File blacksheep_tar
   Array[File] ssgsea_assoc_tars
   File ssgsea_ome_tar
-  File? blacksheep_tar
   File? so_nmf_results
   File? so_nmf_figures
   File? so_nmf_ssgsea_tar
@@ -16,7 +15,7 @@ task panoply_download
 
   File? omicsev_tar
   File? cosmo_tar
-  File? cna_corr_tar # non-standalone tar with genomic-only-modyle outputs
+  File? cna_corr_tar # non-standalone tar with genomic-only-module outputs
 
   String analysisDir
   String output_prefix
