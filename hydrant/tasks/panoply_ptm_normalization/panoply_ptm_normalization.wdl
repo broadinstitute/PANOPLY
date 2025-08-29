@@ -17,6 +17,9 @@ task panoply_ptm_normalization {
     String? accession_numbers_col
     String? accession_numbers_sep
     String? score_col
+    Boolean? use_gene_symbol
+    String? gene_symbol_colname
+    String? mode
 
     command {
         set -euo pipefail
@@ -27,7 +30,10 @@ task panoply_ptm_normalization {
         ${"--accession_number_colname " + accession_number_col} \
         ${"--accession_numbers_colname " + accession_numbers_col} \
         ${"--accession_numbers_separator " + accession_numbers_sep} \
-        ${"--score_colname" + score_col}
+        ${"--score_colname" + score_col} \
+        ${"--use_gene_symbol" + use_gene_symbol} \
+        ${"--gene_symbol_colname" + gene_symbol_colname} \
+        ${"--mode" + mode} 
 
 
         Rscript /prot/proteomics/Projects/PGDAC/src/normalize-ptm.R \

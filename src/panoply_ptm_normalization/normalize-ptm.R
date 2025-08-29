@@ -22,16 +22,19 @@ p_load(tidyr)
 
 normalize_ptm <- function (proteome.gct, ptm.gct, output.prefix=NULL, 
                            try.all.accession.numbers=TRUE,        # try hard to find a match (using accession_numbers)
-                           accession_number='accession_number',   # column with protein/PTM accession number
+                           accession_number='id.description',   # column with protein/PTM accession number
                            accession_numbers='accession_numbers', # accession_numbers for protein/PTM group
                            accession_sep='|',                     # separator for each accession number in accession_numbers
                            score='scoreUnique',                   # column with protein scores
+                           use_gene_symbol=FALSE,                # use gene symbol for matching instead of accession number
+                           gene_symbol='geneSymbol',             # column with gene symbol
+                           mode='median',                        # mode for combining multiple proteins per gene symbol
                            ndigits=5)
 {
   # import GCT files
   proteome <- parse.gctx (proteome.gct)
   PTM <- parse.gctx (ptm.gct)
-
+  
   # Spectrum Mill specific (extensible to other search engines if function arguments are set appropriately):
   # if PTM accession number does not have match in the proteome, will try to match all accession numbers
   # for that site in the proteome. if there are multiple protein matches, it will pick
@@ -46,14 +49,17 @@ normalize_ptm <- function (proteome.gct, ptm.gct, output.prefix=NULL,
                                          accession_numbers, accession_sep, score)
   }
   
-  
   # fits linear model and returns updated GCT
-  PTM.norm <- normalize(PTM, proteome, accession_number)
+  if (use_gene_symbol) {
+    PTM.norm <- normalize_by_gene_symbol(PTM, proteome, gene_symbol, mode)
+  } else {
+    PTM.norm <- normalize(PTM, proteome, accession_number)
+  }
   
   
   # writes and returns updated GCT
   file.prefix <- ifelse (!is.null (output.prefix), output.prefix,
-                         unlist(strsplit(PTM.gct, split = '.gct', fixed = TRUE))[1])
+                         unlist(strsplit(ptm.gct, split = '.gct', fixed = TRUE))[1])
   
   write.gct (PTM.norm, paste(file.prefix, '-proteome-relative-norm.gct', sep = ''), 
              appenddim = FALSE, precision=ndigits)
@@ -144,37 +150,115 @@ normalize <- function (PTM, proteome, accession_number) {
 }
 
 
-if (!interactive()) {
-## call via command line
-## usage: Rscript normalize-ptm.R <proteome.gct> <ptm.gct> <output.prefix> <yaml.file>
-
-# process command line args
-args <- commandArgs (TRUE)
-proteome_gct <- as.character (args[1])
-ptm_gct <- as.character (args[2])
-output_prefix <- as.character (args[3])
-if (output_prefix == "NULL") output_prefix <- NULL
-yaml_file <- args[4]
-
-# read yaml parameters
-yaml_params <- read_yaml (yaml_file)
-accession_number_col <- yaml_params$panoply_ptm_normalization$accession_number_colname
-accession_numbers_col <- yaml_params$panoply_ptm_normalization$accession_numbers_colname
-accession_numbers_sep <- yaml_params$panoply_ptm_normalization$accession_numbers_separator
-score_col <- yaml_params$panoply_ptm_normalization$score_colname
-ndigits <- yaml_params$global_parameters$output_precision$ndigits
-
-# support for old separator
-if (accession_numbers_sep == "\\|") {
-  accession_numbers_sep <- "|"
+normalize_by_gene_symbol <- function (PTM, proteome, gene_symbol, mode) {
+  # Applies linear regression to correct PTM levels for underlying protein levels using gene symbols
+  
+  # warn if not all samples are matched
+  matched.samples <- intersect (PTM@cid, proteome@cid)
+  if (length(matched.samples) != length(PTM@cid)) {
+    warning ('WARNING: not all samples in PTM file have matches in proteome ... unmatched samples removed.')
+  }
+  
+  # create merged data table
+  PTM.melt <- data.frame ( melt.gct (PTM) )
+  prot.melt <- data.frame ( melt.gct (proteome) )
+  PTM.melt[,"gene_symbol"] = PTM.melt[,gene_symbol]
+  prot.melt[,"gene_symbol"] = prot.melt[,gene_symbol]
+  
+  # Combine multiple proteins per gene symbol using specified mode
+  prot.melt.combined <- aggregate(value ~ gene_symbol + id.y, data = prot.melt, FUN = function(x) {
+    if (mode == "median") {
+      median(x, na.rm = TRUE)
+    } else if (mode == "mean") {
+      mean(x, na.rm = TRUE)
+    } else if (mode == "max") {
+      max(x, na.rm = TRUE)
+    } else if (mode == "min") {
+      min(x, na.rm = TRUE)
+    } else {
+      # Default to median if mode is not recognized
+      median(x, na.rm = TRUE)
+    }
+  })
+  
+  # Merge PTM data with combined protein data by gene symbol
+  prot.melt.data.only <- data.frame(prot.melt.combined$id.y, prot.melt.combined$gene_symbol, prot.melt.combined$value)
+  colnames (prot.melt.data.only) <- c ('id.y', gene_symbol, 'value.prot')
+  
+  data <- merge (PTM.melt, prot.melt.data.only, by = c('id.y', gene_symbol))
+  
+  # print metrics
+  percent <-round (100*nrow(data)/nrow(PTM.melt), digits = 1)
+  print (paste (nrow(data), ' out of ', nrow(PTM.melt), ' PTM peptides normalized by gene symbol',
+                ' (', percent, '%).', sep = ''))
+  
+  # fit global model
+  print ("Fitting model using gene symbol matching...") 
+  model <- lm (value ~ value.prot, data = data)
+  residuals <- residuals (model)
+  results <- data.frame (data$id.x, data$id.y, residuals)
+  colnames(results) <- c('id.x', 'id.y', 'residuals')
+  print ("Success.")
+  print (summary(model))
+  
+  # compile results into matrix
+  results.df <- data.frame (reshape::cast(results, id.x ~ id.y, value.var = residuals))
+  results.mat <- data.matrix (results.df[, c(2:ncol(results.df))])
+  rownames(results.mat) <- as.character (results.df$id.x)
+  
+  # reset GCT
+  PTM@rdesc <- PTM@rdesc[match(rownames(results.mat), PTM@rdesc$id),]
+  PTM@cdesc <- PTM@cdesc[match(colnames(results.mat), PTM@cdesc$id),]
+  PTM@rid <- rownames(results.mat)
+  PTM@cid <- colnames(results.mat)
+  PTM@mat <- results.mat
+  
+  return(PTM)
 }
 
-# call ptm normalization
-normalize_ptm (proteome.gct=proteome_gct, ptm.gct=ptm_gct, output.prefix=output_prefix,
-               try.all.accession.numbers=ifelse (accession_numbers_col=="NULL", FALSE, TRUE), 
-               accession_number=accession_number_col,
-               accession_numbers=ifelse (accession_numbers_col=="NULL", NULL, accession_numbers_col),
-               accession_sep=accession_numbers_sep,
-               score=ifelse (score_col=="NULL", NULL, score_col),
-               ndigits=ndigits)
+
+if (!interactive()) {
+  ## call via command line
+  ## usage: Rscript normalize-ptm.R <proteome.gct> <ptm.gct> <output.prefix> <yaml.file>
+  
+  # process command line args
+  args <- commandArgs (TRUE)
+  proteome_gct <- as.character (args[1])
+  ptm_gct <- as.character (args[2])
+  output_prefix <- as.character (args[3])
+  if (output_prefix == "NULL") output_prefix <- NULL
+  yaml_file <- args[4]
+  
+  # read yaml parameters
+  yaml_params <- read_yaml (yaml_file)
+  accession_number_col <- yaml_params$panoply_ptm_normalization$accession_number_colname
+  accession_numbers_col <- yaml_params$panoply_ptm_normalization$accession_numbers_colname
+  accession_numbers_sep <- yaml_params$panoply_ptm_normalization$accession_numbers_separator
+  score_col <- yaml_params$panoply_ptm_normalization$score_colname
+  ndigits <- yaml_params$global_parameters$output_precision$ndigits
+  
+  # New parameters for gene symbol mode
+  use_gene_symbol <- yaml_params$panoply_ptm_normalization$use_gene_symbol
+  if (is.null(use_gene_symbol)) use_gene_symbol <- FALSE
+  gene_symbol_col <- yaml_params$panoply_ptm_normalization$gene_symbol_colname
+  if (is.null(gene_symbol_col)) gene_symbol_col <- "geneSymbol"
+  mode <- yaml_params$panoply_ptm_normalization$mode
+  if (is.null(mode)) mode <- "median"
+  
+  # support for old separator
+  if (accession_numbers_sep == "\\|") {
+    accession_numbers_sep <- "|"
+  }
+  
+  # call ptm normalization
+  normalize_ptm (proteome.gct=proteome_gct, ptm.gct=ptm_gct, output.prefix=output_prefix,
+                 try.all.accession.numbers=ifelse (accession_numbers_col=="NULL", FALSE, TRUE), 
+                 accession_number=ifelse (accession_number_col=="NULL", "accession_number", accession_number_col),
+                 accession_numbers=ifelse (accession_numbers_col=="NULL", NULL, accession_numbers_col),
+                 accession_sep=accession_numbers_sep,
+                 score=ifelse (score_col=="NULL", NULL, score_col),
+                 use_gene_symbol=use_gene_symbol,
+                 gene_symbol=gene_symbol_col,
+                 mode=mode,
+                 ndigits=ndigits)
 }
