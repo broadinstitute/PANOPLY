@@ -35,6 +35,23 @@ display_usage() {
   exit
 }
 
+# wrapper script for fissfc
+# retries command if a timeout errors occur
+fissfc_timeout() {
+  success=false
+  while ! $success
+  do
+    out=`fissfc $@`
+    echo $out
+
+    if echo "$out" | grep -Eq "Error .+? timeout";then
+      success=false
+    else
+      success=true
+    fi
+  done
+}
+
 # replace the docker namespace and docker tag in the existing WDL
 # to the specified docker namespace and docker tag
 replaceDockerInWdl() {
@@ -76,7 +93,7 @@ put_method_config() {
     fissfc config_delete -c $m -w $w -p $p -n $release_dns
   fi
 
-  fissfc config_put -w $w -p $p -c $m-template.json 
+  fissfc_timeout config_put -w $w -p $p -c $m-template.json 
 }
 
 
@@ -134,6 +151,9 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.prote_ome" = $val' --arg val "this.proteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.ubiquityl_ome" = $val' --arg val "this.ubiquitylome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.nglyco_ome" = $val' --arg val "this.nglycoproteome_ss" |  \
+      jq '.inputs."panoply_unified_workflow.methyl_ome" = $val' --arg val "this.methylation_ss" |  \
+      jq '.inputs."panoply_unified_workflow.metabol_ome" = $val' --arg val "this.metabolome_ss" |  \
       jq '.inputs."panoply_unified_workflow.pome.annotation_pathway_db" = $val' --arg val "this.gseaDB" > new-template.json
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
@@ -142,7 +162,7 @@ configure_primary_workflow() {
   if [ "$wf" == "panoply_nmf_workflow" ]; then
     # configure panoply_nmf_workflow with template for paired-array input
     cat $wf-template.json |  \
-      jq '.inputs."panoply_nmf_workflow.ome_pairs" = $val' --arg val '[ { "left":"prot", "right":this.proteome_ss }, { "left":"pSTY", "right":this.phosphoproteome_ss }, { "left":"acK", "right":this.acetylome_ss }, { "left":"ubK", "right":this.ubiquitylome_ss }, { "left":"RNA", "right":this.rna_ss }, { "left":"CNA", "right":this.cna_ss } ]' \
+      jq '.inputs."panoply_nmf_workflow.ome_pairs" = $val' --arg val '[ { "left":"prot", "right":this.proteome_ss }, { "left":"pSTY", "right":this.phosphoproteome_ss }, { "left":"acK", "right":this.acetylome_ss }, { "left":"ubK", "right":this.ubiquitylome_ss }, { "left":"nglycoproteome", "right":this.nglycoproteome_ss }, { "left":"methylation", "right":this.methylation_ss }, { "left":"RNA", "right":this.rna_ss }, { "left":"CNA", "right":this.cna_ss } ]' \
       > new-template.json
     mv new-template.json $wf-template.json  
     put_method_config $ws $wp $wf
@@ -170,9 +190,9 @@ installMethod() {
     cp $orig_doc $meth.md    
     # documentation too large error for some modules -- hence just use URL for method
     echo -e "Documentation at https://github.com/broadinstitute/PANOPLY/blob/$release_ver/release/$release_dir/$meth/$meth.md\n" > $meth-doc-URL.txt
-    fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $meth-doc-URL.txt
+    fissfc_timeout meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn" --doc $meth-doc-URL.txt
   else
-    fissfc meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn"
+    fissfc_timeout meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn"
   fi
     
   # get method snapshot id and save release snapshot ids
@@ -288,7 +308,7 @@ createWkSpace() {
   
   if fissfc space_exists -w $ws -p $project -q; then
     echo -e "$not Creating workspace $ws"
-    fissfc space_new -w $ws -p $project
+    fissfc_timeout space_new -w $ws -p $project
   else
     echo -e "$not Workspace $ws exisits. Updating permissions"
   fi

@@ -10,6 +10,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboana
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/50/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/33/plain-WDL/descriptor" as assemble_wdl
 
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_check_yaml_default/versions/9/plain-WDL/descriptor" as check_yaml_default_wdl
 
 
 workflow panoply_unified_workflow {
@@ -32,7 +33,8 @@ workflow panoply_unified_workflow {
   Boolean run_mo_nmf #'true' or 'false'
   Boolean run_so_nmf #'true' or 'false'
   String? run_ptmsea
-  Boolean run_clumps
+  Boolean? run_clumps
+  Boolean? run_metab
 
   File groups_file
   File? groups_file_nmf
@@ -122,7 +124,14 @@ workflow panoply_unified_workflow {
 
 
   ### ClumpsPTM
-  if (run_clumps) {
+  # check yaml default for run.clumpsptm (Terra param takes precedence)
+  call check_yaml_default_wdl.panoply_check_yaml_default as check_clumpsptm_default {
+    input:
+      param = run_clumps,
+      yaml = yaml,
+      param_lookup = "run.clumpsptm"
+  }
+  if ( check_clumpsptm_default.param_boolean ){
     call clumps_wdl.panoply_clumps_ptm_workflow as clumps_ptm {
       input:
         pSTY_gct = phospho_ome,
@@ -135,7 +144,14 @@ workflow panoply_unified_workflow {
   }
 
   ### MetaboAnalyst
-  if ( "${metabol_ome}" != '' ) {
+  # check yaml default for run.metab (Terra param takes precedence)
+  call check_yaml_default_wdl.panoply_check_yaml_default as check_metab_default {
+    input:
+      param = run_metab,
+      yaml = yaml,
+      param_lookup = "run.metab"
+  }
+  if ( "${metabol_ome}" != '' && check_metab_default.param_boolean ){
     # Proteome and Transcriptome pair
     Array[Pair[String?, File?]] pg_pairs_input =
       [ ("proteome", prote_ome),
