@@ -26,6 +26,7 @@ p_load( scales );
 p_load( glue );
 p_load( yaml );
 p_load( ids );
+p_load( qs );
 
 sink(); source('/prot/proteomics/Projects/R-utilities/map-to-genes.r')
 source('/prot/proteomics/Projects/R-utilities/color-mod-utils.r')
@@ -45,8 +46,11 @@ cat.map <- c(
   "phosphoproteome",
   "acetylome",
   "ubiquitylome",
+  "methylation",
+  "nglycoproteome",
   "rna",
   "cna",
+  "metabolome",
   "annotation",
   "groups",
   "parameters",
@@ -57,7 +61,9 @@ proteome.types <- c(
   "proteome",
   "phosphoproteome",
   "acetylome",
-  "ubiquitylome"
+  "ubiquitylome",
+  "methylation",
+  "nglycoproteome"
 )
 
 # required.genomics.types <- c(
@@ -93,8 +99,10 @@ if ( (panda <- Sys.getenv("PANDA")) == "" ) panda <- "/panda"
 Sys.setenv (PANDA=panda)   # set in env so that other scripts can find the code base
 defaults <- list()
 defaults$parameters <- glue ("{panda}/defaults/master-parameters.yaml")
-defaults$ptmsea_db <- glue ("{panda}/defaults/ptm.sig.db.all.flanking.human.v1.9.0.gmt")
-defaults$gsea_db <- glue ("{panda}/defaults/h.all.v6.2.symbols.gmt")
+
+defaults$ptmsea_db <- list.files( glue ("{panda}/defaults/"), pattern="ptm.sig.db.all.flanking.human.*.gmt", full.names = T ) # get most up-to-date version
+defaults$gsea_db <- list.files( glue ("{panda}/defaults/"), pattern="h.all.*.symbols.gmt", full.names = T ) # get most up-to-date version
+defaults$metab_db <- glue ("{panda}/defaults/compound_db.qs")
 defaults$all_parameters_file_name <- "panoply-parameters.yaml"
 defaults$panda_parameters_file_name <- "config.yaml"
 
@@ -311,8 +319,8 @@ load_unzipped_files <- function(){
     return(zip.name)
   }
   # list of zip-files
-  cat(paste(glue("Available zip-files:"),
-            paste( system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("zip$", ., value=T), collapse = '\n'), 
+  cat(paste(glue("Available zip-file(s):"),
+            paste( "*", system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("zip$", ., value=T), collapse = '\n'), 
             sep,
             sep = '\n'))
   input.zip.name <- smart_readline( prompt = "\n$$ Enter name of zip file containing input data: ",
@@ -465,54 +473,62 @@ gene_id_column_create <- function(ome, gct, gene.id.col.default, protein.id.col)
 }
 
 validate_gene_id <- function(ome) {
-  suppressMessages(require(org.Hs.eg.db)) # read in org.Hs.eg.db, to let us check that gene id column has Hugo Gene Symbols
-  gene.id.col.default = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$gene_id_col
-  # gene.id.col.default = "testing"
-  protein.id.col = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$protein_id_col
-  
-  gct = suppressMessages (parse.gctx (typemap.gct[[ome]]))
-  rdesc = gct@rdesc
-  rdesc_names = names(rdesc)
-  
-  # Check for default gene.id.col
-  valid_id = TRUE # initialize value
-  if ( gene.id.col.default %in% rdesc_names ) { # if the default gene.id.col exists
-    print( glue( "\n.. INFO. Default Gene ID column '{gene.id.col.default}' detected in {toupper(ome)} data.\n" ) )
-    tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col.default ]] , # check if they're valid symbols
-                                   keytype="SYMBOL", columns = "SYMBOL"),
-             error = function(cond) {
-               cat(printX("WARNING", glue("IDs in column '{gene.id.col.default}' are not valid HUGO Gene Symbols")))
-               valid_id <<- FALSE })
+  if (ome=="metabolome")  {
+    
+    print( glue( "\n.. INFO. Skipping Gene ID column check for {toupper(ome)} data.\n" ) )
+           
   } else {
-    printX("WARNING", glue("Default Gene ID column '{gene.id.col.default}' was NOT detected in {toupper(ome)} data"))
-    valid_id = FALSE
-  }
-  
-  # If the default gene.id.col wasn't found / wasn't valid
-  if ( !valid_id ) {
-    while ( !valid_id ) { # until we select a valid ID
-      # check whether user is inputting a gene.id.col, or a prot.id.col and prot.id.type
-      id.col.type = smart_readline( prompt = paste(glue("\n$$ To create a Gene ID column for {toupper(ome)}, please choose to either:"),
-                                                   "\t1) Select an existing annotation column with HUGO Gene Symbols",
-                                                   "\t2) Convert protein IDs to HUGO Gene Symbol",
-                                                   "\t3) Proceed without a gene-symbol column, at your own risk \n",
-                                                   sep = "\n"),
-                                    custom_condition = function(input) { input %in% c(1,2,3) },
-                                    custom_warning = stnd_custom_warning,
-                                    exit_message = stnd_exit_message )
-      if(is.null(id.col.type)) stop()
-      
-      # attempt to create Gene ID Column
-      if (id.col.type==1)
-        valid_id = gene_id_column_select(ome, gct, gene.id.col.default) #select column w/ gene IDs
-      else if (id.col.type==2) 
-        valid_id = gene_id_column_create(ome, gct, gene.id.col.default, protein.id.col) # convert protein IDs to gene IDs
-      else if (id.col.type==3) {
-        printX("WARNING", glue("Skipping check for gene-symbol column in {toupper(ome)} data. Proceed with caution; many PANOPLY modules require this column"))
-        valid_id = TRUE # skip check entirely
-      } else { printX("ERROR", "This shouldn't have happened!"); stop() }
+    
+    suppressMessages(require(org.Hs.eg.db)) # read in org.Hs.eg.db, to let us check that gene id column has Hugo Gene Symbols
+    gene.id.col.default = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$gene_id_col
+    # gene.id.col.default = "testing"
+    protein.id.col = read_yaml(typemap.yml$parameters)$global_parameters$gene_mapping$protein_id_col
+    
+    gct = suppressMessages (parse.gctx (typemap.gct[[ome]]))
+    rdesc = gct@rdesc
+    rdesc_names = names(rdesc)
+    
+    # Check for default gene.id.col
+    valid_id = TRUE # initialize value
+    if ( gene.id.col.default %in% rdesc_names ) { # if the default gene.id.col exists
+      print( glue( "\n.. INFO. Default Gene ID column '{gene.id.col.default}' detected in {toupper(ome)} data.\n" ) )
+      tryCatch(AnnotationDbi::select(org.Hs.eg.db, keys = rdesc[[ gene.id.col.default ]] , # check if they're valid symbols
+                                     keytype="SYMBOL", columns = "SYMBOL"),
+               error = function(cond) {
+                 cat(printX("WARNING", glue("IDs in column '{gene.id.col.default}' are not valid HUGO Gene Symbols")))
+                 valid_id <<- FALSE })
+    } else {
+      printX("WARNING", glue("Default Gene ID column '{gene.id.col.default}' was NOT detected in {toupper(ome)} data"))
+      valid_id = FALSE
+    }
+    
+    # If the default gene.id.col wasn't found / wasn't valid
+    if ( !valid_id ) {
+      while ( !valid_id ) { # until we select a valid ID
+        # check whether user is inputting a gene.id.col, or a prot.id.col and prot.id.type
+        id.col.type = smart_readline( prompt = paste(glue("\n$$ To create a Gene ID column for {toupper(ome)}, please choose to either:"),
+                                                     "\t1) Select an existing annotation column with HUGO Gene Symbols",
+                                                     "\t2) Convert protein IDs to HUGO Gene Symbol",
+                                                     "\t3) Proceed without a gene-symbol column, at your own risk \n",
+                                                     sep = "\n"),
+                                      custom_condition = function(input) { input %in% c(1,2,3) },
+                                      custom_warning = stnd_custom_warning,
+                                      exit_message = stnd_exit_message )
+        if(is.null(id.col.type)) stop()
+        
+        # attempt to create Gene ID Column
+        if (id.col.type==1)
+          valid_id = gene_id_column_select(ome, gct, gene.id.col.default) #select column w/ gene IDs
+        else if (id.col.type==2) 
+          valid_id = gene_id_column_create(ome, gct, gene.id.col.default, protein.id.col) # convert protein IDs to gene IDs
+        else if (id.col.type==3) {
+          printX("WARNING", glue("Skipping check for gene-symbol column in {toupper(ome)} data. Proceed with caution; many PANOPLY modules require this column"))
+          valid_id = TRUE # skip check entirely
+        } else { printX("ERROR", "This shouldn't have happened!"); stop() }
+      }
     }
   }
+  
   
   flush.console()
   # nothing to return
@@ -634,6 +650,118 @@ validate_flanking_sequence <- function() {
   flush.console()
 }
 
+
+create_metab_id <- function() {
+  flush.console()
+  ome = 'metabolome'
+  
+  ## import GCT file
+  gct = suppressMessages(cmapR::parse.gctx(typemap.gct[[ome]]))
+  rdesc = gct@rdesc
+  rdesc_names = names(rdesc)
+  
+  ## metabolite id col/type
+  metab.id.col.default = read_yaml(typemap.yml$parameters)$panoply_metaboanalyst$meta_id_col
+  metab.id.type.default = read_yaml(typemap.yml$parameters)$panoply_metaboanalyst$meta_id_type
+  # metab.id.col.default = "HMDB.ID"
+  
+  ## import mapping database
+  compound_map = qs::qread(defaults$metab_db) # mapping between ID types for metabolic compounds
+  if (! metab.id.type.default %in% names(compound_map)) stop(glue("Provided metabolic ID type '{metab.id.type.default}' is not one of the accepted ID types ({paste(names(compound_map), collapse=', ')})"))
+  
+  # Check for default metab.id.col
+  valid_id = TRUE # initialize value
+  if ( metab.id.col.default %in% rdesc_names ) { # if the default flanking.seq.col.default exists
+    flush.console()
+    print( glue( "\n.. INFO. Default Metabolite ID column '{metab.id.col.default}' detected in {toupper(ome)} data.\n" ) )
+    
+    ## check validity of ID type
+    cpd_vec = rdesc[[metab.id.col.default]]
+    valid_cpd = which( !is.na(cpd_vec) & (cpd_vec %in% compound_map[[metab.id.type.default]]) ) ## get valid compound IDs
+    if (length(valid_cpd)==0) { # check that it has valid flanking sequences
+      printX("WARNING", glue("IDs in column '{metab.id.col.default}' are not valid '{metab.id.type.default}' IDs"))
+      valid_id = FALSE
+    } 
+  } else {
+    printX("WARNING", glue("Default Metabolite ID column '{metab.id.col.default}' was NOT detected in {toupper(ome)} data"))
+    valid_id = FALSE
+  }
+  
+  ## if we're missing a valid metabolite-ID column, overwrite the GCT with a new default ID column
+  if (!valid_id) {
+    # print column options
+    cat(paste(glue("{toupper(ome)} COLUMNS:"),
+              paste( glue( "{add_space( 0 )}: use GCT rid values" ), collapse = '\n'), 
+              paste( glue( "{add_space( 1:length( rdesc_names ) )}: {rdesc_names}" ), collapse = '\n'), 
+              sep, '\n',
+              sep = '\n'))
+    
+    ## request a valid column
+    while (!valid_id) { # until we select a valid ID column
+      flush.console()
+      ## ask for column with IDs
+      metab.id.col.index = smart_readline( prompt = glue("\n$$ Enter the column from the {toupper(ome)} rdesc that has Metabolite IDs:"),
+                                               custom_condition = function(column) { column %in% 0:length(rdesc_names) },
+                                               custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
+                                               exit_message = stnd_exit_message, allow_zero=TRUE )
+      if( is.null(metab.id.col.index) ) stop()
+      ## set ID column
+      if ( metab.id.col.index==0 ) {
+        metab.id.col = "rid"
+        gct@rdesc[[metab.id.col]] = gct@rid # create rdesc column with rid values
+      } else {
+        metab.id.col = rdesc_names[[as.numeric(metab.id.col.index)]]
+      }
+      
+      ## ask for ID type in column
+      ask_id = !y2true( glue("Does '{metab.id.col}' use `{metab.id.type.default}` IDs?"))
+      if ( ask_id ) {
+        cat(paste(glue("Supported Metabolite ID Types:"),
+                  paste( glue( "{add_space( 1:length( names(compound_map) ) )}: {names(compound_map)}" ), collapse = '\n'), 
+                  sep, '\n',
+                  sep = '\n'))
+        metab.id.type.index = smart_readline( prompt = glue("\n$$ Enter the ID type found in '{metab.id.col}':"),
+                                              custom_condition = function(column) { column %in% 1:length(names(compound_map)) },
+                                              custom_warning = printX ("ERROR", glue("Invalid column index, please try again")),
+                                              exit_message = stnd_exit_message )
+        metab.id.type = names(compound_map)[[as.numeric(metab.id.type.index)]]
+      } else {
+        metab.id.type = metab.id.type.default
+      }
+      
+      ## check if IDs are valid
+      cpd_vec = rdesc[[metab.id.col]] # get ID vec from list
+      valid_cpd = which( !is.na(cpd_vec) & (cpd_vec %in% compound_map[[metab.id.type]]) ) ## get valid compound IDs
+      if (length(valid_cpd)==0) { # check that it has valid flanking sequences
+        printX("WARNING", glue("IDs in column '{metab.id.col}' are not valid '{metab.id.type}' IDs"))
+      } else {
+        valid_id = TRUE
+      }
+    }
+    
+    ## overwrite GCT (if we found a valid column)
+    if (valid_id) { #select column w/ gene IDs
+      printX("INFO", glue("Using column '{metab.id.col}' as {metab.id.col.default} column for {toupper(ome)} data"))
+      ## overwrite column
+      if (metab.id.type != metab.id.type.default) {
+        mapped_ids = sapply(gct@rdesc[[ metab.id.col ]], USE.NAMES = F, function(id) { # map IDs to default ID type
+          if (is.na(id)) return(NA) # return NA if no ID type
+          return( compound_map[which(compound_map[[metab.id.type]]==id), metab.id.type.default][1] ) # otherwise return (FIRST) mapped ID type
+        })  %>% unlist()
+        gct@rdesc[[metab.id.col.default]] <- mapped_ids # overwrite default gene.id.col with mapped IDs
+      } else {
+        gct@rdesc[[metab.id.col.default]] <- gct@rdesc[[ metab.id.col ]] # overwrite default metabolite ID column with IDs
+      }
+      ## write GCT file
+      write.gct(gct, typemap.gct[[ome]], appenddim=FALSE) # overwrite GCT file
+    } else { stop(printX("ERROR", "Something has gone terribly wrong.")) }
+    
+  }
+  
+  flush.console()
+}
+
+
 panda_preprocessing <- function() {
   new.config <<- TRUE
   
@@ -650,6 +778,16 @@ panda_preprocessing <- function() {
     
     if (run.ptmsea) validate_flanking_sequence()
   }
+  
+  
+  ### MetaboAnalyst / HMDB_ID Column
+  run.metab <<- FALSE # initialize run.metab as FALSE
+  if ( 'metabolome' %in% names(typemap.gct) && !is.null(typemap.gmt) ) { # if we have phosphoproteome data
+    run.metab <<- y2true("Metabolomics data detected. Should MetaboAnalyst be run?")
+    
+    if (run.metab) create_metab_id()
+  }
+  
   
   print( DONE )
 }
@@ -1041,6 +1179,57 @@ select_COSMO_attributes <- function() {
   cat(DONE)
 }
 
+
+
+### ===
+### Section. ClumpsPTM Groups File
+### ===
+
+# function to get user input for cosmo
+run.clumpsptm <<- FALSE # initialize run.clumpsptm as FALSE
+clumps_ptm_setup <- function() {
+  
+  if ( length( intersect(c('phosphoproteome',"acetylome","ubiquitylome"), names(typemap.gct) )  >  1) ## if we have PTM data
+       && !is.null(typemap.gmt) ) {
+    run.clumpsptm <<- y2true("PTM data detected. Should Clumps-PTM be run?")
+    
+    if (run.clumpsptm) create_clumpsptm_groups()
+  } else {
+    printX("INFO", glue("No PTM data detected; Clumps-PTM will not be run."))
+  }
+}
+
+create_clumpsptm_groups <- function() {
+  printX("INFO", glue("Please select annotations to analyze in ClumpsPTM."))
+  
+  all.groups  <<- display_all_groups( typemap.csv )
+  
+  selection_confirmed = F
+  while (!selection_confirmed) {
+    flush.console ()  # without this, the display shows up after the next function
+    clumps_groups <- select_groups ( all.groups )
+    selection_confirmed = T
+    
+    clumps_nmax = 3
+    if (length(clumps_groups)>clumps_nmax) {
+      flush.console ()  
+      printX("WARNING", glue("You have selected more than {clumps_nmax} annotations for ClumpsPTM. Choosing too many annotations can cause long, expensive run-times"))
+      flush.console ()  
+      selection_confirmed = y2true("Proceed with this selection?")
+    }
+  }
+  
+  ## write file and add to typemap
+  fn = paste0(gsub(".csv","-clumpsptm.csv",typemap.csv$groups))
+  df = dplyr::select(read_annot(), all_of(c(required.cols, clumps_groups)))
+  write.csv(df, file.path(glue("{home}/input"), fn),
+            row.names = F,
+            quote = T )
+  typemap.csv$groups_clumpsptm <<- fn
+  
+  print( DONE )
+}
+
 ### ===
 ### Section. Sample sets
 ### ===
@@ -1184,7 +1373,7 @@ panda_finalize <- function (internal=FALSE) {
   # perform sanity checks (in case this function is called without going through other steps)
   if (!exists ("typemap.csv") || is.null (typemap.csv$annotation))
     stop( glue( "\n\n{sep}\n.. ERROR. Sample annotation file missing. Run panda_input().\n{sep}\n" ) )
-  if (!exists ("normalize.prot") || !exists ("filter.prot") || !exists ("run.ptmsea") ) 
+  if (!exists ("normalize.prot") || !exists ("filter.prot") || !exists ("run.ptmsea") || !exists("run.metab") ) 
     stop( glue( "\n\n{sep}\n.. ERROR. Preprocessing has not been selected. Run panda_preprocessing()." ) )
   if (!exists ("groups.cols") || length (groups.cols) == 0) 
     stop( glue( "\n\n{sep}\n.. ERROR. No groups selected. Run panda_groups()." ) )
@@ -1218,7 +1407,9 @@ panda_finalize <- function (internal=FALSE) {
   lines$sample.sets <- sample.sets
   lines$normalize.proteomics <- normalize.prot
   lines$filter.proteomics <- filter.prot
-  lines$run.ptmsea <- run.ptmsea # needs to be integrated ?
+  lines$run.ptmsea <- run.ptmsea
+  lines$run.metab <- run.metab
+  lines$run.clumpsptm <- run.clumpsptm
   lines$cosmo.params <- cosmo.params
   
   # output config for panda and copy to google bucket
