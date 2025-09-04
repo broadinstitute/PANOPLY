@@ -3,9 +3,9 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/19/plain-WDL/descriptor" as select_pairs
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/37/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/73/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/75/plain-WDL/descriptor" as main_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_internal/versions/1/plain-WDL/descriptor" as main_internal_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_workflow/versions/21/plain-WDL/descriptor" as clumps_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_workflow/versions/23/plain-WDL/descriptor" as clumps_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst_workflow/versions/4/plain-WDL/descriptor" as metab_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/50/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/33/plain-WDL/descriptor" as assemble_wdl
@@ -38,8 +38,12 @@ workflow panoply_unified_workflow {
 
   File groups_file
   File? groups_file_nmf
-  File? groups_file_clumpsptm
   File? groups_file_metaboanlayst
+
+  File? groups_file_clumpsptm
+
+  File geneset_db
+  File ptm_db
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
@@ -99,7 +103,9 @@ workflow panoply_unified_workflow {
         input_pome=pair.right,
         ome_type=pair.left,
         job_identifier="${job_id}-${pair.left}",
+        geneset_db=geneset_db,
         run_ptmsea="${run_ptmsea}",
+        ptm_db=ptm_db,
         run_cmap = "${run_cmap}",
         run_omicsev = "${if pair.left=='proteome' then true else false}",
         run_nmf = "false",
@@ -116,7 +122,9 @@ workflow panoply_unified_workflow {
       input_ome=rna_data,
       ome_type="rna",
       job_identifier="${job_id}-rna",
+      geneset_db=geneset_db,
       run_ptmsea=false,
+      ptm_db=ptm_db,
       run_nmf = "false",
       groups_file=groups_file,
       yaml=yaml
@@ -137,7 +145,7 @@ workflow panoply_unified_workflow {
         pSTY_gct = phospho_ome,
         acK_gct = acetyl_ome,
         ubK_gct = ubiquityl_ome,
-        groupsFile = "${if defined(groups_file_clumpsptm) then groups_file_clumpsptm else groups_file}",
+        groupsFile = groups_file_clumpsptm,
         output_prefix = job_id,
         yaml_file = yaml
     }
@@ -183,6 +191,8 @@ workflow panoply_unified_workflow {
         label = job_id,                     # default parameters & figure colors
         yaml_file = yaml,                   # default parameters & figure colors
         groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",
+
+        gene_set_database=geneset_db,
 
         run_mo_nmf = run_mo_nmf,            # toggle for Multi-omic NMF
         run_so_nmf = run_so_nmf             # toggle for Single-omic NMF

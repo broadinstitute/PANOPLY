@@ -794,6 +794,187 @@ panda_preprocessing <- function() {
 
 
 ### ===
+### Section. COSMO labels
+### ===
+
+# initialize cosmo parameters in case user never runs COSMO cell
+cosmo.params <- list(run_cosmo = FALSE)
+
+# function to get user input for cosmo
+select_COSMO_attributes <- function() { 
+  
+  # initialize again in case user runs cell multiple times
+  cosmo.params <<- list(run_cosmo = FALSE)
+  
+  # ask user if they want to run cosmo
+  user_run_cosmo <- ""
+  while(!(user_run_cosmo %in% c("y", "n"))) {
+    user_run_cosmo <- readline("Run COSMO? (y/n): ")
+  }
+  
+  # set cosmo.params
+  cosmo.params <<- list(run_cosmo = (user_run_cosmo == "y"))
+  
+  # ask if the user wants to select attributes anyways
+  if (user_run_cosmo == "n") {
+    user_select_attributes <- ""
+    while(!(user_select_attributes %in% c("y", "n"))) {
+      user_select_attributes <- readline("Select COSMO attributes anyways to run COSMO later? (y/n): ")
+    }
+    
+    # return if user doesn't want to select COSMO attributes
+    if (user_select_attributes == "n") return(cat(DONE))
+    
+    cat(sep, '\n')
+  }
+  
+  annot <- read_annot()
+  potential_cols <- setdiff(names(annot), ignore.cols)
+  
+  # get valid columns
+  valid_columns <- c()
+  for (col in potential_cols) {
+    if (!(col %in% names(annot))) {
+      warning(paste0("Sample label '", col, "' is not in sample annotation file"))
+    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 5)) {
+      warning(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
+    } else if (any(is.na(annot[, col]))) {
+      warning(paste0("Sample label '", col, "' has NAs. It is being excluded."))
+    } else if (length(unique(annot[, col])) < 2) {
+      warning(paste0("Sample label '", col, "' only has one level. It is being excluded."))
+    } else if (length(unique(annot[, col])) > 2) {
+      warning(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
+    } else {
+      valid_columns <- c(valid_columns, col)
+    }
+  }
+  
+  # make prompt
+  if (length(valid_columns > 0)) {
+    prompt <- paste(sep,
+                    "VALID ATTRIBUTES:",
+                    paste(paste(' *', valid_columns), collapse = '\n'), 
+                    sep,
+                    "Select sample label column(s) for COSMO: ",
+                    sep = '\n')
+  } else {
+    cat("NO VALID ATTRIBUTES FOUND. COSMO will not be run.\n", DONE)
+    return()
+  }
+  
+  # get user input
+  user_columns <- readline(prompt)
+  
+  # validate column selection
+  user_columns <- strsplit(gsub(' ', '', user_columns), ',')[[1]]
+  
+  invalid_user_columns <- setdiff(user_columns, valid_columns)
+  if (length(invalid_user_columns > 0)) {
+    message(paste("Invalid attribute:", 
+                  paste(invalid_user_columns, collapse = ', ')))
+  }
+  
+  valid_user_columns <- intersect(user_columns, valid_columns)
+  
+  
+  cat(sep, '\n')
+  
+  if (length(valid_user_columns) > 0) {
+    cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
+  } else {
+    cat("NO ATTRIBUTES SELECTED.\n")
+  }
+  
+  if (length(valid_user_columns) > 0 & user_run_cosmo == "y") {
+    cat("\n\nCOSMO WILL BE RUN.\n")
+    run_cosmo <- TRUE
+  } else {
+    cat("\n\nCOSMO will not be run.\n")
+    run_cosmo <- FALSE
+  }
+  
+  cosmo.params <<- list(run_cosmo = run_cosmo,
+                        sample_label = paste(valid_user_columns, collapse = ','))
+  
+  cat(DONE)
+}
+
+### ===
+### Section. ClumpsPTM Groups File
+### ===
+
+# function to get user input for cosmo
+run.clumpsptm <<- FALSE # initialize run.clumpsptm as FALSE
+clumps_ptm_setup <- function() {
+  
+  if ( length( intersect(c('phosphoproteome',"acetylome","ubiquitylome"), names(typemap.gct) )  >  1) ## if we have PTM data
+       && !is.null(typemap.gmt) ) {
+    run.clumpsptm <<- y2true("PTM data detected. Should Clumps-PTM be run?")
+    
+    if (run.clumpsptm) select_FASTA()
+    if (run.clumpsptm) create_clumpsptm_groups()
+    
+    print( DONE )
+    
+  } else {
+    printX("INFO", glue("No PTM data detected; Clumps-PTM will not be run."))
+  }
+  
+}
+
+create_clumpsptm_groups <- function() {
+  printX("INFO", glue("Please select annotations to analyze in ClumpsPTM."))
+  
+  all.groups  <<- display_all_groups( typemap.csv )
+  
+  selection_confirmed = F
+  while (!selection_confirmed) {
+    flush.console ()  # without this, the display shows up after the next function
+    clumps_groups <- select_groups ( all.groups )
+    selection_confirmed = T
+    
+    clumps_nmax = 3
+    if (length(clumps_groups)>clumps_nmax) {
+      flush.console ()  
+      printX("WARNING", glue("You have selected more than {clumps_nmax} annotations for ClumpsPTM. Choosing too many annotations can cause long, expensive run-times"))
+      flush.console ()  
+      selection_confirmed = y2true("Proceed with this selection?")
+    }
+  }
+  
+  ## write file and add to typemap
+  fn = paste0(gsub(".csv","-clumpsptm.csv",typemap.csv$groups))
+  df = dplyr::select(read_annot(), all_of(c(required.cols, clumps_groups)))
+  write.csv(df, file.path(glue("{home}/input"), fn),
+            row.names = F,
+            quote = T )
+  typemap.csv$groups_clumpsptm <<- fn
+  
+  # print( DONE )
+}
+
+select_FASTA <- function() {
+  printX("INFO", glue("Please select a FASTA file with all relevant sequences for your PTM data."))
+  # list of zip-files
+  fasta_files = system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("fasta$", ., value=T)
+  cat(paste(glue("Available .fasta file(s):"),
+            paste( "*", fasta_files, collapse = '\n'), 
+            sep,
+            sep = '\n'))
+  input.fasta.name <- smart_readline( prompt = "\n$$ Enter name of Reference FASTA file: ",
+                                      custom_condition = function(input.fasta.name) { trim(input.fasta.name) %in% fasta_files },
+                                      custom_warning = printX ("ERROR", glue("FASTA file not found in workspace bucket")),
+                                      exit_message = stnd_exit_message) # ensure that zip file exists
+  if (is.null(input.fasta.name)) stop() # if we triggered a quit condition, stop
+  
+  ## copy file to input folder & add to .gmt typemap
+  system_withError( glue( "gsutil cp {google.bucket}/{input.fasta.name} {home}/input/." ) )
+  typemap.gmt$clumpsFASTA <<- trim(input.fasta.name)
+  
+  # print( DONE )  
+}
+
+### ===
 ### Section. Groups
 ### ===
 
@@ -1070,163 +1251,6 @@ change_current_colors <- function( groups.cols, all.groups, groups.colors, byInd
 panda_colors_edit <- function( byIndex = TRUE ){
   groups.colors <<- change_current_colors(
     groups.cols, all.groups, groups.colors, byIndex = byIndex )
-  print( DONE )
-}
-
-### ===
-### Section. COSMO labels
-### ===
-
-# initialize cosmo parameters in case user never runs COSMO cell
-cosmo.params <- list(run_cosmo = FALSE)
-
-# function to get user input for cosmo
-select_COSMO_attributes <- function() { 
-  
-  # initialize again in case user runs cell multiple times
-  cosmo.params <<- list(run_cosmo = FALSE)
-  
-  # ask user if they want to run cosmo
-  user_run_cosmo <- ""
-  while(!(user_run_cosmo %in% c("y", "n"))) {
-    user_run_cosmo <- readline("Run COSMO? (y/n): ")
-  }
-  
-  # set cosmo.params
-  cosmo.params <<- list(run_cosmo = (user_run_cosmo == "y"))
-  
-  # ask if the user wants to select attributes anyways
-  if (user_run_cosmo == "n") {
-    user_select_attributes <- ""
-    while(!(user_select_attributes %in% c("y", "n"))) {
-      user_select_attributes <- readline("Select COSMO attributes anyways to run COSMO later? (y/n): ")
-    }
-    
-    # return if user doesn't want to select COSMO attributes
-    if (user_select_attributes == "n") return(cat(DONE))
-    
-    cat(sep, '\n')
-  }
-  
-  annot <- read_annot()
-  potential_cols <- setdiff(names(annot), ignore.cols)
-  
-  # get valid columns
-  valid_columns <- c()
-  for (col in potential_cols) {
-    if (!(col %in% names(annot))) {
-      warning(paste0("Sample label '", col, "' is not in sample annotation file"))
-    } else if (min(base::table(annot[, col])) < min(10, dim(annot)[1] / 5)) {
-      warning(paste0("Sample label '", col, "' is not well-balanced. It is being excluded."))
-    } else if (any(is.na(annot[, col]))) {
-      warning(paste0("Sample label '", col, "' has NAs. It is being excluded."))
-    } else if (length(unique(annot[, col])) < 2) {
-      warning(paste0("Sample label '", col, "' only has one level. It is being excluded."))
-    } else if (length(unique(annot[, col])) > 2) {
-      warning(paste0("Sample label '", col, "' being excluded because COSMO does not handle classes with more than 2 levels."))
-    } else {
-      valid_columns <- c(valid_columns, col)
-    }
-  }
-  
-  # make prompt
-  if (length(valid_columns > 0)) {
-    prompt <- paste(sep,
-                    "VALID ATTRIBUTES:",
-                    paste(paste(' *', valid_columns), collapse = '\n'), 
-                    sep,
-                    "Select sample label column(s) for COSMO: ",
-                    sep = '\n')
-  } else {
-    cat("NO VALID ATTRIBUTES FOUND. COSMO will not be run.\n", DONE)
-    return()
-  }
-  
-  # get user input
-  user_columns <- readline(prompt)
-  
-  # validate column selection
-  user_columns <- strsplit(gsub(' ', '', user_columns), ',')[[1]]
-  
-  invalid_user_columns <- setdiff(user_columns, valid_columns)
-  if (length(invalid_user_columns > 0)) {
-    message(paste("Invalid attribute:", 
-                  paste(invalid_user_columns, collapse = ', ')))
-  }
-  
-  valid_user_columns <- intersect(user_columns, valid_columns)
-  
-  
-  cat(sep, '\n')
-  
-  if (length(valid_user_columns) > 0) {
-    cat("ATTRIBUTE SELECTION:\n", paste(paste(' *', valid_user_columns), collapse = '\n'), sep = '')
-  } else {
-    cat("NO ATTRIBUTES SELECTED.\n")
-  }
-  
-  if (length(valid_user_columns) > 0 & user_run_cosmo == "y") {
-    cat("\n\nCOSMO WILL BE RUN.\n")
-    run_cosmo <- TRUE
-  } else {
-    cat("\n\nCOSMO will not be run.\n")
-    run_cosmo <- FALSE
-  }
-  
-  cosmo.params <<- list(run_cosmo = run_cosmo,
-                        sample_label = paste(valid_user_columns, collapse = ','))
-  
-  cat(DONE)
-}
-
-
-
-### ===
-### Section. ClumpsPTM Groups File
-### ===
-
-# function to get user input for cosmo
-run.clumpsptm <<- FALSE # initialize run.clumpsptm as FALSE
-clumps_ptm_setup <- function() {
-  
-  if ( length( intersect(c('phosphoproteome',"acetylome","ubiquitylome"), names(typemap.gct) )  >  1) ## if we have PTM data
-       && !is.null(typemap.gmt) ) {
-    run.clumpsptm <<- y2true("PTM data detected. Should Clumps-PTM be run?")
-    
-    if (run.clumpsptm) create_clumpsptm_groups()
-  } else {
-    printX("INFO", glue("No PTM data detected; Clumps-PTM will not be run."))
-  }
-}
-
-create_clumpsptm_groups <- function() {
-  printX("INFO", glue("Please select annotations to analyze in ClumpsPTM."))
-  
-  all.groups  <<- display_all_groups( typemap.csv )
-  
-  selection_confirmed = F
-  while (!selection_confirmed) {
-    flush.console ()  # without this, the display shows up after the next function
-    clumps_groups <- select_groups ( all.groups )
-    selection_confirmed = T
-    
-    clumps_nmax = 3
-    if (length(clumps_groups)>clumps_nmax) {
-      flush.console ()  
-      printX("WARNING", glue("You have selected more than {clumps_nmax} annotations for ClumpsPTM. Choosing too many annotations can cause long, expensive run-times"))
-      flush.console ()  
-      selection_confirmed = y2true("Proceed with this selection?")
-    }
-  }
-  
-  ## write file and add to typemap
-  fn = paste0(gsub(".csv","-clumpsptm.csv",typemap.csv$groups))
-  df = dplyr::select(read_annot(), all_of(c(required.cols, clumps_groups)))
-  write.csv(df, file.path(glue("{home}/input"), fn),
-            row.names = F,
-            quote = T )
-  typemap.csv$groups_clumpsptm <<- fn
-  
   print( DONE )
 }
 

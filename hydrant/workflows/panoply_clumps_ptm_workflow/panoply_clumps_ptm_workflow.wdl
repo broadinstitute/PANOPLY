@@ -1,11 +1,11 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/4/plain-WDL/descriptor" as diffexp_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/15/plain-WDL/descriptor" as mapping_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/21/plain-WDL/descriptor" as analysis_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/7/plain-WDL/descriptor" as postprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/5/plain-WDL/descriptor" as report_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/5/plain-WDL/descriptor" as diffexp_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/17/plain-WDL/descriptor" as mapping_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/23/plain-WDL/descriptor" as analysis_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/8/plain-WDL/descriptor" as postprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/6/plain-WDL/descriptor" as report_wdl
 
 ################################################
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm
@@ -24,6 +24,8 @@ workflow panoply_clumps_ptm_workflow {
 	File? UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
 	# SIFTS database
 	File? SIFTS_DB = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/pdb_chain_uniprot.tsv"
+
+	File? FASTA_ref_file
 
 	String? accession_col
 	String? variable_sites_col
@@ -53,6 +55,7 @@ workflow panoply_clumps_ptm_workflow {
 				PDB_ref_bucket = PDB_ref_bucket,
 				UNIPROT_SWISSPROT = UNIPROT_SWISSPROT,
 				SIFTS_DB = SIFTS_DB,
+				FASTA_ref_file = FASTA_ref_file,
 				accession_col = accession_col,
 				variable_sites_col = variable_sites_col,
 				yaml_file = yaml_file,

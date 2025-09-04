@@ -57,7 +57,6 @@ workflow panoply_main {
   Float? nmiss_factor
   String? duplicate_gene_policy
   String? gene_id_col
-  String? organism
 
   String standalone = "false"
   String geneset_db #this.gseaDB
@@ -210,9 +209,9 @@ workflow panoply_main {
       nmiss_factor = nmiss_factor,
       duplicate_gene_policy = duplicate_gene_policy,
       gene_id_col = gene_id_col,
-      organism = organism,
       standalone = standalone,
-      geneset_db = geneset_db
+      geneset_db = geneset_db,
+      ptm_db = ptm_db
   }
 
 

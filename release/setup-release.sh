@@ -88,12 +88,20 @@ put_method_config() {
   p=$2
   m=$3
 
-  exists=`fissfc config_list -w $w -p $p | cut -f 2 | grep "^$m$" | wc -l`
-  if [ $exists -eq 1 ]; then
-    fissfc config_delete -c $m -w $w -p $p -n $release_dns
-  fi
-
-  fissfc_timeout config_put -w $w -p $p -c $m-template.json 
+  ## add timeout-safe loop
+  success=false
+  while ! $success
+  do
+    ## if we already have a config, delete it
+    if [ $(fissfc config_list -w $w -p $p | cut -f 2 | grep "^$m$" | wc -l) -ge 1 ]; then
+      fissfc_timeout config_delete -c $m -w $w -p $p -n $release_dns
+    fi
+    ## upload config file
+    out=`fissfc config_put -w $w -p $p -c $m-template.json`
+    ## check if we need to repeat
+    echo $out
+    if echo "$out" | grep -Eq "Error .+? timeout"; then success=false; else success=true; fi
+  done
 }
 
 
@@ -138,15 +146,16 @@ configure_primary_workflow() {
       jq '.inputs."panoply_unified_workflow.rna_data" = $val' --arg val "this.rna_ss" |  \
       # jq '.inputs."panoply_unified_workflow.sample_annotation" = $val' --arg val "this.annotation_ss" |  \
       jq '.inputs."panoply_unified_workflow.groups_file" = $val' --arg val "this.groups_ss" |  \
+      jq '.inputs."panoply_unified_workflow.groups_file_clumpsptm" = $val' --arg val "this.groups_clumpsptm_ss" |  \
+      jq '.inputs."panoply_unified_workflow.clumps_ptm.FASTA_ref_file" = $val' --arg val "this.clumpsFASTA" |  \
       jq '.inputs."panoply_unified_workflow.run_cmap" = $val' --arg val "\"false\"" |  \
       jq '.inputs."panoply_unified_workflow.run_mo_nmf" = $val' --arg val "false" |  \
       jq '.inputs."panoply_unified_workflow.run_so_nmf" = $val' --arg val "true" |  \
       jq '.inputs."panoply_unified_workflow.nmf.run_sankey" = $val' --arg val "true" |  \
       jq '.inputs."panoply_unified_workflow.nmf.run_ssgsea" = $val' --arg val "true" |  \
       # jq '.inputs."panoply_unified_workflow.run_ptmsea" = $val' --arg val "\"false\"" |  \
-      jq '.inputs."panoply_unified_workflow.nmf.gene_set_database" = $val' --arg val "this.gseaDB" |  \
-      jq '.inputs."panoply_unified_workflow.pome.geneset_db" = $val' --arg val "this.gseaDB" |  \
-      jq '.inputs."panoply_unified_workflow.pome.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.geneset_db" = $val' --arg val "this.gseaDB" |  \
+      jq '.inputs."panoply_unified_workflow.ptm_db" = $val' --arg val "this.ptmseaDB" |  \
       jq '.inputs."panoply_unified_workflow.acetyl_ome" = $val' --arg val "this.acetylome_ss" |  \
       jq '.inputs."panoply_unified_workflow.prote_ome" = $val' --arg val "this.proteome_ss" |  \
       jq '.inputs."panoply_unified_workflow.phospho_ome" = $val' --arg val "this.phosphoproteome_ss" |  \
@@ -209,8 +218,10 @@ installMethod() {
   #  there is no (?) direct way to copy a method to a workspace
   #  instead, create an empty config template and install it in the workspace
   #  (delete method config if it exists)
-  fissfc config_template -m $meth -n $release_dns -i $snap -t sample_set |  \
-    sed 's/\"EDITME.*\"/""/' | jq '.name = $val' --arg val $meth > $meth-template.json
+  fissfc_timeout config_template -m $meth -n $release_dns -i $snap -t sample_set | \
+    awk '/Error/,/timeout/{next} 1' | awk NF | \
+    sed -e 's/\"EDITME[^"]*\"/""/g' | \
+    jq '.name = $val' --arg val $meth > $meth-template.json
   
   if [[ ("$type" = "workflows") && ("$meth" = "panoply_main" || "$meth" = "panoply_unified_workflow") ]]; then
     # only panoply_main and panoply_unified_workflow in $wkspace_pipelines
