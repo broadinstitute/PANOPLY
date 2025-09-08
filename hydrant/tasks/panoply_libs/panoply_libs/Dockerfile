@@ -1,6 +1,8 @@
 FROM rocker/r-ver:3.6.3
 MAINTAINER proteogenomics@broadinstitute.org
 
+RUN echo "deb http://archive.debian.org/debian buster main" > /etc/apt/sources.list
+
 RUN apt-get update
 RUN apt-get install -y build-essential
 RUN apt-get install -y libssl-dev
