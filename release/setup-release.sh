@@ -41,7 +41,7 @@ fissfc_timeout() {
   success=false
   while ! $success
   do
-    out=`fissfc $@`
+    out=`fissfc "$@"`
     echo $out
 
     if echo "$out" | grep -Eq "Error .+? timeout";then
@@ -366,7 +366,7 @@ do
   if [[ $rebuild_docker_flag ]]; then # if we are rebuilding dockers
     wd=`pwd` # record og dir
     cd $panoply/hydrant # change dir to location of setup.sh
-    ./setup.sh -t $mod -n $pull_dns -y -b -u -x # rebuild
+    ./setup.sh -t $mod -n $pull_dns -y -b -u -x -T # rebuild
     ./setup.sh -t $mod -z    # cleanup
     cd $wd # change back to og dir
   fi
