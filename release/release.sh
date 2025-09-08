@@ -111,12 +111,25 @@ fi
 # Rebuild all other task dockers
 modules=( $( ls -d $panoply/hydrant/tasks/panoply_* | xargs -n 1 basename |  \
   sed '/panoply_libs/d' | sed '/panoply_utils/d' | sed '/panoply_common/d') )
+modules_buildSecond=() # initialize array of modules that should be built second (i.e. NOT built from panoply_common)
 for mod in "${modules[@]}"
 do
-  ./setup.sh -t $mod -n $DEV -y -b -u -x
-  ./setup.sh -t $mod -z    # cleanup
+  # if we're building from panoply_common
+  if grep -q "FROM broadcptacdev/panoply_common:latest" "$panoply/hydrant/tasks/$mod/$mod/Dockerfile"; then
+    # build immediately
+    ./setup.sh -t $mod -n $DEV -y -b -u -x
+    ./setup.sh -t $mod -z    # cleanup
+  else
+    # otherwise, add to secondary list of modules
+    modules_buildSecond+=($mod)
+  fi
 done
-
+# build second list of modules
+for mod in "${modules_buildSecond[@]}"
+do
+    ./setup.sh -t $mod -n $DEV -y -b -u -x
+    ./setup.sh -t $mod -z    # cleanup
+done
 
 ## ** Create production workspaces and release dockers;
 ##    copy/update WDLs and install methods on Terra
