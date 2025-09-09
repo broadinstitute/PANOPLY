@@ -2,6 +2,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+export PYTHONWARNINGS="ignore::UserWarning:google.auth._default" # suppress default warnings from google auth (to avoid noisy fissfc calls)
+
 start_dir=`pwd`    # must be invoked from the PANOPLY/release directory
 panoply=$start_dir/..
 red='\033[0;31m'
