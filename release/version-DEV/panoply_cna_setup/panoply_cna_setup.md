@@ -21,7 +21,6 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `cna` subdirectory:
-
-* Harmonized data matrices for CNA (`all-cna-matrix.csv`), RNA (`all-rna-matrix.csv`) and proteome (`all-pome-matrix.csv`) 
-* A text file `file_table.tsv` listing all the data matrix files
+* ```outputs```: Tarball including the following files in the `cna` subdirectory:
+	* Harmonized data matrices for CNA (`all-cna-matrix.csv`), RNA (`all-rna-matrix.csv`) and proteome (`all-pome-matrix.csv`) 
+	* A text file `file_table.tsv` listing all the data matrix files

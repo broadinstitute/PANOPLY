@@ -2,7 +2,6 @@
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
 
-
 workflow panoply_select_all_pairs {
   Array[Pair[String?,File?]]+ pairs_input
 

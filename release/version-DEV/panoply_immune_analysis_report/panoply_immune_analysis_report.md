@@ -14,4 +14,4 @@ This module creates an interactive  [R Markdown](https://rmarkdown.rstudio.com/)
 
 ## Output
 
-* ```report```: (`.html` file) Interactive [R Markown](https://rmarkdown.rstudio.com/) report.
+* ```report_out```: (`.html` file) Interactive [R Markown](https://rmarkdown.rstudio.com/) report.

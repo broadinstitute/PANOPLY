@@ -1,8 +1,8 @@
-## PANOPLY implementation of COSMO
+# ```panoply_cosmo```
 
-Find full COSMO documentation [here](https://github.com/bzhanglab/COSMO).
+This is a PANOPLY implenentation of the COSMO toolset. Full COSMO documentation [here](https://github.com/bzhanglab/COSMO).
 
-### Inputs
+## Inputs
 
 Mandatory inputs:
 
@@ -27,12 +27,12 @@ Optional inputs:
     -   **Note**: if you specifically use `gender` as a sample label, then COSMO will know that column contains male/female information and will use genes from sex chromosome to better predict this attribute. COSMO does not properly identify other synonymous column titles (such as `sex` or `Gender`).
 -   `run_cosmo` (Boolean): whether or not to actually run the cosmo functions. If `false`, the original tar file is saved as the final output and the cosmo html report is not generated. If no input, `run_cosmo` is pulled from default set in yaml file.
 
-### Output
+## Output
 
 -   `cosmo_tar` (File): The main tar output. When `STANDALONE == "false"`, this tar has the same data and format as the original tar input (plus cosmo results if cosmo was run).
 -   `cosmo_report_html` (File): The html report summarizing cosmo results.
 
-### Common Pitfalls
+## Common Pitfalls
 
 The main source of computing errors in COSMO is improper selection of sample labels. PANOPLY-specific preprocessing should eliminate sample labels that are likely to cause errors. COSMO requires clinical attributes that are well-balanced with only two levels (e.g. male/female, positive/negative) and no NA's. These are used to predict if there is mislabeling between the sample annotation file (`sample_file`) and any of the data files (`d1_file`, `d2_file`).
 

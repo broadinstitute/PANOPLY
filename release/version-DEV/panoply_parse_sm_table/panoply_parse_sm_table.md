@@ -22,8 +22,8 @@ Optional inputs:
   - `TMT10.126` (TMT-10 with 126 channel as common reference)
   - `iTRAQ4` (iTRAQ 4-plex with 117 as common reference)
 * ```applyNumratioFilter```: (String, default = TRUE) flag for applying numRatio based filter
-* ```minNumratioProteome```: (Int, default = 2 for protome) minimum number of ratios that need to be observed for each protein/PTM site in order to retain in the filtered table
-* ```minNumratioPTMs```: (Int, default = 1 for PTMs) minimum number of ratios that need to be observed for each protein/PTM site in order to retain in the filtered table
+* `minNumratioProteome`: (Int, default = 2 for protome) minimum number of ratios that need to be observed for each protein/PTM site in order to retain in the filtered table (**YAML only**)
+* `minNumratioPTMs`: (Int, default = 1 for PTMs) minimum number of ratios that need to be observed for each protein/PTM site in order to retain in the filtered table (**YAML only**)
 * ```minNumratioFraction```: (Float, default = 0.25) fraction of samples in which `minNumratio` should be present to retain protein/PTM site
 * ```speciesFilter```: (String, default = TRUE) enable species filtering to retain only human proteins
 * ```ndigits```: (Int, default = 5) number of decimal digits to use in output `gct` tables
@@ -31,12 +31,11 @@ Optional inputs:
 
 ## Output
 
-Tarball with the following `.gct` files in the `parsed-data` subdirectory:
-
-* `*-intensity` report ion intensities (for channels with samples) for each protein/PTM site
-* `*-num-ratio` number of PSM ratios observed for each protein/PTM site
-* `*-num-spectra` number of spectra observed for each protein/PTM site
-* `*-precursor-intensity` precursor ion intensity for each protein/PTM site
-* `*-ratio` log2 ratio to common reference for each protein/PTM site
-* `*-reference-intensity` reporter ion intensity of the common reference channel for each protein/PTM site
-* `*-unique-peptides` unique peptide count for each protein/PTM site
+* ```outputs```: Tarball with the following `.gct` files in the `parsed-data` subdirectory:
+  * `*-intensity` report ion intensities (for channels with samples) for each protein/PTM site
+  * `*-num-ratio` number of PSM ratios observed for each protein/PTM site
+  * `*-num-spectra` number of spectra observed for each protein/PTM site
+  * `*-precursor-intensity` precursor ion intensity for each protein/PTM site
+  * `*-ratio` log2 ratio to common reference for each protein/PTM site
+  * `*-reference-intensity` reporter ion intensity of the common reference channel for each protein/PTM site
+  * `*-unique-peptides` unique peptide count for each protein/PTM site

@@ -22,10 +22,9 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `sample-qc` subdirectory: 
-
-* ESTIMATE score table for RNA (`rna-estimate-scores.gct`), CNA (`cna-estimate-scores.gct`) and proteome (`*-estimate-scores.gct`)
-* Plots showing correlation heatmaps, co-clustering fanplot and boxplots for ESTIMATE scores (`sample-qc-plots.pdf`)
+* ```outputs``` Tarball including the following files in the `sample-qc` subdirectory: 
+	* ESTIMATE score table for RNA (`rna-estimate-scores.gct`), CNA (`cna-estimate-scores.gct`) and proteome (`*-estimate-scores.gct`)
+	* Plots showing correlation heatmaps, co-clustering fanplot and boxplots for ESTIMATE scores (`sample-qc-plots.pdf`)
 	
 ## References
 

@@ -23,16 +23,15 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `rna` subdirectory: 
-
-* Harmonized (`rna-seq.gct`) and filtered (`rna-seq-sdfilter.gct`) RNA data with sample order matching that in the proteome data table
-* Tables listing RNA-protein correlation for every gene-protein pair (`*-mrna-cor.tsv`) and the best gene-protein pairs with highest (correlation > 0.7), statistically significant correlation (`*-mrna-cor-best.tsv`)
-* Plots showing histograms of RNA-protein correlation for the following gene-protein pairs:
-	* all gene-protein pairs (`*-mrna-cor.pdf`)
-	* best pairs (`*-mrna-cor-best.pdf`)
-	* statistically significant pairs (`*-mrna-cor-sig.pdf`)
-	* all pairs, with statistically significant pairs highlighted (`*-mrna-cor-combined.pdf`)
-	* plots showing RNA and protein levels across samples for the `topN` gene-protein pairs
+* ```outputs```: Tarball including the following files in the `rna` subdirectory: 
+	* Harmonized (`rna-seq.gct`) and filtered (`rna-seq-sdfilter.gct`) RNA data with sample order matching that in the proteome data table
+	* Tables listing RNA-protein correlation for every gene-protein pair (`*-mrna-cor.tsv`) and the best gene-protein pairs with highest (correlation > 0.7), statistically significant correlation (`*-mrna-cor-best.tsv`)
+	* Plots showing histograms of RNA-protein correlation for the following gene-protein pairs:
+		* all gene-protein pairs (`*-mrna-cor.pdf`)
+		* best pairs (`*-mrna-cor-best.pdf`)
+		* statistically significant pairs (`*-mrna-cor-sig.pdf`)
+		* all pairs, with statistically significant pairs highlighted (`*-mrna-cor-combined.pdf`)
+		* plots showing RNA and protein levels across samples for the `topN` gene-protein pairs
 
 ## References
 

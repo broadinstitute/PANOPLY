@@ -1,0 +1,2 @@
+Documentation at https://github.com/broadinstitute/PANOPLY/blob/release-DEV/release/version-DEV/panoply_clumps_ptm_workflow/panoply_clumps_ptm_workflow.md
+

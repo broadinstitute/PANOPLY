@@ -27,17 +27,16 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following within the `immune-analysis` subdirectory:
-
-* `.csv` files:
-	* ESTIMATE results (`estimate-scores.csv`)
-	* xCell results (`xcell-scores.csv`)
-	* ImmuneSubtypeClassifier results (`immune-subtype.csv`)
-	* Immune subtype enrichment analysis results (`immune-subtype-enrichment.csv`; filtered results for ```fdr``` in `immune-subtype-enrichment-pval*.csv`)
-	
-* `.pdf` files:
-	* Heatmap of xCell scores (`xcell-scores-heatmap.pdf`)
-	* Plots of xCell and ESTIMATE scores (`xCell-vs-ESTIMATE-plots.pdf`)
+* ```outputs```: Tarball including the following within the `immune-analysis` subdirectory:
+	* `.csv` files:
+		* ESTIMATE results (`estimate-scores.csv`)
+		* xCell results (`xcell-scores.csv`)
+		* ImmuneSubtypeClassifier results (`immune-subtype.csv`)
+		* Immune subtype enrichment analysis results (`immune-subtype-enrichment.csv`; filtered results for ```fdr``` in `immune-subtype-enrichment-pval*.csv`)
+	* `.pdf` files:
+		* Heatmap of xCell scores (`xcell-scores-heatmap.pdf`)
+		* Plots of xCell and ESTIMATE scores (`xCell-vs-ESTIMATE-plots.pdf`)
+* ```yaml_file```: Finalized YAML file, with all modified parameters
 
 ## References
 

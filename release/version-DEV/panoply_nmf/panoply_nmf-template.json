@@ -9,7 +9,7 @@
     "panoply_nmf_workflow.panoply_nmf.memory": "",
     "panoply_nmf_workflow.panoply_nmf.nmf_method": "",
     "panoply_nmf_workflow.panoply_nmf.nrun": "",
-    "panoply_nmf_workflow.panoply_nmf.num_preemtions": "",
+    "panoply_nmf_workflow.panoply_nmf.num_preemptions": "",
     "panoply_nmf_workflow.panoply_nmf.num_threads": "",
     "panoply_nmf_workflow.panoply_nmf.ome_gcts": "",
     "panoply_nmf_workflow.panoply_nmf.ome_labels": "",
@@ -26,8 +26,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_nmf",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_nmf/8",
-    "methodVersion": 8,
+    "methodUri": "agora://broadcptacdev/panoply_nmf/11",
+    "methodVersion": 11,
     "sourceRepo": "agora"
   },
   "name": "panoply_nmf",

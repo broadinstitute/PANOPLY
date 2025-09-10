@@ -9,6 +9,7 @@ task panoply_nmf_postprocess {
 	String? gene_column
 	File? groups_file		# for enrichment analysis
 
+	String? feature_method		# Method for selecting driver features (e.g. kim or max)
 	Float? pval_signif		# significant p-value for cluster-enrichement
 	Float? feature_fdr		# fdr threshold for driver-feature t-test
 	Int? max_annot_levels	# max number of annotation-levels to allow for discrete variables
@@ -20,12 +21,12 @@ task panoply_nmf_postprocess {
 	Int? memory
 	Int? disk_space
 	Int? num_threads
-	Int? num_preemtions
+	Int? num_preemptions
 	
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} ${"-g " + groups_file} ${"-a " + gene_column} ${"-p " + pval_signif} ${"-q " + feature_fdr} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf_postprocess.R --nmf_results ${nmf_results} --rank_top ${nclust} ${"-g " + groups_file} ${"-a " + gene_column} ${"-m " + feature_method} ${"-p " + pval_signif} ${"-q " + feature_fdr} ${"-l " + max_annot_levels} ${"-t " + top_n_features} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 
 	}
 
@@ -41,7 +42,7 @@ task panoply_nmf_postprocess {
 		memory : select_first ([memory, 64]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 20]) + " HDD"
 		cpu : select_first ([num_threads, 32]) + ""
-		preemptible : select_first ([num_preemtions, 0])
+		preemptible : select_first ([num_preemptions, 0])
 	}
 
 	meta {

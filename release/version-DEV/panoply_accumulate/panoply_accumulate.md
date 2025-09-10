@@ -14,5 +14,6 @@ Optional inputs:
 * ```output_tar```: (String, default = "panoply_contrasts.tar") output `.tar` file name
 
 ## Output
-Tarball containing results of `module` assembled into appropriate `gct` files for executing `panoply_ssgsea`.
+* ```outputs```: Tarball containing results of `module` assembled into appropriate `gct` files for executing `panoply_ssgsea`.
+* ```list_gct```: Array format with all GCT files to scatter `panoply_ssgsea` across
 

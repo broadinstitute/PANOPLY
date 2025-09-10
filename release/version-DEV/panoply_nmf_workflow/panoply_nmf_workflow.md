@@ -1,15 +1,15 @@
 # ```panoply_nmf_workflow```
 
 ## Description
-Performs unsupervised non-negative matrix factorization (NMF)-based clustering on multi-omic data. Can be used to run the [panoply_nmf_internal_workflow](./Data-Analysis-Modules%3A-panoply_nmf_internal_workflow), to perform multi-omic NMF on all input data matrices combined and/or single-omic NMF on each data matrix independently. Multi-omic and Single-omic NMF results are compared 
+Performs unsupervised non-negative matrix factorization (NMF)-based clustering on multi-omic data. Can be used to run the [panoply_nmf_internal_workflow](./Workflows%3A-panoply_nmf_internal_workflow), to perform multi-omic NMF on all input data matrices combined and/or single-omic NMF on each data matrix independently. Multi-omic and Single-omic NMF results are compared 
 
 This pipeline executes the following workflows:
 
 | module                    | description
 | ----------------------- | ---------------------------------------------------------------- |
-| [<code>panoply_nmf_internal_workflow</code>](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_nmf)         |   performs NMF analysis, post-processing, and characterization |
-| [<code>panoply_sankey_workflow</code>](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_sankey_workflow)         |   generates sankey-diagram comparisons of SO-NMF results, requires `run_so_nmf=TRUE` |
-| [<code>panoply_nmf_assemble_results</code>](https://github.com/broadinstitute/PANOPLY/wiki/Support-Modules%3A-panoply_nmf_assemble_results)   |   compiles all results and reports into single tar |
+| [<code>panoply_nmf_internal_workflow</code>](./Workflows%3A-panoply_nmf_internal_workflow)         |   performs NMF analysis, post-processing, and characterization |
+| [<code>panoply_sankey_workflow</code>](./Workflows%3A-panoply_sankey_workflow)         |   generates sankey-diagram comparisons of SO-NMF results, requires `run_so_nmf=TRUE` |
+| [<code>panoply_nmf_assemble_results</code>](./Support-Modules%3A-panoply_nmf_assemble_results)   |   compiles all results and reports into single tar |
 
 
 ## Input

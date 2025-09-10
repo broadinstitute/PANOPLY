@@ -2,7 +2,7 @@
 
 ## Description
 
-This module creates an [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_normalize_ms_data](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_normalize_ms_data) module.
+This module creates an [R Markdown](https://rmarkdown.rstudio.com/) report for the [panoply_normalize_ms_data](https://github.com/broadinstitute/PANOPLY/wiki/Data-Preparation-Modules%3A-panoply_normalize_ms_data) module.
 
 The report provides:
 
@@ -15,8 +15,6 @@ The report provides:
 * Interactive line plot depicting normalization coefficients (center, scale) across samples.
 
 ## Input
-
-### Required inputs:
 
 * ```tarball```: (`.tar` file) tarball from ```panoply_normalize_ms_data```
 * ```label```: (String) label used in the report title

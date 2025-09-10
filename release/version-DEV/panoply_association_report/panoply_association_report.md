@@ -8,7 +8,7 @@ This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) 
 
 ## Required inputs:
 
-* ```input_tar```: (`.tar` file) output tar file containing results from ```panoply_association```
+* ```ssgsea_assoc_tars```: (`.tar` file) output tar file(s) containing results from ```panoply_association```
 * ```master_yaml```: (`.yaml` file) master parameters file
 * ```label```: (String) directory name within the tar file
 * ```type```: (String) data (-ome) type
@@ -19,4 +19,4 @@ This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) 
 
 ## Output
 
-* ```report```: (`.html` file) Interactive [R Markown](https://rmarkdown.rstudio.com/) report.
+* ```report_out```: (`.html` file) Interactive [R Markown](https://rmarkdown.rstudio.com/) report.

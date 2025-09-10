@@ -20,18 +20,18 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `cna` subdirectory:
+* ```outputs```Tarball including the following files in the `cna` subdirectory:
 
-* CNA-RNA correlation:
-	* `all-mrna-vs-cna-corr.csv` gene x gene table of CNA-RNA correlation values 
-	* `all-mrna-vs-cna-pval.csv` table of CNA-RNA multiple testing corrected FDR p-values for corresponding correlation values
-	* `all-mrna-vs-cna-sigevents.csv` count of significant correlations ("events") for each CNA gene; the table also includes an indication of whether the CNA-RNA cis-correlation was statistically significant, and the chromosome location for each gene
-* CNA-proteome correlation:
-	* `all-pome-vs-cna-corr.csv` gene x gene table of CNA-proteome (protein or PTM) correlation values 
-	* `all-pome-vs-cna-pval.csv` table of CNA-RNA multiple testing corrected FDR p-values for corresponding correlation values
-	* `all-pome-vs-cna-sigevents.csv` count of significant correlations ("events") for each CNA gene; the table also includes an indication of whether the CNA-proteome (protein or PTM)q cis-correlation was statistically significant, and the chromosome location for each gene
+	* CNA-RNA correlation:
+		* `all-mrna-vs-cna-corr.csv` gene x gene table of CNA-RNA correlation values 
+		* `all-mrna-vs-cna-pval.csv` table of CNA-RNA multiple testing corrected FDR p-values for corresponding correlation values
+		* `all-mrna-vs-cna-sigevents.csv` count of significant correlations ("events") for each CNA gene; the table also includes an indication of whether the CNA-RNA cis-correlation was statistically significant, and the chromosome location for each gene
+	* CNA-proteome correlation:
+		* `all-pome-vs-cna-corr.csv` gene x gene table of CNA-proteome (protein or PTM) correlation values 
+		* `all-pome-vs-cna-pval.csv` table of CNA-RNA multiple testing corrected FDR p-values for corresponding correlation values
+		* `all-pome-vs-cna-sigevents.csv` count of significant correlations ("events") for each CNA gene; the table also includes an indication of whether the CNA-proteome (protein or PTM)q cis-correlation was statistically significant, and the chromosome location for each gene
 
-* CNA correlation plot (`all-cna-plot.png`) plot showing correlation between (i) CNA and RNA expression and between (ii) CNA and protein/PTM abundance. Significant positive and negative correlations are indicated in red and green, respectively. CNA-driven cis effects usually appear as a red diagonal line; trans effects appear as vertical lines with red/green dots. The accompanying histograms at the bottom of each correlation plot show the number of significant cis and trans events corresponding to the indicated genomic loci (upward plot) as well as the overlap between CNA-RNA and CNA-protein events (downward plot).
+	* CNA correlation plot (`all-cna-plot.png`) plot showing correlation between (i) CNA and RNA expression and between (ii) CNA and protein/PTM abundance. Significant positive and negative correlations are indicated in red and green, respectively. CNA-driven cis effects usually appear as a red diagonal line; trans effects appear as vertical lines with red/green dots. The accompanying histograms at the bottom of each correlation plot show the number of significant cis and trans events corresponding to the indicated genomic loci (upward plot) as well as the overlap between CNA-RNA and CNA-protein events (downward plot).
 
 ## References
 

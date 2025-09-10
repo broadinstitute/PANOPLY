@@ -23,8 +23,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_blacksheep_workflow",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_blacksheep_workflow/15",
-    "methodVersion": 15,
+    "methodUri": "agora://broadcptacdev/panoply_blacksheep_workflow/20",
+    "methodVersion": 20,
     "sourceRepo": "agora"
   },
   "name": "panoply_blacksheep_workflow",

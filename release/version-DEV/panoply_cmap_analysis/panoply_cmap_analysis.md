@@ -21,6 +21,7 @@ Required inputs:
 
 * ```CNAcorr_tarball```: (`.tar` file) tar file from output of `panoply_cna_correlation` that contains harmonized RNA, CNA and proteomics data, along with CNA cis/trans correlation tables with corresponding p-values.
 * ```subset_list_file```: (File) list of CMAP dataset fragments, default set to gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt
+* ```subset_files```: Internal parameter; array of CMAP dataset fragment files read from ```subset_list_file```. 
 * ```cmap_level5_data```: (File) complete CMAP dataset, default location gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx
 * ```subset_bucket```: (String) location of subdirectory containing CMAP dataset fragments, default set to gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets
 * ```annotation_pathway_db```: (File) pathway database for GSEA enrichment analysis to promote biological insight into list of candidate driver genes
@@ -52,17 +53,17 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `cmap` subdirectory:
-
-* A list of significant candidate driver genes identified using the Fisher test on outlier scores for 
-  - genes with CNA UP **or** DOWN (unidirectional, `*-sig-genes-unidirectional.txt`)
-  - genes with CNA UP **and** DOWN (bidirectional, `*-sig-genes-bidirectional.txt`)
-* FDR score for uni- and bidirectional significant candidate driver genes (`*-sig-genes-with-fdr.txt`)
-* A gene x sample table indicating outlier status (`*-outliers.csv`)
-* List and plot of extreme samples (with CNA UP/DOWN) for each significant candidate driver gene (`*-sig-genes-extreme-samples.*`)
-* Enrichment these extreme samples in various sample annotation groups (`*-sig-genes-enrichment.csv` and `*-sig-genes-enrichment-pval*.csv` with the latter showing only group that are enriched with `p.value < alpha`
-* Overlap of trans genes with extreme genes in CMAP profiles (based on z-score); `*-sig-genes-overlap.gmt` lists overlap for each significant candidate driver gene and these results are graphically shown in `*-sig-genes-overlap.pdf`
-* Input (`*-permuted-genes-???.gmt`) and output results (`*-permutation-*`) for all permutations 
+* ```outputs```: Tarball including the following files in the `cmap` subdirectory:
+  * A list of significant candidate driver genes identified using the Fisher test on outlier scores for 
+    - genes with CNA UP **or** DOWN (unidirectional, `*-sig-genes-unidirectional.txt`)
+    - genes with CNA UP **and** DOWN (bidirectional, `*-sig-genes-bidirectional.txt`)
+  * FDR score for uni- and bidirectional significant candidate driver genes (`*-sig-genes-with-fdr.txt`)
+  * A gene x sample table indicating outlier status (`*-outliers.csv`)
+  * List and plot of extreme samples (with CNA UP/DOWN) for each significant candidate driver gene (`*-sig-genes-extreme-samples.*`)
+  * Enrichment these extreme samples in various sample annotation groups (`*-sig-genes-enrichment.csv` and `*-sig-genes-enrichment-pval*.csv` with the latter showing only group that are enriched with `p.value < alpha`
+  * Overlap of trans genes with extreme genes in CMAP profiles (based on z-score); `*-sig-genes-overlap.gmt` lists overlap for each significant candidate driver gene and these results are graphically shown in `*-sig-genes-overlap.pdf`
+  * Input (`*-permuted-genes-???.gmt`) and output results (`*-permutation-*`) for all permutations 
+* ```ssgseaOutput```: ssGSEA analysis on the cis/trans-correlation values from [```panoply_cmap_annnotate```](./Support-Modules%3A-panoply_cmap_annotate) .
 
 ## References
 * Lamb, J., Crawford, E.D., Peck, D., Modell, J.W., Blat, I.C., Wrobel, M.J., Lerner, J., Brunet, J.-P., Subramanian, A., Ross, K.N., et al. (2006). The Connectivity Map: using gene-expression signatures to connect small molecules, genes, and disease. *Science* 313, 1929–1935.

@@ -14,8 +14,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_cons_clust_report",
     "methodNamespace": "broadcptacdev",
-    "methodUri": "agora://broadcptacdev/panoply_cons_clust_report/8",
-    "methodVersion": 8,
+    "methodUri": "agora://broadcptacdev/panoply_cons_clust_report/12",
+    "methodVersion": 12,
     "sourceRepo": "agora"
   },
   "name": "panoply_cons_clust_report",

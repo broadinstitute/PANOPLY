@@ -33,6 +33,7 @@ display_usage() {
   echo "-w | string | Workspace to populate with all methods"
   echo "-y | string | Workspace to populate pipeline/workflow methods"
   echo "-P | string | Patch flag. When toggled, only specified modules will be rebuilt."
+  echo "-D | string | Patch flag. When toggled, dockers will NOT be downloaded and/or pushed."
   echo "-R | string | Patch flag. When toggled, dockers will be rebuilt for specified modules."
   echo "        [...] Trailing arguments will be interpretted as modules to patch-fix. Should only be used alongside -P flag."
   echo "-h | flag   | Print Usage"
@@ -82,8 +83,7 @@ replaceWdlImports() {
   for mod in $modules
   do
     new_snap=$( grep ":$mod/" $repl )
-    echo "$mod has snapshot $new_snap"
-    # sed -i'' -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
+    sed -i'' -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
   done
   rm $wdl_f-e
 }
@@ -244,7 +244,7 @@ installMethod() {
 }
 
 
-while getopts ":p:T:N:r:w:y:PRh" opt; do
+while getopts ":p:T:N:r:w:y:PDRh" opt; do
     case $opt in
         p) pull_dns="$OPTARG";;
         T) release_tag="$OPTARG";;
@@ -253,6 +253,7 @@ while getopts ":p:T:N:r:w:y:PRh" opt; do
         w) wkspace_all="$OPTARG";;
         y) wkspace_pipelines="$OPTARG";;
         P) patch_flag=TRUE;;
+        D) docker_skip_flag=TRUE;;
         R) rebuild_docker_flag=TRUE;;
         h) display_usage;;
         \?) echo "Invalid Option -$OPTARG" >&2;;
@@ -365,10 +366,11 @@ fi # otherwise, modules are pulled from trailing arguments ( see display_usage()
 
 for mod in "${modules[@]}"
 do
+  if [[ $mod == "panoply_test" ]]; then echo "$not Skipping $mod module"; continue; fi
   echo -e "$not Processing task $mod"
 
   if [[ -n $patch_flag ]]; then # if we are patch-fixing
-    sed -i'' -e "/:$mod\/versions/d" $release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
+    sed -i'' -e "/:$mod\/versions/d" $snapshots # delete relevant snapshots from snapshot-ids.txt
     rm -r ./$release_dir/$mod # delete relevant version folders
   fi
   
@@ -397,9 +399,13 @@ do
   if [ "$lat" != "NO_DOCKER" ]; then
     # build release docker
     echo -e "FROM $pull_dns/$mod:$lat" > Dockerfile
-    docker build --pull --no-cache -t $release_dns/$mod:$release_tag .
-    docker images | grep "$mod"
-    docker push $release_dns/$mod:$release_tag
+    if [[ -z $docker_skip_flag ]]; then
+      docker build --pull --no-cache -t $release_dns/$mod:$release_tag .
+      docker images | grep "$mod"
+      docker push $release_dns/$mod:$release_tag
+    else
+      echo "Skipping docker push (-D flag)"
+    fi
   fi
   
   # copy and update task WDL, install method and save snapshot id
@@ -422,7 +428,7 @@ do
   echo -e "$not Processing workflow $wk"
 
   if [[ -n $patch_flag ]]; then # if we are patch-fixing
-    sed -i'' -e "/:$wk\/versions/d" ./$release_dir/snapshot-ids.txt # delete relevant snapshots from snapshot-ids.txt
+    sed -i'' -e "/:$wk\/versions/d" $snapshots # delete relevant snapshots from snapshot-ids.txt
     rm -r ./$release_dir/$wk # delete relevant version folders
   fi
 

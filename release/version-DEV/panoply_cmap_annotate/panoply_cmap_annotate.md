@@ -22,12 +22,17 @@ Required inputs:
 Optional inputs:
 
 * ```cmap_grp```: (String, default = "all") filename prefix used for files created during CMAP analysis
+	* ```cmap_group```: Internal parameter set by `cmap_grp`.
 * ```cmap_typ```: (String, default = "pome") omics data type; suppoted types are "pome" (all proteomics/PTM types) and "mrna" (for RNAseq data)
+	* ```cmap_type```: Internal parameter set by `cmap_typ`.
 * ```cmap_enrichment_groups```: (`.csv` File) subset of sample annotations, providing classes for enrichment analysis of candidate genes
 * ```cna_threshold```: (Float, default = 0.3) copy number up/down threshold; copy number is considered UP regulated if > `cna_threshold` and DOWN regulated if < `-cna_threshold` 
 * ```log_transform```: (String, default = "FALSE") if TRUE, log2 transform input data
 * ```alpha```: (String, default = 0.05) p-value threshold for CMAP profile z-scores (see Description) and enrichments
 * ```outFile```: (String, default = "panoply_cmap-annotate-output.tar") output `.tar` file name
 
+
+
 ## Output
-Tarball with annotated CMAP analysis results. See [Data Analysis Modules: panoply_cmap_analysis](./Data-Analysis-Modules%3A-panoply_cmap_analysis) for details.
+* ```outputs```: Tarball with annotated CMAP analysis results. See [Data Analysis Modules: panoply_cmap_analysis](./Data-Analysis-Modules%3A-panoply_cmap_analysis) for details.
+* ```gsea_input```: (`"${cmap_group}-cmap-${cmap_type}-gsea-input.gct"`) GCT file with cis/trans-correlation values, used as input for subsequent GSEA analysis.

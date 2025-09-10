@@ -1,0 +1,35 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.acK_gct": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.disk_space": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.fdr_cutoff": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.groupsFile": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.max_annot_levels": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.memory": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.min_samples": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.num_preemptions": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.num_threads": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.output_prefix": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.pSTY_gct": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.sample_id_col": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.ubK_gct": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_clumps_ptm_diffexp",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_clumps_ptm_diffexp/9",
+    "methodVersion": 9,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_clumps_ptm_diffexp",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.diff_exp_files": "",
+    "panoply_clumps_ptm_diffexp_workflow.panoply_clumps_ptm_diffexp.log_file": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,14 +1,16 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/3/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/16/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/64/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_blacksheep_workflow/versions/15/plain-WDL/descriptor" as blacksheep_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/46/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_immune_analysis_workflow/versions/16/plain-WDL/descriptor" as immune_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/27/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/6/plain-WDL/descriptor" as select_pairs
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_normalize_filter_workflow/versions/20/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/78/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_internal/versions/4/plain-WDL/descriptor" as main_internal_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_workflow/versions/27/plain-WDL/descriptor" as clumps_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst_workflow/versions/8/plain-WDL/descriptor" as metab_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/54/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/36/plain-WDL/descriptor" as assemble_wdl
 
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_check_yaml_default/versions/15/plain-WDL/descriptor" as check_yaml_default_wdl
 
 
 workflow panoply_unified_workflow {
@@ -16,36 +18,53 @@ workflow panoply_unified_workflow {
   File? phospho_ome
   File? acetyl_ome
   File? ubiquityl_ome
+  File? nglyco_ome
+  File? methyl_ome
+
+  File? metabol_ome
+
   File? rna_data      #version 1.3 only!
   File? cna_data
+
   File yaml
   String job_id
+  
   String run_cmap
   Boolean run_mo_nmf #'true' or 'false'
   Boolean run_so_nmf #'true' or 'false'
   String? run_ptmsea
+  Boolean? run_clumps
+  Boolean? run_metab
 
   File groups_file
-  File? groups_file_blacksheep
-  File? groups_file_immune
   File? groups_file_nmf
+  File? groups_file_metaboanlayst
+
+  File? groups_file_clumpsptm
+
+  File geneset_db
+  File ptm_db
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
   String? filterProteomics # "true" or "false"
 
-  # Organize omics data into pairs
+  ### Organize omics data into pairs
 
+  # proteomic pairs
   Array[Pair[String?, File?]] ome_pairs_input =
     [ ("proteome", prote_ome),
       ("phosphoproteome", phospho_ome),
       ("acetylome", acetyl_ome),
-      ("ubiquitylome", ubiquityl_ome) ]
+      ("ubiquitylome", ubiquityl_ome),
+      ("nglycoproteome", nglyco_ome),
+      ("methylation", methyl_ome) ]
   call select_pairs.panoply_select_all_pairs as ome_pairs { # select extant pairs
     input:
         pairs_input = ome_pairs_input
   }
 
+  # genomic pairs
   Array[Pair[String?, File?]] geneome_pairs_input =
     [ ("rna", rna_data),
       ("cna", cna_data) ]
@@ -53,6 +72,7 @@ workflow panoply_unified_workflow {
     input:
         pairs_input = geneome_pairs_input
   }
+
 
   ### NORMALIZE:
   ### Normalize the data first so downstream modules (NMF etc) can run in parallel to main:
@@ -83,8 +103,11 @@ workflow panoply_unified_workflow {
         input_pome=pair.right,
         ome_type=pair.left,
         job_identifier="${job_id}-${pair.left}",
+        geneset_db=geneset_db,
         run_ptmsea="${run_ptmsea}",
+        ptm_db=ptm_db,
         run_cmap = "${run_cmap}",
+        run_omicsev = "${if pair.left=='proteome' then true else false}",
         run_nmf = "false",
         input_cna=cna_data,
         input_rna=rna_data,
@@ -92,16 +115,70 @@ workflow panoply_unified_workflow {
         yaml=yaml
     }
   }
-  
-  ### BLACKSHEEP:
-  scatter (pair in all_pairs) {
-    call blacksheep_wdl.panoply_blacksheep_workflow as outlier {
+
+  ### MAIN for RNA:
+  call main_internal_wdl.panoply_main_internal as rna {
+    input:
+      input_ome=rna_data,
+      ome_type="rna",
+      job_identifier="${job_id}-rna",
+      geneset_db=geneset_db,
+      run_ptmsea=false,
+      ptm_db=ptm_db,
+      run_nmf = "false",
+      groups_file=groups_file,
+      yaml=yaml
+  }
+
+
+  ### ClumpsPTM
+  # check yaml default for run.clumpsptm (Terra param takes precedence)
+  call check_yaml_default_wdl.panoply_check_yaml_default as check_clumpsptm_default {
+    input:
+      param = run_clumps,
+      yaml = yaml,
+      param_lookup = "run.clumpsptm"
+  }
+  if ( check_clumpsptm_default.param_boolean ){
+    call clumps_wdl.panoply_clumps_ptm_workflow as clumps_ptm {
       input:
-        input_gct = "${pair.right}",
-        master_yaml = "${yaml}",
-        output_prefix = "${pair.left}",
-        type = "${pair.left}",
-        groups_file="${if defined(groups_file_blacksheep) then groups_file_blacksheep else groups_file}"
+        pSTY_gct = phospho_ome,
+        acK_gct = acetyl_ome,
+        ubK_gct = ubiquityl_ome,
+        groupsFile = groups_file_clumpsptm,
+        output_prefix = job_id,
+        yaml_file = yaml
+    }
+  }
+
+  ### MetaboAnalyst
+  # check yaml default for run.metab (Terra param takes precedence)
+  call check_yaml_default_wdl.panoply_check_yaml_default as check_metab_default {
+    input:
+      param = run_metab,
+      yaml = yaml,
+      param_lookup = "run.metab"
+  }
+  if ( "${metabol_ome}" != '' && check_metab_default.param_boolean ){
+    # Proteome and Transcriptome pair
+    Array[Pair[String?, File?]] pg_pairs_input =
+      [ ("proteome", prote_ome),
+        ("rna", rna_data) ]
+    call select_pairs.panoply_select_all_pairs as pg_pairs { # select extant pairs
+      input:
+          pairs_input = pg_pairs_input
+    }
+
+    scatter (pair in pg_pairs.pairs) {
+      call metab_wdl.panoply_metaboanalyst_workflow as metab {
+        input:
+          meta_gct = metabol_ome,
+          omic_gct = pair.right,
+          ome_type = pair.left,
+          output_prefix = "${job_id}-${pair.left}",
+          groups_file = "${if defined(groups_file_metaboanlayst) then groups_file_metaboanlayst else groups_file}",
+          yaml_file = yaml
+      }
     }
   }
 
@@ -115,24 +192,13 @@ workflow panoply_unified_workflow {
         yaml_file = yaml,                   # default parameters & figure colors
         groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",
 
+        gene_set_database=geneset_db,
+
         run_mo_nmf = run_mo_nmf,            # toggle for Multi-omic NMF
         run_so_nmf = run_so_nmf             # toggle for Single-omic NMF
     }
   }
-  
-  ### IMMUNE:
-  if ( "${rna_data}" != '' ) {
-    call immune_wdl.panoply_immune_analysis_workflow as immune {
-      input:
-          inputData=rna_data,
-          standalone="true",
-          type="rna",
-          yaml=yaml,
-          analysisDir=job_id,
-          label=job_id,
-          groupsFile="${if defined(groups_file_immune) then groups_file_immune else groups_file}"
-    }
-  }
+
   
   ## assemble final output combining results from panoply_main, blacksheep immune_analysis and mo_nmf
   call assemble_wdl.panoply_unified_assemble_results {
@@ -144,17 +210,21 @@ workflow panoply_unified_workflow {
       norm_report = norm_filt.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,
+      ssgsea_rna_report = rna.ssgsea_ome_report,
+      ssgsea_ome_report = pome.ssgsea_ome_report,
       omicsev_report = pome.omicsev_report,
       cosmo_report = pome.cosmo_report,
       sampleqc_report = pome.sample_qc_report,
       assoc_report = pome.association_report,
-      blacksheep_tar = outlier.blacksheep_tar,
-      blacksheep_report = outlier.blacksheep_report,
+      ptmsea_ome_report = pome.ptmsea_ome_report,
+      blacksheep_report = pome.blacksheep_report,
+      clumpsptm_results = clumps_ptm.clumps_ptm_results,
+      clumpsptm_report = clumps_ptm.clumps_ptm_report,
+      metaboanalyst_results = metab.metaboanalyst_tar,
+      metaboanalyst_reports = metab.metaboanalyst_report,
       nmf_results = nmf.nmf_results,
       nmf_reports = nmf.nmf_reports,
-      immune_tar = immune.outputs,
-      immune_report = immune.report
-
+      immune_report = rna.immune_analysis_report
   }
   
   output {

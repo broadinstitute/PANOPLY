@@ -45,11 +45,10 @@ Optional inputs:
 
 ## Output
 
-Tarball of files containing the following in the `association` subdirectory, for *each class vector* considered for association analysis: 
-
-* List of significant differential markers derived using LIMMA (`*-markers-all-fdr*.csv`) and p-values for all input features (`*-markers-all*.csv`)
-* Marker importance for significant markers, along with final rank (`*-markerimp-fdr*.csv`)
-* Heatmap of significant differential markers (`*-markers-heatmap.pdf`)
-* Classifier performance contingency tables (`*-analysis-model-results.txt`)
-* Table of prediction results for training data (`*-train-results-*.csv`) and testing data (`*-test-results.csv`) using all classifiers
-* GSEA outputs, along with `.gct`. and `.cls` input files, for each binary class (in `*-gsea-analysis/` subdirectory).
+* ```outputs``` Tarball of files containing the following in the `association` subdirectory, for *each class vector* considered for association analysis: 
+  - List of significant differential markers derived using LIMMA (`*-markers-all-fdr*.csv`) and p-values for all input features (`*-markers-all*.csv`)
+  - Marker importance for significant markers, along with final rank (`*-markerimp-fdr*.csv`)
+  - Heatmap of significant differential markers (`*-markers-heatmap.pdf`)
+  - Classifier performance contingency tables (`*-analysis-model-results.txt`)
+  - Table of prediction results for training data (`*-train-results-*.csv`) and testing data (`*-test-results.csv`) using all classifiers
+  - GSEA outputs, along with `.gct`. and `.cls` input files, for binary classes (in `*-gsea-analysis/` subdirectory).

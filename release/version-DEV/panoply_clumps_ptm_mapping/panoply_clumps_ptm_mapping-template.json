@@ -1,0 +1,44 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.DEBUG_MODE": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.FASTA_ref_file": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.FASTA_sep_type": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.PDB_ref_bucket": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.SIFTS_DB": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.UNIPROT_SWISSPROT": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.acK_gct": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.accession_col": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.disk_space": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.filter_duplicate_sites": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.gene_column": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.keep_multi_sites": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.memory": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.num_preemptions": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.num_threads": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.output_prefix": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.pSTY_gct": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.ubK_gct": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.variable_sites_col": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.variable_sites_sep": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_clumps_ptm_mapping",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_clumps_ptm_mapping/21",
+    "methodVersion": 21,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_clumps_ptm_mapping",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.filt_results": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.full_results": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.mapping_params": "",
+    "panoply_clumps_ptm_mapping_workflow.panoply_clumps_ptm_mapping.var_sites_file": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

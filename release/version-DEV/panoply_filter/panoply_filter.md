@@ -39,7 +39,7 @@ Optional inputs:
 * ```proteinIdType```:  (String, default chosen in startup notebook) keytype of protein IDs in ```proteinIdCol```
 * ```combineReplicates```: (String, default = 'mean') method used to combine replicate samples, as are identified by identical values in the `Participant`, `Type` (optional), and `Timepoint` (optional) columns of the sample annotation table. If `null`, replicates will not be combined.
 * ```naMax```: (Float, default = 0.7) maximum allowed NA values per row (protein/PTM site); can be fraction between 0-1 or an integer specifying actual number of samples. If `null`, NA values will not be removed.
-* ```noMax```: (String, default = 'false') toggle for generating a GCT in which rows (protein/PTM sites) containing any NA values are excluded
+* ```noNA```: (String, default = 'false') toggle for generating a GCT in which rows (protein/PTM sites) containing any NA values are excluded
 * ```sdFilterThreshold```: (Float, default = 0.5) standard deviation (SD) threshold for SD filtering; rows (proteins/PTM sites) with SD less than `sdFilterThreshold` are excluded from the filtered output table. If `null`, sd filtering will not be applied.
 * ```ndigits```: (Int, default = 5) number of decimal digits to use in output tables
 * ```outTar```: (String, default = "panoply_filter-output.tar") output `.tar` file name
@@ -47,15 +47,15 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `filtered-data` subdirectory: 
-
-* Filtered data files:
-	* data table containing *only* QC-pass samples (`*-ratio-norm.gct`), with no other filters applied
-	* filtered data table (`*-ratio-norm-filt.gct`)
-
-* Optional data files:
-	* data table containing non-`QC.pass` samples of some {qc.type} (`*-ratio-norm-{qc.type}.gct`), with no other filters applied
-	* filtered data table, with rows (protein/PTM sites) containing any NA values excluded (`*-ratio-norm-filt-noNA.gct`)
+* ```output_tar```: Tarball including the following files in the `filtered-data` subdirectory: 
+	* Filtered data files:
+		* data table containing *only* QC-pass samples (`*-ratio-norm.gct`), with no other filters applied
+		* filtered data table (`*-ratio-norm-filt.gct`)
+	* Optional data files:
+		* data table containing non-`QC.pass` samples of some {qc.type} (`*-ratio-norm-{qc.type}.gct`), with no other filters applied
+		* filtered data table, with rows (protein/PTM sites) containing any NA values excluded (`*-ratio-norm-filt-noNA.gct`)
+* ```outputs```: (`.gct` file) filtered data table (equivalent to `*-ratio-norm-filt.gct`)
+* ```output_yaml```: finalized parameter file
 
 
 	

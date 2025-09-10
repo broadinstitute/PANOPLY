@@ -42,13 +42,14 @@ To test for overrepresentation of categorical variables defined under `group.col
 * ```max_annot_levels```: (Int, default = 10) Maximal number of levels in an annotation category. Categories with more levels will be excluded from figures and overrepresentation analysis. Controlled by `ora_max_categories` in `.yaml` file.
 * ```top_n_features```: (Int, default = 25) Maximal number of driver features, per cluster, to create boxplots / heatmaps for visualizing expression.
 * ```gene_column```: (String, default = "geneSymbol") (optional) Column name in rdesc in the GCT file that contains gene symbols, used for adding additional feature-annotations. Controlled by global-parameter `gene_id_col` in `.yaml` file.
- 
+ * ```feature_method```: (String, **optional**) Explicit override for the driver-feature selection method. If `NULL`, the algorithm will choose a method automatically. 
  
 ## Output
 
-* ```${output_prefix}_NMF_postprocess.tar.gz```: Tar file containing figures and analyses from post-processing.
-* ```"${output_prefix}_K${nclust}_clusterMembership.tsv"```: TSV file with sample membership scores, consensus mapping, and core-membership.
-* ```${output_prefix}_K${nclust}_W_rowNorm_combined_signed_n*.gct```: GCT file containing signed W-Matrix for GSEA analysis
+* ```results```: (`${output_prefix}_NMF_postprocess.tar.gz`) Tar file containing figures and analyses from post-processing.
+* ```membership```: (`${output_prefix}_K${nclust}_clusterMembership.tsv`) TSV file with sample membership scores, consensus mapping, and core-membership.
+* ```feature_matrix_w```: (`${output_prefix}_K${nclust}_W_rowNorm_combined_signed_n*.gct`) GCT file containing signed W-Matrix for GSEA analysis
+* ```ssgsea_viable```: Boolean value indicating whether feature-space is ssGSEA compatible (i.e. mappable to gene symbols)  
 
 
 ## References

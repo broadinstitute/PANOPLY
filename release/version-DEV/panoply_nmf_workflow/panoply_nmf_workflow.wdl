@@ -1,10 +1,10 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/3/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/20/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/12/plain-WDL/descriptor" as sankey_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/17/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_select_all_pairs/versions/6/plain-WDL/descriptor" as select_pairs
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_internal_workflow/versions/27/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sankey_workflow/versions/16/plain-WDL/descriptor" as sankey_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_assemble_results/versions/20/plain-WDL/descriptor" as assemble_wdl
 
 
 ################################################
@@ -26,18 +26,28 @@ workflow panoply_nmf_workflow {
 	File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
 	
 	## Preprocess Parameters
-	Float? sd_filt_min
-	String? sd_filt_mode
-	String? z_score			# true / false
-	String? z_score_mode
+	Float? mo_sd_filt_min
+	Float? so_sd_filt_min
+	String? mo_sd_filt_mode
+	String? so_sd_filt_mode
+	String? mo_z_score			# true / false
+	String? so_z_score			# true / false
+	String? mo_z_score_mode
+	String? so_z_score_mode
 	
 	## NMF Parameters
-	Int? kmin
-	Int? kmax
-	String? exclude_2		# true / false
-	String? nmf_method		# options in the YAML
-	Int? nrun				# Number of NMF runs with different starting seeds.
-	String? seed			# 'random' for random seed, or numeric for explicit seed
+	Int? mo_kmin
+	Int? so_kmin
+	Int? mo_kmax
+	Int? so_kmax
+	String? mo_exclude_2		# true / false
+	String? so_exclude_2		# true / false
+	Int? mo_nrun				# Number of NMF runs with different starting seeds.
+	Int? so_nrun				# Number of NMF runs with different starting seeds.
+	String? mo_seed			# 'random' for random seed, or numeric for explicit seed
+	String? so_seed			# 'random' for random seed, or numeric for explicit seed
+	String? mo_nmf_method		# options in the YAML
+	String? so_nmf_method		# options in the YAML
 
 	## Module Toggles
 	Boolean run_so_nmf
@@ -65,18 +75,18 @@ workflow panoply_nmf_workflow {
 					groups_file=groups_file,
 
 					## Preprocess Parameters
-					sd_filt_min=sd_filt_min,
-					sd_filt_mode=sd_filt_mode,
-					z_score=z_score,
-					z_score_mode=z_score_mode,
+					sd_filt_min=so_sd_filt_min,
+					sd_filt_mode=so_sd_filt_mode,
+					z_score=so_z_score,
+					z_score_mode=so_z_score_mode,
 
 					## NMF Parameters
-		            kmin=kmin,
-		            kmax=kmax,
-		            exclude_2=exclude_2,
-		            nmf_method=nmf_method,
-		            nrun=nrun,
-		            seed=seed
+		            kmin=so_kmin,
+		            kmax=so_kmax,
+		            exclude_2=so_exclude_2,
+		            nmf_method=so_nmf_method,
+		            nrun=so_nrun,
+		            seed=so_seed
 			}
 		}
 	}
@@ -95,18 +105,18 @@ workflow panoply_nmf_workflow {
 				groups_file=groups_file,
 
 				## Preprocess Parameters
-				sd_filt_min=sd_filt_min,
-				sd_filt_mode=sd_filt_mode,
-				z_score=z_score,
-				z_score_mode=z_score_mode,
+				sd_filt_min=mo_sd_filt_min,
+				sd_filt_mode=mo_sd_filt_mode,
+				z_score=mo_z_score,
+				z_score_mode=mo_z_score_mode,
 
 				## NMF Parameters
-	            kmin=kmin,
-	            kmax=kmax,
-	            exclude_2=exclude_2,
-	            nmf_method=nmf_method,
-	            nrun=nrun,
-	            seed=seed
+	            kmin=mo_kmin,
+	            kmax=mo_kmax,
+	            exclude_2=mo_exclude_2,
+	            nmf_method=mo_nmf_method,
+	            nrun=mo_nrun,
+	            seed=mo_seed
 		}
 	}
 

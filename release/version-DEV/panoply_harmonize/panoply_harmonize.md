@@ -21,7 +21,6 @@ Optional inputs:
 * ```pomeGeneIdCol```: (String, default = 'GeneSymbol') gene id column in proteome data
 * ```cnaGeneIdCol```: (String, default = 'id') gene id column in CNA expression data
 * ```rnaGeneIdCol```: (String, default = 'id') gene id column in RNA expression data
-* ```ndigits```: (Int, default = 5) number of decimal digits to use in output tables
 * ```na_max```: (Float, default = 0.7) maximum allowed NA values per protein/site/row; can be fraction.
 * ```duplicate_gene_policy```: (String, default = 'maxvar')
 * ```gene_id_col```: (String, default = 'geneSymbol') name of sample annotation column containing gene ids.
@@ -30,8 +29,7 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `harmonized-data` subdirectory:
-
-* Harmonized data matrices for CNA (`cna-matrix.csv`), RNA (`rna-matrix.csv`) and proteome (`*-matrix.csv`) with samples (columns) and genes (rows) in identical order in all tables.
-* Matching sample annotation for samples included in the data matrices (`sample-info.csv`)
-* Class vectors files (`*.cls`) for all sample annotations
+* ```outputs``` Tarball including the following files in the `harmonized-data` subdirectory:
+	* Harmonized data matrices for CNA (`cna-matrix.csv`), RNA (`rna-matrix.csv`) and proteome (`*-matrix.csv`) with samples (columns) and genes (rows) in identical order in all tables.
+	* Matching sample annotation for samples included in the data matrices (`sample-info.csv`)
+	* Class vectors files (`*.cls`) for all sample annotations

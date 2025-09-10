@@ -25,7 +25,7 @@ The report provides:
 
 `panoply_cna_correlation_report`
 
-* ```fdr```: (Float, default = 0.05) FDR value used to define signifcance.
+* `fdr`: (Float, default = 0.05) FDR value used to define signifcance.
 
 ## Output
 

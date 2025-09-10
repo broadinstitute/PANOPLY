@@ -1,4 +1,3 @@
-
 # ```panoply_nmf_assemble_results```
 
 ## Description
@@ -24,10 +23,13 @@ This module compiles the outputs of multiple [panoply_nmf_internal_workflow](htt
 
 * Sankey Results (if run)
 	- ```sankey_tar```: (File) Tar file containing sankey diagram results of [panoply_sankey](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_sankey)
-	- ```sankey_report```: (File) Summary reports of sankey-diagram comparisons
+	- ```sankey_report```: (File) Summary reports of sankey-diagram comparisons from [panoply_sankey_report](https://github.com/broadinstitute/PANOPLY/wiki/Report-Modules%3A-panoply_sankey_report)
+
+* ```output_results_tar```: (String, default = "nmf_results.tar.gz") output `.tar.gz` file name
+* ```output_reports_tar```: (String, default = "nmf_reports.tar.gz") output `.tar.gz` file name
 
 
 ## Output
 
-* ```nmf_resuls.tar```: Tarred results of NMF clustering and GSEA analysis, from all NMF runs (single-omic and multi-omic). Also contains sankey diagrams (if run).
-* ```nmf_reports.tar```: Tarred reports for NMF clustering and GSEA analysis, from all NMF runs (single-omic and multi-omic). Also contains sankey diagrams (if run).
+* ```nmf_results```: (`nmf_resuls.tar`) Tarred results of NMF clustering and GSEA analysis, from all NMF runs (single-omic and multi-omic). Also contains sankey diagrams (if run).
+* ```nmf_reports```: (`nmf_reports.tar`) Tarred reports for NMF clustering and GSEA analysis, from all NMF runs (single-omic and multi-omic). Also contains sankey diagrams (if run).

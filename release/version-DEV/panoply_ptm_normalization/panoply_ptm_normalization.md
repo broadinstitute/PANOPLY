@@ -20,13 +20,18 @@ Optional inputs:
 
 * ```accession_number_col```: (String, default = "accession_number") Name of column with protein or PTM accession number
 * ```accession_numbers_col```: (String, default = "accession_numbers") Name of column with accession numbers for the protein or PTM **group**
+* ```accession_numbers_sep```: (String, default = `basename (ptm_gct, ".gct")`) Delimiter used to separate accession numbers in `accession_numbers_col` column; ignored if accession_numbers_colname is NULL.
+* ```score_col```: (String, default = "scoreUnique") Scoring column, to determine which accession number to use in the case of multiples. If `score_col` is provided, the highest scoring accession number; if set to `NULL` in YAML, the first accession number is used. Ignored if accession_numbers_colname is `NULL`.
+
+* ```output_prefix```: (String, default = "accession_numbers") prefix for naming the output tar file
+
 
 **NOTE:** The inputs described above are for the primary workflow. Additional optional inputs for tasks constituting the workflow are already set to appropriate defaults and do not need to be modified.
 
 
 ## Output
 
-* PTM GCT data table (`<NAME_OF_INPUT_GCT>-proteome-relative-norm.gct.gct`) with normalized PTM abundances with respect to the global proteome abudances
+* ```gct_out``` PTM GCT data table (`<NAME_OF_INPUT_GCT>-proteome-relative-norm.gct.gct`) with normalized PTM abundances with respect to the global proteome abudances
 
 ## References
 

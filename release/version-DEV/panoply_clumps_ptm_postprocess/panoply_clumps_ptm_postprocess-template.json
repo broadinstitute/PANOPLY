@@ -1,0 +1,31 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.disk_space": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.fdr_threshold": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.memory": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.num_preemptions": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.num_threads": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.output_prefix": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.pymol_gen": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.pymol_upper_limit": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.results_tar": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_clumps_ptm_postprocess",
+    "methodNamespace": "broadcptacdev",
+    "methodUri": "agora://broadcptacdev/panoply_clumps_ptm_postprocess/12",
+    "methodVersion": 12,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_clumps_ptm_postprocess",
+  "namespace": "broadcptacdev",
+  "outputs": {
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.figures_only": "",
+    "panoply_clumps_ptm_postprocess_workflow.panoply_clumps_ptm_postprocess.results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

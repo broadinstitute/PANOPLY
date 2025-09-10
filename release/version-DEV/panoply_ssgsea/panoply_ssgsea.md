@@ -21,51 +21,28 @@ For more information about the GSEA method and MSigDB please visit http://softwa
 * ```yaml_file```: (`.yaml` file) master-parameters.yaml
 
 ### Optional inputs:
-
-#### preprocessing
-* ```preprocess_gct```: (Boolean) If FALSE preprocessing will be skipped and the GCT file will be used as is (default: FALSE).
-* ```acc_type```: (String) Type of accession number in 'rid' object in GCT file ("uniprot", "refseq" (default), "symbol").
-* ```id_type```: (String) Notation of site-ids: 'sm' - Spectrum Mill (default); 'wg' - Web Gestalt; 'ph' - Philosopher. Only relevant for PTM-SEA.
-* ```id_type_out``` (String) Type of site id for output: 'uniprot'(default), 'refseq', 'seqwin'. Only relevant for PTM-SEA.
-* ```level``` (String) Mode of report:
-  + 'ssc' - single-site-centric
-  + 'gc' - gene-centric (default)
-  + 'gcr' - gene-centric-redundant
-* ```loc``` (Boolean) If TRUE only fully localized sites will be considered (default: TRUE). Localization infromation is expected to be encoded in the site identifier. Respective parsing rules are determined by '--id_type'.
-* ```gene_col```: (String) Name of column listing gene names; used for gene centric reports (default: "geneSymbol").
-* ```seqwin_col```: (String) "Column containing flanking sequences, separated by '|'. Only relevant for PTM-SEA and if '--id_type_out' = 'seqwin' (default: 'VMsiteFlanks').
-* ```SGT_col```: (String) Column used to collpase subgroup-top (SGT) reports (default: "subgroupNum). Only relevant for Spectrum Mill protein reports.
-* ```mod_res```: (String) Modified residues, e.g. "S|T|Y" or "K" (default: "S|T|Y").
-* ```mod_type```: (String) Type of post-translational modification, e.g "p" for phospho (default) or "ac" for acetylation
-* ```mode```: (String) Determines how multiple features (e.g. proteins, PTM sites, etc.) mapping to the same gene symbol will be aggregated: 
-  + "mean" - mean
-  + "median" - median
-  + "sd - most variable (standard deviation) across sample columns
-  + "SGT" - subgroup top: first subgroup in protein group (Spectrum Mill)
-  + "abs.max" - for log-transformed, signed p-values"
-
-#### ssGSEA/PTM-SEA
 * ```correl_type```: (String) Correlation type: "z.score" (default), "rank", "symm.rank".
 * ```global_fdr```: (Boolean) If TRUE global FDR across all data columns is calculated (default: FALSE).
 * ```min_overlap```: (Integer) Minimal overlap between signature and data set (default: 10).
+* ```tolerate_min_overlap_err``` (String) Internal parameter. TRUE/FALSE toggle for tolerating "not-enough-overlap" errors. Recommended value is FALSE.
 * ```nperm```: (Integer) Number of permutations (default: 1000).
 * ```output_score_type```: (String) Score type: "ES" - enrichment score,  "NES" - normalized ES (default).
+* ```sample_norm_type```: (String) Sample normalization: "rank"(default), "log", "log.rank"
 * ```statistic```: (String) Test statistic: "area.under.RES" (default), "Kolmogorov-Smirnov"
 * ```weight```: (Float) When weight=0, all genes have the same weight; if weight>0 actual values matter and can change the resulting score (default: 0.75).
-* ```sample_norm_type```: (String) Sample normalization: "rank"(default), "log", "log.rank"
-* ```output_prefix```: (String) File prefix for output files.
+* ```output_prefix```: (String, default="results-ssgsea") File prefix for output files.
 
 ## Output
 
 * ```results```: (`.tar.gz` file) tarball including:
-
-* `${output_prefix}-scores.gct`: GCT file with enrichment scores as data matrix (@mat)
-* `${output_prefix}-pvalues.gct`: GCT file with nominal p-values as data matrix (@mat)
-* `${output_prefix}-fdr-pvalues.gct`: GCT file with FDR-corrected p-values as data matrix (@mat)
-* `${output_prefix}-combined.gct`: GCT file with enrichment scores as data matrix (@mat) as well as nominal and FDR-corrected p-values as row-description metadata (@rdesc).
-* `${output_prefix}-parameters.txt`: Text file summarizing parameters.
-* `${output_prefix}-ssgse.log.txt`: Text file tracking progess.
-* `signature_gct`: Directory with individual GCT files (one for each gene set) with the original data used as input for ssGSEA/PTM-SEA as data matrix (@mat).
+  * `${output_prefix}-scores.gct`: GCT file with enrichment scores as data matrix (@mat)
+  * `${output_prefix}-pvalues.gct`: GCT file with nominal p-values as data matrix (@mat)
+  * `${output_prefix}-fdr-pvalues.gct`: GCT file with FDR-corrected p-values as data matrix (@mat)
+  * `${output_prefix}-combined.gct`: GCT file with enrichment scores as data matrix (@mat) as well as nominal and FDR-corrected p-values as row-description metadata (@rdesc).
+  * `${output_prefix}-parameters.txt`: Text file summarizing parameters.
+  * `${output_prefix}-ssgse.log.txt`: Text file tracking progess.
+  * `signature_gct`: Directory with individual GCT files (one for each gene set) with the original data used as input for ssGSEA/PTM-SEA as data matrix (@mat).
+* ```ssgsea_min_overlap_err```: (Boolean) Internal parameter. TRUE if all pathways returned a "not-enough-overlap" error; relevant when `tolerate_min_overlap_err=TRUE`. Can be used to automatically skip [the report module](./Report-Modules%3A-panoply_ssgsea_report.md) in a workflow context.
 
 	
 ## References

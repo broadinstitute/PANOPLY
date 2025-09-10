@@ -21,6 +21,7 @@ This module utilizes the MIMP algorithm for predicting the impact of missense mu
 * ```search_engine```: (String, default = "SpectrumMill") name of search engine used to process phosphoproteomic data. Options are "SpectrumMill" or "other." If "SpectrumMill," the user does not have to specify values for ```phosphosite_col``` and ```protein_id_col	``` below; if "other," the user must specify values for ```phosphosite_col``` and ```protein_id_col	```.
 * ```phosphosite_col```: (String, default = NULL) if search_engine = "other," provide name of column in phospho row metadata that indicates phosphosite position.
 * ```protein_id_col```: (String, default = NULL) if search_engine = "other," provide name of column in phospho row metadata that indicates protein identifier/accession number.
+* ```protein_id_type```: (String, default = ) if 'protein_id_col' uses a different protein identifier/accession number, please specify (see YAML for full list of options).
 * ```mutation_AA_change_colname```: (String, default = "Protein_Change")  name of column in mutation MAF file that indicates amino acid change due to mutation.
 * ```mutation_type_col```: (String, default =  "Variant_Classification")  name of column in mutation MAF file that indicates type of mutation (e.g. missense).
 * ```sample_id_col```: (String, default =  "Tumor_Sample_Barcode") name of column in mutation MAF file that indicates sample identifier.
@@ -28,7 +29,7 @@ This module utilizes the MIMP algorithm for predicting the impact of missense mu
 
 ## Output
 
-An output tar file called output_prefix_mimp_output.tar contains all results and summaries in a directory called "mimp_results_dir":
+* ```tar_out```: An output tar file called output_prefix_mimp_output.tar contains all results and summaries in a directory called "mimp_results_dir":
 
 Results for individual samples are included in the "results_by_sample" sub-directory. Each sample has a further sub-directory labeled by sample identifier. These results include:
 * In the "mutation_info" directory:

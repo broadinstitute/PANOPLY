@@ -39,17 +39,17 @@ Optional inputs:
 
 ## Output
 
-Tarball including the following files in the `normalized-data` subdirectory: 
-
-* Normalized data files:
-	* normalized data table (`*-ratio-norm.gct`)
-	* normalized data table using alternate normalization method specified in `altMethod` (`*-ratio-*-norm.gct`)
-
-* Plots and normalization statistics
-	* profile plot (density of log ratio values for each sample) showing distribution for all samples in input data, before normalization (`*-ratio-profile-plot.pdf`)
-	* profile plot showing distribution for samples *after* normalization, using primary normalization method (`*-ratio-norm-profile-plot.pdf`) and alternate normalization method (`*-ratio-median-norm-profile-plot.pdf`)
-	* normalization statistics table showing centering and scaling factors for each sample, using primary normalization method (`*-ratio-norm-stats.csv`) and alternate normalization method (`*-ratio-median-norm-stats.csv`)
-	* boxplot of normalization statistics for `QC.pass` and `QC.fail` samples (`*-ratio-norm-stats.pdf` and `*-ratio-median-norm-stats.pdf`)
+* ```output_tar```: Tarball including the following files in the `normalized-data` subdirectory: 
+	* Normalized data files:
+		* normalized data table (`*-ratio-norm.gct`)
+		* normalized data table using alternate normalization method specified in `altMethod` (`*-ratio-*-norm.gct`)
+	* Plots and normalization statistics
+		* profile plot (density of log ratio values for each sample) showing distribution for all samples in input data, before normalization (`*-ratio-profile-plot.pdf`)
+		* profile plot showing distribution for samples *after* normalization, using primary normalization method (`*-ratio-norm-profile-plot.pdf`) and alternate normalization method (`*-ratio-median-norm-profile-plot.pdf`)
+		* normalization statistics table showing centering and scaling factors for each sample, using primary normalization method (`*-ratio-norm-stats.csv`) and alternate normalization method (`*-ratio-median-norm-stats.csv`)
+		* boxplot of normalization statistics for `QC.pass` and `QC.fail` samples (`*-ratio-norm-stats.pdf` and `*-ratio-median-norm-stats.pdf`)
+* ```outputs```: (`.gct` file) fnormalized data table (equivalent to `*-ratio-norm.gct`)
+* ```output_yaml```: finalized parameter file
 
 	
 ## References

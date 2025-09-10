@@ -29,7 +29,7 @@ This module creates an interactive [R Markdown](https://rmarkdown.rstudio.com/) 
 
 `panoply_rna_protein_correlation_report`
 
-* ```fdr```: (Float, default = 0.05) FDR value used to define signifcance.
+* `fdr`: (Float, default = 0.05) FDR value used to define signifcance.
 
 ## Output
 

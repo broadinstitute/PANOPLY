@@ -15,19 +15,28 @@ Optional inputs:
 * ```norm_report```: (Array[File]) array of `.html` report files from `panoply_normalize_ms_data_report` in the `panoply_main` proteogenomic analysis
 * ```rna_corr_report```: (Array[File]) array of `.html` report files from `panoply_rna_protein_correlation_report` in the `panoply_main` proteogenomic analysis
 * ```cna_corr_report```: (Array[File]) array of `.html` report files from `panoply_cna_correlation_report` in the `panoply_main` proteogenomic analysis
+* ```ssgsea_ome_report```: (Array[File]) array of `.html` report files from `panoply_ssgsea` in the `panoply_main` proteogenomic analysis
+* ```ptmsea_ome_report```: (Array[File]) array of `.html` report files from PTM-SEA (run with`panoply_ssgsea`) in the `panoply_main` phosphoproteomic analysis
+* ```omicsev_report```: (Array[File]) array of `.html` report files from `panoply_omicsev` in the `panoply_main` proteogenomic analysis
+* ```cosmo_report```: (Array[File]) array of `.html` report files from `panoply_cosmo` in the `panoply_main` proteogenomic analysis
 * ```sampleqc_report```: (Array[File]) array of `.html` report files from `panoply_sampleqc_report` in the `panoply_main` proteogenomic analysis
 * ```assoc_report```: (Array[File]) array of `.html` report files from `panoply_association_report` in the `panoply_main` proteogenomic analysis
-* ```cons_clust_report```: (Array[File]) array of `.html` report files from `panoply_cons_clust_report` in the `panoply_main` proteogenomic analysis
-* ```blacksheep_tar```: (Array[File]) array of `.tar` results files from `panoply_blacksheep` outlier analysis
-* ```blacksheep_report```: (Array[File]) array of `.html` report files from `panoply_blacksheep_report` 
+* ```blacksheep_report```: (Array[File]) array of `.html` report files from `panoply_blacksheep_report` in the `panoply_main` proteogenomic analysis
 * ```cmap_output```: (Array[File]) array of `.tar` output files from `panoply_cmap_analysis` in the `panoply_main` proteogenomic analysis
 * ```cmap_ssgsea_output```: (Array[File]) array of `.tar` output files from running ssGSEA on `panoply_cmap_analysis` in the `panoply_main` proteogenomic analysis
-* ```nmf_results```: (File) `.tar` file with all results from `panoply_nmf_workflow`
-* ```nmf_report```: (File) `.tar` file with all reports from `panoply_nmf_workflow`
+
+* ```ssgsea_rna_report```: (Array[File]) array of `.html` report files from `panoply_ssgsea` on transcriptomic analysis
 * ```immune_tar```: (File) `.tar` file results from `panoply_immune_analysis`
 * ```immune_report```: (File) `.html` file showing results from `panoply_immune_analysis` analysis
 
+* ```clumpsptm_results```: (File) `.tar` file with all results from `panoply_clumps_ptm_workflow`
+* ```clumpsptm_report```: (File) `.tar` file with all reports from `panoply_clumps_ptm_workflow`
+* ```metaboanalyst_results```: (File) `.tar` file with all results from `panoply_metaboanalyst_workflow`
+* ```metaboanalyst_reports```: (File) `.tar` file with all reports from `panoply_metaboanalyst_workflow`
+* ```nmf_results```: (File) `.tar` file with all results from `panoply_nmf_workflow`
+* ```nmf_reports```: (File) `.tar` file with all reports from `panoply_nmf_workflow`
+
 ## Output
 
-* all_results `.zip` file
-* all_reports `.zip` file
+* ```all_results```: `.zip` file
+* ```all_reports```: `.zip` file

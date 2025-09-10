@@ -2,23 +2,34 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_unified_assemble_results {
+  ## main pipeline
   Array[File?] main_full
   Array[File?] main_summary
   Array[File?] norm_report
   Array[File?] rna_corr_report
   Array[File?] cna_corr_report
+  Array[File?] ssgsea_ome_report
+  Array[File?] ptmsea_ome_report
   Array[File?] omicsev_report
   Array[File?] cosmo_report
   Array[File?] sampleqc_report
   Array[File?] assoc_report
-  Array[File?] blacksheep_tar
   Array[File?] blacksheep_report
   Array[File?] cmap_output
   Array[File?] cmap_ssgsea_output
-  File? nmf_results
-  File? nmf_reports
+
+  ## rna main
+  File? ssgsea_rna_report
   File? immune_tar
   File? immune_report
+
+  ## unified pipeline
+  Array[File?] clumpsptm_results
+  File? clumpsptm_report
+  Array[File?] metaboanalyst_results
+  Array[File?] metaboanalyst_reports
+  File? nmf_results
+  File? nmf_reports
 
   String output_results_zip = "all_results.zip"
   String output_reports_zip = "all_reports.zip"
@@ -33,9 +44,9 @@ task panoply_unified_assemble_results {
 
     ### Setup RESULTS and REPORTS directory structure
     mkdir results
-    mkdir results/proteogenomics_analysis results/blacksheep_outlier results/nmf results/immune_analysis
+    mkdir results/proteogenomics_analysis results/nmf results/rna_analysis results/clumpsptm results/metaboanalyst
     mkdir reports
-    mkdir reports/proteogenomics_analysis reports/blacksheep_outlier reports/nmf reports/immune_analysis
+    mkdir reports/proteogenomics_analysis reports/nmf reports/rna_analysis reports/clumpsptm reports/metaboanalyst
 
     ### Dump results files into the given folders
     # MAIN 
@@ -78,6 +89,16 @@ task panoply_unified_assemble_results {
       mv ${sep=' ' cna_corr_report} reports/proteogenomics_analysis
     fi
 
+    if [ ${sep='' ssgsea_ome_report} != '' ]; then
+      cp ${sep=' ' ssgsea_ome_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' ssgsea_ome_report} reports/proteogenomics_analysis
+    fi
+
+    if [ ${sep='' ptmsea_ome_report} != '' ]; then
+      cp ${sep=' ' ptmsea_ome_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' ptmsea_ome_report} reports/proteogenomics_analysis
+    fi
+
     if [ ${sep='' omicsev_report} != '' ]; then
       cp ${sep=' ' omicsev_report} results/proteogenomics_analysis/all_html_reports
       mv ${sep=' ' omicsev_report} reports/proteogenomics_analysis
@@ -98,44 +119,66 @@ task panoply_unified_assemble_results {
       mv ${sep=' ' assoc_report} reports/proteogenomics_analysis
     fi
     
-
-    # BLACKSHEEP
-    if [ ${sep='' blacksheep_tar} != '' ]; then
-      mv ${sep=' ' blacksheep_tar} results/blacksheep_outlier
-      for filename in results/blacksheep_outlier/*.tar;
-      do 
-        folder=$(basename $filename _blacksheep.tar)
-        if [ ! -d $folder ]; then
-          mkdir results/blacksheep_outlier/$folder
-        fi
-        tar -C results/blacksheep_outlier/$folder -xvf $filename
-        rm $filename
-      done
-    fi
-
     if [ ${sep='' blacksheep_report} != '' ]; then
-      mkdir results/blacksheep_outlier/reports
-      cp ${sep=' ' blacksheep_report} results/blacksheep_outlier/reports
-      mv ${sep=' ' blacksheep_report} reports/blacksheep_outlier
+      cp ${sep=' ' blacksheep_report} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' blacksheep_report} reports/proteogenomics_analysis
     fi
+
+
+    # RNA RESULTS
+    mkdir results/rna_analysis/all_html_reports # make folder for all reports
+    if [ ${immune_tar} != '' ]; then
+      mkdir results/rna_analysis/immune_analysis
+      mv ${immune_tar} results/rna_analysis/immune_analysis
+      for filename in results/rna_analysis/immune_analysis/*.tar;do tar -C results/rna_analysis/immune_analysis -xvf $filename;rm $filename;done
+    fi
+    if [ ${immune_report} != '' ]; then
+      cp ${immune_report} results/rna_analysis/all_html_reports
+      mv ${immune_report} reports/rna_analysis
+    fi
+    if [ ${ssgsea_rna_report} != '' ]; then
+      cp ${ssgsea_rna_report} results/rna_analysis/all_html_reports
+      mv ${ssgsea_rna_report} reports/rna_analysis
+    fi
+
+    # UNIFIED RESULTS
 
     # NMF Results
     if [ ${nmf_results} != '' ]; then
       tar -C results/nmf -xvf ${nmf_results} --strip-components 1 # note: results tar already contains reports
     fi
-    
     if [ ${nmf_reports} != '' ]; then
       tar -C reports/nmf -xvf ${nmf_reports} --strip-components 1
     fi
 
-    # IMMUNE
-    if [ ${immune_tar} != '' ]; then
-      mv ${immune_tar} results/immune_analysis
-      for filename in results/immune_analysis/*.tar;do tar -C results/immune_analysis -xvf $filename;rm $filename;done
+    # ClumpsPTM
+    if [ ${sep='' clumpsptm_results} != '' ]; then
+      mv ${sep=' ' clumpsptm_results} results/clumpsptm
+      for filename in results/clumpsptm/*.tar;do 
+        foldername=$(basename "$filename" .tar)
+        mkdir -p "results/clumpsptm/$foldername"
+        tar -C "results/clumpsptm/$foldername" -xvf "$filename"
+        rm "$filename"
+      done
     fi
-    if [ ${immune_report} != '' ]; then
-      cp ${immune_report} results/immune_analysis
-        mv ${immune_report} reports/immune_analysis
+    if [ ${clumpsptm_report} != '' ]; then
+      cp ${clumpsptm_report} results/clumpsptm/all_html_reports
+      mv ${clumpsptm_report} reports/clumpsptm
+    fi
+
+    # MetaboAnalyst
+    if [ ${sep='' metaboanalyst_results} != '' ]; then
+      mv ${sep=' ' metaboanalyst_results} results/metaboanalyst
+      for filename in results/metaboanalyst/*.tar.gz;do 
+        foldername=$(basename "$filename" .tar.gz)
+        mkdir -p "results/metaboanalyst/$foldername"
+        tar -C "results/metaboanalyst/$foldername" -xvf "$filename"
+        rm "$filename"
+      done
+    fi
+    if [ ${sep='' metaboanalyst_reports} != '' ]; then
+      cp ${sep=' ' metaboanalyst_reports} results/metaboanalyst
+      mv ${sep=' ' metaboanalyst_reports} reports/metaboanalyst
     fi
 
     ### Zip up final directories
@@ -153,7 +196,7 @@ task panoply_unified_assemble_results {
   runtime {
     docker : "broadcptacdev/panoply_common:DEV"
     memory : select_first ([memory, 16]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 32]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }

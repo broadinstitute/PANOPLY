@@ -20,7 +20,7 @@ task panoply_check_yaml_default {
   
 
   runtime {
-    docker : "broadcptacdev/panoply_common:latest"
+    docker : "broadcptacdev/panoply_common:DEV"
   }
   
 
