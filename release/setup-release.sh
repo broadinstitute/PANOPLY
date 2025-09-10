@@ -12,6 +12,8 @@ reg='\033[0m'
 err="${red}Error:${reg}"
 not="${grn}====>>${reg}" ## notification
 
+reattempt_warning="====>> reattempting fissfc command"
+
 ## users (for method permissions)
 proteomics_comp=(manidr@broadinstitute.org nclark@broadinstitute.org wcorinne@broadinstitute.org)
 proteomics_cptac=(GROUP_Broad_CPTAC@firecloud.org)
@@ -47,6 +49,7 @@ fissfc_timeout() {
     echo $out
 
     if echo "$out" | grep -Eq "Error .+? timeout";then
+      echo $reattempt_warning # echo the warning for reattempts
       success=false
     else
       success=true
@@ -79,7 +82,8 @@ replaceWdlImports() {
   for mod in $modules
   do
     new_snap=$( grep ":$mod/" $repl )
-    sed -i'' -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
+    echo "$mod has snapshot $new_snap"
+    # sed -i'' -e "s|https.*:$mod/.*descriptor|$new_snap|" $wdl_f
   done
   rm $wdl_f-e
 }
@@ -102,7 +106,9 @@ put_method_config() {
     out=`fissfc config_put -w $w -p $p -c $m-template.json`
     ## check if we need to repeat
     echo $out
-    if echo "$out" | grep -Eq "Error .+? timeout"; then success=false; else success=true; fi
+    if echo "$out" | grep -Eq "Error .+? timeout"; then 
+      echo "====>> reattempting config upload"; success=false;
+    else success=true; fi
   done
 }
 
@@ -205,7 +211,7 @@ installMethod() {
   else
     fissfc_timeout meth_new -m $meth -n $release_dns -d $meth_wdl -c "Snapshot for Release v$release_tag" -s "$syn"
   fi
-    
+  
   # get method snapshot id and save release snapshot ids
   snap=$(fissfc meth_list -m $meth -n $release_dns | sort -n -k3 | tail -1 | cut -f3)
 
@@ -222,6 +228,7 @@ installMethod() {
   #  (delete method config if it exists)
   fissfc_timeout config_template -m $meth -n $release_dns -i $snap -t sample_set | \
     awk '/Error/,/timeout/{next} 1' | awk NF | \
+    sed -e "s/$reattempt_warning//g" | awk NF | \
     sed -e 's/\"EDITME[^"]*\"/""/g' | \
     jq '.name = $val' --arg val $meth > $meth-template.json
   
@@ -409,7 +416,7 @@ done
 
 ## WORKFLOWS
 workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename |  grep -vE 'panoply_nmf_workflow|panoply_main_internal|panoply_main|panoply_unified_workflow' ) ) # remove panoply_nmf_workflow, panoply_main, and panoply_unified_workflow
-workflows+=( panoply_nmf_workflow panoply_main_internal panoply_main panoply_unified_workflow ) # add to end of array, to ensure that these are built last
+workflows+=( panoply_nmf_workflow panoply_main_internal panoply_main panoply_unified_workflow ) # add to end of array, to ensure that these are built in the appropriate order
 for wk in "${workflows[@]}"
 do
   echo -e "$not Processing workflow $wk"
