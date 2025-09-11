@@ -421,8 +421,8 @@ done
 
 
 ## WORKFLOWS
-workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename |  grep -vE 'panoply_nmf_workflow|panoply_main_internal|panoply_main|panoply_unified_workflow' ) ) # remove panoply_nmf_workflow, panoply_main, and panoply_unified_workflow
-workflows+=( panoply_nmf_workflow panoply_main_internal panoply_main panoply_unified_workflow ) # add to end of array, to ensure that these are built in the appropriate order
+workflows=( $( ls -d $panoply/hydrant/workflows/panoply_* | xargs -n 1 basename |  grep -vE 'panoply_nmf_internal_workflow|panoply_nmf_workflow|panoply_main_internal|panoply_main|panoply_unified_workflow' ) ) # remove panoply_nmf_internal_workflow/panoply_nmf_workflow, panoply_main_internal/panoply_main, and panoply_unified_workflow
+workflows+=( panoply_nmf_internal_workflow panoply_nmf_workflow panoply_main_internal panoply_main panoply_unified_workflow ) # add to end of array, to ensure that these are built in the appropriate order
 for wk in "${workflows[@]}"
 do
   echo -e "$not Processing workflow $wk"
