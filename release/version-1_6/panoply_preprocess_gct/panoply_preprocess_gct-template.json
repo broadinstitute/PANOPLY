@@ -1,0 +1,39 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.SGT_col": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.acc_type": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.disk_space": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.gene_col": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.humanize_gene": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.id_type": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.id_type_out": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.input_ds": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.level": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.loc": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.memory": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.mod_res": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.mod_type": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.mode": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.num_preemptions": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.num_threads": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.output_prefix": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.seqwin_col": "",
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_preprocess_gct",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_preprocess_gct/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_preprocess_gct",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_preprocess_gct_workflow.panoply_preprocess_gct.result": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

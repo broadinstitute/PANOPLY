@@ -1,0 +1,38 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_ssgsea_workflow.panoply_ssgsea.correl_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.disk_space": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.gene_set_database": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.global_fdr": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.input_ds": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.memory": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.min_overlap": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.nperm": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.num_preemptions": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.num_threads": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.output_prefix": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.output_score_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.sample_norm_type": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.statistic": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.tolerate_min_overlap_err": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.weight": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_ssgsea",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_ssgsea/39",
+    "methodVersion": 39,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_ssgsea",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_ssgsea_workflow.panoply_ssgsea.results": "",
+    "panoply_ssgsea_workflow.panoply_ssgsea.ssgsea_min_overlap_err": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

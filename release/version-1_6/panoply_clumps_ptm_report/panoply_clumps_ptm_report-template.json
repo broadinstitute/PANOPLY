@@ -1,0 +1,27 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.disk_space": "",
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.label": "",
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.mapping_params": "",
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.memory": "",
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.num_preemptions": "",
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.num_threads": "",
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.postprocess_results": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_clumps_ptm_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_clumps_ptm_report/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_clumps_ptm_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_clumps_ptm_report_workflow.panoply_clumps_ptm_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,0 +1,33 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.cfg_yaml": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.cluster_rows": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.disk_space": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.fdr": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.geneset_groups_file": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.label": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.memory": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.num_preemptions": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.num_threads": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.ser_meth": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.split_by_prefix": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.tarball": "",
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.top_n": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_ssgsea_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_ssgsea_report/23",
+    "methodVersion": 23,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_ssgsea_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_ssgsea_report_workflow.panoply_ssgsea_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

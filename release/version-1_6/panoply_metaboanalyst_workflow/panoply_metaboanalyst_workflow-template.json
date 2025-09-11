@@ -1,0 +1,44 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_metaboanalyst_workflow.groups_file": "",
+    "panoply_metaboanalyst_workflow.meta_gct": "",
+    "panoply_metaboanalyst_workflow.ome_type": "",
+    "panoply_metaboanalyst_workflow.omic_gct": "",
+    "panoply_metaboanalyst_workflow.output_prefix": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.anal_type": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.disk_space": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.gene_column": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.gene_id_type": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.max_annot_levels": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.memory": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.meta_id_col": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.meta_id_type": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.num_preemptions": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.num_threads": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.pval_comb": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.pval_signif": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst.top_n_networks": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst_report.disk_space": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst_report.memory": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst_report.num_preemptions": "",
+    "panoply_metaboanalyst_workflow.panoply_metaboanalyst_report.num_threads": "",
+    "panoply_metaboanalyst_workflow.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_metaboanalyst_workflow",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_metaboanalyst_workflow/2",
+    "methodVersion": 2,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_metaboanalyst_workflow",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_metaboanalyst_workflow.metaboanalyst_report": "",
+    "panoply_metaboanalyst_workflow.metaboanalyst_tar": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
