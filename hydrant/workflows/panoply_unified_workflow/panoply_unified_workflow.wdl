@@ -65,12 +65,12 @@ workflow panoply_unified_workflow {
   }
 
   # genomic pairs
-  Array[Pair[String?, File?]] geneome_pairs_input =
+  Array[Pair[String?, File?]] genome_pairs_input =
     [ ("rna", rna_data),
       ("cna", cna_data) ]
-  call select_pairs.panoply_select_all_pairs as geneome_pairs { # select extant pairs
+  call select_pairs.panoply_select_all_pairs as genome_pairs { # select extant pairs
     input:
-        pairs_input = geneome_pairs_input
+        pairs_input = genome_pairs_input
   }
 
 
@@ -92,7 +92,7 @@ workflow panoply_unified_workflow {
   Array[Pair[String,File]] ome_pairs_norm_filt = zip(norm_filt.output_ome_type , norm_filt.filtered_data_table)
   
   # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for NMF & Blacksheep use:
-  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,geneome_pairs.pairs])
+  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,genome_pairs.pairs])
 
 
   ### MAIN:
