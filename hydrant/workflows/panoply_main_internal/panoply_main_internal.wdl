@@ -132,7 +132,7 @@ workflow panoply_main_internal {
           preprocess_gct=true,
           input_ds=input_ome,
           gene_set_database=ptm_db,
-          output_prefix=job_identifier,
+          output_prefix="${job_identifier}-PTM-SEA",
           level = "ssc",
           yaml_file = yaml
       }
