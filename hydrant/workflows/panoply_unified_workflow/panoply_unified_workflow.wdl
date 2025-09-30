@@ -107,7 +107,6 @@ workflow panoply_unified_workflow {
         run_ptmsea="${run_ptmsea}",
         ptm_db=ptm_db,
         run_cmap = "${run_cmap}",
-        run_omicsev = "${if pair.left=='proteome' then true else false}",
         run_nmf = "false",
         input_cna=cna_data,
         input_rna=rna_data,
@@ -224,7 +223,9 @@ workflow panoply_unified_workflow {
       metaboanalyst_reports = metab.metaboanalyst_report,
       nmf_results = nmf.nmf_results,
       nmf_reports = nmf.nmf_reports,
-      immune_report = rna.immune_analysis_report
+      immune_report = rna.immune_analysis_report,
+      rna_blacksheep_report = rna.blacksheep_report,
+      rna_assoc_report = rna.association_report
   }
   
   output {
