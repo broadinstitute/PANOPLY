@@ -78,7 +78,7 @@ parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for 
 parser.add_argument("--keep_multi_sites", type=str2bool, help="Should multi-site PTMs be mapped?.")
 parser.add_argument("--filter_duplicate_sites", type=str2bool, help="Should multi-site PTMs be filtered to remove sites that were observed as single-sites?")
 
-parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.", required=True)
+parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.", required=True) # expected directory structure is: ${PDB_DIR}/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
 parser.add_argument("--UNIPROT_SWISSPROT", type=str, help="Reference FASTA file with all relevant UNIPROT sequences, to BLAST your sequences to.", required=True)
 parser.add_argument("--SIFTS_DB", type=str, help="SIFTS database containing mapping between UNIPROT IDs and PDB IDs.", required=True)
 
@@ -294,6 +294,8 @@ filt_in_df = [bool(pattern.search(fasta)) for fasta in individual_fastas_all] # 
 #itertools.compress(individual_fastas_all,filt_in_df)
 individual_fastas = list(itertools.compress(individual_fastas_all,filt_in_df))
 
+if len(individual_fastas) == 0:
+    raise Exception("No matching accession-numbers between '"+accn_col+"' column and FASTA sequence IDs")
 
 print("\n#### FASTA FILE-SPLITTING COMPLETE  --- ", datetime.now())
 
