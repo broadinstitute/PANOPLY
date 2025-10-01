@@ -294,6 +294,8 @@ filt_in_df = [bool(pattern.search(fasta)) for fasta in individual_fastas_all] # 
 #itertools.compress(individual_fastas_all,filt_in_df)
 individual_fastas = list(itertools.compress(individual_fastas_all,filt_in_df))
 
+if len(individual_fastas) == 0:
+    raise Exception("No matching accession-numbers between '"+accn_col+"' column and FASTA sequence IDs")
 
 print("\n#### FASTA FILE-SPLITTING COMPLETE  --- ", datetime.now())
 
