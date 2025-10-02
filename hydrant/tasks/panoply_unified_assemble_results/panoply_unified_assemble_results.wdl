@@ -26,10 +26,10 @@ task panoply_unified_assemble_results {
   File? immune_report
 
   ## unified pipeline
-  Array[File?] clumpsptm_results
+  Array[File?]? clumpsptm_results
   File? clumpsptm_report
-  Array[File?] metaboanalyst_results
-  Array[File?] metaboanalyst_reports
+  Array[File?]? metaboanalyst_results
+  Array[File?]? metaboanalyst_reports
   File? nmf_results
   File? nmf_reports
 
