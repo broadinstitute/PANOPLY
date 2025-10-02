@@ -27,8 +27,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_clumps_ptm_mapping",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_clumps_ptm_mapping/3",
-    "methodVersion": 3,
+    "methodUri": "agora://broadcptac/panoply_clumps_ptm_mapping/4",
+    "methodVersion": 4,
     "sourceRepo": "agora"
   },
   "name": "panoply_clumps_ptm_mapping",

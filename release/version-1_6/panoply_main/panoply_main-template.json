@@ -368,8 +368,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_main",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_main/41",
-    "methodVersion": 41,
+    "methodUri": "agora://broadcptac/panoply_main/42",
+    "methodVersion": 42,
     "sourceRepo": "agora"
   },
   "name": "panoply_main",

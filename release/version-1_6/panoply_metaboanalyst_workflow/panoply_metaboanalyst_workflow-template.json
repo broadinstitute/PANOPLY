@@ -29,8 +29,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_metaboanalyst_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_metaboanalyst_workflow/2",
-    "methodVersion": 2,
+    "methodUri": "agora://broadcptac/panoply_metaboanalyst_workflow/3",
+    "methodVersion": 3,
     "sourceRepo": "agora"
   },
   "name": "panoply_metaboanalyst_workflow",

@@ -598,6 +598,7 @@
     "panoply_unified_workflow.pome.run_cmap_analysis.permutation.num_threads": "",
     "panoply_unified_workflow.pome.run_cmap_analysis.rankpt_n": "",
     "panoply_unified_workflow.pome.run_cmap_analysis.top_N": "",
+    "panoply_unified_workflow.pome.run_omicsev": "",
     "panoply_unified_workflow.pome.sample_na_max": "",
     "panoply_unified_workflow.pome.standalone": "",
     "panoply_unified_workflow.pome.subset_bucket": "",
@@ -840,8 +841,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_unified_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_unified_workflow/47",
-    "methodVersion": 47,
+    "methodUri": "agora://broadcptac/panoply_unified_workflow/49",
+    "methodVersion": 49,
     "sourceRepo": "agora"
   },
   "name": "panoply_unified_workflow",

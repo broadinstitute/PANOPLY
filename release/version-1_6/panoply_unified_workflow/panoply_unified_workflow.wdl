@@ -2,13 +2,13 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/20/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/39/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/41/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main_internal/versions/2/plain-WDL/descriptor" as main_internal_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_clumps_ptm_workflow/versions/2/plain-WDL/descriptor" as clumps_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_metaboanalyst_workflow/versions/2/plain-WDL/descriptor" as metab_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_workflow/versions/19/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_assemble_results/versions/13/plain-WDL/descriptor" as assemble_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/40/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/42/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main_internal/versions/3/plain-WDL/descriptor" as main_internal_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_clumps_ptm_workflow/versions/3/plain-WDL/descriptor" as clumps_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_metaboanalyst_workflow/versions/3/plain-WDL/descriptor" as metab_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_workflow/versions/20/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_assemble_results/versions/16/plain-WDL/descriptor" as assemble_wdl
 
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/32/plain-WDL/descriptor" as check_yaml_default_wdl
 
@@ -65,12 +65,12 @@ workflow panoply_unified_workflow {
   }
 
   # genomic pairs
-  Array[Pair[String?, File?]] geneome_pairs_input =
+  Array[Pair[String?, File?]] genome_pairs_input =
     [ ("rna", rna_data),
       ("cna", cna_data) ]
-  call select_pairs.panoply_select_all_pairs as geneome_pairs { # select extant pairs
+  call select_pairs.panoply_select_all_pairs as genome_pairs { # select extant pairs
     input:
-        pairs_input = geneome_pairs_input
+        pairs_input = genome_pairs_input
   }
 
 
@@ -92,7 +92,7 @@ workflow panoply_unified_workflow {
   Array[Pair[String,File]] ome_pairs_norm_filt = zip(norm_filt.output_ome_type , norm_filt.filtered_data_table)
   
   # This takes the array of pairs of normalized proteomics data and combines it with the array of pairs of RNA+CNA data for NMF & Blacksheep use:
-  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,geneome_pairs.pairs])
+  Array[Pair[String,File]] all_pairs = flatten([ome_pairs_norm_filt,genome_pairs.pairs])
 
 
   ### MAIN:
@@ -107,7 +107,6 @@ workflow panoply_unified_workflow {
         run_ptmsea="${run_ptmsea}",
         ptm_db=ptm_db,
         run_cmap = "${run_cmap}",
-        run_omicsev = "${if pair.left=='proteome' then true else false}",
         run_nmf = "false",
         input_cna=cna_data,
         input_rna=rna_data,
@@ -224,7 +223,9 @@ workflow panoply_unified_workflow {
       metaboanalyst_reports = metab.metaboanalyst_report,
       nmf_results = nmf.nmf_results,
       nmf_reports = nmf.nmf_reports,
-      immune_report = rna.immune_analysis_report
+      immune_report = rna.immune_analysis_report,
+      rna_blacksheep_report = rna.blacksheep_report,
+      rna_assoc_report = rna.association_report
   }
   
   output {

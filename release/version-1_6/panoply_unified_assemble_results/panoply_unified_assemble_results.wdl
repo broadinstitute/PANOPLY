@@ -20,14 +20,16 @@ task panoply_unified_assemble_results {
 
   ## rna main
   File? ssgsea_rna_report
+  File? rna_blacksheep_report
+  File? rna_assoc_report
   File? immune_tar
   File? immune_report
 
   ## unified pipeline
-  Array[File?] clumpsptm_results
+  Array[File?]? clumpsptm_results
   File? clumpsptm_report
-  Array[File?] metaboanalyst_results
-  Array[File?] metaboanalyst_reports
+  Array[File?]? metaboanalyst_results
+  Array[File?]? metaboanalyst_reports
   File? nmf_results
   File? nmf_reports
 
@@ -139,6 +141,14 @@ task panoply_unified_assemble_results {
     if [ ${ssgsea_rna_report} != '' ]; then
       cp ${ssgsea_rna_report} results/rna_analysis/all_html_reports
       mv ${ssgsea_rna_report} reports/rna_analysis
+    fi
+    if [ ${rna_blacksheep_report} != '' ]; then
+      cp ${rna_blacksheep_report} results/rna_analysis/all_html_reports
+      mv ${rna_blacksheep_report} reports/rna_analysis
+    fi
+    if [ ${rna_assoc_report} != '' ]; then
+      cp ${rna_assoc_report} results/rna_analysis/all_html_reports
+      mv ${rna_assoc_report} reports/rna_analysis
     fi
 
     # UNIFIED RESULTS
