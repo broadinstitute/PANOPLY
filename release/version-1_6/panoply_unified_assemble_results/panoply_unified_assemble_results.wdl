@@ -204,7 +204,7 @@ task panoply_unified_assemble_results {
   }
   
   runtime {
-    docker : "broadcptacdev/panoply_common:latest"
+    docker : "broadcptac/panoply_common:1_6"
     memory : select_first ([memory, 16]) + "GB"
     disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""

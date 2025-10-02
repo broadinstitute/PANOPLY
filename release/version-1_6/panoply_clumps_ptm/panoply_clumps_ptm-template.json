@@ -1,0 +1,34 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.DEBUG_MODE": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.PDB_ref_bucket": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.accession_col": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.diff_exp_file": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.disk_space": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.memory": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.num_preemptions": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.num_threads": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.output_prefix": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.run_combined": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.var_sites_file": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.variable_sites_col": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.weight_col": "",
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.yaml_file": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_clumps_ptm",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_clumps_ptm/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_clumps_ptm",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_clumps_ptm_workflow.panoply_clumps_ptm.results": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

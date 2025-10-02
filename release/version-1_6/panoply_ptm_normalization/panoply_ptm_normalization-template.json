@@ -1,0 +1,34 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.accession_number_col": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.accession_numbers_col": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.accession_numbers_sep": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.disk_space": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.gene_symbol_colname": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.memory": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.mode": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.num_preemptions": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.num_threads": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.proteome_gct": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.ptm_gct": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.score_col": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.use_gene_symbol": "",
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.yaml": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_ptm_normalization",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_ptm_normalization/12",
+    "methodVersion": 12,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_ptm_normalization",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_ptm_normalization_workflow.panoply_ptm_normalization.gct_out": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}

@@ -1,0 +1,26 @@
+{
+  "deleted": false,
+  "inputs": {
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.disk_space": "",
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.label": "",
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.memory": "",
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.metaboanalyst_results": "",
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.num_preemptions": "",
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.num_threads": ""
+  },
+  "methodConfigVersion": 1,
+  "methodRepoMethod": {
+    "methodName": "panoply_metaboanalyst_report",
+    "methodNamespace": "broadcptac",
+    "methodUri": "agora://broadcptac/panoply_metaboanalyst_report/1",
+    "methodVersion": 1,
+    "sourceRepo": "agora"
+  },
+  "name": "panoply_metaboanalyst_report",
+  "namespace": "broadcptac",
+  "outputs": {
+    "panoply_metaboanalyst_report_workflow.panoply_metaboanalyst_report.report": ""
+  },
+  "prerequisites": {},
+  "rootEntityType": "sample_set"
+}
