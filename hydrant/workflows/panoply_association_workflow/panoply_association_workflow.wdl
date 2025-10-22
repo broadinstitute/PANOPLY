@@ -56,7 +56,6 @@ workflow panoply_association_workflow {
 		input:
 			input_ds = "${f}",
 			level = "gc",
-			mode = "abs.max", # association contrasts are log-transformed signed p-values and should be combined by abs.max
 			yaml_file = yaml
 		}
 		## Run ssGSEA

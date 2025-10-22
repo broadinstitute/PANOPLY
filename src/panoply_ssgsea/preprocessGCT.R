@@ -31,7 +31,18 @@ option_list <- list(
   )
 
 # parse command line parameters
-opt <- parse_args( OptionParser(option_list=option_list) )
+opt <- parse_args( OptionParser(option_list=option_list),
+                   # args = c("-i", "/opt/input/20251015_normalizePTM-proteome-relative-norm.gct",
+                   #          "-y", "/opt/input/master-parameters.yaml",
+                   #          "--level", "ssc",
+                   #          "--acc_type_in", "uniprot",
+                   #          "--id_type_out", "seqwin",
+                   #          "--id_type", "ph",
+                   #          "--gene_symbol_column", "gene_symbol_column",
+                   #          "--seqwin_column", "PTM.FlankingRegion",
+                   #          "-u", TRUE, "-z", "/home/pgdac/src"
+                   #          )
+                   )
 
 source(glue("{opt$libdir}/panoply_ptmsea_functions.R"))
 source(glue("{opt$libdir}/parse_yaml_preprocess_gct.R"))
