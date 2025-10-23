@@ -25,8 +25,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_preprocess_gct",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_preprocess_gct/1",
-    "methodVersion": 1,
+    "methodUri": "agora://broadcptac/panoply_preprocess_gct/2",
+    "methodVersion": 2,
     "sourceRepo": "agora"
   },
   "name": "panoply_preprocess_gct",

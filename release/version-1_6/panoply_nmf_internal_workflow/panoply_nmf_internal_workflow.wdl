@@ -5,7 +5,7 @@ import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_balance_
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf/versions/6/plain-WDL/descriptor" as panoply_nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_postprocess/versions/4/plain-WDL/descriptor" as panoply_nmf_postprocess_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_report/versions/5/plain-WDL/descriptor" as panoply_nmf_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_workflow/versions/3/plain-WDL/descriptor" as panoply_ssgsea_workflow_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_workflow/versions/4/plain-WDL/descriptor" as panoply_ssgsea_workflow_wdl
 
 ################################################
 ##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
@@ -102,9 +102,6 @@ workflow panoply_nmf_internal_workflow {
 				gene_col=gene_column,
 				tolerate_min_overlap_err="true", # tolerate having < min_overlap genes in common with gene_set_database, since W-matrix feature space may be small for some ome-types
 				yaml_file=yaml_file,
-				output_prefix=label,
-	 			mode="abs.max",
-				weight=1,
 				output_prefix=label
 				
 		}

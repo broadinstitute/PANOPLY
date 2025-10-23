@@ -2,12 +2,12 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/20/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/40/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/42/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main_internal/versions/3/plain-WDL/descriptor" as main_internal_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_clumps_ptm_workflow/versions/3/plain-WDL/descriptor" as clumps_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_metaboanalyst_workflow/versions/3/plain-WDL/descriptor" as metab_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_workflow/versions/20/plain-WDL/descriptor" as nmf_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/41/plain-WDL/descriptor" as norm_filt_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main/versions/43/plain-WDL/descriptor" as main_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main_internal/versions/4/plain-WDL/descriptor" as main_internal_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_clumps_ptm_workflow/versions/4/plain-WDL/descriptor" as clumps_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_metaboanalyst_workflow/versions/4/plain-WDL/descriptor" as metab_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_nmf_workflow/versions/21/plain-WDL/descriptor" as nmf_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_unified_assemble_results/versions/16/plain-WDL/descriptor" as assemble_wdl
 
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_check_yaml_default/versions/32/plain-WDL/descriptor" as check_yaml_default_wdl

@@ -2,7 +2,7 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main_internal/versions/3/plain-WDL/descriptor" as panoply_main_internal
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_main_internal/versions/4/plain-WDL/descriptor" as panoply_main_internal
 ## Proteogenomic
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_harmonize/versions/19/plain-WDL/descriptor" as harmonize_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_rna_protein_correlation/versions/20/plain-WDL/descriptor" as rna_prot_corr_wdl
