@@ -228,7 +228,7 @@ panoply_nmf_postprocess:
 ## ssGSEA default  parameters (projection)
 panoply_ssgsea:
   nperm: 1000
-  weight: 0.75
+  weight: 0                     ## NOTE (2025-10-21) weight is currently bugged and should not be changed from 0 (historical default was 0.75)
   sample_norm_type: "rank"      ## rank, log, log.rank, none
   correl_type: "z.score"        ## "rank", "z.score", "symm.rank"
   statistic: "area.under.RES"   ## "area.under.RES", "Kolmogorov-Smirnov" 
@@ -252,7 +252,7 @@ panoply_preprocess_gct:
  humanize_gene_names: FALSE     ## If TRUE, gene symbols will be capitalized (for e.g. mouse or rat).
  sgt_column: subgroupNum        ## Column used to collpase subgroup-top (SGT) reports.
  localized: TRUE                ## CAUTION: it is NOT RECOMMENDED to set this flag to FALSE. If TRUE only fully localized sites will be considered.
- mode: median                   ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - for log-transformed, signed p-values.
+ mode: "abs.max"                ## Determines how multiple sites per gene will be combined: sd - most variable (standard deviation) across sample columns; SGT - subgroup top: first subgroup in protein group (Spectrum Mill); abs.max - most extreme value across sites; median - median value across sites
  residue: "S|T|Y"               ## Modified residues, e.g. "S|T|Y" or "K".
  ptm: p                         ## Type of modification, e.g "p" or "ac".
  

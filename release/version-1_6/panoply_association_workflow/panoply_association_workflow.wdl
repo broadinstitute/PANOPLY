@@ -3,8 +3,8 @@
 #
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association/versions/27/plain-WDL/descriptor" as assoc_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_accumulate/versions/23/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_preprocess_gct/versions/1/plain-WDL/descriptor" as preprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/39/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_preprocess_gct/versions/2/plain-WDL/descriptor" as preprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/40/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_association_report/versions/24/plain-WDL/descriptor" as 	assoc_report_wdl
 
 ################################################
@@ -56,7 +56,6 @@ workflow panoply_association_workflow {
 		input:
 			input_ds = "${f}",
 			level = "gc",
-			mode = "abs.max", # association contrasts are log-transformed signed p-values and should be combined by abs.max
 			yaml_file = yaml
 		}
 		## Run ssGSEA

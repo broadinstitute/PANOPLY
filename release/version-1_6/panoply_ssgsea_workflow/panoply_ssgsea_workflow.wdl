@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_preprocess_gct/versions/1/plain-WDL/descriptor" as preprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/39/plain-WDL/descriptor" as ssgsea_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_preprocess_gct/versions/2/plain-WDL/descriptor" as preprocess_wdl
+import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea/versions/40/plain-WDL/descriptor" as ssgsea_wdl
 import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_ssgsea_report/versions/23/plain-WDL/descriptor" as ssgsea_report_wdl
 
 ################################################

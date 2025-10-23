@@ -52,6 +52,7 @@
     "panoply_nmf_internal_workflow.ssgsea.min_overlap": "",
     "panoply_nmf_internal_workflow.ssgsea.mod_res": "",
     "panoply_nmf_internal_workflow.ssgsea.mod_type": "",
+    "panoply_nmf_internal_workflow.ssgsea.mode": "",
     "panoply_nmf_internal_workflow.ssgsea.nperm": "",
     "panoply_nmf_internal_workflow.ssgsea.output_score_type": "",
     "panoply_nmf_internal_workflow.ssgsea.preprocess.disk_space": "",
@@ -75,6 +76,7 @@
     "panoply_nmf_internal_workflow.ssgsea.ssgsea_report.split_by_prefix": "",
     "panoply_nmf_internal_workflow.ssgsea.ssgsea_report.top_n": "",
     "panoply_nmf_internal_workflow.ssgsea.statistic": "",
+    "panoply_nmf_internal_workflow.ssgsea.weight": "",
     "panoply_nmf_internal_workflow.tol": "",
     "panoply_nmf_internal_workflow.var": "",
     "panoply_nmf_internal_workflow.yaml_file": "",
@@ -85,8 +87,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_nmf_internal_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_nmf_internal_workflow/23",
-    "methodVersion": 23,
+    "methodUri": "agora://broadcptac/panoply_nmf_internal_workflow/24",
+    "methodVersion": 24,
     "sourceRepo": "agora"
   },
   "name": "panoply_nmf_internal_workflow",

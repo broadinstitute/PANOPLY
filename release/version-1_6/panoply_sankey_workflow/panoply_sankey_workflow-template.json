@@ -23,8 +23,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_sankey_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_sankey_workflow/21",
-    "methodVersion": 21,
+    "methodUri": "agora://broadcptac/panoply_sankey_workflow/22",
+    "methodVersion": 22,
     "sourceRepo": "agora"
   },
   "name": "panoply_sankey_workflow",

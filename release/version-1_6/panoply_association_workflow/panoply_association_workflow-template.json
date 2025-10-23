@@ -37,6 +37,7 @@
     "panoply_association_workflow.preprocess.memory": "",
     "panoply_association_workflow.preprocess.mod_res": "",
     "panoply_association_workflow.preprocess.mod_type": "",
+    "panoply_association_workflow.preprocess.mode": "",
     "panoply_association_workflow.preprocess.num_preemptions": "",
     "panoply_association_workflow.preprocess.num_threads": "",
     "panoply_association_workflow.preprocess.output_prefix": "",
@@ -62,8 +63,8 @@
   "methodRepoMethod": {
     "methodName": "panoply_association_workflow",
     "methodNamespace": "broadcptac",
-    "methodUri": "agora://broadcptac/panoply_association_workflow/25",
-    "methodVersion": 25,
+    "methodUri": "agora://broadcptac/panoply_association_workflow/26",
+    "methodVersion": 26,
     "sourceRepo": "agora"
   },
   "name": "panoply_association_workflow",
