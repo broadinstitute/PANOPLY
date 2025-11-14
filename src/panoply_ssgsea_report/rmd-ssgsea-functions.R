@@ -163,6 +163,8 @@ pw_hm <- function(output.prefix,
                   ser.meth='ARSA',                 ## Seriation method used to (attempt to) arrange the matrix.
                   cw=10,                           ## heatmap cellwidth 
                   ch=10,                           ## heatmap cellheight
+                  width_override=NULL,             ## manual override for heatmap width
+                  height_override=NULL,            ## manual override for heatmap height
                   
                   remove_prefix = FALSE,           ## Toggle to remove common prefixes for names (e.g. "HALLMARK_MITOTIC_SPINDLE" -> "MITOTIC_SPINDLE")
                   normalize_names = FALSE,         ## Toggle for normalizing pathway names (e.g. "MITOTIC_SPINDLE" -> "Mitotic Spindle")
@@ -389,11 +391,19 @@ pw_hm <- function(output.prefix,
       lgd_width = convertX(min_legend_width, 'inches', valueOnly = TRUE) + # add minimum legend width
         convertX(max_legend_text, 'inches', valueOnly = TRUE) # add max legend text-length
       width = hm_width+lgd_width + padding # calculate total width + padding
+      if (!is.null(width_override)) {
+        print(glue("Auto-calculated heatmap width of {width}in. will be overriden by provided width of {width_override}in."))
+        width = width_override
+      }
         
       height = convertX(unit(nrow(mat.filt) * ch*1.5, "point"), 'inches', valueOnly = TRUE) + # heatmap height
         convertX(ComplexHeatmap::max_text_width(colnames(mat.filt)),'inches', valueOnly = TRUE) + padding # column-name text, + 1 for padding
       if (ext=='.pdf') pdf(paste0(fn.out,ext), width = width, height = height)
       if (ext=='.png') png(paste0(fn.out,ext), width = width, height = height, units = 'in', res=300)
+      if (!is.null(height_override)) {
+        print(glue("Auto-calculated heatmap height of {height}in. will be overriden by provided height of {height_override}in."))
+        height = height_override
+      }
       
       ## plot heatmap and legend side-by-side
       grid.arrange(ht_grob, lgd_grob, ncol=2, widths=c(hm_width,lgd_width))
