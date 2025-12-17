@@ -1,3 +1,4 @@
+version 1.0
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
