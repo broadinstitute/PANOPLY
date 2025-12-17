@@ -30,8 +30,7 @@ task panoply_ssgsea {
 		set -euo pipefail
 		
 		# run ssgsea/ptm-sea
-		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${default=NA output_prefix} -n ${default=NA sample_norm_type} -w ${default=NA weight} -c ${default=NA correl_type} -t ${default=NA statistic} -s ${default=NA output_score_type} -p ${default=NA nperm} -m ${default=NA min_overlap} ${"-q " + tolerate_min_overlap_err} -g ${default=NA global_fdr} -z /home/pgdac
-
+		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${default="NA" output_prefix} -n ${default="NA" sample_norm_type} -w ${default="NA" weight} -c ${default="NA" correl_type} -t ${default="NA" statistic} -s ${default="NA" output_score_type} -p ${default="NA" nperm} -m ${default="NA" min_overlap} ${"-q " + tolerate_min_overlap_err} -g ${default="NA" global_fdr} -z /home/pgdac
 
 		## tar results
 
