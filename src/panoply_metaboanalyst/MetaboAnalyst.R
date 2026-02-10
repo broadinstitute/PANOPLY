@@ -26,6 +26,8 @@ option_list <- list(
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
   make_option( c("-k", "--top_n_networks"), action='store', type='numeric', dest='top_n_networks', help='Top N networks to plot per annot subvalue.'), 
   make_option( c("-r", "--impact_metric"), action='store', type='numeric', dest='impact_metric', help="Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality)."), 
+  make_option( c("--min_overlap"), action='store', type='numeric', dest='min_overlap', help='Minimum number of overlapping features required for pathway enrichment analysis.'), 
+  make_option( c("--background_filter"), action='store', type='logical', dest='background_filter', help='Whether to filter pathway entries to only those present in the dataset (TRUE) or use all pathway entries (FALSE). Default is TRUE.'), 
   #### General Parameters ####
   make_option( c("-x", "--output_prefix"), action='store', type='character',  dest='output_prefix', help='Label associated with this run.'),  # default = 2),
   make_option( c("-f", "--output_directory"), action='store', type='character',  dest='output_dir', help='Directory to output files to.',  default = 'results/'),
@@ -39,25 +41,27 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                        # # for testing arguments
                        # args = c(
                        #   # '--metabolome_gct',"/opt/input/HMDB_ID_GCTs/ODG-v2_2-metabolomics_log_norm-HMDB_UNIQUE.gct",
-                       #   '--metabolome_gct',"/opt/input/ODG-v3-metabolome-all-log2-median-norm-QCfilter.gct",
+                       #   '--metabolome_gct',"/opt/input/ODG-v4-metabolome-all-log2-median-norm-QCfilter-NMFk3core_n56x647.gct",
                        #   # '-n',"hmdb_id",
                        #   '-i',"HMDB.ID",
                        #   # '-n',"kegg_id",
                        #   # '-i',"KEGG.ID",
-                       #   '--ome_gct',"/opt/input/ODG-v3-proteome-SpectrumMill-ratio-QCfilter-NArm.gct",
-                       #   '-t',"prot",
-                       # #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
-                       # #   # '-t',"RNA",
-                       # #   # '-g',"opt/input/sample-info.csv",
-                       #   '-g',"opt/input/ODG-v3-sample-annotation.csv",
-                       # #   '-l',"15",
-                       # #   '-a',"QEA",
+                       #   '--ome_gct',"opt/input/ODG-v4-proteome-SpectrumMill-ratio-QCfilter-NArm-NMFk3core_n80x12650.gct",
+                       #   '-t',"proteome",
+                       #   #   # '--ome_gct',"opt/input/ODG-v2_2-rnaseq-expression-TPM-protein-coding-log2-median-norm-NArm-with-NMF.gct",
+                       #   #   # '-t',"RNA",
+                       #   #   # '-g',"opt/input/sample-info.csv",
+                       #   '-g',"opt/input/groups-subset-subsetted.csv",
+                       #   #   '-l',"15",
+                       #   #   '-a',"QEA",
                        #   # '-b',"pvalo",
-                       # #   '-p',"0.01",
-                       # #   '-k',"15",
+                       #   #   '-p',"0.01",
+                       #   #   '-k',"15",
                        #   # '-r',"Impact.CC",
+                       #   # '--background_filter', 'FALSE',
+                       #   # '--min_overlap', '0',
                        #   '-y',"opt/input/master-parameters.yaml",
-                       # #   # '-f',"/opt/input/prelim_results",
+                       #   #   # '-f',"/opt/input/prelim_results",
                        #   '-x',"ODG_v3")
 )
 
@@ -86,6 +90,8 @@ if ( !is.null(opt$yaml_file) ) {
   if (is.null(opt$pval_signif)) opt$pval_signif = yaml_metaboanalyst$pval_signif
   if (is.null(opt$top_n_networks)) opt$top_n_networks = yaml_metaboanalyst$top_n_networks
   if (is.null(opt$impact_metric)) opt$impact_metric = yaml_metaboanalyst$impact_metric
+  if (is.null(opt$min_overlap)) opt$min_overlap = yaml_metaboanalyst$min_overlap
+  if (is.null(opt$background_filter)) opt$background_filter = yaml_metaboanalyst$background_filter
 } else { # if no YAML was provieded
   # check if any necessary parameters are missing
   if( any(sapply(list(opt$meta_id_type, 
@@ -162,9 +168,9 @@ if (multiomic) {
     pathway_list = list(ID = pathway,
                         name = names(pathways_qs$path.ids[pathways_qs$path.ids==pathway]),
                         entries = unlist(sapply(pathways_qs$mset.list[[pathway]], USE.NAMES=F, # unlist pathway elements
-                                                function(x) {strsplit(x, " ", fixed = TRUE)} )), # and separate strings into single entries
-                        cmpd.counts = sum(grepl(glue("^(cpd)|(gl):"), pathways_qs$mset.list[[pathway]])), # count compounds (before unlisting)
-                        gene.counts = sum(grepl(glue("^hsa:"), pathways_qs$mset.list[[pathway]]))) # count genes (before unlisting)
+                                                function(x) {strsplit(x, " ", fixed = TRUE)} )))#, # and separate strings into single entries
+                        # cmpd.counts = sum(grepl(glue("^(cpd)|(gl):"), pathways_qs$mset.list[[pathway]])), # count compounds (before unlisting)
+                        # gene.counts = sum(grepl(glue("^hsa:"), pathways_qs$mset.list[[pathway]]))) # count genes (before unlisting)
     return(pathway_list)
   })
   names(pathways) = pathways_qs$path.ids
@@ -172,9 +178,9 @@ if (multiomic) {
   pathway_id_type = list(meta="kegg_id",
                          gene="ENTREZID")
   
-  # get unique compound / gene counts
-  unique.cmpd = pathways_qs$uniq.cmpd.count
-  unique.gene = pathways_qs$uniq.gene.count
+  # # get unique compound / gene counts
+  # unique.cmpd = pathways_qs$uniq.cmpd.count
+  # unique.gene = pathways_qs$uniq.gene.count
   
   # binary toggle for topological measures
   has_topology = TRUE
@@ -194,16 +200,16 @@ if (multiomic) {
   pathways = lapply(pathways_gmt, function(p) {
     pathway_list = list(ID = p$id,
                         name = p$name,
-                        entries = p$genes,
-                        cmpd.counts = length(unique(p$genes)) # only take unique values
-                                      + max(sum(p$genes=='NA')-1, 0) ) # but also count every NA as a unique compound
+                        entries = p$genes)#,
+                        # cmpd.counts = length(unique(p$genes)) # only take unique values
+                        #               + max(sum(p$genes=='NA')-1, 0) ) # but also count every NA as a unique compound
     return(pathway_list)
   })
   # set pathway IDs
   pathway_id_type = list(meta="hmdb_id")
   
-  # get unique compound counts
-  unique.cmpd = length(unique(unlist(lapply(pathways_gmt, function(p) {p$genes})))) # get unique genes
+  # # get unique compound counts
+  # unique.cmpd = length(unique(unlist(lapply(pathways_gmt, function(p) {p$genes})))) # get unique genes
   
   # binary toggle for topological measures
   has_topology = FALSE
@@ -310,6 +316,53 @@ all_features = meta_input@rid
 if (multiomic) { all_features = c(all_features, ome_input@rid) }
 
 
+
+# set up background filtering so that pathways are only tested on features present in the dataset
+if ( !opt$background_filter ) {
+  # legacy behavior: subset pathways to compound/gene type, but use all IDs from pathway database (not filtered to dataset)
+  
+  ## get feature counts for all pathways
+  if (multiomic) {
+    # extract all unique compound and gene IDs from pathway database
+    all_pathway_compounds = unique(unlist(lapply(pathways, function(p) {
+      p$entries[grepl("^(cpd|gl):", p$entries)]
+    })))
+    all_pathway_genes = unique(unlist(lapply(pathways, function(p) {
+      p$entries[grepl("^hsa:", p$entries)]
+    })))
+    all_pathway_features = unique(unlist(lapply(pathways, function(p) {p$entries})))
+  } else {
+    # in single-omic mode, all pathway entries are compounds
+    all_pathway_compounds = unique(unlist(lapply(pathways, function(p) {p$entries})))
+    all_pathway_genes = NULL
+    all_pathway_features = all_pathway_compounds
+  }
+
+  # set up background filtering to assume all features in pathway DB are present
+  if (multiomic) {
+    background_meta = all_pathway_compounds # all compounds in pathway database
+    background_ome = all_pathway_genes # all genes in pathway database
+    background_mo = all_pathway_features # all features in pathway database
+  } else {
+    background_meta = all_pathway_compounds # all compounds in pathway database
+    background_ome = NULL
+    background_mo = NULL
+  }
+} else {
+  # default behavior: filter to dataset features AND subset to compound/gene type
+  if (multiomic) {
+    # in multiomic mode, separate metabolite and gene features from dataset
+    background_meta = all_features[grepl("^(cpd|gl):", all_features)] # metabolite features (cpd: or gl:) in dataset
+    background_ome = all_features[grepl("^hsa:", all_features)] # gene features (hsa:) in dataset
+    background_mo = all_features # all features in dataset for combined analysis
+  } else {
+    # in single-omic mode, all_features contains only metabolites
+    background_meta = all_features
+    background_ome = NULL
+    background_mo = NULL
+  }
+}
+
 ################################
 ####  Perform Enrichement   ####
 ################################
@@ -350,13 +403,37 @@ gct.to.qea.input = function(gct, annot_of_interest, value_of_interest, annots = 
   return(list(mat = mat,
               cls = cls))
 }
-q.ea = function(mat, cls, pathways, uniq.len = NULL, p.val.min=2.3233E-11) {
+q.ea = function(mat, cls, pathways, background=NULL, p.val.min=2.3233E-11, min_overlap=NULL) {
   if (dim(mat)[1] != length(cls)) stop(glue("Matrix ({dim(mat)[1]}) and CLS vector ({length(cls)}) have differing dimensions. Please ensure that your matrix has samples for rows and columns for features, and that your CLS has an entry for every sample."))
   if (!is.numeric(cls)) stop(glue("CLS vector is not numeric! Please supply a binary numeric vector to annotate your samples."))
   
   #### Enrichment Analysis ####
-  # number of entries in pathways
-  if(is.null(uniq.len)) uniq.len = sapply(pathways, function(p) {sum(length(unique(p$entries)))})
+  # calculate original pathway sizes (before filtering)
+  uniq.len.all = sapply(pathways, function(p) {length(unique(p$entries))})
+  
+  # filter pathway entries to background if provided (features in dataset)
+  if (!is.null(background)) {
+    # filter each pathway's entries to only those in background
+    pathways_filtered = lapply(pathways, function(p) {
+      p$entries_filtered = p$entries[p$entries %in% background]
+      return(p)
+    })
+    # get all unique entries in pathways that are in background
+    current.universe <- unique(unlist(lapply(pathways_filtered, function(p) {p$entries_filtered})))
+    # recalculate pathway sizes based on filtered entries
+    uniq.len = sapply(pathways_filtered, function(p) {length(unique(p$entries_filtered))})
+    # recalculate universe size based on filtered entries
+    uniq.count = length(current.universe)
+  } else {
+    # use original pathway entries (no filtering) - original behavior
+    # get all unique entries in pathways (full pathway database)
+    current.universe <- unique(unlist(lapply(pathways, function(p) {p$entries})))
+    # use original pathway sizes (all entries, not filtered)
+    uniq.len = sapply(pathways, function(p) {length(unique(p$entries))})
+    # universe size is all unique entries in pathway database
+    uniq.count = length(current.universe)
+  }
+  
   # number of hits in pathways
   pathway.hits = sapply(pathways, function(p) {
     x = p$entries
@@ -371,23 +448,26 @@ q.ea = function(mat, cls, pathways, uniq.len = NULL, p.val.min=2.3233E-11) {
   # wrangle outputs
   res.df = data.frame(ID = names(pathways),
                       Pathway.Name = unname(sapply(pathways, USE.NAMES=F, function(p) {p$name})), # pull name into DF
-                      N.Entries = uniq.len,
+                      N.Entries = uniq.len, # features in pathway that appear in dataset (filtered to background)
+                      N.Entries.All = uniq.len.all, # all features in pathway
                       N.Hits = sapply(pathway.hits, length)) %>%
     dplyr::mutate(Observed = gt.res[, 2],
                   Expected = gt.res[, 3],
                   Enrichment.Ratio = Observed/Expected) %>% # Enrichment.Ratio
     dplyr::mutate(Test.Type = "QEA",
                   Raw.P.Value =  gt.res[, 1] %>% ifelse(.==0, p.val.min, .), # add a minimum p-value of 2.3233E-11, to avoid -log(P.Value)
-                  neg.Log.P.Value = -log10(Raw.P.Value),
-                  Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
-                  BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
+                  neg.Log.P.Value = -log10(Raw.P.Value)) %>%
     dplyr::filter(N.Hits>0) %>% # filter to valid hits
+    { if (!is.null(min_overlap)) dplyr::filter(., N.Entries >= min_overlap) else . } %>% # filter by minimum overlap if specified
+    dplyr::mutate(Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
+                  BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
     dplyr::arrange(Raw.P.Value) %>% # sort in order of significance
     # dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs # DONT round before combination
     column_to_rownames("ID") # add rownames back
   
   return(list(df = res.df,
-              hits = pathway.hits))                  
+              hits = pathway.hits,
+              universe.size = uniq.count))                  
 }
 
 
@@ -438,12 +518,31 @@ gct.to.ora.input = function(gct, annot_of_interest, value_of_interest, annots = 
   }
   return(df)
 }
-o.ea = function(queries, pathways, uniq.len=NULL, uniq.count=NULL, p.val.min=2.3233E-11) {
-  # calculate analysis metrics to be used later
-  current.universe <- unique(unlist(lapply(pathways, function(p) {p$entries}))) # get all unique entries in pathway
-  # if we aren't limiting the feature-space (i.e. only hsa: or only cpd: / gl:), calculate size of featurespace
-  if(is.null(uniq.len)) uniq.len = sapply(pathways, function(p) {sum(length(unique(p$entries)))})
-  if(is.null(uniq.count)) uniq.count = sum(length(current.universe))
+o.ea = function(queries, pathways, p.val.min=2.3233E-11, background=NULL, min_overlap=NULL) {
+  # calculate original pathway sizes (before filtering)
+  uniq.len.all = sapply(pathways, function(p) {length(unique(p$entries))})
+  
+  # filter pathway entries to background if provided
+  if (!is.null(background)) {
+    # filter each pathway's entries to only those in background
+    pathways_filtered = lapply(pathways, function(p) {
+      p$entries_filtered = p$entries[p$entries %in% background]
+      return(p)
+    })
+    # get all unique entries in pathways that are in background
+    current.universe <- unique(unlist(lapply(pathways_filtered, function(p) {p$entries_filtered})))
+    # recalculate pathway sizes based on filtered entries
+    uniq.len = sapply(pathways_filtered, function(p) {length(unique(p$entries_filtered))})
+    # recalculate universe size based on filtered entries
+    uniq.count = length(current.universe)
+  } else {
+    # use original pathway entries
+    current.universe <- unique(unlist(lapply(pathways, function(p) {p$entries}))) # get all unique entries in pathway
+    # if we aren't limiting the feature-space (i.e. only hsa: or only cpd: / gl:), calculate size of featurespace
+    uniq.len = sapply(pathways, function(p) {sum(length(unique(p$entries)))})
+    uniq.count = sum(length(current.universe))
+  }
+  
   # calculate hits
   queries.subset <- queries[queries %in% current.universe] # subset to queries in current.universe
   pathway.hits <- lapply(pathways, function(p) { # for each pathway
@@ -459,23 +558,26 @@ o.ea = function(queries, pathways, uniq.len=NULL, uniq.count=NULL, p.val.min=2.3
   
   res.df = data.frame(ID = sapply(pathways, function(p) {p$ID}),
                       Pathway.Name = sapply(pathways, function(p) {p$name}),
-                      N.Entries = uniq.len,
+                      N.Entries = uniq.len, # features in pathway that appear in dataset (filtered to background)
+                      N.Entries.All = uniq.len.all, # all features in pathway
                       N.Hits = pathway.hits.num) %>%
     dplyr::mutate(Observed = N.Hits,
                   Expected = length(queries.subset) * (uniq.len/uniq.count),
                   Enrichment.Ratio = Observed/Expected) %>% # Enrichment.Ratio
     dplyr::mutate(Test.Type = "ORA",
                   Raw.P.Value = p.val,
-                  neg.Log.P.Value = -log10(Raw.P.Value),
-                  Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
-                  BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
+                  neg.Log.P.Value = -log10(Raw.P.Value)) %>%
     dplyr::filter(N.Hits>0) %>% # filter to valid hits
+    { if (!is.null(min_overlap)) dplyr::filter(., N.Entries >= min_overlap) else . } %>% # filter by minimum overlap if specified
+    dplyr::mutate(Holm.P.Value = p.adjust(Raw.P.Value, "holm"),
+                  BH.P.Value = p.adjust(Raw.P.Value, "fdr")) %>%
     dplyr::arrange(Raw.P.Value) %>% # sort in order of significance
     # dplyr::mutate_if(is.numeric, signif, 5) %>% # filter to 5 sigfigs # DONT round before combination
     column_to_rownames('ID')
   
   return(list(df = res.df,
-              hits = pathway.hits))
+              hits = pathway.hits,
+              universe.size = uniq.count))
 }
 
 #### Figure Generation Function ####
@@ -606,8 +708,8 @@ for (annot_of_interest in names(annots)) {
       if (is.null(meta_ora)) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; linear model could not be fit for metabolome.\n\n")); next }
       meta_ora_vec = meta_ora$id
       res.meta = o.ea(meta_ora_vec, pathways,
-                      uniq.count = unique.cmpd,
-                      uniq.len = sapply(pathways, function(p) {p$cmpd.counts}))
+                      background = background_meta,
+                      min_overlap = opt$min_overlap)
       
       if (!multiomic && dim(res.meta$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant metabolite enrichments.\n\n")); next }
       
@@ -622,15 +724,15 @@ for (annot_of_interest in names(annots)) {
         if (is.null(ome_ora)) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; linear model could not be fit for additional -ome.\n\n")); next }
         ome_ora_vec = ome_ora$id
         res.ome = o.ea(ome_ora_vec, pathways,
-                       uniq.count = unique.gene,
-                       uniq.len = sapply(pathways, function(p) {p$gene.counts}))
+                       background = background_ome,
+                       min_overlap = opt$min_overlap)
         if (dim(res.meta$df)[1]==0 && dim(res.ome$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant enrichments.\n\n")); next }
         
         if (opt$pval_comb=="query") {
           if(print_internal_placemarks) cat("\n\n####################\nOverrepresenation Analysis on Both Omes\n\n")
           res.mo = o.ea(c(meta_ora_vec, ome_ora_vec), pathways,
-                        uniq.count = unique.cmpd+unique.gene,
-                        uniq.len = sapply(pathways, function(p) {p$cmpd.counts + p$gene.counts}))
+                        background = background_mo,
+                        min_overlap = opt$min_overlap)
         }
       }
       # make logFC dataframe
@@ -645,14 +747,16 @@ for (annot_of_interest in names(annots)) {
       if(print_internal_placemarks) cat("\n\n####################\nQuantitative Enrichment Analysis on Metabolome\n\n")
       meta_qea = gct.to.qea.input(meta_input, annot_of_interest, value_of_interest, annots = annots,
                                   write_to_file = T, prefix=glue("{opt$output_prefix}_metabolome"))
-      res.meta = q.ea(meta_qea$mat, meta_qea$cls, pathways, uniq.len = sapply(pathways, function(p) {p$cmpd.counts}))
+      res.meta = q.ea(meta_qea$mat, meta_qea$cls, pathways, background = background_meta,
+                      min_overlap = opt$min_overlap)
       if (!multiomic && dim(res.meta$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant metabolite enrichments.\n\n")); next }
       
       if (multiomic) {
         if(print_internal_placemarks) cat(glue("\n\n####################\nQuantitative Enrichment Analysis on {opt$ome_type}\n\n"))
         ome_qea = gct.to.qea.input(ome_input, annot_of_interest, value_of_interest, annots = annots,
                                    write_to_file = T, prefix=glue("{opt$output_prefix}_{opt$ome_type}"))
-        res.ome = q.ea(ome_qea$mat, ome_qea$cls, pathways, uniq.len = sapply(pathways, function(p) {p$gene.counts}))
+        res.ome = q.ea(ome_qea$mat, ome_qea$cls, pathways, background = background_ome,
+                      min_overlap = opt$min_overlap)
         if (dim(res.meta$df)[1]==0 && dim(res.ome$df)[1]==0) { cat(glue("\nSkipping '{value_of_interest}' annotation-value; no significant enrichments.\n\n")); next }
         
         
@@ -665,7 +769,8 @@ for (annot_of_interest in names(annots)) {
           mo_qea = gct.to.qea.input(mo_input, annot_of_interest, value_of_interest, annots = annots,
                                     write_to_file = T, prefix=glue("{opt$output_prefix}_multiomic"))
           # quantitative enrichment analysis
-          res.mo = q.ea(mo_qea$mat, mo_qea$cls, pathways, uniq.len = sapply(pathways, function(p) {p$cmpd.counts + p$gene.counts}))
+          res.mo = q.ea(mo_qea$mat, mo_qea$cls, pathways, background = background_mo,
+                        min_overlap = opt$min_overlap)
         }
       }
       
@@ -695,13 +800,17 @@ for (annot_of_interest in names(annots)) {
           w.m = 0.5
           w.g = 0.5
         } else if (opt$pval_comb=="pvalo") {
-          w.m <- unique.cmpd/(unique.cmpd+unique.gene)
-          w.g <- unique.gene/(unique.cmpd+unique.gene)
+          # use universe sizes from result lists (filtered to dataset features)
+          universe.meta = res.meta$universe.size # get universe size for metabolites
+          universe.ome = res.ome$universe.size # get universe size for genes
+          w.m <- universe.meta/(universe.meta+universe.ome)
+          w.g <- universe.ome/(universe.meta+universe.ome)
         } else if (opt$pval_comb=="pvalp") {
-          pw.c = sapply(all.paths, function(pathway) {pathways[[pathway]]$cmpd.counts})
-          pw.g = sapply(all.paths, function(pathway) {pathways[[pathway]]$gene.counts})
+          # use pathway entry counts from result dataframes (filtered to dataset features)
+          pw.c = res.meta.df[all.paths,'N.Entries'] %>% ifelse(is.na(.), 0, .)
+          pw.g = res.ome.df[all.paths,'N.Entries'] %>% ifelse(is.na(.), 0, .)
           w.m = pw.c/(pw.c+pw.g)
-          w.g = gene.w = pw.g/(pw.c+pw.g)
+          w.g = pw.g/(pw.c+pw.g)
         } else stop(glue("Invalid p-value combination method '{opt$pval_comb}' selected. Please select either 'query' (combine queries), 'pvalu' (un-weighted), 'pvalo' (overall), or 'pvalp' (pathway-wise)."))
         
         # calculate combined p-values
@@ -716,9 +825,15 @@ for (annot_of_interest in names(annots)) {
                            coalesce(as.vector(res.meta.df[all.paths,'Raw.P.Value']),
                                     as.vector(res.ome.df[all.paths,'Raw.P.Value'])))
         # create finalized data-frame, ordered by all.paths
+        # use N.Entries from result dataframes (filtered to dataset features)
+        n.entries.meta = res.meta.df[all.paths,'N.Entries'] %>% ifelse(is.na(.), 0, .)
+        n.entries.ome = res.ome.df[all.paths,'N.Entries'] %>% ifelse(is.na(.), 0, .)
+        # re-pul N.Entries.All directly from pathway object; cannot sum n.entries.all values directly (would double the count!)
+        n.entries.all = sapply(all.paths, function(pathway) {length(unique(pathways[[pathway]]$entries))})
         res.df = data.frame(ID = all.paths,
                             Pathway.Name = sapply(pathways, function(p) {p$name})[all.paths],
-                            N.Entries = sapply(pathways, function(p) {p$cmpd.counts + p$gene.counts})[all.paths],
+                            N.Entries = n.entries.meta + n.entries.ome,
+                            N.Entries.All = n.entries.all,
                             N.Hits = NA) %>% # initialize N.Hits column for order
           # add metabolite / gene specific hit breakdowns
           dplyr::mutate(N.Hits.Compounds = res.meta.df[ID,'N.Hits'] %>% ifelse(is.na(.), 0, .), # count 
@@ -886,7 +1001,7 @@ for (annot_of_interest in names(annots)) {
     # file.copy(file.path(annot_dir, fn), '/opt/input/', overwrite=T)
     
     #### Network Graphs ####
-    if (!is.null(graph_list)) {
+    if (!is.null(graph_list) & !is.null(logFC_df)) {
       val_dir = file.path(annot_dir, glue("networks_{value_of_interest.name}"))
       dir.create(val_dir)
       
