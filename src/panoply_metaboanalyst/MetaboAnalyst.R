@@ -20,13 +20,13 @@ option_list <- list(
   # make_option( c("-w", "--pathway_gmt"), action='store', type='character',  dest='pathway_gmt', help='GMT file containing pathways of interest.'),
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest.'),
   #### Analysis ####
+  make_option( c("--pthw_db"), action='store', type='character', dest='pthw_db', help='Pathway database to use. Options: "kegg" (multiomic) or "smpdb" (metabolite-only).'), 
   make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='10'),
   make_option( c("-a", "--anal_type"), action='store', type='character', dest='anal_type', help='Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis).'), 
   make_option( c("-b", "--pval_comb"), action='store', type='character', dest='pval_comb', help='Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).'), 
   make_option( c("-p", "--pval_signif"), action='store', type='numeric', dest='pval_signif', help='P-value threshold for significant enrichement.'), 
   make_option( c("-k", "--top_n_networks"), action='store', type='numeric', dest='top_n_networks', help='Top N networks to plot per annot subvalue.'), 
   make_option( c("-r", "--impact_metric"), action='store', type='numeric', dest='impact_metric', help="Topological impact metric to be used in plotting ('Impact.BC' for betweenness centrality, 'Impact.CC' for closeness centrality, or 'Impact.DC' for degree centrality)."), 
-  make_option( c("--pthw_db"), action='store', type='character', dest='pthw_db', help='Pathway database to use. Options: "kegg" (multiomic) or "smpdb" (metabolite-only).'), 
   make_option( c("--min_overlap"), action='store', type='numeric', dest='min_overlap', help='Minimum number of overlapping features required for pathway enrichment analysis.'), 
   make_option( c("--background_filter"), action='store', type='logical', dest='background_filter', help='Whether to filter pathway entries to only those present in the dataset (TRUE) or use all pathway entries (FALSE). Default is TRUE.'), 
   #### General Parameters ####

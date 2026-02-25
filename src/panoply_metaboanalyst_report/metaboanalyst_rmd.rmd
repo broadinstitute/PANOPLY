@@ -245,8 +245,6 @@ cat(paste(
 
 # Network Annotations JSON
 network_annots_file = list.files(pattern="._network_annots.JSON$")
-# Network Annotations JSON
-network_annots_file = list.files(pattern="._network_annots.JSON$")
 cat(paste(
   '<script>
     const json_net_anno_str = ',read_file(network_annots_file),';
