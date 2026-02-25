@@ -16,11 +16,6 @@ params:
 title: `r params$title`
 ---
 
-# Overview
-
-This document describes the results of the MetaboAnalyst module, which performs metabolic analysis. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_metaboanalyst), or refer to the original [MetaboAnalyst](https://www.metaboanalyst.ca/home.xhtml) software.
-
-
 ```{r setup, include=FALSE}
 # R tooles
 library(tidyverse)
@@ -37,14 +32,20 @@ library(htmltools)
 library(kableExtra)
 
 create_tmp_file=FALSE # set to TRUE to make JSON files, useful for testing in CodePen
-send_df_to_js <- function(df, id="data"){ # send df to javascript variable in json format
+send_df_to_js <- function(df, id="data", na_val="null"){ # send df to javascript variable in json format
   cat(
     paste(
     '<script>
-      const ', id,' = ',toJSON(df, digits=22),';
+      const ', id,' = ',toJSON(df, digits=22, na=na_val),';
     </script>'
     , sep="")
   )
+}
+send_param_to_js <- function(param_val, param_name) {
+  cat(paste(
+    '<script>
+      const ',param_name,' = "',param_val,'";
+    </script>', sep=""))
 }
 
 ```
@@ -65,8 +66,13 @@ load(file_metaboanalyst_opt) # load opt list object (panoply_metaboanalyst. para
 log_file = read.csv(log_file)
 
 # Get Analysis-Type from opt
-anal_type = opt$anal_type
-impact_metric = opt$impact_metric
+anal_type = opt$anal_type # used throughout report
+background_filter = { if(is.null(opt$background_filter)) FALSE else opt$background_filter } # used in descriptive text
+pval_comb = opt$pval_comb # used in descriptive text
+impact_metric = opt$impact_metric # used in volcano plot
+top_n_networks = opt$top_n_networks # used in heatmap caption
+if (!is.null(opt$ome_gct)) { multiomic = TRUE } else { multiomic = FALSE }
+
 
 # counter variable for figures and tables
 fig_count <- 1
@@ -74,12 +80,80 @@ tab_count <- 1
 
 ```
 
+
+```{r, echo=FALSE, results='asis'}
+
+cat("# Overview\n")
+
+# determine pathway database
+if (is.null(opt$pthw_db)) {
+  pathway_database_text = "(<code>pthw_db</code> parameter missing)"
+  opt$pthw_db = "" # set to empty string to avoid errors
+} else {
+  if ( opt$pthw_db == "kegg" ) {
+    pathway_database_text = "a curated subset of metabolomic pathways from the KEGG Database"
+  } else if ( opt$pthw_db == "smpdb" ) {
+    pathway_database_text = "a curated subset of metabolomic pathways from the Small Molecule Pathway Database"
+  } else {
+    pathway_database_text = glue("a curated subset of metabolomic pathways from the {opt$pthw_db} Database")
+  }
+}
+
+# generate overview text, based on the analysis type and p-value combination method
+cat("This document describes the results of the MetaboAnalyst module, which performs pathway enrichment analysis on metabolites and genes. ")
+cat(paste0("Pathway enrichment was performed on the ", pathway_database_text," pathway database. "))
+cat("\n\n")
+
+# generate text describing analysis type
+if (anal_type=="ORA") {
+  cat("Pathway enrichment analysis was performed using the Overrepresentation Analysis (ORA) method. ")
+  cat("For each annotation of interest, for each subvalue, a list of significantly differentially expressed features was calculated via a one-v-all 2-sample mod-T-test. ")
+  cat("These features were then used as the input of a hypergeometric test, to determine if any pathways are overrepresented in differentially expressed features. ")
+} else {
+  cat("Pathway enrichment analysis was performed using the Quantitative Enrichment Analysis (QEA) method. A global test was performed across all features in a pathway, to identify differential expression across samples of a given annotation-subvalue. ")
+}
+# generate text describing p-value combination method (if applicable)
+if (multiomic) {
+  if (pval_comb=="query") {
+    cat("Analysis was performed on both metabolites and genes together. ")
+  } else {
+    cat("Analysis was performed on metabolites and genes separately; ")
+    if (pval_comb=="pvalu") {
+      cat("p-values were combined using a weighted z-test, with equal weight given to metabolites and genes. ")
+    } else if (pval_comb=="pvalo") {
+      cat("p-values were combined using a weighted z-test, with weights given to metabolites and genes based on their respective proportions in the pathway database overall. ")
+    } else if (pval_comb=="pvalp") {
+      cat("p-values were combined using a weighted z-test, with weights given to metabolites and genes based on their respective proportions in each individual pathway tested. ")
+    }
+  }
+} else {
+  cat("Analysis was performed on metabolites only. ")
+}
+
+
+# point to PANOPLY Wiki for more information
+cat("\n\nFor more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_metaboanalyst), or refer to the original [MetaboAnalyst](https://www.metaboanalyst.ca/home.xhtml) software. ")
+# add disclaimer to note that we've changed how pathway featuers are counted
+if (anal_type=="ORA") {
+  cat(paste0("Please note that, due to a change in the way unique features are counted, ",
+  if(background_filter) "as well as pathway-level filtering to features observed in the provided dataset, " else "",
+  "results will differ between this report and the original MetaboAnalyst software. "))
+}
+cat("\n")
+```
+
 ```{r, echo=FALSE}
-if(anal_type=="QEA") {
-  cat("## WARNING:\nReport is configured for multiomic ORA analysis, and figures may not behave properly, when using the metabolite-only pathway database.")
+if(opt$pthw_db!="kegg") {
+  cat("## WARNING:\nReport is configured primarily for the KEGG pathway database; figures may not behave properly when using other pathway databases.")
 }
 ```
 
+
+```{r, echo=FALSE}
+if(all(!log_file$valid.results)) {
+  cat("## WARNING:\nNo significant results were found across any annotation of interest. Please refer to the panoply_metaboanalyst log file for more details.")
+}
+```
 
 ```{r prep_data, include=FALSE}
 
@@ -171,16 +245,20 @@ cat(paste(
 
 # Network Annotations JSON
 network_annots_file = list.files(pattern="._network_annots.JSON$")
+# Network Annotations JSON
+network_annots_file = list.files(pattern="._network_annots.JSON$")
 cat(paste(
   '<script>
     const json_net_anno_str = ',read_file(network_annots_file),';
   </script>', sep=""))
+#send_param_to_js(read_file(network_annots_file), "json_net_anno_str")
 
-# Set Impact Score
-cat(paste(
-  '<script>
-    const impact_score = "',opt$impact_metric,'";
-  </script>', sep=""))
+# send opt parameters to JavaScript
+for (param in names(opt)) {
+  send_param_to_js(opt[[param]], param)
+}
+# send manually-generated parameters to JavaScript
+send_param_to_js(multiomic, "multiomic")
 
 ```
 
@@ -209,7 +287,7 @@ cat(paste(
 <div class='sticky'>
 <img width=100% name="img_heatmap" />
 </div>
-<div><b>Figure 1:</b> This heatmap shows the -log(P.Value) of the top {n} significant pathways, across each subvalue of this annotation.</div>
+<div><b>Figure 1:</b> This heatmap shows the -log(P.Value) of the top `r top_n_networks` significant pathways, across each subvalue of this annotation.</div>
 
 <hr>
 
@@ -222,26 +300,28 @@ cat(paste(
 
 <div class='parent'>
   <!-- Create a div where the graph will take place -->
-  <div id="div_volcano" class='child flex-child'></div>
+  <div class='child flex-child'>
+    <div id="div_volcano"></div>
+    <div id="volcano-caption"></div>
+  </div>
 
 
   <!-- Create a div where the graph will take place -->
-  <div id="div_network" class='child flex-child'></div>
+  <div class='child flex-child'>
+    <div id="div_network"></div>
+    <div id="network-caption"></div>
+  </div>
 </div>
 
 <hr>
     
-<div class='sticky'>
-<table id="myTable" class="display">
-    <thead>
-      <tr id="table-headers">
-        <!-- Column headers will be populated here dynamically -->
-      </tr>
-    </thead>
-    <tbody>
-        <!-- Data will be injected here dynamically -->
-    </tbody>
-</table>
+<div class='table-container'>
+  <div id="div_table">
+    <table id="myTable" class="display compact stripe hover row-border" style="width:100%">
+        <!-- Headers and data will be populated by DataTables -->
+    </table>
+  </div>
+  <div id="table-caption"></div>
 </div>
 ```
 
@@ -252,7 +332,8 @@ cat(paste(
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  font-family: "Inter", sans-serif;
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; /* use same font as Rmarkdown */
+  color: #303030; /* use same font-color as Rmarkdown */
   --shadow: rgba(0, 0, 0, 0.05) 0px 6px 10px 0px,
     rgba(0, 0, 0, 0.1) 0px 0px 0px 1px;
   --color: #166e67;
@@ -262,28 +343,111 @@ cat(paste(
 
 body {
   margin: 2rem;
-  font-size: 0.9rem;
-  color: black;
+  font-size: 14px;
 }
 
-.sticky {
-    width: 100%;
-    height: 400px;
-    overflow: auto;
+/* Table container - matches figure flex structure */
+.table-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
+
+#div_table {
+  height: 500px;
+  flex-shrink: 0;
+  overflow: auto;
+}
+
+/* DataTables styling improvements */
+#myTable {
+    font-size: 1rem;
+    border-collapse: collapse;
+}
+
+/* table header cell styling - target the actual sorting header */
+.dt-scroll-headInner th,
+#myTable thead th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    font-size: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    padding: 10px 8px;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: center;
+}
+
+/* Make the duplicate header in scroll body invisible but keep it for column alignment */
+.dt-scroll-body thead th {
+    visibility: hidden;
+}
+
+/* Ensure column widths match between header and body */
+.dt-scroll-headInner table,
+.dt-scroll-body table {
+    width: 100% !important;
+}
+
+/* table body cell styling */
+#myTable tbody td {
+    padding: 8px;
+    border-bottom: 1px solid #dee2e6;
+    text-align: right;
+}
+
+/* hover styling for rows - make it clear they're clickable */
+#myTable tbody tr {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+#myTable tbody tr:hover {
+    background-color: #e3f2fd !important; /* Light blue to indicate interactivity */
+}
+#myTable tbody tr:nth-child(even) {
+    background-color: #fafafa;
+}
+#myTable tbody tr:nth-child(even):hover {
+    background-color: #e3f2fd !important; /* Light blue to indicate interactivity */
+}
+
+/* NA value styling */
+.na-value {
+    color: #999;
+    font-style: italic;
+}
+
+/* caption styles */
+#table-caption, #volcano-caption, #network-caption {
+  margin-top: 10px;
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+#table-caption p, #volcano-caption p, #network-caption p {
+  margin: 0;
+  padding: 5px 0;
+}
+
 hr {
     margin-top: 20px;
     margin-bottom: 20px;
 }
 
-
+/* other figure formatting */
 .parent {
   display: flex;
   width: 100%;
-  height: 400px;
 }
 .flex-child {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+#div_volcano, #div_network {
+  height: 400px;
+  flex-shrink: 0;
 }
 
 .dropdown-menu {
@@ -301,6 +465,7 @@ hr {
   pointer-events: none;
   opacity: 0;
   white-space: pre-wrap;
+  user-select: text;
 }
 
 .axis-label {
@@ -370,6 +535,9 @@ var bounce_select = d3.transition()
 var tooltip = d3.select("body").append("div")	
 .attr("class", "tooltip")				
 .style("opacity", 0);
+tooltip.on("click", function() {
+  d3.event.stopPropagation();
+});
 
 //// ---- HTML Elements
 const annotMenu = document.getElementById("dropdown_annot");
@@ -440,6 +608,7 @@ subvalueMenu.addEventListener("change", function(event) {
   updateDataTable(table, columnNames,
                   annotMenu.options[annotMenu.selectedIndex].text,
                   subvalueMenu.options[subvalueMenu.selectedIndex].text)
+  clearNetwork() // clear network if we change annot subvalue
 } );
 
 
@@ -458,42 +627,129 @@ function clearTable(table) {
     .column(columnNames.indexOf("Annot")).search('NA', { exact: true }) // search for NA
     .column(columnNames.indexOf("Subvalue")).search('NA', { exact: true })  // search for NA
     .draw()
+  // clear caption
+  const captionDiv = document.getElementById("table-caption");
+  if (captionDiv) captionDiv.innerHTML = '';
 }
 function initializeDT(df, columnNames) {
-  // Initialize Headers
-  const tableHeaders = $('#table-headers');
-  // Dynamically generate the table headers 
-  columnNames.forEach(function(column) {
-    tableHeaders.append('<th>' + column.charAt(0).toUpperCase() + column.slice(1) + '</th>'); // Capitalize first letter for display
+  // Format column names for display (capitalize first letter)
+  const formattedColumnNames = columnNames.map(function(column) {
+    return column.charAt(0).toUpperCase() + column.slice(1).replace(/\./g, ' ');
   });
   
   // identify columns to hide
   let col_to_filt = ['Annot', 'Subvalue', 'Pathway.ID', 'Test.Type'] 
-      .concat(dropItem(["Impact.BC", "Impact.CC", "Impact.DC"], impact_score))
+      .concat(dropItem(["Impact.BC", "Impact.CC", "Impact.DC"], impact_metric))
+  
+  // Hide Observed.Entries and N.Hits if individual columns exist
+  const hasIndividualColumns = columnNames.includes('Observed.Entries.Genes') || 
+                               columnNames.includes('Observed.Entries.Compounds') ||
+                               columnNames.includes('N.Hits.Genes') || 
+                               columnNames.includes('N.Hits.Compounds');
+  if (hasIndividualColumns) {
+    if (columnNames.includes('Observed.Entries')) {
+      col_to_filt.push('Observed.Entries');
+    }
+    if (columnNames.includes('N.Hits')) {
+      col_to_filt.push('N.Hits');
+    }
+  }
+  
   let filt_idx = [];
   col_to_filt.forEach(entry => filt_idx.push(columnNames.indexOf(entry)))
   // identify Raw.P.Value column
   const search_idx = columnNames.indexOf("Pathway.Name")
   const sort_idx = columnNames.indexOf("Raw.P.Value")
   
-  // Initialize DataTables
-  const table = new DataTable('#myTable', {
-    scrollY: 300, // scroll height
-    scrollCollapse: true, // collapse height if fewer entries
-    paging: false,
-    lengthChange: false,
-    columnDefs: [
-      { visible: false, targets: filt_idx }, // hide first three columns
-      { searchable: true, targets: search_idx },
-    ], 
-    order: [sort_idx, 'asc'] // sort by p-value
+  // Detect numeric columns (while ignoring null-like values)
+  const isNumericValue = function(value) {
+    if (value === null || value === undefined || value === '' || value === 'null') {
+      return false;
+    }
+    return !isNaN(Number(value));
+  };
+  const numericColumnFlags = columnNames.map(function(_, idx) { // for each column idx
+    return df.some(function(row) {
+      const value = Object.values(row)[idx]; // for each row value in this column
+      return isNumericValue(value); // check if the value is numeric
+    });
   });
   
-  // -- Populate the table body with data
-  df_array = df.map( Object.values ); // convert to array of arrays
-  table.rows.add(df_array).draw(); // add all arrays as rows & draw
+  // Initialize DataTables
+  const table = new DataTable('#myTable', {
+    data: df.map(Object.values), // convert to array of arrays
+    columns: columnNames.map(function(col, idx) {
+      return { 
+        title: formattedColumnNames[idx],
+        data: idx,
+        type: numericColumnFlags[idx] ? 'num' : 'string',
+        render: function(data, type, row) {
+          // Handle null, undefined, or empty string values
+          if (data === null || data === undefined || data === 'null' || data === '') {
+            if (type !== 'display') { // if not displaying, return empty string
+              return '';
+            }
+            return '<span class="na-value">NA</span>'; // if displaying, return NA value
+          }
+          return data;
+        }
+      };
+    }),
+    scrollY: 400, // scroll height
+    scrollX: true, // enable horizontal scrolling
+    scrollCollapse: true, // collapse height if fewer entries
+    paging: false,
+    // pageLength: 25, // show 25 rows per page
+    lengthChange: true, // allow user to change page length
+    lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+    order: [sort_idx, 'asc'], // sort by p-value
+    columnDefs: [
+      { visible: false, targets: filt_idx }, // hide filtered columns
+      { searchable: true, targets: search_idx },
+      { targets: '_all', className: 'text-center' }, // center align headers
+    ],
+    dom: 'lfrtip', // layout: length, filter, processing, table, info, pagination
+    language: {
+      search: "Search:",
+      lengthMenu: "Show _MENU_ entries",
+      info: "Showing _START_ to _END_ of _TOTAL_ entries",
+      infoEmpty: "No entries to show",
+      infoFiltered: "(filtered from _MAX_ total entries)"
+    },
+    initComplete: function() {
+      // Ensure column widths are synchronized after initialization
+      const api = this.api();
+      api.columns.adjust();
+      
+      // Add row click handler to update network viewer
+      $('#myTable tbody').on('click', 'tr', function() {
+        const rowData = api.row(this).data();
+        if (rowData) {
+          // Find Pathway.ID and Pathway.Name column indices
+          const pathwayIdIdx = columnNames.indexOf('Pathway.ID');
+          const pathwayNameIdx = columnNames.indexOf('Pathway.Name');
+          
+          if (pathwayIdIdx !== -1 && pathwayNameIdx !== -1) {
+            const pathwayId = rowData[pathwayIdIdx];
+            const pathwayName = rowData[pathwayNameIdx];
+            
+            // Only update if we have valid values
+            if (pathwayId && pathwayId !== 'null' && pathwayName && pathwayName !== 'null') {
+              console.log('Clicked row: ' + pathwayName + ' (' + pathwayId + ')');
+              updateNetwork(pathwayId, pathwayName);
+            }
+          }
+        }
+      });
+      
+      // Add hover effect to indicate rows are clickable
+      $('#myTable tbody').on('mouseenter', 'tr', function() {
+        $(this).css('cursor', 'pointer');
+      });
+    }
+  });
   
-  // hide all rows
+  // hide all rows initially
   clearTable(table);
   
   return table
@@ -506,6 +762,61 @@ function updateDataTable(table, columnNames, annot_filt, subval_filt) {
     .column(columnNames.indexOf("Annot")).search(annot_filt, { exact: true })
     .column(columnNames.indexOf("Subvalue")).search(subval_filt, { exact: true })
     .draw()
+  
+  // Adjust column widths after drawing to ensure header/body alignment
+  setTimeout(function() {
+    table.columns.adjust();
+  }, 0);
+  
+  // Update table caption with N.Sign.DF and N.Obs.Overall values
+  updateTableCaption(annot_filt, subval_filt)
+}
+
+//// ---- Update Table Caption
+function updateTableCaption(annot_filt, subval_filt) {
+  const captionDiv = document.getElementById("table-caption");
+  if (!captionDiv) return;
+  
+  // Find matching log_file entry
+  const logEntry = log_file.find(function(entry) {
+    return entry['annot.name'] === annot_filt && entry['subvalue.value'] === subval_filt;
+  });
+  
+  if (!logEntry) {
+    captionDiv.innerHTML = '';
+    return;
+  }
+  
+  // Build caption text
+  let captionText = '<p><b>Table 1:</b> This table shows pathway enrichment results in ' +
+    subval_filt + ' samples. ';
+  
+  if (anal_type == "ORA") {
+    // Build N.Sign.DF and N.Obs.Overall descriptions
+    let nSignText = '';
+    let nObsText = '';
+    if (logEntry['N.Sign.DF.Compounds'] != null && !isNaN(logEntry['N.Sign.DF.Compounds'])) { // check if compound data is present
+      nSignText = logEntry['N.Sign.DF.Compounds'] + ' metabolites';
+      nObsText = logEntry['N.Obs.Overall.Compounds'] + ' metabolites';
+      if (logEntry['N.Sign.DF.Genes'] != null && !isNaN(logEntry['N.Sign.DF.Genes'])) { // check if gene data is present
+        nSignText += ' and ' + logEntry['N.Sign.DF.Genes'] + ' genes';
+        nObsText += ' and ' + logEntry['N.Obs.Overall.Genes'] + ' genes';
+      }
+    } else { // otherwise, use combined data
+      nSignText = logEntry['N.Sign.DF'] + ' metabolites and genes';
+      nObsText = logEntry['N.Obs.Overall'] + ' metabolites and genes';
+    }
+    // Build caption text
+    captionText += 'A list of significantly differentially expressed features (' + nSignText + 
+      ') was used as the input of Overrepresentation Analysis, across the observed features in the pathway database (' + 
+      nObsText + ').';
+  } else {
+    // Build caption text
+    captionText += 'Quantitative Enrichment Analysis was performed via a global test across all observed features in each pathway.';
+  }
+  
+  captionText += '</p>';
+  captionDiv.innerHTML = captionText;
 }
 
 
@@ -516,11 +827,14 @@ function updateDataTable(table, columnNames, annot_filt, subval_filt) {
 function clearVolcano() {
   if (document.getElementById("svg_volcano")) { document.getElementById("svg_volcano").remove() }
   if (document.getElementById("point_vals_volcano")) { document.getElementById("point_vals_volcano").remove() }
+  // clear caption
+  const captionDiv = document.getElementById("volcano-caption");
+  if (captionDiv) captionDiv.innerHTML = '';
 }
 // function to create/update volcano plot
 function updateVolcano(df, annot_filt, subval_filt) {
   y_val = "neg.Log.P.Value"
-  x_val = impact_score
+  x_val = impact_metric
   // filter json to annot_filt
   const df_annot = df.filter((entry,index,arr) => entry["Annot"]===annot_filt )
   //console.log(json_annot)
@@ -532,12 +846,10 @@ function updateVolcano(df, annot_filt, subval_filt) {
   
   // get width of container object
   const containerWidth = document.querySelector('.parent').offsetWidth
-  const containerHeight = document.querySelector('.parent').offsetHeight
-  //const containerHeight = window.innerHeight
   
   // Declare the chart dimensions and margins.
   const width = containerWidth/2*0.95;
-  const height = containerHeight;
+  const height = 400;
   const marginTop = 20;
   const marginRight = 20;
   const marginBottom = 60;
@@ -567,7 +879,7 @@ function updateVolcano(df, annot_filt, subval_filt) {
       // Add label
       .append('text')
       .attr('class', 'axis-label')
-      .text(impact_score)
+      .text(impact_metric)
       .attr('x', (marginLeft + (width - marginLeft - marginRight) / 2)) // Relative to the x axis.
       .attr('y', 40)
 
@@ -592,14 +904,18 @@ function updateVolcano(df, annot_filt, subval_filt) {
     .append("p")
     .attr("align", "left")
     .attr("id", "point_vals_volcano")
-    .text("Mouseover points for more info, and click to show Pathway Network!");
+    //.text("Mouseover points for more info, and click to show Pathway Network!");
 
   // Add the scatterplot
+  //const pval_signif_num = Number(pval_signif);
   svg.selectAll(".dots")
       .data(df_subv)
     .enter().append("circle")
       .attr("class", "dots")
-      .attr("fill", d => d.type === "A"? "steelblue":"orangered")
+      .attr("fill", function(d) {
+        return ( Number(d["BH.P.Value"]) <= Number(pval_signif) ) ? "orangered" : "#BDBDBD";
+        //return d.type === "A" ? "steelblue" : "orangered";
+      })
       .attr("fill-opacity", 0.3)
       .attr("r", 5)
       .attr("cx", d => x(d[x_val]) )
@@ -625,20 +941,39 @@ function updateVolcano(df, annot_filt, subval_filt) {
       .on("click", function(d) {
          //console.log(json)
          console.log( "clicked " + d["Pathway.Name"] + " (" + d["Pathway.ID"] + ")" )
-         updateNetwork(d["Pathway.ID"])
+         updateNetwork(d["Pathway.ID"], d["Pathway.Name"])
       }); // click behavior
 
+  // Update caption
+  if (impact_metric == "Impact.BC") {
+    impact_metric_text = "Betweenness Centrality";
+  } else if (impact_metric == "Impact.CC") {
+    impact_metric_text = "Closeness Centrality";
+  } else if (impact_metric == "Impact.DC") {
+    impact_metric_text = "Degree Centrality";
+  }
+  const captionDiv = document.getElementById("volcano-caption");
+  if (captionDiv) {
+    captionDiv.innerHTML = '<p><b>Figure 2:</b> This scatterplot shows the relationship between the topologically impact of significant hits on the pathway network (<code>' +
+      impact_metric_text + '</code>) and statistical significance of the pathway enrichment test (<code>-log(P.Value)</code>). Click on a point to view the pathway network diagram.</p>';
+  }
+  
 }
 
 // updateNetwork()
 // Update Network Plot
 function clearNetwork() {
   if (document.getElementById("svg_network")) { document.getElementById("svg_network").remove() }
+  // clear caption
+  const captionDiv = document.getElementById("network-caption");
+  if (captionDiv) captionDiv.innerHTML = '';
 }
-function updateNetwork(pthw_id) {
+function updateNetwork(pthw_id, pthw_name) {
   //console.log(pthw_id)
   
   clearNetwork()
+  let tooltipPinned = false;
+  let pinnedNodeId = null;
   
   // pull network info
   const df_network = json_network[pthw_id]
@@ -651,23 +986,45 @@ function updateNetwork(pthw_id) {
   //console.log(getMax(nodes, 'graphics_x'))
   
   // color-scale for nodes
+  // color-scale for non-logFC colored nodes
+  const khroma_blue = '#2166AC'; // khroma BuRd palette
+  const khroma_grey = '#F7F7F7'; // khroma BuRd palette
+  const khroma_red = '#B2182B'; // khroma BuRd palette
+  const observed_color = "#666666"; // dark grey
+  const not_observed_color = "#BBBBBB"; // grey
   const max_logFC = 3; // logFC will range from -5 to 5 for now
   const nodeColor = d3.scaleSequential().domain([-max_logFC,max_logFC])
-  .interpolator(d3.interpolateRgbBasis(["#2166AC", "#F7F7F7", "#B2182B"])); // khroma BuRd palette
-  
+  .interpolator(d3.interpolateRgbBasis([khroma_blue, khroma_grey, khroma_red])); 
   // node size
   const node_size = 10
   console.log('test')
   
+  function renderNodeTooltip(d) {
+    const nodeTitle = d.link
+      ? '<a href="' + d.link + '" target="_blank" rel="noopener noreferrer"><b><u>' + d.graphics_name + '</u></b></a>'
+      : '<b><u>' + d.graphics_name + '</u></b>';
+    tooltip.html(nodeTitle + "<br>" +
+                 "<b>Hits In Dataset: </b>" + d['hits.all.hr'] + "<br>" +
+                 "<b>Significant Hits: </b>" + d['hits.sign.hr'] + "<br>" +
+                 "<b>LogFC Values: </b>" + d['logFC.all.sign'])
+      .style("left", (d3.event.pageX) + "px")
+      .style("top", (d3.event.pageY) + "px");
+  }
+  
+  function hideNodeTooltip() {
+    tooltip.style("pointer-events", "none")
+      .transition().duration(200).style("opacity", 0);
+    tooltipPinned = false;
+    pinnedNodeId = null;
+  }
+  
   // get width of container object
   const containerWidth = document.querySelector('.parent').offsetWidth
-  const containerHeight = document.querySelector('.parent').offsetHeight
-  //const containerHeight = window.innerHeight
   
   // set the dimensions and margins of the graph
   const margin = {top: 10, right: 30, bottom: 30, left: 40},
     width = containerWidth/2*0.95 - margin.left - margin.right,
-    height = containerHeight - margin.top - margin.bottom;
+    height = 400 - margin.top - margin.bottom;
 
   // Create the scales for x and y
   const xScale = d3.scaleLinear()
@@ -719,6 +1076,7 @@ function updateNetwork(pthw_id) {
     .attr("y2", d => yScale(nodes[nodes.map(e => e['id']).findIndex(n => n == d.target)].graphics_y))
     .attr("marker-end", "url(#arrowhead)");;
   
+
   // Initialize the nodes
   //console.log(nodes)
   //console.log(nodes[1].graphics_type)
@@ -734,10 +1092,12 @@ function updateNetwork(pthw_id) {
       //const hits = d["hits.all"];
       const value = d["logFC.absmax"];
       //console.log(hits)
-      if (value != null) {
-        return nodeColor(value); // use color-scale otherwise
+      if (value != null) { // if there are significant hits / non-null logFC value
+        return nodeColor(value); // use logFC color-scale
+      } else if (d["hits.all.hr"].length != 0) { // if there is at least one hit (but no logFC value)
+        return observed_color; // use dark grey
       } else {
-        return "#BBBBBB";  // use grey if the value is null / undefined
+        return not_observed_color;  // use grey if there were no hits
       }
     })
   // circle coords / aesthetics
@@ -750,6 +1110,7 @@ function updateNetwork(pthw_id) {
     .attr("width", node_size) // Set width for squares
     .attr("height", node_size) // Set height for squares
     .on("mouseover", function(d){
+      if (tooltipPinned && pinnedNodeId !== d.id) return;
       // circle behavior
       d3.selectAll(".circles").attr("r", node_size/2) //make sure all the dots are small
       d3.select(this)
@@ -765,13 +1126,9 @@ function updateNetwork(pthw_id) {
         .attr("height", node_size*2);
       
       // show tooltip
-      tooltip.transition().duration(200).style("opacity", .8);		
-            tooltip.html("<b/><u/>" + d.graphics_name + '</u></b>\n' +
-                         "<b/>Hits In Dataset: </b>" + d['hits.all.hr'] + '\n' +
-                         "<b/>Significant Hits: </b>" + d['hits.sign.hr'] + '\n' +
-                         "<b/>LogFC Values: </b>" + d['logFC.all.sign'])
-              .style("left", (d3.event.pageX) + "px")
-              .style("top", (d3.event.pageY) + "px");
+      tooltip.style("pointer-events", "none")
+        .transition().duration(200).style("opacity", .8);
+      renderNodeTooltip(d);
     }) // mouseover behavior
     .on("mouseout", function(d){
       // circle behavior
@@ -788,9 +1145,48 @@ function updateNetwork(pthw_id) {
         .attr("width", node_size)
         .attr("height", node_size);
       // remove tooltip
-      tooltip.transition().duration(200).style("opacity", 0);
+      if (!tooltipPinned) {
+        tooltip.transition().duration(200).style("opacity", 0);
+      }
     }) // mouseout behavior
+    .on("click", function(d){
+      d3.event.stopPropagation();
+      if (tooltipPinned && pinnedNodeId === d.id) {
+        hideNodeTooltip();
+      } else {
+        tooltipPinned = true;
+        pinnedNodeId = d.id;
+        tooltip.style("pointer-events", "auto")
+          .style("opacity", .95);
+        renderNodeTooltip(d);
+      }
+    });
   
+  d3.select("body").on("click.networkTooltip", function() {
+    if (tooltipPinned) hideNodeTooltip();
+  });
+  
+  // Update caption
+  const captionDiv = document.getElementById("network-caption");
+  if (captionDiv) {
+    if (anal_type == "ORA") {
+      color_text = '<br><span style="margin-left: 1.5em; display: inline-block;">' +
+        '<span style="color:'+khroma_red+';">■</span> significantly upregulated<br>'+
+        '<span style="color:'+khroma_blue+';">■</span> significantly downregulated<br>'+
+        '<span style="color:'+observed_color+';">■</span> observed but not significant<br>'+
+        '<span style="color:'+not_observed_color+';">■</span> not observed' +
+        '</span>';
+    } else {
+      color_text = '<br><span style="margin-left: 1.5em; display: inline-block;">' +
+        '<span style="color:'+observed_color+';">■</span> observed in dataset<br>'+
+        '<span style="color:'+not_observed_color+';">■</span> not observed in dataset'
+        '</span>';
+    }
+    captionDiv.innerHTML = '<p><b>Figure 3:</b> This network diagram shows the pathway structure for <code>' +
+      pthw_name + '</code>, with circles representing metabolites and squares representing genes. Hover over a node to view additional details. ' +
+      '<br><br><b>Nodes Color Key:</b> ' + color_text +
+      '</p>';
+  }
 }
 
 ```
@@ -804,6 +1200,9 @@ function updateNetwork(pthw_id) {
 Details about the parameters listed in **Table `r tab_count`** can be found in the [PANOPLY WIKI](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_mo_nmf).    
     
 ```{r params, include=TRUE, echo=FALSE, warning=T, message=F}
+fig_count <- fig_count + 3 # manually increment to account for javascript figures
+tab_count <- tab_count + 1 # manually increment to account for javascript tables
+
 tab_param <- data.frame(param=names(opt), value=unlist(opt))
 ## insert table
 tab_param %>%

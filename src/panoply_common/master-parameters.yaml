@@ -155,6 +155,7 @@ panoply_metaboanalyst:
   gene_id_type: "SYMBOL"                        # ID type used for -omic data
   max_annot_levels: 10                          # max. number of levels in a annotation category to be included in the analysis
   anal_type: "ORA"                              # Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis)
+  pthw_db: "kegg"                               # Pathway database to use. Options: "kegg" for KEGG metabolomic pathways, "smpdb" for metabolite-only pathways from SMPDB.
   min_overlap: 5                                # 'Minimal overlap between pathways and data set.'
   background_filter: TRUE                       # Toggle for turning on/off backgorund filtering (i.e. filtering to features that appear in your dataset)
   pval_comb: "pvalo"                            # Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).
