@@ -1,5 +1,5 @@
 # FragPipe DDA search and spectral library creation
-**Version**: FragPipe 20.0, MSFragger 3.8, Philosopher 5.0.0, IonQuant 1.9.8
+**Version**: FragPipe 24.0, MSFragger 4.4.1, Philosopher 5.1.3-RC9, IonQuant 1.11.20, diaTracer 2.2.1
 
 ## Description
 This workflow wraps the FragPipe program using the CLI interface. All of the configurations can be configured in FragPipe GUI and saved as a `.workflow` file to be uploaded to this workflow. It is also capable of generating a spectral library via EasyPQP. Outputs are separated into converted files and generated files with final ion, PSM, protein level report tables.

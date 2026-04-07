@@ -17,8 +17,10 @@ RUN set -ex \
     && wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh \
     && /bin/bash ~/miniconda.sh -b -p /opt/conda
 
-ENV PATH=/opt/conda/bin:$PATH
+ENV PATH /opt/conda/bin:$PATH
 SHELL ["/bin/bash", "-c"]
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 RUN conda create --name fragpipe -y python=3.9
 RUN echo "source activate fragpipe" > ~/.bashrc
 ENV PATH /opt/conda/envs/fragpipe/bin:$PATH
@@ -33,11 +35,16 @@ RUN set -ex \
     && unzip ThermoRawFileParser1.4.5.zip \
     && rm ThermoRawFileParser1.4.5.zip && cd -
 
-ADD src/FragPipe-23.0-linux.zip /
-RUN unzip FragPipe-23.0-linux.zip \
-    && rm FragPipe-23.0-linux.zip \
-    && chmod 755 /fragpipe-23.0/bin/fragpipe
+## FragPipe: https://github.com/Nesvilab/FragPipe/releases/tag/24.0
+## dependencies are listed on release page
+ADD https://github.com/Nesvilab/FragPipe/releases/download/24.0/FragPipe-24.0-linux.zip /FragPipe-24.0-linux.zip
+RUN unzip FragPipe-24.0-linux.zip \
+    && rm FragPipe-24.0-linux.zip \
+    && chmod 755 /fragpipe-24.0/bin/fragpipe
 
+## Available At: https://github.com/Nesvilab/philosopher/releases
+## most recent stable release is v5.1.0 (20260304)
+## FragPipe v24.0 requests v5.1.13-k
 RUN set -ex \
     && cd /usr/local/bin \
     && curl -LOk https://github.com/Nesvilab/philosopher/releases/download/v5.1.0/philosopher_v5.1.0_linux_amd64.zip \
@@ -47,14 +54,20 @@ RUN set -ex \
 
 RUN mkdir utils && cd utils
 
-ADD src/IonQuant-1.11.9.zip /
-RUN unzip IonQuant-1.11.9.zip && rm IonQuant-1.11.9.zip && mv /IonQuant-1.11.9 /utils && chmod 755 /utils/IonQuant-1.11.9/IonQuant-1.11.9.jar
+## Download From: https://msfragger-upgrader.nesvilab.org/ionquant/
+## must be downloaded from an academic account; do not upload zip to GitHub
+ADD src/IonQuant-1.11.20.zip /
+RUN unzip IonQuant-1.11.20.zip && rm IonQuant-1.11.20.zip && mv /IonQuant-1.11.20 /utils && chmod 755 /utils/IonQuant-1.11.20/IonQuant-1.11.20.jar
 
-ADD src/MSFragger-4.2.zip /
-RUN unzip MSFragger-4.2.zip && rm MSFragger-4.2.zip && mv /MSFragger-4.2 /utils && chmod 755 /utils/MSFragger-4.2/MSFragger-4.2.jar 
+## Download From: https://msfragger-upgrader.nesvilab.org/upgrader/
+## must be downloaded from an academic account; do not upload zip to GitHub
+ADD src/MSFragger-4.4.1.zip /
+RUN unzip MSFragger-4.4.1.zip && rm MSFragger-4.4.1.zip && mv /MSFragger-4.4.1 /utils && chmod 755 /utils/MSFragger-4.4.1/MSFragger-4.4.1.jar 
 
-ADD src/diaTracer-1.2.5.zip /
-RUN unzip diaTracer-1.2.5.zip && rm diaTracer-1.2.5.zip && mv /diaTracer-1.2.5 /utils && chmod 755 /utils/diaTracer-1.2.5/diaTracer-1.2.5.jar 
+## Download From: https://msfragger-upgrader.nesvilab.org/diatracer/
+## must be downloaded from an academic account; do not upload zip to GitHub
+ADD src/diatracer-2.2.1.zip /
+RUN unzip diatracer-2.2.1.zip && rm diatracer-2.2.1.zip && mv /diatracer-2.2.1 /utils && chmod 755 /utils/diatracer-2.2.1/diaTracer-2.2.1.jar 
 
 COPY src/collect_psm.sh /usr/local/bin/
 COPY src/package.sh /usr/local/bin/

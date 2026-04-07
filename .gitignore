@@ -16,6 +16,10 @@ hydrant/tasks/*/tests/
 hydrant/tasks/panoply_test/
 Thumbs.db
 
+diatracer-*.zip
+IonQuant-*.zip
+MSFragger-*.zip
+
 panda/.ipynb_checkpoints/
 *.zip
 
