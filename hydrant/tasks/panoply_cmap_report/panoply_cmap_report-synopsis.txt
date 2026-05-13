@@ -1,0 +1,1 @@
+Report generation method for the CMAP analysis workflow
