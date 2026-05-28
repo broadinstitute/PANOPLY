@@ -3,7 +3,7 @@
 # Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
 rm(list=ls())
-options( warn = -1, stringsAsFactors = F )
+options( warn = 1, stringsAsFactors = F )
 suppressPackageStartupMessages(library("optparse"))
 
 
@@ -17,10 +17,9 @@ option_list <- list(
   make_option( c("-t", "--ome_type"), action='store', type='character',  dest='ome_type', help='Label for the additional ome-type.'),
   make_option( c("-c", "--gene_column"), action='store', type='character', dest='gene_col', help='Column name in rdesc in the GCT that contains gene names.', default='geneSymbol'),
   make_option( c("-d", "--gene_id_type"), action='store', type='character', dest='gene_id_type', help='Type of ID contianed in gene_col', default='SYMBOL'),
-  # make_option( c("-w", "--pathway_gmt"), action='store', type='character',  dest='pathway_gmt', help='GMT file containing pathways of interest.'),
   make_option( c("-g", "--groups_file"), action='store', type='character',  dest='groups_file', help='Groups-file, i.e. an annotations file subsetted to annotations of interest.'),
   #### Analysis ####
-  make_option( c("--pthw_db"), action='store', type='character', dest='pthw_db', help='Pathway database to use. Options: "kegg" (multiomic) or "smpdb" (metabolite-only).'), 
+  make_option( c("-w", "--pathway_db"), action='store', type='character',  dest='pthw_db', help='Pathway database to use. KEGG pathways will be used by default, if missing.'),
   make_option( c("-l", "--max_annot_levels"), action='store', type='numeric', dest='max_annot_levels', help='Maximum number of levels an annotation can have and be considered discrete.'), # default='10'),
   make_option( c("-a", "--anal_type"), action='store', type='character', dest='anal_type', help='Analysis method to use ("ORA" for Overrepresentation Analysis or "QEA" for Quantitative Enrichment Analysis).'), 
   make_option( c("-b", "--pval_comb"), action='store', type='character', dest='pval_comb', help='Method for combining p-values in multiomic enrichment analysis. Options include "query" (combine queries), "pvalu" (unweighted), "pvalo" (overall), or "pvalp" (pathway-level).'), 
@@ -45,6 +44,7 @@ opt_cmd <- parse_args( OptionParser(option_list=option_list),
                       #    '--metabolome_gct',"/opt/input/ODG-v4-metabolome-all-log2-median-norm-QCfilter-NMFk3core_n56x647.gct",
                       #    # '-n',"hmdb_id",
                       #    '-i',"HMDB.ID",
+                      #    '-w',"smpdb_pathway",
                       #    # '-n',"kegg_id",
                       #    # '-i',"KEGG.ID",
                       #   #  '--ome_gct',"opt/input/ODG-v4-proteome-SpectrumMill-ratio-QCfilter-NArm-NMFk3core_n80x12650.gct",
@@ -159,24 +159,38 @@ if (!is.null(opt$ome_gct)) {
 if (!is.null(opt$groups_file)) { annots = read.csv(opt$groups_file) } else { # read in groups file or
   annots = gct_meta@cdesc; cat("\nWARNING: No groups file provided; module will attempt to use metabolome gct@cdesc.\n") } # print warning and use cdescs
 
-compound_map = qs::qread(file.path(opt$lib_dir, "pathway_db/compound_db.qs")) # mapping between ID types for metabolic compounds
+compound_map = qs::qread(file.path(opt$lib_dir, "pathway_db/master_compound_db.qs")) # MetaboAnalyst master compound table (ID columns + `name`)
+## create stable row IDs
+if (!"name" %in% names(compound_map)) stop("master_compound_db is missing required column `name`.")
+rownames(compound_map) = make.names(compound_map$name, unique = TRUE) # set rownames
+## print warning for duplicate IDs
+dup_row_idx = duplicated(compound_map$name) | duplicated(compound_map$name, fromLast = TRUE) # identify duplicated rows
+if (any(dup_row_idx)) { # print warning about duplicated metabolite names
+  example = paste(head(rownames(compound_map)[dup_row_idx]), collapse = ";\n")
+  warning(glue("master_compound_db: {sum(dup_row_idx)} row(s) share a duplicated `name`; `master_id` from make.names(..., unique=TRUE) disambiguates them (e.g. suffix .1, .2).\nExample name(s):\n{example}"))
+}
 
 if (is.null(opt$pthw_db)) {
   warning("No pathway database selected. Defaulting to KEGG database.")
-  opt$pthw_db = "kegg"
+  opt$pthw_db = "kegg_pathway"
 }
-if (!opt$pthw_db %in% c("kegg", "smpdb")) {
-  stop(glue("Invalid pathway database '{opt$pthw_db}'. Please select either 'kegg' or 'smpdb'."))
+kegg_dbs = c('kegg_pathway'='hsa', 'kegg_pathway_2023'='hsa_2023') # kegg db files
+valid_qs_files = c(names(kegg_dbs), # manually add Kegg DBs pathway names; these are handled manually since they require different wrangling
+                   setdiff(gsub('.qs$','',list.files( file.path(opt$lib_dir, "pathway_db"), pattern = '.qs')),
+                           c(kegg_dbs, names(kegg_dbs), # exclude the multiomic KEGG DB *files*; these are handled manually since they require different wrangling
+                             c('compound_db', 'lipid_compound_db', 'master_compound_db')))) # exclude compound database files; these aren't pathways
+if (!opt$pthw_db %in% valid_qs_files) {
+  stop(glue("Invalid pathway database '{opt$pthw_db}'. Please select one of the following:\n{paste0(valid_qs_files, collapse='\n' )}"))
 }
 # do not run multiomic analysis with the SMP Database
-if (multiomic && opt$pthw_db == "smpdb") {
-  stop("The SMP Database ('smpdb') contains only metabolites, and does not support multiomic analysis. Please use the KEGG database ('kegg') instead.")
+if (multiomic && !( opt$pthw_db %in% kegg_dbs ) ) {
+  stop(glue("This pathway ('{opt$pthw_db}') contains only metabolites, and does not support multiomic analysis. Please use a KEGG database ('{paste(names(kegg_dbs), collapse='\\' or \\'')}') instead."))
 }
 
 #### Read in / Format Pathways ####
-if (opt$pthw_db == "kegg") {
+if (opt$pthw_db %in% names(kegg_dbs)) { # if we're looking at the multiomic KEGG databases
   # format QS object from MetaboAnalyst Site into GMT-adjacent
-  pathways_qs = qs::qread(file.path(opt$lib_dir,"pathway_db/hsa.qs"))
+  pathways_qs = qs::qread(file.path(opt$lib_dir,"pathway_db", paste0(kegg_dbs[opt$pthw_db], ".qs")))
   pathways = lapply(unname(pathways_qs$path.ids), function(pathway) {
     pathway_list = list(ID = pathway,
                         name = names(pathways_qs$path.ids[pathways_qs$path.ids==pathway]),
@@ -208,18 +222,53 @@ if (opt$pthw_db == "kegg") {
   
   # graph list
   graph_list = pathways_qs$graph.list
-} else if (opt$pthw_db == "smpdb") {
-  pathways_gmt = read.GMT(file.path(opt$lib_dir, "pathway_db/smpdb_pathway.gmt"))
-  pathways = lapply(pathways_gmt, function(p) {
-    pathway_list = list(ID = p$id,
-                        name = p$name,
-                        entries = p$genes)#,
-                        # cmpd.counts = length(unique(p$genes)) # only take unique values
-                        #               + max(sum(p$genes=='NA')-1, 0) ) # but also count every NA as a unique compound
-    return(pathway_list)
-  })
-  # set pathway IDs
-  pathway_id_type = list(meta="hmdb_id")
+} else {
+  # # for loop is JUST for testing databases; should be commented out for general usage 
+  # for (pthw_db in setdiff(valid_qs_files, c(names(kegg_dbs)))) { # check that all QS files work with this format
+  #   opt$pthw_db = pthw_db
+  #   cat("\n\n###################\n\n")
+  #   cat(pthw_db); cat('\n\n')
+    
+    #   wrangle .qs dataframes into a list structure
+    pathways_qs = qs::qread(file.path(opt$lib_dir,"pathway_db", paste0(opt$pthw_db, ".qs")))
+    pathways = apply(pathways_qs, 1,
+      function(p) {
+        list(ID = p['id'][[1]], #p['image'][[1]], # image is only valid for a few DBs
+            name = p['name'][[1]],
+            reference = p['reference'][[1]],
+            entries = str_split(p['member'], "; ")[[1]])
+      })
+    names(pathways) = pathways_qs$id #pathways_qs$image
+    # drop malformed pathways
+    pthw_keep = names(which(!unlist(lapply(pathways, function(p) {any(is.na(p$entries))})))) # prune pathways with NA features
+    if ( length(pthw_keep) != length(pathways) ) {
+      pthw_drop = setdiff(names(pathways), pthw_keep)
+      warning(glue("Dropping pathway(s) from '{opt$pthw_db}' database with NA entries:\n{paste(pthw_drop, paste0(tidyr::replace_na(pathways[[pthw_drop]]$entries, 'NA'), collapse=', '), sep='; Entries: ', collapse='\n')}"))
+    }
+    pathways = pathways[pthw_keep]
+
+    # set pathway IDs
+    pathway_id_type = list(meta="name")
+    pthw_entries = unique(unlist(lapply(pathways, `[[`, "entries")))
+    if (any(!pthw_entries %in% compound_map[[pathway_id_type$meta]])) {
+      warning(glue("Pathway entries missing from master_compound_db `{pathway_id_type$meta}`:\n{paste0(pthw_entries[which(!pthw_entries %in% compound_map[[pathway_id_type$meta]])], collapse=', ')}"))
+    }
+  #   cat("\n\n###################\n\n")
+  #   # print(head(pathways_qs))
+  #   # print(head(pathways_qs$id))
+  #   # print(head(pathways_qs$image))
+  #   print(pathways[[1]])
+  # }
+
+  # pathways_gmt = read.GMT(file.path(opt$lib_dir, "pathway_db/smpdb_pathway.gmt"))
+  # pathways = lapply(pathways_gmt, function(p) {
+  #   pathway_list = list(ID = p$id,
+  #                       name = p$name,
+  #                       entries = p$genes)#,
+  #                       # cmpd.counts = length(unique(p$genes)) # only take unique values
+  #                       #               + max(sum(p$genes=='NA')-1, 0) ) # but also count every NA as a unique compound
+  #   return(pathway_list)
+  # })
   
   # # get unique compound counts
   # unique.cmpd = length(unique(unlist(lapply(pathways_gmt, function(p) {p$genes})))) # get unique genes
@@ -250,18 +299,46 @@ valid_cpd_rid = gct_meta@rid[which( !is.na(cpd_vec) & (cpd_vec %in% compound_map
 if (length(valid_cpd_rid)==0) stop(glue("No IDs in the GCT mapped to valid compounds. Please check that your data uses {opt$meta_id_type} IDs, or select a different ID type."))
 # subset to valid compound IDs
 # toDo: add lipid ID mapping
-cat(glue("\nOut of {length(cpd_vec)} features, {length(valid_cpd_rid)} mapped to valid compound IDs.\n\n"))
+cat(glue("\nOut of {length(cpd_vec)} features, {length(valid_cpd_rid)} appear in our DB as valid {opt$meta_id_type}.\n\n"))
 gct_meta_filt = subset_gct(gct_meta, rid=valid_cpd_rid)
-# map to new ID type if necessary
+# map to pathway ID type (resolve duplicate lookup rows: first non-NA target, else drop feature)
 if (opt$meta_id_type != pathway_id_type$meta || # if we need to change ID type
     !is.null(opt$meta_id_col)) { # OR the id column wasn't the rid
+  
+  # helper function-- if compound_map has multiple rows per input ID, use the first non-NA pathway target ID.
+  resolve_pathway_meta_ids = function(input_ids, compound_map, from_col, to_col) {
+    lookup = compound_map[[from_col]]
+    target = compound_map[[to_col]]
+    out = vapply(input_ids, function(id) {
+      if (is.na(id) || !nzchar(trimws(as.character(id)))) return(NA_character_)  # if our ID is NA, return NA
+      hits = which(!is.na(lookup) & lookup == id) # locate all plausible ID matches
+      if (length(hits) == 0L) return(NA_character_) # if we have no hits, return NA
+      vals = target[hits] # get hits
+      ok = !is.na(vals) & nzchar(trimws(as.character(vals))) # check for a valid hit
+      if (!any(ok)) return(NA_character_) # if we have no valid hits, return NA
+      as.character(vals[which(ok)[1L]]) # get first valid hit
+    }, character(1), USE.NAMES = FALSE)
+    u_ids = unique(input_ids[!is.na(input_ids) & nzchar(trimws(as.character(input_ids)))])
+    n_multi = sum(vapply(u_ids, function(id) sum(!is.na(lookup) & lookup == id, na.rm = TRUE) > 1L, logical(1)))
+    if (n_multi > 0L) {
+      warning(glue("{n_multi} input `{from_col}` ID(s) has multiple entries in the metabolite mapping database; using the first non-NA `{to_col}` per ID."))
+    }
+    out
+  }
+
   # get relevant IDs from rid or rdesc
   if (is.null(opt$meta_id_col)) { cpd_vec_filt = gct_meta_filt@rid } else { cpd_vec_filt = gct_meta_filt@rdesc[[opt$meta_id_col]] }
-  new_rid = compound_map[match(cpd_vec_filt, compound_map[[opt$meta_id_type]]), # match subsetted GCT rid to compound map
-                         pathway_id_type$meta] # overwrite with new ID type
+  new_rid = resolve_pathway_meta_ids(cpd_vec_filt, compound_map, opt$meta_id_type, pathway_id_type$meta)
+  has_pathway_id = !is.na(new_rid) & nzchar(new_rid)
+  if (any(!has_pathway_id)) {
+    warning(glue("Excluding {sum(!has_pathway_id)} feature(s): matched on `{opt$meta_id_type}` but no non-NA `{pathway_id_type$meta}` ID."))
+    # gct_meta_filt = subset_gct(gct_meta_filt, rid = gct_meta_filt@rid[which(has_pathway_id)])
+    # new_rid = new_rid[has_pathway_id]
+    # cpd_vec_fin = cpd_vec_filt[has_pathway_id]
+  }
   rid_dup = !(new_rid %in% unique(new_rid[duplicated(new_rid)])) # identify duplicated RIDs (covers NA values)
   # overwrite RID and drop duplicated
-  tmp = overwrite_rid(gct_meta_filt, new_rid, allow_dups = T) 
+  tmp = overwrite_rid(gct_meta_filt, new_rid, allow_dups = T)
   meta_val = subset_gct(tmp, rid_dup)
   cat(glue("\nOut of {length(cpd_vec_filt)} features, {length(meta_val@rid)} had valid and unique {pathway_id_type$meta} IDs.\n\n"))
 } else { meta_val = gct_meta_filt }
@@ -269,11 +346,11 @@ if (opt$meta_id_type != pathway_id_type$meta || # if we need to change ID type
 feature_map = compound_map$name # get compound names
 names(feature_map) = compound_map[, c(pathway_id_type$meta)] # name with pathway IDs
 # optionally add KEGG formatting (cpd: prefix) to metabolite IDs
-if (opt$pthw_db == "kegg" || multiomic) { # if KEGG DB is used, or if multiomic analysis is performed
+if (opt$pthw_db %in% names(kegg_dbs) || multiomic) { # if KEGG DB is used, or if multiomic analysis is performed
   meta_val = overwrite_rid(meta_val, paste0("cpd:", meta_val@rid))
   names(feature_map) = paste0("cpd:", names(feature_map)) # add cpd prefix to feature_map
 }
-  
+
 if (multiomic) {
   cat("\n\n####################\nGene ID Validation\n\n")
   keytypes = AnnotationDbi::keytypes(org.Hs.eg.db)
@@ -305,7 +382,7 @@ if (multiomic) {
 
 }
 # append all pathway gene IDs to feature_map, for use in network diagrams
-if (opt$pthw_db == "kegg") {
+if (opt$pthw_db %in% names(kegg_dbs)) {
   pathway_gene_ids = unique(unlist(lapply(pathways, function(p) {
     p$entries[grepl("^hsa:", p$entries)]
   }))) %>% gsub("^hsa:", "", .)
@@ -696,7 +773,7 @@ cat("\n\n####################\nEnrichment Analysis\n\n")
 for (annot_of_interest in names(annots)) {
   # skip annotation if it has too many values, or too few
   if (length(unique(annots[[annot_of_interest]])) > opt$max_annot_levels) { cat(glue("\n\n####################\nSkipping '{annot_of_interest}' annotation; too many annotation-values ({length(unique(annots[[annot_of_interest]]))}) to be considered discrete (>{opt$max_annot_levels}).\n\n")); next }
-  if (length(unique(annots[[annot_of_interest]]))  == 1 ) { cat(glue("\n\n####################\nSkipping '{annot_of_interest}' annotation; only one unique annotation-value.\n\n")); next }
+  if (length(unique(annots[[annot_of_interest]])) == 1 ) { cat(glue("\n\n####################\nSkipping '{annot_of_interest}' annotation; only one unique annotation-value.\n\n")); next }
   # otherwise run analysis for every unique annotation subvalue
   cat(glue("\n\n####################\nAnalyzing '{annot_of_interest}' Annotation \n####################\n\n"))
   
@@ -1125,7 +1202,7 @@ for (annot_of_interest in names(annots)) {
   
   sign_pathways = filter(res.df.long, BH.P.Value<opt$pval_signif)$Pathway.Name
   if (length(sign_pathways) > max_hm_pathways) {
-    top_n_pathways = floor(max_hm_pathways/length(res.df.list)) # pathways to plot per subvalue
+    top_n_pathways = max(1,floor(max_hm_pathways/length(res.df.list))) # pathways to plot per subvalue (minimum 1 per subvalue)
     sign_pathways = lapply(res.df.list, function(res.df) {
       df = dplyr::filter(res.df, BH.P.Value<opt$pval_signif) %>% # filter to significant values
         slice_min(order_by = BH.P.Value, # order by corrected p-value
@@ -1152,7 +1229,7 @@ for (annot_of_interest in names(annots)) {
   # generate heatmap
   hm.title = glue("{opt$output_prefix} {opt$anal_type} Results\nTop Significant Pathways for {annot_of_interest}")
   # hm.subtitle = glue("{value_col}")
-  hm <- Heatmap(heatmap_df, # plot normalized heatmap
+  hm <- Heatmap(as.matrix(heatmap_df), # plot normalized heatmap (as matrix to suppress warning)
                 cell_fun = function(j, i, x, y, w, h, fill) {
                   if(is.na(sign_df[i, j])) {
                     grid.text("", x, y)
