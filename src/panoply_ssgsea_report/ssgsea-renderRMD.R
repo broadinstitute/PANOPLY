@@ -164,21 +164,31 @@ param <- dir(tmp.dir, pattern = 'parameters.txt$', full.names = T)
 
 ######################################
 ## import and save as .Rdata
-if(file.exists(gct.comb))
+if(file.exists(gct.comb)) {
   gct.comb <- parse.gctx(gct.comb)
-if(file.exists(param))
+} else { stop("Missing combined GCT file") }
+if(file.exists(param)) {
   param <- readLines(param)
+} else { stop("Missing parameter file") }
 
-## create the figure
-pw_hm(output.prefix=gct.comb, fdr.max=fdr.max, n.max=n.max,
-      geneset_groups_file = geneset_groups_file,
-      split.by.prefix = split.by.prefix,#, ptmsigdb=opt$ptmsigdb)
-      cluster.rows = cluster.rows, ser.meth = ser.meth)
 
-## copy to tmp.dir
-fn.png <- dir('.', pattern='.png$')
-if ( length(fn.png)==0 ) stop("No heatmap figures were created. Something likely went wrong in pw_hm().")
-file.copy(fn.png, tmp.dir)
+signif_pthw_toggle = any(dplyr::select(gct.comb@rdesc, starts_with("fdr.pvalue."))<fdr.max, ## check if there are any significant pathways
+                         na.rm = TRUE) 
+if ( signif_pthw_toggle ) {
+  ## create the figure
+  pw_hm(output.prefix=gct.comb, fdr.max=fdr.max, n.max=n.max,
+        geneset_groups_file = geneset_groups_file,
+        split.by.prefix = split.by.prefix,#, ptmsigdb=opt$ptmsigdb)
+        cluster.rows = cluster.rows, ser.meth = ser.meth)
+  
+  ## copy to tmp.dir
+  fn.png <- dir('.', pattern='.png$')
+  if ( length(fn.png)==0 ) stop("No heatmap figures were created. Something likely went wrong in pw_hm().")
+  file.copy(fn.png, tmp.dir)
+} else {
+  fn.png=NULL # initialize empty fn.png object 
+  warning("No significant pathways were found across any column.")
+}
 
 
 
@@ -191,6 +201,7 @@ rmarkdown::render(file.path(opt$libdir, "ssgsea_rmd.rmd"),
                                 label = label,
                                 fdr = fdr.max,
                                 top_n = n.max,
+                                signif_pthw_toggle = signif_pthw_toggle,
                                 param = param,
                                 fn.png = file.path(pwd, fn.png)),
                   output_file = file.path(pwd,paste0(label,"_ssGSEA_rmd.html")))

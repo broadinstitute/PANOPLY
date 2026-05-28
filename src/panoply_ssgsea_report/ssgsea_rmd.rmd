@@ -13,6 +13,7 @@ params:
   label: NULL
   fdr: NULL
   top_n: NULL
+  signif_pthw_toggle: NULL
   opt: NULL
   # gct.comb: NULL
   param: NULL
@@ -71,7 +72,11 @@ The heatmap in **Figure `r fig_count`** depicts normalized enrichment scores (NE
 ***
 
 ```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Normalized enrichment scores (NES) of gene sets across columns of the input data matrix. Asterisks indicate gene sets with FDR < ', fdr,'. Shown are up to ', top_n,' most significant gene sets per column.'), echo=FALSE}
-knitr::include_graphics(fn.png)
+if (signif_pthw_toggle) {
+  knitr::include_graphics(fn.png)
+} else {
+  cat("No significant pathway enrichments found across any column.")
+}
 ```
 
 
