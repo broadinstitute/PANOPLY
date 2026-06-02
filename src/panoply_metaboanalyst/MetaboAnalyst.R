@@ -183,7 +183,7 @@ if (!opt$pthw_db %in% valid_qs_files) {
   stop(glue("Invalid pathway database '{opt$pthw_db}'. Please select one of the following:\n{paste0(valid_qs_files, collapse='\n' )}"))
 }
 # do not run multiomic analysis with the SMP Database
-if (multiomic && !( opt$pthw_db %in% kegg_dbs ) ) {
+if (multiomic && !( opt$pthw_db %in% names(kegg_dbs) ) ) {
   stop(glue("This pathway ('{opt$pthw_db}') contains only metabolites, and does not support multiomic analysis. Please use a KEGG database ('{paste(names(kegg_dbs), collapse='\\' or \\'')}') instead."))
 }
 
@@ -927,7 +927,7 @@ for (annot_of_interest in names(annots)) {
         all.paths = unique(union(rownames(res.meta.df),rownames(res.ome.df))) # get all paths with at least 1 hit in either ome
         shared.paths = intersect(rownames(res.meta.df),rownames(res.ome.df)) # get paths with hits in both omes
         
-        if(print_internal_placemarks) cat("\n\n####################\nCombinging P-values\n\n")
+        if(print_internal_placemarks) cat("\n\n####################\nCombining P-values\n\n")
         performWeightedZtest = function(p1, p2, w1, w2) {
           p.vec = c(p1,p2)
           weights = c(w1, w2)

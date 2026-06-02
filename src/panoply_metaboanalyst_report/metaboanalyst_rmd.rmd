@@ -90,7 +90,7 @@ if (is.null(opt$pthw_db)) {
   pathway_database_text = "(<code>pthw_db</code> parameter missing)"
   opt$pthw_db = "" # set to empty string to avoid errors
 } else {
-  if ( opt$pthw_db == "kegg" ) {
+  if ( grepl("kegg_pathway", opt$pthw_db) ) {
     pathway_database_text = "a curated subset of metabolomic pathways from the KEGG Database"
   } else if ( opt$pthw_db == "smpdb" ) {
     pathway_database_text = "a curated subset of metabolomic pathways from the Small Molecule Pathway Database"
@@ -143,7 +143,7 @@ cat("\n")
 ```
 
 ```{r, echo=FALSE}
-if(opt$pthw_db!="kegg") {
+if(!grepl("kegg_pathway", opt$pthw_db)) {
   cat("## WARNING:\nReport is configured primarily for the KEGG pathway database; figures may not behave properly when using other pathway databases.")
 }
 ```
