@@ -95,13 +95,13 @@ if (is.null(opt$pthw_db)) {
   } else if ( opt$pthw_db == "smpdb" ) {
     pathway_database_text = "a curated subset of metabolomic pathways from the Small Molecule Pathway Database"
   } else {
-    pathway_database_text = glue("a curated subset of metabolomic pathways from the {opt$pthw_db} Database")
+    pathway_database_text = glue("a curated subset of metabolomic pathways from the '{opt$pthw_db}' Database")
   }
 }
 
 # generate overview text, based on the analysis type and p-value combination method
 cat("This document describes the results of the MetaboAnalyst module, which performs pathway enrichment analysis on metabolites and genes. ")
-cat(paste0("Pathway enrichment was performed on the ", pathway_database_text," pathway database. "))
+cat(paste0("Pathway enrichment was performed on the ", pathway_database_text,". "))
 cat("\n\n")
 
 # generate text describing analysis type
