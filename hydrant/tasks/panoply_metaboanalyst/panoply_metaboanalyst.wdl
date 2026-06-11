@@ -17,6 +17,9 @@ task panoply_metaboanalyst {
 	Int? max_annot_levels
 	String? pval_signif
 	Int? top_n_networks
+	Int? min_overlap
+	String? pthw_db
+	Boolean? background_filter
 
 	String output_prefix="results_metaboanalyst"
 	File? groups_file
@@ -30,7 +33,17 @@ task panoply_metaboanalyst {
 	command {
 		set -euo pipefail
 
-		Rscript /prot/proteomics/Projects/PGDAC/src/MetaboAnalyst.R '--metabolome_gct' ${meta_gct} ${'--meta_id_type ' + meta_id_type} ${'--meta_id_col ' + meta_id_col} ${'--ome_gct ' + omic_gct} ${'--ome_type ' + ome_type} ${'--gene_column ' + gene_column} ${'--gene_id_type ' + gene_id_type} ${'--groups_file ' + groups_file} ${"--max_annot_levels " + max_annot_levels} ${"--anal_type " + anal_type} ${"--pval_comb " + pval_comb} ${"--pval_signif " + pval_signif} ${"--top_n_networks " + top_n_networks} ${"--output_prefix " + output_prefix} ${"--yaml " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/MetaboAnalyst.R '--metabolome_gct' ${meta_gct} \
+			${'--meta_id_type ' + meta_id_type} ${'--meta_id_col ' + meta_id_col} \
+			${'--ome_gct ' + omic_gct} ${'--ome_type ' + ome_type} \
+			${'--gene_column ' + gene_column} ${'--gene_id_type ' + gene_id_type} \
+			${'--groups_file ' + groups_file} ${"--max_annot_levels " + max_annot_levels} \
+			${"--pthw_db " + pthw_db} \
+			${"--anal_type " + anal_type} ${"--pval_comb " + pval_comb} ${"--pval_signif " + pval_signif} \
+			${"--top_n_networks " + top_n_networks} ${"--min_overlap " + min_overlap} \
+			${true="--background_filter true" false="--background_filter false" background_filter} \
+			${"--output_prefix " + output_prefix} \
+			${"--yaml " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 	}
 
 	output {
