@@ -1,11 +1,11 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_diffexp/versions/5/plain-WDL/descriptor" as diffexp_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_mapping/versions/17/plain-WDL/descriptor" as mapping_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm/versions/23/plain-WDL/descriptor" as analysis_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_postprocess/versions/8/plain-WDL/descriptor" as postprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_report/versions/6/plain-WDL/descriptor" as report_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_clumps_ptm_diffexp/panoply_clumps_ptm_diffexp.wdl" as diffexp_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_clumps_ptm_mapping/panoply_clumps_ptm_mapping.wdl" as mapping_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_clumps_ptm/panoply_clumps_ptm.wdl" as analysis_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_clumps_ptm_postprocess/panoply_clumps_ptm_postprocess.wdl" as postprocess_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_clumps_ptm_report/panoply_clumps_ptm_report.wdl" as report_wdl
 
 ################################################
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm

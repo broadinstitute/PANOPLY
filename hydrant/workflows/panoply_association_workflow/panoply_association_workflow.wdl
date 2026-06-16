@@ -1,11 +1,11 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association/versions/10/plain-WDL/descriptor" as assoc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_accumulate/versions/8/plain-WDL/descriptor" as accum_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_preprocess_gct/versions/4/plain-WDL/descriptor" as preprocess_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_ssgsea/versions/15/plain-WDL/descriptor" as ssgsea_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_association_report/versions/9/plain-WDL/descriptor" as 	assoc_report_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_association/panoply_association.wdl" as assoc_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_accumulate/panoply_accumulate.wdl" as accum_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_association_report/panoply_association_report.wdl" as 	assoc_report_wdl
 
 ################################################
 ##  workflow: panoply_association + panoply_accumulate + panoply_ssgsea + panoply_association_report

@@ -2,22 +2,22 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_internal/versions/1/plain-WDL/descriptor" as panoply_main_internal
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_main_internal/panoply_main_internal.wdl" as panoply_main_internal
 ## Proteogenomic
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_harmonize/versions/7/plain-WDL/descriptor" as harmonize_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation/versions/7/plain-WDL/descriptor" as rna_prot_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_rna_protein_correlation_report/versions/6/plain-WDL/descriptor" as rna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_setup/versions/7/plain-WDL/descriptor" as cna_setup_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation/versions/7/plain-WDL/descriptor" as cna_corr_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cna_correlation_report/versions/6/plain-WDL/descriptor" as cna_corr_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cmap_analysis/versions/6/plain-WDL/descriptor" as cmap_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_harmonize/panoply_harmonize.wdl" as harmonize_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_rna_protein_correlation/panoply_rna_protein_correlation.wdl" as rna_prot_corr_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_rna_protein_correlation_report/panoply_rna_protein_correlation_report.wdl" as rna_corr_report_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cna_setup/panoply_cna_setup.wdl" as cna_setup_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cna_correlation/panoply_cna_correlation.wdl" as cna_corr_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cna_correlation_report/panoply_cna_correlation_report.wdl" as cna_corr_report_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cmap_analysis/panoply_cmap_analysis.wdl" as cmap_wdl
 ## Sample-QC
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc/versions/8/plain-WDL/descriptor" as sampleqc_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_sampleqc_report/versions/5/plain-WDL/descriptor" as sampleqc_report_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_cosmo/versions/11/plain-WDL/descriptor" as cosmo_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_omicsev/versions/21/plain-WDL/descriptor" as omicsev_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_sampleqc/panoply_sampleqc.wdl" as sampleqc_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_sampleqc_report/panoply_sampleqc_report.wdl" as sampleqc_report_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cosmo/panoply_cosmo.wdl" as cosmo_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_omicsev/panoply_omicsev.wdl" as omicsev_wdl
 ## Support
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_download/versions/23/plain-WDL/descriptor" as download_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_download/panoply_download.wdl" as download_wdl
 
 
 workflow panoply_main {

@@ -1,16 +1,16 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_select_all_pairs/versions/19/plain-WDL/descriptor" as select_pairs
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptac:panoply_normalize_filter_workflow/versions/37/plain-WDL/descriptor" as norm_filt_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main/versions/75/plain-WDL/descriptor" as main_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_main_internal/versions/1/plain-WDL/descriptor" as main_internal_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_clumps_ptm_workflow/versions/23/plain-WDL/descriptor" as clumps_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst_workflow/versions/4/plain-WDL/descriptor" as metab_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_nmf_workflow/versions/50/plain-WDL/descriptor" as nmf_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_unified_assemble_results/versions/33/plain-WDL/descriptor" as assemble_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_select_all_pairs/panoply_select_all_pairs.wdl" as select_pairs
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_normalize_filter_workflow/panoply_normalize_filter_workflow.wdl" as norm_filt_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_main/panoply_main.wdl" as main_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_main_internal/panoply_main_internal.wdl" as main_internal_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_clumps_ptm_workflow/panoply_clumps_ptm_workflow.wdl" as clumps_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_metaboanalyst_workflow/panoply_metaboanalyst_workflow.wdl" as metab_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_nmf_workflow/panoply_nmf_workflow.wdl" as nmf_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_unified_assemble_results/panoply_unified_assemble_results.wdl" as assemble_wdl
 
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_check_yaml_default/versions/9/plain-WDL/descriptor" as check_yaml_default_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl" as check_yaml_default_wdl
 
 
 workflow panoply_unified_workflow {

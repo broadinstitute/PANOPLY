@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst/versions/2/plain-WDL/descriptor" as metaboanalyst_wdl
-import "https://api.firecloud.org/ga4gh/v1/tools/broadcptacdev:panoply_metaboanalyst_report/versions/1/plain-WDL/descriptor" as metaboanalyst_report_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_metaboanalyst/panoply_metaboanalyst.wdl" as metaboanalyst_wdl
+import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_metaboanalyst_report/panoply_metaboanalyst_report.wdl" as metaboanalyst_report_wdl
 
 ################################################
 ##  workflow: panoply_metaboanalyst + panoply_metaboanalyst_report
