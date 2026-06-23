@@ -33,7 +33,7 @@ task panoply_cmap_report {
   runtime {
     docker : "broadcptacdev/panoply_cmap_report:latest"
     memory : select_first ([memory, 8]) + "GB"
-    disks : "local-disk " + select_first ([disk_space, 20]) + " SSD"
+    disks : "local-disk " + select_first ([disk_space, 64]) + " SSD"
     cpu : select_first ([num_threads, 1]) + ""
     preemptible : select_first ([num_preemptions, 0])
   }
