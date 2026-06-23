@@ -25,6 +25,7 @@ task panoply_clumps_ptm_mapping {
 	String? variable_sites_sep		# seperator for variable sites
 	Boolean? keep_multi_sites		# should multi-site PTMs be mapped to PDBs
 	Boolean? filter_duplicate_sites	# should multi-site PTMs that were also observed as single-sites be filtered out
+	Boolean? ignore_multiplicity	# skip single- vs multi-site separation (use when rids do not encode site multiplicity)
 
 	File UNIPROT_SWISSPROT			# file with UNIPROT sequences, to be blasted to
 	File SIFTS_DB					# SIFTS database with mapping between UNIPROT and PDB IDs
@@ -61,6 +62,7 @@ task panoply_clumps_ptm_mapping {
 		${'--variable_sites_col ' + variable_sites_col} ${'--variable_sites_sep ' + '"' + variable_sites_sep + '"'} \
 		${true="--keep_multi_sites true" false="--keep_multi_sites false" keep_multi_sites} \
 		${true="--filter_duplicate_sites true" false="--filter_duplicate_sites false" filter_duplicate_sites} \
+		${true="--ignore_multiplicity true" false="--ignore_multiplicity false" ignore_multiplicity} \
 		--UNIPROT_SWISSPROT ${UNIPROT_SWISSPROT} --SIFTS_DB ${SIFTS_DB} \
 		--output_prefix ${output_prefix} --yaml ${yaml_file} --num_threads ${num_threads} \
 		$( [ ${DEBUG_MODE} = true ] && echo "--DEBUG_MODE" )

@@ -956,8 +956,8 @@ create_clumpsptm_groups <- function() {
 select_FASTA <- function() {
   printX("INFO", glue("Please select a FASTA file with all relevant sequences for your PTM data."))
   # list of zip-files
-  fasta_files = system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("fasta$", ., value=T)
-  cat(paste(glue("Available .fasta file(s):"),
+  fasta_files = system(glue( "gsutil ls {google.bucket}/"), intern=T) %>% basename() %>% grep("fasta$|fa$", ., value=T)
+  cat(paste(glue("Available .fasta or .fa file(s):"),
             paste( "*", fasta_files, collapse = '\n'), 
             sep,
             sep = '\n'))

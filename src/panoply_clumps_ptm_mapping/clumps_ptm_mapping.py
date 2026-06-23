@@ -77,6 +77,7 @@ parser.add_argument("-v", "--variable_sites_col", type=str, help="GCT rdesc colu
 parser.add_argument("-s", "--variable_sites_sep", type=str, help="Separator for variable sites (e.g. ' ' is the separator for 'T972t S977s')")
 parser.add_argument("--keep_multi_sites", type=str2bool, help="Should multi-site PTMs be mapped?.")
 parser.add_argument("--filter_duplicate_sites", type=str2bool, help="Should multi-site PTMs be filtered to remove sites that were observed as single-sites?")
+parser.add_argument("--ignore_multiplicity", type=str2bool, help="Skip single- vs multi-site separation (use for datasets where rids do not encode site multiplicity).", default=False)
 
 parser.add_argument("-b", "--PDB_DIR", type=str, help="Directory with PDB structures.", required=True) # expected directory structure is: ${PDB_DIR}/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
 parser.add_argument("--UNIPROT_SWISSPROT", type=str, help="Reference FASTA file with all relevant UNIPROT sequences, to BLAST your sequences to.", required=True)
@@ -142,6 +143,9 @@ if (args.keep_multi_sites==None):
 if (args.filter_duplicate_sites==None):
     args.filter_duplicate_sites = yaml_dict['panoply_clumps_ptm']['mapping']['filter_duplicate_sites']
 
+if (args.ignore_multiplicity==None):
+    args.ignore_multiplicity = yaml_dict['panoply_clumps_ptm']['mapping'].get('ignore_multiplicity', False)
+
 if (args.FASTA_sep_type==None):
     args.FASTA_sep_type = yaml_dict['panoply_clumps_ptm']['mapping']['FASTA_sep_type']
 
@@ -203,6 +207,7 @@ ptm_col = args.variable_sites_col
 ptm_split = args.variable_sites_sep
 keep_multi_sites = args.keep_multi_sites
 filter_duplicate_sites = args.filter_duplicate_sites
+ignore_multiplicity = args.ignore_multiplicity
 gene_col = args.gene_column
 accn_type = 'inputID' # label to use for input ID (e.g. 'ENSEMBL' or 'refseq'). not really used; currently a placeholder.
 unique_id_col = 'rid' # hardcode unique_id_col to "rid" since we're importing a GCT file. If we were using a pre-generated var_site.tsv file, this might be "id" instead.
@@ -442,38 +447,48 @@ ptm_df[ptm_col] = [str.split(ptm_split) for str in ptm_df[ptm_col]] # convert va
 ptm_df_long = ptm_df.explode(ptm_col).drop_duplicates() # make every list element into its own row
 
 
-# Proteins with single PTM sites
-ptm_sing_df = ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="1" and x.split("_")[-4]=="1")].copy()
-ptm_sing_df.loc[:,"ptmSite"] = ptm_sing_df[ptm_col].apply(grab_ptm_site)
-# filter out malformed values
-ptm_sing_df_filt = ptm_sing_df[ptm_sing_df['ptmSite'].notna()] # drop ptmSites that are NA
-ptm_sing_df_filt = ptm_sing_df_filt[ptm_sing_df_filt['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
-if ptm_sing_df_filt.shape[0]==0:
-	raise Exception("No single-site ptms in dataset")
-
-if keep_multi_sites:
-    # Proteins with multiple PTM sites
-    ptm_multi_df = pd.concat((
-        ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="3" and x.split("_")[-4]=="3")].copy(),
-        ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="2" and x.split("_")[-4]=="2")].copy()
-    ))
-    ptm_multi_df.loc[:,"ptmSite"] = ptm_multi_df[ptm_col].apply(grab_ptm_site)
-    ptm_multi_df = ptm_multi_df.explode("ptmSite")
+if ignore_multiplicity:
+    # Skip rid-based single/multi-site separation; treat all rows as valid sites
+    ptm_comb_df = ptm_df_long.copy()
+    ptm_comb_df.loc[:,"ptmSite"] = ptm_comb_df[ptm_col].apply(grab_ptm_site)
     # filter out malformed values
-    ptm_multi_df_filt = ptm_multi_df[ptm_multi_df['ptmSite'].notna()] # drop ptmSites that are NA
-    ptm_multi_df_filt = ptm_multi_df_filt[ptm_multi_df_filt['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
-    if ptm_multi_df_filt.shape[0]==0:
-    	warnings.warn("No multi-site ptms in dataset")
-    # optionally filter sites that already exist in single-site data
-    if filter_duplicate_sites:
-        sing_keys = set(zip(ptm_sing_df_filt[accn_col], ptm_sing_df_filt["ptmSite"])) # get all unique PTM Sites in the single-site dataset
-        ptm_multi_df_filt = ptm_multi_df_filt[ # filter out sites from the multisite dataset
-            ~ptm_multi_df_filt[[accn_col,"ptmSite"]].apply(tuple, axis=1).isin(sing_keys) # that had a relevant single-site
-        ]
-    # Combine single-sites with multi-sites
-    ptm_comb_df = pd.concat((ptm_sing_df_filt, ptm_multi_df_filt))
+    ptm_comb_df = ptm_comb_df[ptm_comb_df['ptmSite'].notna()] # drop ptmSites that are NA
+    ptm_comb_df = ptm_comb_df[ptm_comb_df['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
+    if ptm_comb_df.shape[0]==0:
+        raise Exception("No valid PTM sites in dataset")
 else:
-    ptm_comb_df = ptm_sing_df_filt
+    # Proteins with single PTM sites
+    ptm_sing_df = ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="1" and x.split("_")[-4]=="1")].copy()
+    ptm_sing_df.loc[:,"ptmSite"] = ptm_sing_df[ptm_col].apply(grab_ptm_site)
+    # filter out malformed values
+    ptm_sing_df_filt = ptm_sing_df[ptm_sing_df['ptmSite'].notna()] # drop ptmSites that are NA
+    ptm_sing_df_filt = ptm_sing_df_filt[ptm_sing_df_filt['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
+    if ptm_sing_df_filt.shape[0]==0:
+        raise Exception("No single-site ptms in dataset")
+
+    if keep_multi_sites:
+        # Proteins with multiple PTM sites
+        ptm_multi_df = pd.concat((
+            ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="3" and x.split("_")[-4]=="3")].copy(),
+            ptm_df_long.loc[ptm_df_long.index.map(lambda x: x.split("_")[-3]=="2" and x.split("_")[-4]=="2")].copy()
+        ))
+        ptm_multi_df.loc[:,"ptmSite"] = ptm_multi_df[ptm_col].apply(grab_ptm_site)
+        ptm_multi_df = ptm_multi_df.explode("ptmSite")
+        # filter out malformed values
+        ptm_multi_df_filt = ptm_multi_df[ptm_multi_df['ptmSite'].notna()] # drop ptmSites that are NA
+        ptm_multi_df_filt = ptm_multi_df_filt[ptm_multi_df_filt['ptmSite'].apply(lambda x: len(x) > 0)] # drop ptmSites that are length zero (i.e. non K S T Y ptms)
+        if ptm_multi_df_filt.shape[0]==0:
+            warnings.warn("No multi-site ptms in dataset")
+        # optionally filter sites that already exist in single-site data
+        if filter_duplicate_sites:
+            sing_keys = set(zip(ptm_sing_df_filt[accn_col], ptm_sing_df_filt["ptmSite"])) # get all unique PTM Sites in the single-site dataset
+            ptm_multi_df_filt = ptm_multi_df_filt[ # filter out sites from the multisite dataset
+                ~ptm_multi_df_filt[[accn_col,"ptmSite"]].apply(tuple, axis=1).isin(sing_keys) # that had a relevant single-site
+            ]
+        # Combine single-sites with multi-sites
+        ptm_comb_df = pd.concat((ptm_sing_df_filt, ptm_multi_df_filt))
+    else:
+        ptm_comb_df = ptm_sing_df_filt
 
 
 ptm_comb_df = ptm_comb_df[ptm_comb_df[accn_col].isin(mapped_acc_df.index)] # subset to valid accession numbers
