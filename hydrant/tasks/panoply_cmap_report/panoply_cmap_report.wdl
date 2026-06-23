@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
+# Copyright (c) 2026 The Broad Institute, Inc. All rights reserved.
 #
 task panoply_cmap_report {
 
