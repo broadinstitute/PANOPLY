@@ -151,7 +151,7 @@ panoply_blacksheep:
   fdr_value: 0.05
 
 panoply_metaboanalyst:
-  meta_id_type: "hmdb_id"                       # ID type used for metabolites
+  meta_id_type: "hmdb_id"                       # ID type used for metabolites (options:  "hmdb_id", "name", "pubchem_id", "chebi_id", "kegg_id", "metlin_id", "lipid", "smiles", "exactmass", "formula", "inchi_key", "super_class", "main_class", "sub_class", "synonym")
   meta_id_col: "metab_id"                       # Rdesc column in Metabolite GCT with meta_id_type IDs (use NULL for rid)
   gene_id_type: "SYMBOL"                        # ID type used for -omic data
   max_annot_levels: 10                          # max. number of levels in a annotation category to be included in the analysis
