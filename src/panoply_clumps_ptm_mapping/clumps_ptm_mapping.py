@@ -512,11 +512,14 @@ ptm_comb_df["acc_res_i"] = ptm_comb_df["ptmSite"].str.slice(1,-1).astype(int)
 
 
 # print out stats for your database
-print("  * {} single PTM sites total in dataset".format(ptm_sing_df_filt.shape[0]))
-if keep_multi_sites:
-    print("  * {} multi PTM sites total in dataset".format(ptm_multi_df_filt.shape[0]))
+if ignore_multiplicity:
+    print("  * {} PTM sites total in dataset (multiplicity ignored)".format(ptm_comb_df.shape[0]))
 else:
-    print("  * Multi PTM sites will be excluded")
+    print("  * {} single PTM sites total in dataset".format(ptm_sing_df_filt.shape[0]))
+    if keep_multi_sites:
+        print("  * {} multi PTM sites total in dataset".format(ptm_multi_df_filt.shape[0]))
+    else:
+        print("  * Multi PTM sites will be excluded")
 
 
 print("#### PTM PREPROCESSING COMPLETE  --- ", datetime.now())
