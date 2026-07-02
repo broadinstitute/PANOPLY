@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_immune_analysis/panoply_immune_analysis.wdl" as immune_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_immune_analysis_report/panoply_immune_analysis_report.wdl" as immune_report_wdl
+import "../../tasks/panoply_immune_analysis/panoply_immune_analysis.wdl" as immune_wdl
+import "../../tasks/panoply_immune_analysis_report/panoply_immune_analysis_report.wdl" as immune_report_wdl
 
 workflow panoply_immune_analysis_workflow {
     File inputData

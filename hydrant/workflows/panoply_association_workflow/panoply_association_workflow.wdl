@@ -1,11 +1,11 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_association/panoply_association.wdl" as assoc_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_accumulate/panoply_accumulate.wdl" as accum_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_association_report/panoply_association_report.wdl" as 	assoc_report_wdl
+import "../../tasks/panoply_association/panoply_association.wdl" as assoc_wdl
+import "../../tasks/panoply_accumulate/panoply_accumulate.wdl" as accum_wdl
+import "../../tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
+import "../../tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
+import "../../tasks/panoply_association_report/panoply_association_report.wdl" as 	assoc_report_wdl
 
 ################################################
 ##  workflow: panoply_association + panoply_accumulate + panoply_ssgsea + panoply_association_report

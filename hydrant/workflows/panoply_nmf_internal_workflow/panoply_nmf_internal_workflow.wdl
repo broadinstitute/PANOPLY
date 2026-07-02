@@ -1,11 +1,11 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_nmf_balance_omes/panoply_nmf_balance_omes.wdl" as panoply_nmf_balance_omes_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_nmf/panoply_nmf.wdl" as panoply_nmf_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_nmf_postprocess/panoply_nmf_postprocess.wdl" as panoply_nmf_postprocess_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_nmf_report/panoply_nmf_report.wdl" as panoply_nmf_report_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl" as panoply_ssgsea_workflow_wdl
+import "../../tasks/panoply_nmf_balance_omes/panoply_nmf_balance_omes.wdl" as panoply_nmf_balance_omes_wdl
+import "../../tasks/panoply_nmf/panoply_nmf.wdl" as panoply_nmf_wdl
+import "../../tasks/panoply_nmf_postprocess/panoply_nmf_postprocess.wdl" as panoply_nmf_postprocess_wdl
+import "../../tasks/panoply_nmf_report/panoply_nmf_report.wdl" as panoply_nmf_report_wdl
+import "../panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl" as panoply_ssgsea_workflow_wdl
 
 ################################################
 ##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report

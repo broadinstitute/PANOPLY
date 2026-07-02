@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_ssgsea_report/panoply_ssgsea_report.wdl" as ssgsea_report_wdl
+import "../../tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
+import "../../tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
+import "../../tasks/panoply_ssgsea_report/panoply_ssgsea_report.wdl" as ssgsea_report_wdl
 
 ################################################
 ##  workflow: panoply_preprocess_gct + panoply_ssgsea + panoply_ssgsea_report

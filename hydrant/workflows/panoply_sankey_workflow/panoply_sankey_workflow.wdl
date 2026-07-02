@@ -1,8 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_sankey/panoply_sankey.wdl" as sankey_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_sankey_report/panoply_sankey_report.wdl" as sankey_report_wdl
+import "../../tasks/panoply_sankey/panoply_sankey.wdl" as sankey_wdl
+import "../../tasks/panoply_sankey_report/panoply_sankey_report.wdl" as sankey_report_wdl
 
 
 workflow panoply_sankey_workflow {

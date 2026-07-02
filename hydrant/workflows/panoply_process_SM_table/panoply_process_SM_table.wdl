@@ -1,9 +1,9 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_parse_sm_table/panoply_parse_sm_table.wdl" as parse_sm_table
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl" as normalize
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_normalize_ms_data_report/panoply_normalize_ms_data_report.wdl" as normalize_report
+import "../../tasks/panoply_parse_sm_table/panoply_parse_sm_table.wdl" as parse_sm_table
+import "../../tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl" as normalize
+import "../../tasks/panoply_normalize_ms_data_report/panoply_normalize_ms_data_report.wdl" as normalize_report
 
 workflow panoply_process_SM_table {
 

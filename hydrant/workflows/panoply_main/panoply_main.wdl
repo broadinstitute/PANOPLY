@@ -2,22 +2,22 @@
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_main_internal/panoply_main_internal.wdl" as panoply_main_internal
+import "../panoply_main_internal/panoply_main_internal.wdl" as panoply_main_internal
 ## Proteogenomic
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_harmonize/panoply_harmonize.wdl" as harmonize_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_rna_protein_correlation/panoply_rna_protein_correlation.wdl" as rna_prot_corr_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_rna_protein_correlation_report/panoply_rna_protein_correlation_report.wdl" as rna_corr_report_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cna_setup/panoply_cna_setup.wdl" as cna_setup_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cna_correlation/panoply_cna_correlation.wdl" as cna_corr_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cna_correlation_report/panoply_cna_correlation_report.wdl" as cna_corr_report_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cmap_analysis/panoply_cmap_analysis.wdl" as cmap_wdl
+import "../../tasks/panoply_harmonize/panoply_harmonize.wdl" as harmonize_wdl
+import "../../tasks/panoply_rna_protein_correlation/panoply_rna_protein_correlation.wdl" as rna_prot_corr_wdl
+import "../../tasks/panoply_rna_protein_correlation_report/panoply_rna_protein_correlation_report.wdl" as rna_corr_report_wdl
+import "../../tasks/panoply_cna_setup/panoply_cna_setup.wdl" as cna_setup_wdl
+import "../../tasks/panoply_cna_correlation/panoply_cna_correlation.wdl" as cna_corr_wdl
+import "../../tasks/panoply_cna_correlation_report/panoply_cna_correlation_report.wdl" as cna_corr_report_wdl
+import "../../tasks/panoply_cmap_analysis/panoply_cmap_analysis.wdl" as cmap_wdl
 ## Sample-QC
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_sampleqc/panoply_sampleqc.wdl" as sampleqc_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_sampleqc_report/panoply_sampleqc_report.wdl" as sampleqc_report_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_cosmo/panoply_cosmo.wdl" as cosmo_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_omicsev/panoply_omicsev.wdl" as omicsev_wdl
+import "../../tasks/panoply_sampleqc/panoply_sampleqc.wdl" as sampleqc_wdl
+import "../../tasks/panoply_sampleqc_report/panoply_sampleqc_report.wdl" as sampleqc_report_wdl
+import "../../tasks/panoply_cosmo/panoply_cosmo.wdl" as cosmo_wdl
+import "../../tasks/panoply_omicsev/panoply_omicsev.wdl" as omicsev_wdl
 ## Support
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_download/panoply_download.wdl" as download_wdl
+import "../../tasks/panoply_download/panoply_download.wdl" as download_wdl
 
 
 workflow panoply_main {

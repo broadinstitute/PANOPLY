@@ -2,14 +2,14 @@
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
 
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_association_workflow/panoply_association_workflow.wdl" as assoc_workflow
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_blacksheep_workflow/panoply_blacksheep_workflow.wdl" as blacksheep_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl" as panoply_ssgsea_workflow_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_nmf_internal_workflow/panoply_nmf_internal_workflow.wdl" as nmf_wdl
+import "../panoply_association_workflow/panoply_association_workflow.wdl" as assoc_workflow
+import "../panoply_blacksheep_workflow/panoply_blacksheep_workflow.wdl" as blacksheep_wdl
+import "../panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl" as panoply_ssgsea_workflow_wdl
+import "../panoply_nmf_internal_workflow/panoply_nmf_internal_workflow.wdl" as nmf_wdl
 
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/workflows/panoply_immune_analysis_workflow/panoply_immune_analysis_workflow.wdl" as immune_wdl
+import "../panoply_immune_analysis_workflow/panoply_immune_analysis_workflow.wdl" as immune_wdl
 
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl" as check_yaml_default_wdl
+import "../../tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl" as check_yaml_default_wdl
 
 workflow panoply_main_internal {
 
