@@ -1,8 +1,9 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_blacksheep/panoply_blacksheep.wdl" as blacksheep_wdl
-import "https://raw.githubusercontent.com/broadinstitute/PANOPLY/issue-githubWDL/hydrant/tasks/panoply_blacksheep_report/panoply_blacksheep_report.wdl" as blacksheep_report_wdl
+import "../../tasks/panoply_blacksheep/panoply_blacksheep.wdl" as blacksheep_wdl
+import "../../tasks/panoply_blacksheep_report/panoply_blacksheep_report.wdl" as blacksheep_report_wdl
+
 workflow panoply_blacksheep_workflow {
     File input_gct
     File master_yaml
