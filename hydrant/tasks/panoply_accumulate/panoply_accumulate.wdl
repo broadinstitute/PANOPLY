@@ -1,16 +1,20 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_accumulate {
-  File input_tar
-  String? output_tar = "panoply_contrasts.tar"
-  String module
-  String? analysisDir = "input_tarball"
+version 1.0
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+task panoply_accumulate {
+  input {
+    File input_tar
+    String? output_tar = "panoply_contrasts.tar"
+    String module
+    String? analysisDir = "input_tarball"
+
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -42,4 +46,5 @@ task panoply_accumulate {
 
 workflow panoply_accumulate_workflow {
   call panoply_accumulate
+
 }

@@ -1,33 +1,37 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_preprocess_gct {
+	input {
 
-	File input_ds
-	File yaml_file
-	String output_prefix='input-ssgsea'
-	
-    ## parameters to create gene-centric or single-site-centric 
-    ## GCT files for ssGSEA / PTM-SEA
-	String? level
- 	String? id_type
-	String? id_type_out
-	String? acc_type
-	String? seqwin_col
-	String? gene_col
-	Boolean? humanize_gene
-	String? SGT_col
-	Boolean? loc
-	String? mode
-	String? mod_res
-	String? mod_type
+		File input_ds
+		File yaml_file
+		String output_prefix='input-ssgsea'
 
-    ## VM parameters
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+	    ## parameters to create gene-centric or single-site-centric 
+	    ## GCT files for ssGSEA / PTM-SEA
+		String? level
+	 	String? id_type
+		String? id_type_out
+		String? acc_type
+		String? seqwin_col
+		String? gene_col
+		Boolean? humanize_gene
+		String? SGT_col
+		Boolean? loc
+		String? mode
+		String? mod_res
+		String? mod_type
+
+	    ## VM parameters
+		Int? memory
+		Int? disk_space
+		Int? num_threads
+		Int? num_preemptions
+	}
+
 	command {
 		set -euo pipefail
 		
@@ -60,4 +64,5 @@ task panoply_preprocess_gct {
 
 workflow panoply_preprocess_gct_workflow {
 	call panoply_preprocess_gct
+
 }

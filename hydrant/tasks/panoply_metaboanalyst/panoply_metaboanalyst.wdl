@@ -1,35 +1,38 @@
 #
 # Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 task panoply_metaboanalyst {
-	File meta_gct
-	String? meta_id_col
-	String? meta_id_type
-	File? omic_gct
-	String? ome_type
-	String? gene_column
-	String? gene_id_type
+	input {
+		File meta_gct
+		String? meta_id_col
+		String? meta_id_type
+		File? omic_gct
+		String? ome_type
+		String? gene_column
+		String? gene_id_type
 
-	String? anal_type
-	String? pval_comb
+		String? anal_type
+		String? pval_comb
 
-	Int? max_annot_levels
-	String? pval_signif
-	Int? top_n_networks
-	Int? min_overlap
-	String? pthw_db
-	Boolean? background_filter
+		Int? max_annot_levels
+		String? pval_signif
+		Int? top_n_networks
+		Int? min_overlap
+		String? pthw_db
+		Boolean? background_filter
 
-	String output_prefix="results_metaboanalyst"
-	File? groups_file
-	File yaml_file
+		String output_prefix="results_metaboanalyst"
+		File? groups_file
+		File yaml_file
 
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+		Int? memory
+		Int? disk_space
+		Int? num_threads
+		Int? num_preemptions
+	}
+
 	command {
 		set -euo pipefail
 
@@ -69,4 +72,5 @@ task panoply_metaboanalyst {
 ## workflow
 workflow panoply_metaboanalyst_workflow {
     call panoply_metaboanalyst
+
 }

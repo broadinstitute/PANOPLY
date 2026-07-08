@@ -1,30 +1,34 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_ssgsea {
+	input {
 
-	File input_ds
-	File gene_set_database
-	File yaml_file
-	String output_prefix='results-ssgsea'
-	
-	## ssGSEA / PTM-SEA parameters below	
-	String? sample_norm_type
-	String? correl_type
-	String? statistic
-	String? output_score_type
-	Float? weight
-	Int? min_overlap
-	String? tolerate_min_overlap_err # boolean value: should the WDL tolerate "not-enough-overlap" errors?
-	Int? nperm
-	Boolean? global_fdr
+		File input_ds
+		File gene_set_database
+		File yaml_file
+		String output_prefix='results-ssgsea'
 
-    ## VM parameters
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+		## ssGSEA / PTM-SEA parameters below	
+		String? sample_norm_type
+		String? correl_type
+		String? statistic
+		String? output_score_type
+		Float? weight
+		Int? min_overlap
+		String? tolerate_min_overlap_err # boolean value: should the WDL tolerate "not-enough-overlap" errors?
+		Int? nperm
+		Boolean? global_fdr
+
+	    ## VM parameters
+		Int? memory
+		Int? disk_space
+		Int? num_threads
+		Int? num_preemptions
+	}
+
 	command {
 		set -euo pipefail
 		
@@ -65,4 +69,5 @@ task panoply_ssgsea {
 
 workflow panoply_ssgsea_workflow {
 	call panoply_ssgsea
+
 }

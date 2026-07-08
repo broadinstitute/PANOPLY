@@ -1,28 +1,31 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 task panoply_nmf_postprocess {
-    File nmf_results		# tar w/ expr GCT files + res.rank & parameters .Rdata files
-    Int nclust				# best number of cluster
+    input {
+      File nmf_results		# tar w/ expr GCT files + res.rank & parameters .Rdata files
+      Int nclust				# best number of cluster
 
-	String? gene_column
-	File? groups_file		# for enrichment analysis
+  	String? gene_column
+  	File? groups_file		# for enrichment analysis
 
-	String? feature_method		# Method for selecting driver features (e.g. kim or max)
-	Float? pval_signif		# significant p-value for cluster-enrichement
-	Float? feature_fdr		# fdr threshold for driver-feature t-test
-	Int? max_annot_levels	# max number of annotation-levels to allow for discrete variables
-	Int? top_n_features		# max number of driver features (per cluster) to create expression-boxplots for 
+  	String? feature_method		# Method for selecting driver features (e.g. kim or max)
+  	Float? pval_signif		# significant p-value for cluster-enrichement
+  	Float? feature_fdr		# fdr threshold for driver-feature t-test
+  	Int? max_annot_levels	# max number of annotation-levels to allow for discrete variables
+  	Int? top_n_features		# max number of driver features (per cluster) to create expression-boxplots for 
 
-	String output_prefix="output"
-	File? yaml_file
+  	String output_prefix="output"
+  	File? yaml_file
 
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+  	Int? memory
+  	Int? disk_space
+  	Int? num_threads
+  	Int? num_preemptions
+    }
+
 	command {
 		set -euo pipefail
 		
@@ -55,4 +58,5 @@ task panoply_nmf_postprocess {
 ################################################
 workflow panoply_nmf_postprocess_workflow {
 	call panoply_nmf_postprocess
+
 }

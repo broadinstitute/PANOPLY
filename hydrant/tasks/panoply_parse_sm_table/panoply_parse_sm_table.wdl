@@ -1,23 +1,27 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_parse_sm_table {
-  File SMtable
-  File exptDesign
-  String analysisDir
-  String type
-  File yaml
-  String? applyNumratioFilter
-  Float? minNumratioFraction
-  String? labelType
-  String? speciesFilter
-  Int? ndigits
-  String outFile = "panoply_parse_sm_table-output.tar"
+version 1.0
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+task panoply_parse_sm_table {
+  input {
+    File SMtable
+    File exptDesign
+    String analysisDir
+    String type
+    File yaml
+    String? applyNumratioFilter
+    Float? minNumratioFraction
+    String? labelType
+    String? speciesFilter
+    Int? ndigits
+    String outFile = "panoply_parse_sm_table-output.tar"
+
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -55,4 +59,5 @@ task panoply_parse_sm_table {
 
 workflow panoply_parse_sm_table_workflow {
 	call panoply_parse_sm_table
+
 }

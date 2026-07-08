@@ -1,21 +1,25 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_nmf_balance_omes {
+    input {
 
-    String label
-    
-    Array[File]+ ome_gcts
-    Array[String]+ ome_labels # must match length & order of ome_gcts
+      String label
 
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+      Array[File]+ ome_gcts
+      Array[String]+ ome_labels # must match length & order of ome_gcts
 
-    Float? tol
-    Float? var
-    String? zscore_mode
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
+
+      Float? tol
+      Float? var
+      String? zscore_mode
+    }
 
     command {
         set -euo pipefail
@@ -48,6 +52,7 @@ task panoply_nmf_balance_omes {
 ## workflow
 workflow panoply_nmf_balance_omes_workflow {
     call panoply_nmf_balance_omes
+
 }
 
 

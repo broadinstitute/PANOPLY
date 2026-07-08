@@ -1,30 +1,34 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_filter {
-  File inputData
-  String type
-  String standalone
-  String analysisDir
-  File yaml
-  String? geneIdCol
-  String? proteinIdCol
-  String? proteinIdType
-  String? filterProteomics
-  String? separateQCTypes
-  String? combineReplicates
-  Int? ndigits
-  Float? naMax
-  String? noNA
-  Float? sdFilterThreshold
+  input {
+    File inputData
+    String type
+    String standalone
+    String analysisDir
+    File yaml
+    String? geneIdCol
+    String? proteinIdCol
+    String? proteinIdType
+    String? filterProteomics
+    String? separateQCTypes
+    String? combineReplicates
+    Int? ndigits
+    Float? naMax
+    String? noNA
+    Float? sdFilterThreshold
 
-  String outTar = "panoply_filter-output.tar"
-  String outTable = "filtered_table-output.gct"
+    String outTar = "panoply_filter-output.tar"
+    String outTable = "filtered_table-output.gct"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command  <<<
     set -euo pipefail
@@ -96,4 +100,5 @@ task panoply_filter {
 workflow panoply_filter_workflow {
 
   call panoply_filter
+
 }

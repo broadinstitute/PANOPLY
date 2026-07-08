@@ -1,16 +1,20 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_sankey_report {
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+    input {
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
 
-    String annot_of_comparison
+      String annot_of_comparison
 
-    String label
-    File sankey_tar
+      String label
+      File sankey_tar
+    }
 
     command {
         set -euo pipefail
@@ -38,4 +42,5 @@ task panoply_sankey_report {
 
 workflow panoply_sankey_report_workflow {
     call panoply_sankey_report
+
 }

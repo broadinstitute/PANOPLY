@@ -1,23 +1,26 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 
 task panoply_clumps_ptm_postprocess {
-	File results_tar							# tar-file with results from panoply_clumps_ptm
+	input {
+		File results_tar							# tar-file with results from panoply_clumps_ptm
 
-	Float? fdr_threshold
-	Boolean? pymol_gen
-	Int? pymol_upper_limit
+		Float? fdr_threshold
+		Boolean? pymol_gen
+		Int? pymol_upper_limit
 
-	String output_prefix="results"
-	File yaml_file
+		String output_prefix="results"
+		File yaml_file
 
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+		Int? memory
+		Int? disk_space
+		Int? num_threads
+		Int? num_preemptions
+	}
+
 	command {
 		set -euo pipefail
 
@@ -58,4 +61,5 @@ task panoply_clumps_ptm_postprocess {
 workflow panoply_clumps_ptm_postprocess_workflow {
 	call panoply_clumps_ptm_postprocess {
 	}
+
 }

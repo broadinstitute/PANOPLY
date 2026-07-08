@@ -1,45 +1,49 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_unified_assemble_results {
-  ## main pipeline
-  Array[File?] main_full
-  Array[File?] main_summary
-  Array[File?] norm_report
-  Array[File?] rna_corr_report
-  Array[File?] cna_corr_report
-  Array[File?] ssgsea_ome_report
-  Array[File?] ptmsea_ome_report
-  Array[File?] omicsev_report
-  Array[File?] cosmo_report
-  Array[File?] sampleqc_report
-  Array[File?] assoc_report
-  Array[File?] blacksheep_report
-  Array[File?] cmap_output
-  Array[File?] cmap_ssgsea_output
+  input {
+    ## main pipeline
+    Array[File?] main_full
+    Array[File?] main_summary
+    Array[File?] norm_report
+    Array[File?] rna_corr_report
+    Array[File?] cna_corr_report
+    Array[File?] ssgsea_ome_report
+    Array[File?] ptmsea_ome_report
+    Array[File?] omicsev_report
+    Array[File?] cosmo_report
+    Array[File?] sampleqc_report
+    Array[File?] assoc_report
+    Array[File?] blacksheep_report
+    Array[File?] cmap_output
+    Array[File?] cmap_ssgsea_output
 
-  ## rna main
-  File? ssgsea_rna_report
-  File? rna_blacksheep_report
-  File? rna_assoc_report
-  File? immune_tar
-  File? immune_report
+    ## rna main
+    File? ssgsea_rna_report
+    File? rna_blacksheep_report
+    File? rna_assoc_report
+    File? immune_tar
+    File? immune_report
 
-  ## unified pipeline
-  Array[File?]? clumpsptm_results
-  File? clumpsptm_report
-  Array[File?]? metaboanalyst_results
-  Array[File?]? metaboanalyst_reports
-  File? nmf_results
-  File? nmf_reports
+    ## unified pipeline
+    Array[File?]? clumpsptm_results
+    File? clumpsptm_report
+    Array[File?]? metaboanalyst_results
+    Array[File?]? metaboanalyst_reports
+    File? nmf_results
+    File? nmf_reports
 
-  String output_results_zip = "all_results.zip"
-  String output_reports_zip = "all_reports.zip"
+    String output_results_zip = "all_results.zip"
+    String output_reports_zip = "all_reports.zip"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -219,4 +223,5 @@ task panoply_unified_assemble_results {
 
 workflow panoply_unified_assemble_results_workflow {
   call panoply_unified_assemble_results
+
 }

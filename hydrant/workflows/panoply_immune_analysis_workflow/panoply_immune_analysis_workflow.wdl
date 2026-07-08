@@ -1,21 +1,25 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_immune_analysis/panoply_immune_analysis.wdl" as immune_wdl
 import "../../tasks/panoply_immune_analysis_report/panoply_immune_analysis_report.wdl" as immune_report_wdl
 
 workflow panoply_immune_analysis_workflow {
-    File inputData
-  	String type
-  	String standalone
-  	File yaml
-  	String? analysisDir
-  	File? groupsFile
-  	Float? fdr
-  	Int? heatmapWidth
-  	Int? heatmapHeight
-    String label
-        
+    input {
+      File inputData
+    	String type
+    	String standalone
+    	File yaml
+    	String? analysisDir
+    	File? groupsFile
+    	Float? fdr
+    	Int? heatmapWidth
+    	Int? heatmapHeight
+      String label
+    }
+
     call immune_wdl.panoply_immune_analysis as immune {
     	input:
         	inputData = inputData,

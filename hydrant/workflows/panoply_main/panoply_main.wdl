@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 import "../panoply_main_internal/panoply_main_internal.wdl" as panoply_main_internal
 ## Proteogenomic
@@ -22,50 +23,52 @@ import "../../tasks/panoply_download/panoply_download.wdl" as download_wdl
 
 workflow panoply_main {
 
-  String job_identifier
-  String ome_type
-  String? run_ptmsea # "true" or "false"
-  String run_cmap   # "true" or "false"
-  String? run_nmf = "true"
-  String? run_omicsev = "true"
+  input {
+    String job_identifier
+    String ome_type
+    String? run_ptmsea # "true" or "false"
+    String run_cmap   # "true" or "false"
+    String? run_nmf = "true"
+    String? run_omicsev = "true"
 
-  ## inputs
-  File input_pome
-  File? input_rna
-  File? input_cna
-  File yaml
+    ## inputs
+    File input_pome
+    File? input_rna
+    File? input_cna
+    File yaml
 
-  File groups_file
-  File? groups_file_association
-  File? groups_file_blacksheep
-  File? groups_file_cmap_enrichment
-  File? groups_file_immune
-  File? groups_file_nmf
+    File groups_file
+    File? groups_file_association
+    File? groups_file_blacksheep
+    File? groups_file_cmap_enrichment
+    File? groups_file_immune
+    File? groups_file_nmf
 
-  File? cna_corr_groupsFile # DO NOT use groups_file by default
+    File? cna_corr_groupsFile # DO NOT use groups_file by default
 
-  ## cmap inputs
-  Int cmap_n_permutations = 10
-  File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt"
-  File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx"
-  File? geneset_db_cmap # optional override for CMAP geneset_db
-  String subset_bucket = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets"
-  
-  ## global params
-  Float? na_max
-  Float? sample_na_max
-  Float? nmiss_factor
-  String? duplicate_gene_policy
-  String? gene_id_col
+    ## cmap inputs
+    Int cmap_n_permutations = 10
+    File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt"
+    File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx"
+    File? geneset_db_cmap # optional override for CMAP geneset_db
+    String subset_bucket = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets"
 
-  String standalone = "false"
-  String geneset_db #this.gseaDB
-  String ptm_db #this.ptmseaDB
-  
+    ## global params
+    Float? na_max
+    Float? sample_na_max
+    Float? nmiss_factor
+    String? duplicate_gene_policy
+    String? gene_id_col
 
-  ###################################
-  ###   Proteogenomics Analyses   ###
-  ###################################
+    String standalone = "false"
+    String geneset_db #this.gseaDB
+    String ptm_db #this.ptmseaDB
+
+
+    ###################################
+    ###   Proteogenomics Analyses   ###
+    ###################################
+  }
 
   if (defined(input_rna) && defined(input_cna)) {
 

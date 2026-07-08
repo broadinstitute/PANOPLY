@@ -1,18 +1,22 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_association_report {
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+    input {
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
 
-    Array[File] ssgsea_assoc_tars
-    File master_yaml
-    String label
-    String type
+      Array[File] ssgsea_assoc_tars
+      File master_yaml
+      String label
+      String type
 
-    Float? fdr_value
+      Float? fdr_value
+    }
 
     command {
         set -euo pipefail
@@ -48,6 +52,7 @@ task panoply_association_report {
 
 workflow panoply_association_report_workflow {
 
-    call panoply_association_report
     
+    call panoply_association_report
+
 }

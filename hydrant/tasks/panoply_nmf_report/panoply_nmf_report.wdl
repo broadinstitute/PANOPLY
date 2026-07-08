@@ -1,20 +1,24 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_nmf_report {
-    String label
+    input {
+      String label
 
-    # inputs from panoply_nmf
-    File nmf_results                ## Rdata file containing results of nmf()
-    Int nclust                      ## best clustering assignment
+      # inputs from panoply_nmf
+      File nmf_results                ## Rdata file containing results of nmf()
+      Int nclust                      ## best clustering assignment
 
-    # inputs from panoply_nmf_postprocess
-    File postprocess_tarball        ## tarball containing all figures and outputs from panply_nmf_postprocess
+      # inputs from panoply_nmf_postprocess
+      File postprocess_tarball        ## tarball containing all figures and outputs from panply_nmf_postprocess
 
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
+    }
 
     command {
         set -euo pipefail
@@ -41,4 +45,5 @@ task panoply_nmf_report {
 
 workflow panoply_nmf_report_workflow {
     call panoply_nmf_report
+
 }

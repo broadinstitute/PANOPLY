@@ -1,22 +1,25 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_cons_clust {
-  File inputData   # output from panoply_harmonize or panoply_filter
-  String type
-  File? groupsFile
-  File yaml
-  String standalone
-  String? analysisDir
-  Int? clustering_sd_threshold
-  Float? clustering_na_threshold
-  String outFile = "panoply_cluster-output.tar"
+  input {
+    File inputData   # output from panoply_harmonize or panoply_filter
+    String type
+    File? groupsFile
+    File yaml
+    String standalone
+    String? analysisDir
+    Int? clustering_sd_threshold
+    Float? clustering_na_threshold
+    String outFile = "panoply_cluster-output.tar"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
-
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -70,5 +73,6 @@ task panoply_cons_clust {
 
 workflow panoply_cons_clust_workflow {
   call panoply_cons_clust
+
 }
 

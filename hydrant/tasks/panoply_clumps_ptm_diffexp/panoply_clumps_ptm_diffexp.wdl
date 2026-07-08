@@ -1,28 +1,31 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 
 task panoply_clumps_ptm_diffexp {
-	# PTM GCT files; must include at least one
-	File? pSTY_gct
-	File? acK_gct
-	File? ubK_gct
+	input {
+		# PTM GCT files; must include at least one
+		File? pSTY_gct
+		File? acK_gct
+		File? ubK_gct
 
-	File groupsFile
-	String? sample_id_col
-  	Float? fdr_cutoff
-	Int? min_samples
-	Int? max_annot_levels
+		File groupsFile
+		String? sample_id_col
+	  	Float? fdr_cutoff
+		Int? min_samples
+		Int? max_annot_levels
 
-	String output_prefix="results"
-	File yaml_file
+		String output_prefix="results"
+		File yaml_file
 
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+		Int? memory
+		Int? disk_space
+		Int? num_threads
+		Int? num_preemptions
+	}
+
 	command {
 		set -euo pipefail
 
@@ -56,4 +59,5 @@ task panoply_clumps_ptm_diffexp {
 workflow panoply_clumps_ptm_diffexp_workflow {
 	call panoply_clumps_ptm_diffexp {
 	}
+
 }

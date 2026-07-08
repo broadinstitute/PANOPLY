@@ -1,15 +1,19 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_immune_analysis_report {
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+version 1.0
 
-    File tar_file
-    File yaml_file
-    String label
+task panoply_immune_analysis_report {
+    input {
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
+
+      File tar_file
+      File yaml_file
+      String label
+    }
 
     command {
         set -euo pipefail
@@ -36,6 +40,7 @@ task panoply_immune_analysis_report {
 }
 
 workflow panoply_immune_analysis_report_workflow {
+
 
     call panoply_immune_analysis_report 
 

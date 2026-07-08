@@ -1,27 +1,30 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_cmap_annotate {
-  File tarball                  # output from pgdac_cmap_connectivity
-  File cmap_data_file           # CMAP level 5 geneKD data (gctx)
-  File? cmap_enrichment_groups   # groups file (ala experiment design file)
-  File yaml
-  String? cmap_grp
-  String? cmap_typ
-  String outFile = "panoply_cmap-annotate-output.tar"
+  input {
+    File tarball                  # output from pgdac_cmap_connectivity
+    File cmap_data_file           # CMAP level 5 geneKD data (gctx)
+    File? cmap_enrichment_groups   # groups file (ala experiment design file)
+    File yaml
+    String? cmap_grp
+    String? cmap_typ
+    String outFile = "panoply_cmap-annotate-output.tar"
 
-  Float? cna_threshold
-  String? log_transform
-  String? alpha
+    Float? cna_threshold
+    String? log_transform
+    String? alpha
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
 
-  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
-
+    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+  }
 
   command {
     set -euo pipefail
@@ -56,4 +59,5 @@ task panoply_cmap_annotate {
 
 workflow panoply_cmap_annotate_workflow {
   call panoply_cmap_annotate
+
 }

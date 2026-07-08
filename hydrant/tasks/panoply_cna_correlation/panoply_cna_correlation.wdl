@@ -1,19 +1,22 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_cna_correlation {
-  File tarball   # output from panoply_cna_setup
-  String type
-  Float? fdr_cna_corr
-  File yaml
+  input {
+    File tarball   # output from panoply_cna_setup
+    String type
+    Float? fdr_cna_corr
+    File yaml
 
-  String outFile = "panoply_cna_correlation-output.tar"
+    String outFile = "panoply_cna_correlation-output.tar"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
-
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -46,5 +49,6 @@ task panoply_cna_correlation {
 
 workflow panoply_cna_correlation_workflow {
   call panoply_cna_correlation
+
 }
 

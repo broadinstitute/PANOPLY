@@ -1,16 +1,20 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_cons_clust_report {
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+version 1.0
 
-    File tar_file
-    File yaml_file
-    String label
-    String type
+task panoply_cons_clust_report {
+    input {
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
+
+      File tar_file
+      File yaml_file
+      String label
+      String type
+    }
 
     command {
         set -euo pipefail
@@ -39,5 +43,6 @@ task panoply_cons_clust_report {
 workflow panoply_cons_clust_report_workflow {
 
     call panoply_cons_clust_report
+
 }
 

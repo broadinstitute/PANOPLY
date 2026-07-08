@@ -1,32 +1,36 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_cmap_connectivity {
-  File tarball
-  File yaml
-  String? cmap_grp
-  String? cmap_typ
-  Int? permutations
-  Array[File] subset_scores
-  Array[File]? permutation_scores
-  String scores_dir = "cmap-subset-scores"
-  String permutation_dir = "cmap-permutation-scores"
-  String outFile = "panoply_cmap-output.tar"
+  input {
+    File tarball
+    File yaml
+    String? cmap_grp
+    String? cmap_typ
+    Int? permutations
+    Array[File] subset_scores
+    Array[File]? permutation_scores
+    String scores_dir = "cmap-subset-scores"
+    String permutation_dir = "cmap-permutation-scores"
+    String outFile = "panoply_cmap-output.tar"
 
-  Float? fdr_pvalue
-  String? cis_fdr
-  String? legacy_score
-  Int? rankpt_n
-  Int? mean_rankpt_threshold
-  Float? cmap_fdr
+    Float? fdr_pvalue
+    String? cis_fdr
+    String? legacy_score
+    Int? rankpt_n
+    Int? mean_rankpt_threshold
+    Float? cmap_fdr
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
 
-  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+  }
 
   command {
     set -euo pipefail
@@ -78,30 +82,32 @@ task panoply_cmap_connectivity {
 }
 
 task panoply_cmap_input {
-  File tarball   # output from panoply_cna_correlation
-  File yaml
-  String? cmap_grp
-  String? cmap_typ
-  Int? cmap_permutations
-  String outFile = "panoply_cmapsetup-output.tar"
-  String outGmtFile = "cmap-trans-genesets.gmt"
+  input {
+    File tarball   # output from panoply_cna_correlation
+    File yaml
+    String? cmap_grp
+    String? cmap_typ
+    Int? cmap_permutations
+    String outFile = "panoply_cmapsetup-output.tar"
+    String outGmtFile = "cmap-trans-genesets.gmt"
 
-  Float? cna_threshold
-  Int? cna_effects_threshold
-  Int? min_sigevents
-  Int? max_sigevents
-  Int? top_N
-  Float? fdr_pvalue
-  String? log_transform
-  String? must_include_genes
+    Float? cna_threshold
+    Int? cna_effects_threshold
+    Int? min_sigevents
+    Int? max_sigevents
+    Int? top_N
+    Float? fdr_pvalue
+    String? log_transform
+    String? must_include_genes
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
 
-  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+  }
 
   command {
     set -euo pipefail
@@ -143,26 +149,27 @@ task panoply_cmap_input {
 
 
 task panoply_cmap_annotate {
-  File tarball                  # output from pgdac_cmap_connectivity
-  File cmap_data_file           # CMAP level 5 geneKD data (gctx)
-  File? cmap_enrichment_groups   # groups file (ala experiment design file)
-  File yaml
-  String? cmap_grp
-  String? cmap_typ
-  String outFile = "panoply_cmap-annotate-output.tar"
+  input {
+    File tarball                  # output from pgdac_cmap_connectivity
+    File cmap_data_file           # CMAP level 5 geneKD data (gctx)
+    File? cmap_enrichment_groups   # groups file (ala experiment design file)
+    File yaml
+    String? cmap_grp
+    String? cmap_typ
+    String outFile = "panoply_cmap-annotate-output.tar"
 
-  Float? cna_threshold
-  String? log_transform
-  String? alpha
+    Float? cna_threshold
+    String? log_transform
+    String? alpha
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
 
-  String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-  String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
-
+    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
+    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
+  }
 
   command {
     set -euo pipefail
@@ -197,31 +204,33 @@ task panoply_cmap_annotate {
 
 
 task panoply_cmap_ssgsea {
-  # task adapted from panoply_ssgsea; many inputs are set to specfic values for CMAP analysis
-  File input_ds
-  File gene_set_database
-  Int? permutation_num
-  String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
-  File yaml
+  input {
+    # task adapted from panoply_ssgsea; many inputs are set to specfic values for CMAP analysis
+    File input_ds
+    File gene_set_database
+    Int? permutation_num
+    String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
+    File yaml
 
-  # other ssgsea options (below) are fixed for CMAP analysis
-  String sample_norm_type = "rank"
-  String correl_type = "rank"
-  String statistic = "Kolmogorov-Smirnov"
-  String output_score_type = "NES"
+    # other ssgsea options (below) are fixed for CMAP analysis
+    String sample_norm_type = "rank"
+    String correl_type = "rank"
+    String statistic = "Kolmogorov-Smirnov"
+    String output_score_type = "NES"
 
-  Float weight = 0.0
-  Int min_overlap = 5
-  Int nperm = 0
-  String global_fdr = "TRUE"
-  String export_sigs = "FALSE"
-  String ext_output = "FALSE"
+    Float weight = 0.0
+    Int min_overlap = 5
+    Int nperm = 0
+    String global_fdr = "TRUE"
+    String export_sigs = "FALSE"
+    String ext_output = "FALSE"
 
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -249,31 +258,33 @@ task panoply_cmap_ssgsea {
 
 
 task panoply_cmap_annotate_ssgsea {
-  # task adapted from panoply_ssgsea; many inputs are set to specific values for CMAP annotation
-  File input_ds
-  File gene_set_database
-  String outFile="panoply_cmap_annotate-ssgsea.tar"
-  String output_prefix = "${basename (input_ds, '.gct')}"
-  File yaml
+  input {
+    # task adapted from panoply_ssgsea; many inputs are set to specific values for CMAP annotation
+    File input_ds
+    File gene_set_database
+    String outFile="panoply_cmap_annotate-ssgsea.tar"
+    String output_prefix = "${basename (input_ds, '.gct')}"
+    File yaml
 
-  # other ssgsea options (below) are fixed for CMAP analysis
-  String sample_norm_type = "rank"
-  String correl_type = "rank"
-  String statistic = "Kolmogorov-Smirnov"
-  String output_score_type = "NES"
+    # other ssgsea options (below) are fixed for CMAP analysis
+    String sample_norm_type = "rank"
+    String correl_type = "rank"
+    String statistic = "Kolmogorov-Smirnov"
+    String output_score_type = "NES"
 
-  Float weight = 0.0
-  Int min_overlap = 5
-  Int nperm = 1000
-  String global_fdr = "TRUE"
-  String export_sigs = "FALSE"
-  String ext_output = "FALSE"
+    Float weight = 0.0
+    Int min_overlap = 5
+    Int nperm = 1000
+    String global_fdr = "TRUE"
+    String export_sigs = "FALSE"
+    String ext_output = "FALSE"
 
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -304,33 +315,35 @@ task panoply_cmap_annotate_ssgsea {
 
 
 workflow run_cmap_analysis {
-  File CNAcorr_tarball
-  File subset_list_file
-  File cmap_level5_data
-  File annotation_pathway_db
-  String subset_bucket
-  Int n_permutations
+  input {
+    File CNAcorr_tarball
+    File subset_list_file
+    File cmap_level5_data
+    File annotation_pathway_db
+    String subset_bucket
+    Int n_permutations
+    String? group
+    String? data_type
+    File yaml
+    File? cmap_enrichment_groups
+
+    Float? cna_threshold
+    Int? cna_effects_threshold
+    Int? min_sigevents
+    Int? max_sigevents
+    Int? top_N
+    Float? fdr_pvalue
+    String? log_transform
+    String? must_include_genes
+    String? cis_fdr
+    String? legacy_score
+    Int? rankpt_n
+    Int? mean_rankpt_threshold
+    Float? cmap_fdr
+    String? alpha
+  }
+
   Array[String] subset_files = read_lines ("${subset_list_file}")
-  String? group
-  String? data_type
-  File yaml
-  File? cmap_enrichment_groups
-
-  Float? cna_threshold
-  Int? cna_effects_threshold
-  Int? min_sigevents
-  Int? max_sigevents
-  Int? top_N
-  Float? fdr_pvalue
-  String? log_transform
-  String? must_include_genes
-  String? cis_fdr
-  String? legacy_score
-  Int? rankpt_n
-  Int? mean_rankpt_threshold
-  Float? cmap_fdr
-  String? alpha
-
 
   call panoply_cmap_input {
     input:

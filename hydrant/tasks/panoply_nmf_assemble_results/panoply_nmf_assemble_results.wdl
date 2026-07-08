@@ -1,29 +1,33 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_nmf_assemble_results {
-  File? mo_nmf_results
-  File? mo_nmf_figures
-  File? mo_nmf_report
-  File? mo_nmf_ssgsea_tar
-  File? mo_nmf_ssgsea_report
+  input {
+    File? mo_nmf_results
+    File? mo_nmf_figures
+    File? mo_nmf_report
+    File? mo_nmf_ssgsea_tar
+    File? mo_nmf_ssgsea_report
 
-  Array[File?]? so_nmf_results
-  Array[File?]? so_nmf_figures
-  Array[File?]? so_nmf_report
-  Array[File?]? so_nmf_ssgsea_tar
-  Array[File?]? so_nmf_ssgsea_report
+    Array[File?]? so_nmf_results
+    Array[File?]? so_nmf_figures
+    Array[File?]? so_nmf_report
+    Array[File?]? so_nmf_ssgsea_tar
+    Array[File?]? so_nmf_ssgsea_report
 
-  File? sankey_tar
-  File? sankey_report
+    File? sankey_tar
+    File? sankey_report
 
-  String output_results_tar = "nmf_results.tar.gz"
-  String output_reports_tar = "nmf_reports.tar.gz"
+    String output_results_tar = "nmf_results.tar.gz"
+    String output_reports_tar = "nmf_reports.tar.gz"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -173,4 +177,5 @@ task panoply_nmf_assemble_results {
 
 workflow panoply_nmf_assemble_results_workflow {
   call panoply_nmf_assemble_results
+
 }

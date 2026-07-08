@@ -1,29 +1,34 @@
+version 1.0
+
 workflow panoply_omicsev_workflow {
     call panoply_omicsev
+
 }
 
 
 task panoply_omicsev {
-	String STANDALONE
-  File yaml_file
-	String label
+	input {
+		String STANDALONE
+	  File yaml_file
+		String label
 
-	Array[File]? data_files
-	File? sample_anno_file
-	File? rna_file
-  File? panoply_harmonize_tar_file
-  String? ome_type
+		Array[File]? data_files
+		File? sample_anno_file
+		File? rna_file
+	  File? panoply_harmonize_tar_file
+	  String? ome_type
 
-  String? class_column_name
-  String? batch_column_name
-	Boolean? data_log_transformed
-	Boolean? rna_log_transformed
-  Boolean? do_function_prediction
-    
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+	  String? class_column_name
+	  String? batch_column_name
+		Boolean? data_log_transformed
+		Boolean? rna_log_transformed
+	  Boolean? do_function_prediction
+
+	  Int? memory
+	  Int? disk_space
+	  Int? num_threads
+	  Int? num_preemptions
+	}
 
   command {
   	set -euo pipefail

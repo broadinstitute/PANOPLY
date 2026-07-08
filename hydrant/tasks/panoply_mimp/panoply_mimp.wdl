@@ -1,24 +1,28 @@
+version 1.0
+
 task panoply_mimp {
-    Float? memory
-    Int? disk_space
-    Int? num_preemptions
+    input {
+      Float? memory
+      Int? disk_space
+      Int? num_preemptions
 
-    File mutation_file
-    File phospho_file
-    File fasta_file
-    File ids_file
-    File master_yaml
-    String output_prefix
+      File mutation_file
+      File phospho_file
+      File fasta_file
+      File ids_file
+      File master_yaml
+      String output_prefix
 
-    File? groups_file_path
-	String? search_engine
-	String? phosphosite_col
-    String? protein_id_col
-    String? protein_id_type
-	String? mutation_AA_change_colname
-	String? mutation_type_col
-	String? sample_id_col 
-	String? transcript_id_col
+      File? groups_file_path
+  	String? search_engine
+  	String? phosphosite_col
+      String? protein_id_col
+      String? protein_id_type
+  	String? mutation_AA_change_colname
+  	String? mutation_type_col
+  	String? sample_id_col 
+  	String? transcript_id_col
+    }
 
     command {
         set -euo pipefail
@@ -60,6 +64,7 @@ task panoply_mimp {
 }
 
 workflow panoply_mimp_workflow {
+
 
     call panoply_mimp 
 

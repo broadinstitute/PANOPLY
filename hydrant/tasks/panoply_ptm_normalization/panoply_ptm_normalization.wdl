@@ -1,25 +1,29 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_ptm_normalization {
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+    input {
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
 
-    File proteome_gct
-    File ptm_gct
-    File yaml
-    
-    String? output_prefix = basename (ptm_gct, ".gct")
+      File proteome_gct
+      File ptm_gct
+      File yaml
 
-    String? accession_number_col
-    String? accession_numbers_col
-    String? accession_numbers_sep
-    String? score_col
-    Boolean? use_gene_symbol
-    String? gene_symbol_colname
-    String? mode
+      String? output_prefix = basename (ptm_gct, ".gct")
+
+      String? accession_number_col
+      String? accession_numbers_col
+      String? accession_numbers_sep
+      String? score_col
+      Boolean? use_gene_symbol
+      String? gene_symbol_colname
+      String? mode
+    }
 
     command {
         set -euo pipefail
@@ -64,4 +68,5 @@ task panoply_ptm_normalization {
 
 workflow panoply_ptm_normalization_workflow {
     call panoply_ptm_normalization
+
 }

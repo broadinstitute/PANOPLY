@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_select_all_pairs/panoply_select_all_pairs.wdl" as select_pairs
 import "../panoply_normalize_filter_workflow/panoply_normalize_filter_workflow.wdl" as norm_filt_wdl
 import "../panoply_main/panoply_main.wdl" as main_wdl
@@ -14,44 +16,47 @@ import "../../tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl" a
 
 
 workflow panoply_unified_workflow {
-  File? prote_ome
-  File? phospho_ome
-  File? acetyl_ome
-  File? ubiquityl_ome
-  File? nglyco_ome
-  File? methyl_ome
+  input {
+    File? prote_ome
+    File? phospho_ome
+    File? acetyl_ome
+    File? ubiquityl_ome
+    File? nglyco_ome
+    File? methyl_ome
 
-  File? metabol_ome
+    File? metabol_ome
 
-  File? rna_data      #version 1.3 only!
-  File? cna_data
+    File? rna_data      #version 1.3 only!
+    File? cna_data
 
-  File yaml
-  String job_id
-  
-  String run_cmap
-  Boolean run_mo_nmf #'true' or 'false'
-  Boolean run_so_nmf #'true' or 'false'
-  String? run_ptmsea
-  Boolean? run_clumps
-  Boolean? run_metab
+    File yaml
+    String job_id
 
-  File groups_file
-  File? groups_file_nmf
-  File? groups_file_metaboanlayst
+    String run_cmap
+    Boolean run_mo_nmf #'true' or 'false'
+    Boolean run_so_nmf #'true' or 'false'
+    String? run_ptmsea
+    Boolean? run_clumps
+    Boolean? run_metab
 
-  File? groups_file_clumpsptm
+    File groups_file
+    File? groups_file_nmf
+    File? groups_file_metaboanlayst
 
-  File geneset_db
-  File ptm_db
+    File? groups_file_clumpsptm
 
-  # Normalize specific optional params:
-  String? normalizeProteomics # "true" or "false"
-  String? filterProteomics # "true" or "false"
+    File geneset_db
+    File ptm_db
 
-  ### Organize omics data into pairs
+    # Normalize specific optional params:
+    String? normalizeProteomics # "true" or "false"
+    String? filterProteomics # "true" or "false"
 
-  # proteomic pairs
+    ### Organize omics data into pairs
+
+    # proteomic pairs
+  }
+
   Array[Pair[String?, File?]] ome_pairs_input =
     [ ("proteome", prote_ome),
       ("phosphoproteome", phospho_ome),
@@ -59,6 +64,7 @@ workflow panoply_unified_workflow {
       ("ubiquitylome", ubiquityl_ome),
       ("nglycoproteome", nglyco_ome),
       ("methylation", methyl_ome) ]
+
   call select_pairs.panoply_select_all_pairs as ome_pairs { # select extant pairs
     input:
         pairs_input = ome_pairs_input

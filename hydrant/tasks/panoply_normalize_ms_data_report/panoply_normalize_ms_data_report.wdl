@@ -1,17 +1,21 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-task panoply_normalize_ms_data_report {
-  File tarball
-  String label
-  String type
-  String tmpDir
-  File yaml
+version 1.0
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+task panoply_normalize_ms_data_report {
+  input {
+    File tarball
+    String label
+    String type
+    String tmpDir
+    File yaml
+
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -48,5 +52,6 @@ task panoply_normalize_ms_data_report {
 
 workflow panoply_normalize_ms_data_report_workflow {
   call panoply_normalize_ms_data_report
+
 }
 

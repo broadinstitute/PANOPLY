@@ -1,25 +1,28 @@
+version 1.0
+
 task quilts {
-	Array[File]? input_somatic_vcfs
-	Array[File]? input_germline_vcfs
-	Array[File]? input_splice_junctions_files # .bed .txt or .tab (see below)
-	String? junction_file_type   # options: 'mapsplice', 'tophat', 'star' 
-	Array[File]? input_gene_fusions_files     # .txt file of doc specified formatting
-	String output_dir='/src/QUILTS/output' # default results dir set in the docker
-	File reference_genome='gs://fc-5a1bdedd-17aa-4a16-b661-bc16902fc4e0/genome/emily_ensembl_hg38.tar.gz'   # set to hg38 by default
-	File reference_proteome='gs://fc-5a1bdedd-17aa-4a16-b661-bc16902fc4e0/proteome/emily_ensembl_v100_hg38.tar.gz' # set to hg38 v100 (gencodev34 equivalent) by default
-	String out_file='quilts_results.tar.gz' # default output name so the wdl can find the results
+	input {
+		Array[File]? input_somatic_vcfs
+		Array[File]? input_germline_vcfs
+		Array[File]? input_splice_junctions_files # .bed .txt or .tab (see below)
+		String? junction_file_type   # options: 'mapsplice', 'tophat', 'star' 
+		Array[File]? input_gene_fusions_files     # .txt file of doc specified formatting
+		String output_dir='/src/QUILTS/output' # default results dir set in the docker
+		File reference_genome='gs://fc-5a1bdedd-17aa-4a16-b661-bc16902fc4e0/genome/emily_ensembl_hg38.tar.gz'   # set to hg38 by default
+		File reference_proteome='gs://fc-5a1bdedd-17aa-4a16-b661-bc16902fc4e0/proteome/emily_ensembl_v100_hg38.tar.gz' # set to hg38 v100 (gencodev34 equivalent) by default
+		String out_file='quilts_results.tar.gz' # default output name so the wdl can find the results
 
-	Int? threshB                   # integer - minimum number of reads to support a splice junction with conserved exon boundaries
-	Int? threshD				   # integer - minimum number of reads to support a splice junction with only the donor exon boundary conserved
-	Int? threshN				   # integer - minimum number of reads to support a splice junction without the donor exon boundary conserved
-	Int? variant_quality_threshold # quality threshold for variants
-	#? no_missed_cleavage 		   # defaults to allow for one missed cleavage; used for generating tryptic peptides which is not yet ready
+		Int? threshB                   # integer - minimum number of reads to support a splice junction with conserved exon boundaries
+		Int? threshD				   # integer - minimum number of reads to support a splice junction with only the donor exon boundary conserved
+		Int? threshN				   # integer - minimum number of reads to support a splice junction without the donor exon boundary conserved
+		Int? variant_quality_threshold # quality threshold for variants
+		#? no_missed_cleavage 		   # defaults to allow for one missed cleavage; used for generating tryptic peptides which is not yet ready
 
-	Int? memory
-  	Int? disk_space
-  	Int? num_threads
-  	Int? num_preemptions
-
+		Int? memory
+	  	Int? disk_space
+	  	Int? num_threads
+	  	Int? num_preemptions
+	}
 
 	command {
 		set -euo pipefail
@@ -97,4 +100,5 @@ task quilts {
 
 workflow quilts_workflow {
 	call quilts
+
 }

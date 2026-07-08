@@ -1,16 +1,20 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_blacksheep/panoply_blacksheep.wdl" as blacksheep_wdl
 import "../../tasks/panoply_blacksheep_report/panoply_blacksheep_report.wdl" as blacksheep_report_wdl
 
 workflow panoply_blacksheep_workflow {
-    File input_gct
-    File master_yaml
-    String output_prefix
-    File? groups_file
-    String type
-    
+    input {
+      File input_gct
+      File master_yaml
+      String output_prefix
+      File? groups_file
+      String type
+    }
+
     call blacksheep_wdl.panoply_blacksheep {
         input:
             input_gct = input_gct,

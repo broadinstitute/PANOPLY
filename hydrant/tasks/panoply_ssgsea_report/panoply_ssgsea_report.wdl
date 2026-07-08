@@ -1,25 +1,29 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_ssgsea_report {
+  input {
 
-  File tarball
-  File cfg_yaml
-  String label
+    File tarball
+    File cfg_yaml
+    String label
 
-  # Heatmap Parameters
-  Float? fdr
-  Int? top_n
-  Boolean? cluster_rows
-  String? ser_meth
-  Boolean? split_by_prefix
+    # Heatmap Parameters
+    Float? fdr
+    Int? top_n
+    Boolean? cluster_rows
+    String? ser_meth
+    Boolean? split_by_prefix
 
-  File? geneset_groups_file
+    File? geneset_groups_file
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -51,5 +55,6 @@ task panoply_ssgsea_report {
 
 workflow panoply_ssgsea_report_workflow {
   call panoply_ssgsea_report
+
 }
 

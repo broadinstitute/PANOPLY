@@ -1,6 +1,7 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 import "../panoply_association_workflow/panoply_association_workflow.wdl" as assoc_workflow
 import "../panoply_blacksheep_workflow/panoply_blacksheep_workflow.wdl" as blacksheep_wdl
@@ -13,38 +14,41 @@ import "../../tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl" a
 
 workflow panoply_main_internal {
 
-  String job_identifier
-  String ome_type
-  String? run_ptmsea # "true" or "false"
-  String? run_nmf = "true"
+  input {
+    String job_identifier
+    String ome_type
+    String? run_ptmsea # "true" or "false"
+    String? run_nmf = "true"
 
-  ## inputs
-  File input_ome
-  File yaml
+    ## inputs
+    File input_ome
+    File yaml
 
-  File groups_file
-  File? groups_file_association
-  File? groups_file_blacksheep
-  File? groups_file_immune
-  File? groups_file_nmf
-  
-  ## global params
-  Float? sample_na_max
-  Float? nmiss_factor
-  String? duplicate_gene_policy
-  String? gene_id_col
+    File groups_file
+    File? groups_file_association
+    File? groups_file_blacksheep
+    File? groups_file_immune
+    File? groups_file_nmf
 
-  String standalone = "false"
-  String geneset_db #this.gseaDB
-  String ptm_db #this.ptmseaDB
-  
+    ## global params
+    Float? sample_na_max
+    Float? nmiss_factor
+    String? duplicate_gene_policy
+    String? gene_id_col
+
+    String standalone = "false"
+    String geneset_db #this.gseaDB
+    String ptm_db #this.ptmseaDB
 
 
-  #############################
-  ### Single-omic Analyses ###
-  #############################
 
-  ### Single-Sample GSEA
+    #############################
+    ### Single-omic Analyses ###
+    #############################
+
+    ### Single-Sample GSEA
+  }
+
   call panoply_ssgsea_workflow_wdl.panoply_ssgsea_workflow as ssgsea_ome {
     input:
       preprocess_gct = (ome_type!='rna'), # turn off preprocessing if we have RNA data

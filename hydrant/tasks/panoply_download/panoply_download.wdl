@@ -1,33 +1,37 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_download {
-  File association_tar
-  File blacksheep_tar
-  Array[File] ssgsea_assoc_tars
-  File ssgsea_ome_tar
-  File? so_nmf_results
-  File? so_nmf_figures
-  File? so_nmf_ssgsea_tar
+  input {
+    File association_tar
+    File blacksheep_tar
+    Array[File] ssgsea_assoc_tars
+    File ssgsea_ome_tar
+    File? so_nmf_results
+    File? so_nmf_figures
+    File? so_nmf_ssgsea_tar
 
-  File? immune_analysis_tar
-  File? ptmsea
+    File? immune_analysis_tar
+    File? ptmsea
 
-  File? omicsev_tar
-  File? cosmo_tar
-  File? cna_corr_tar # non-standalone tar with genomic-only-module outputs
+    File? omicsev_tar
+    File? cosmo_tar
+    File? cna_corr_tar # non-standalone tar with genomic-only-module outputs
 
-  String analysisDir
-  String output_prefix
-  
-  String summary_tar = "panoply_main_summary.tar"
-  String full_tar = "panoply_main_full.tar"
-  String ssgsea_assoc_dir = "ssgsea_assoc"
+    String analysisDir
+    String output_prefix
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    String summary_tar = "panoply_main_summary.tar"
+    String full_tar = "panoply_main_full.tar"
+    String ssgsea_assoc_dir = "ssgsea_assoc"
+
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -83,4 +87,5 @@ task panoply_download {
 
 workflow panoply_download_workflow {
   call panoply_download
+
 }

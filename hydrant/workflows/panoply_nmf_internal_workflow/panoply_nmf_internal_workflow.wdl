@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_nmf_balance_omes/panoply_nmf_balance_omes.wdl" as panoply_nmf_balance_omes_wdl
 import "../../tasks/panoply_nmf/panoply_nmf.wdl" as panoply_nmf_wdl
 import "../../tasks/panoply_nmf_postprocess/panoply_nmf_postprocess.wdl" as panoply_nmf_postprocess_wdl
@@ -11,39 +13,42 @@ import "../panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl" as panoply_ssgse
 ##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
 workflow panoply_nmf_internal_workflow {
 	
-	String label
-	# Array[Pair[String,File]]+ ome_pairs
-    Array[File]+ ome_gcts			# array of GCT files
-    Array[String]+ ome_labels		# labels corresponding to those GCT files
+	input {
+		String label
+		# Array[Pair[String,File]]+ ome_pairs
+	    Array[File]+ ome_gcts			# array of GCT files
+	    Array[String]+ ome_labels		# labels corresponding to those GCT files
 
-	File? yaml_file
-	File? groups_file
+		File? yaml_file
+		File? groups_file
 
-	## ssGSEA parameters
-	Boolean? run_ssgsea=true
-	File? gene_set_database
+		## ssGSEA parameters
+		Boolean? run_ssgsea=true
+		File? gene_set_database
 
-	## Balance Toggle
-	Boolean? balance_omes
-	Float? tol
-	Float? var
+		## Balance Toggle
+		Boolean? balance_omes
+		Float? tol
+		Float? var
 
-	## Preprocess Parameters
-	Float? sd_filt_min
-	String? sd_filt_mode
-	String? z_score			# true / false
-	String? z_score_mode
-	String? gene_column
-	
-	## NMF Parameters
-	Int? kmin
-	Int? kmax
-	String? exclude_2		# true / false
-	String? nmf_method		# options in the YAML
-	Int? nrun				# Number of NMF runs with different starting seeds.
-	String? seed			# 'random' for random seed, or numeric for explicit seed
+		## Preprocess Parameters
+		Float? sd_filt_min
+		String? sd_filt_mode
+		String? z_score			# true / false
+		String? z_score_mode
+		String? gene_column
 
-	# Toggle Balance Module -- run if we have multi-omic data && balancing is on
+		## NMF Parameters
+		Int? kmin
+		Int? kmax
+		String? exclude_2		# true / false
+		String? nmf_method		# options in the YAML
+		Int? nrun				# Number of NMF runs with different starting seeds.
+		String? seed			# 'random' for random seed, or numeric for explicit seed
+
+		# Toggle Balance Module -- run if we have multi-omic data && balancing is on
+	}
+
 	if (length(ome_gcts) > 1 && select_first([balance_omes, false])) { # false by default, if balance_omes not provided
 		call panoply_nmf_balance_omes_wdl.panoply_nmf_balance_omes as balance {
 			input:

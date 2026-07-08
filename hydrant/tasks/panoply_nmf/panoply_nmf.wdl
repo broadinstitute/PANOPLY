@@ -1,36 +1,39 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 task panoply_nmf {
-    Array[File]+ ome_gcts
-    Array[String]+ ome_labels
+    input {
+      Array[File]+ ome_gcts
+      Array[String]+ ome_labels
 
-	String output_prefix="results_nmf"
-	File? yaml_file
+  	String output_prefix="results_nmf"
+  	File? yaml_file
 
-	## Preprocess Parameters
-	Float? sd_filt_min
-	String? sd_filt_mode
-	String? z_score			# true / false
-	String? z_score_mode
-	String? gene_column
-	String? organism_id		# can be 'Hs', 'Mm', or 'Rn'
-	
-	## NMF Parameters
-	Int? kmin
-	Int? kmax
-	String? exclude_2		# true / false
-	String? nmf_method		# options in the YAML
-	Int? nrun				# Number of NMF runs with different starting seeds.
-	String? seed			# 'random' for random seed, or numeric for explicit seed
-	# Boolean? bayesian
+  	## Preprocess Parameters
+  	Float? sd_filt_min
+  	String? sd_filt_mode
+  	String? z_score			# true / false
+  	String? z_score_mode
+  	String? gene_column
+  	String? organism_id		# can be 'Hs', 'Mm', or 'Rn'
 
-	Int? memory
-	Int? disk_space
-	Int? num_threads
-	Int? num_preemptions
-	
+  	## NMF Parameters
+  	Int? kmin
+  	Int? kmax
+  	String? exclude_2		# true / false
+  	String? nmf_method		# options in the YAML
+  	Int? nrun				# Number of NMF runs with different starting seeds.
+  	String? seed			# 'random' for random seed, or numeric for explicit seed
+  	# Boolean? bayesian
+
+  	Int? memory
+  	Int? disk_space
+  	Int? num_threads
+  	Int? num_preemptions
+    }
+
 	command {
 		set -euo pipefail
 		
@@ -62,4 +65,5 @@ task panoply_nmf {
 ## workflow
 workflow panoply_nmf_workflow {
     call panoply_nmf
+
 }

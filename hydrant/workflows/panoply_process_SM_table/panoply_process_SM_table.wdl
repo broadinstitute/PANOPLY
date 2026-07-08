@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_parse_sm_table/panoply_parse_sm_table.wdl" as parse_sm_table
 import "../../tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl" as normalize
 import "../../tasks/panoply_normalize_ms_data_report/panoply_normalize_ms_data_report.wdl" as normalize_report
@@ -8,12 +10,13 @@ import "../../tasks/panoply_normalize_ms_data_report/panoply_normalize_ms_data_r
 workflow panoply_process_SM_table {
 
   ## inputs
-  String job_identifier
-  String ome_type
-  File sample_annotation
-  File input_ssv
-  File yaml
-
+  input {
+    String job_identifier
+    String ome_type
+    File sample_annotation
+    File input_ssv
+    File yaml
+  }
 
   call parse_sm_table.panoply_parse_sm_table as parse {
     input:

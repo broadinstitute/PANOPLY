@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_clumps_ptm_diffexp/panoply_clumps_ptm_diffexp.wdl" as diffexp_wdl
 import "../../tasks/panoply_clumps_ptm_mapping/panoply_clumps_ptm_mapping.wdl" as mapping_wdl
 import "../../tasks/panoply_clumps_ptm/panoply_clumps_ptm.wdl" as analysis_wdl
@@ -11,30 +13,32 @@ import "../../tasks/panoply_clumps_ptm_report/panoply_clumps_ptm_report.wdl" as 
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm
 workflow panoply_clumps_ptm_workflow {
 	# PTM GCT files; must include at least one
-	File? pSTY_gct
-	File? acK_gct
-	File? ubK_gct
+	input {
+		File? pSTY_gct
+		File? acK_gct
+		File? ubK_gct
 
-	File groupsFile
+		File groupsFile
 
-	## Default Database Files		
-	# Google-Cloud Bucket with PDB Directory, split into tarfiles
-	String? PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars"
-	# Uniprot FASTA reference file
-	File? UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
-	# SIFTS database
-	File? SIFTS_DB = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/pdb_chain_uniprot.tsv"
+		## Default Database Files		
+		# Google-Cloud Bucket with PDB Directory, split into tarfiles
+		String? PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars"
+		# Uniprot FASTA reference file
+		File? UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
+		# SIFTS database
+		File? SIFTS_DB = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/pdb_chain_uniprot.tsv"
 
-	File? FASTA_ref_file
+		File? FASTA_ref_file
 
-	String? accession_col
-	String? variable_sites_col
+		String? accession_col
+		String? variable_sites_col
 
-	File? mapping_file					# pre-generated mapping file, to skip mapping module
-	File? mapping_params				# parameter file from mapping
+		File? mapping_file					# pre-generated mapping file, to skip mapping module
+		File? mapping_params				# parameter file from mapping
 
-	String output_prefix
-	File yaml_file
+		String output_prefix
+		File yaml_file
+	}
 
 	call diffexp_wdl.panoply_clumps_ptm_diffexp as diffexp {
 		input:

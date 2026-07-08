@@ -1,6 +1,8 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 import "../../tasks/panoply_select_all_pairs/panoply_select_all_pairs.wdl" as select_pairs
 import "../panoply_nmf_internal_workflow/panoply_nmf_internal_workflow.wdl" as nmf_wdl
 import "../panoply_sankey_workflow/panoply_sankey_workflow.wdl" as sankey_wdl
@@ -10,52 +12,55 @@ import "../../tasks/panoply_nmf_assemble_results/panoply_nmf_assemble_results.wd
 ################################################
 ##  workflow: mo_nmf + so_nmf + sankey + assemble
 workflow panoply_nmf_workflow {
-	String label
+	input {
+		String label
 
-	## Data Upload
-    Array[Pair[String?,File?]]+ ome_pairs
-	# Array[File]+ ome_gcts		# array of GCT files
-	# Array[String]+ ome_labels	# array of ome-labels for those GCT files (MUST MATCH ORDER)
-	# File? omes_tar			# tar file with GCTs for analysis. not set up.
+		## Data Upload
+	    Array[Pair[String?,File?]]+ ome_pairs
+		# Array[File]+ ome_gcts		# array of GCT files
+		# Array[String]+ ome_labels	# array of ome-labels for those GCT files (MUST MATCH ORDER)
+		# File? omes_tar			# tar file with GCTs for analysis. not set up.
 
-	## Auxilliary Files
+		## Auxilliary Files
 
-	## ssGSEA parameters
-	File gene_set_database
-	File yaml_file				# default parameters & figure colors
-	File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
-	
-	## Preprocess Parameters
-	Float? mo_sd_filt_min
-	Float? so_sd_filt_min
-	String? mo_sd_filt_mode
-	String? so_sd_filt_mode
-	String? mo_z_score			# true / false
-	String? so_z_score			# true / false
-	String? mo_z_score_mode
-	String? so_z_score_mode
-	
-	## NMF Parameters
-	Int? mo_kmin
-	Int? so_kmin
-	Int? mo_kmax
-	Int? so_kmax
-	String? mo_exclude_2		# true / false
-	String? so_exclude_2		# true / false
-	Int? mo_nrun				# Number of NMF runs with different starting seeds.
-	Int? so_nrun				# Number of NMF runs with different starting seeds.
-	String? mo_seed			# 'random' for random seed, or numeric for explicit seed
-	String? so_seed			# 'random' for random seed, or numeric for explicit seed
-	String? mo_nmf_method		# options in the YAML
-	String? so_nmf_method		# options in the YAML
+		## ssGSEA parameters
+		File gene_set_database
+		File yaml_file				# default parameters & figure colors
+		File? groups_file			# datatable with annotations-of-interest (for figures & enrichement analysis)
 
-	## Module Toggles
-	Boolean run_so_nmf
-	Boolean run_mo_nmf
-	Boolean run_ssgsea		# run ssGSEA on nmf results
-	Boolean run_sankey
-    
-	# select extant pairs from ome_pairs
+		## Preprocess Parameters
+		Float? mo_sd_filt_min
+		Float? so_sd_filt_min
+		String? mo_sd_filt_mode
+		String? so_sd_filt_mode
+		String? mo_z_score			# true / false
+		String? so_z_score			# true / false
+		String? mo_z_score_mode
+		String? so_z_score_mode
+
+		## NMF Parameters
+		Int? mo_kmin
+		Int? so_kmin
+		Int? mo_kmax
+		Int? so_kmax
+		String? mo_exclude_2		# true / false
+		String? so_exclude_2		# true / false
+		Int? mo_nrun				# Number of NMF runs with different starting seeds.
+		Int? so_nrun				# Number of NMF runs with different starting seeds.
+		String? mo_seed			# 'random' for random seed, or numeric for explicit seed
+		String? so_seed			# 'random' for random seed, or numeric for explicit seed
+		String? mo_nmf_method		# options in the YAML
+		String? so_nmf_method		# options in the YAML
+
+		## Module Toggles
+		Boolean run_so_nmf
+		Boolean run_mo_nmf
+		Boolean run_ssgsea		# run ssGSEA on nmf results
+		Boolean run_sankey
+
+		# select extant pairs from ome_pairs
+	}
+
     call select_pairs.panoply_select_all_pairs as select_pairs {
     	input:
         	pairs_input = ome_pairs

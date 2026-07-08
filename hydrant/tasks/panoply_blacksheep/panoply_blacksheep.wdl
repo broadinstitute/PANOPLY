@@ -1,21 +1,25 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_blacksheep {
-    Int? memory
-    Int? disk_space
-    Int? num_threads
-    Int? num_preemptions
+    input {
+      Int? memory
+      Int? disk_space
+      Int? num_threads
+      Int? num_preemptions
 
-    File input_gct
-    File master_yaml
-    String output_prefix
+      File input_gct
+      File master_yaml
+      String output_prefix
 
-    String? apply_filtering
-    File? identifiers_file
-    File? groups_file
-    Float? fraction_samples_cutoff
-    Float? fdr_value
+      String? apply_filtering
+      File? identifiers_file
+      File? groups_file
+      Float? fraction_samples_cutoff
+      Float? fdr_value
+    }
 
     command {
         set -euo pipefail
@@ -58,6 +62,7 @@ task panoply_blacksheep {
 
 
 workflow panoply_blacksheep_workflow {
-    call panoply_blacksheep
         
+    call panoply_blacksheep
+
 }

@@ -1,34 +1,37 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 task panoply_clumps_ptm {
-	File diff_exp_file
-	File var_sites_file
+	input {
+		File diff_exp_file
+		File var_sites_file
 
-	# Google-Cloud Bucket with PDB Directory split into tarfiles
-	String PDB_ref_bucket
+		# Google-Cloud Bucket with PDB Directory split into tarfiles
+		String PDB_ref_bucket
 
-	# List of Tarfiles in PDB directory
-	Array[File]+ PDB_DIR = [ PDB_ref_bucket + "/pdbs_0.tar", PDB_ref_bucket + "/pdbs_1.tar", PDB_ref_bucket + "/pdbs_2.tar", PDB_ref_bucket + "/pdbs_3.tar", PDB_ref_bucket + "/pdbs_4.tar", PDB_ref_bucket + "/pdbs_5.tar", PDB_ref_bucket + "/pdbs_6.tar", PDB_ref_bucket + "/pdbs_7.tar", PDB_ref_bucket + "/pdbs_8.tar", PDB_ref_bucket + "/pdbs_9.tar", PDB_ref_bucket + "/pdbs_a.tar", PDB_ref_bucket + "/pdbs_b.tar", PDB_ref_bucket + "/pdbs_c.tar", PDB_ref_bucket + "/pdbs_d.tar", PDB_ref_bucket + "/pdbs_e.tar", PDB_ref_bucket + "/pdbs_f.tar", PDB_ref_bucket + "/pdbs_g.tar", PDB_ref_bucket + "/pdbs_h.tar", PDB_ref_bucket + "/pdbs_i.tar", PDB_ref_bucket + "/pdbs_j.tar", PDB_ref_bucket + "/pdbs_k.tar", PDB_ref_bucket + "/pdbs_l.tar", PDB_ref_bucket + "/pdbs_m.tar", PDB_ref_bucket + "/pdbs_n.tar", PDB_ref_bucket + "/pdbs_o.tar", PDB_ref_bucket + "/pdbs_p.tar", PDB_ref_bucket + "/pdbs_q.tar", PDB_ref_bucket + "/pdbs_r.tar", PDB_ref_bucket + "/pdbs_s.tar", PDB_ref_bucket + "/pdbs_t.tar", PDB_ref_bucket + "/pdbs_u.tar", PDB_ref_bucket + "/pdbs_v.tar", PDB_ref_bucket + "/pdbs_w.tar", PDB_ref_bucket + "/pdbs_x.tar", PDB_ref_bucket + "/pdbs_y.tar", PDB_ref_bucket + "/pdbs_z.tar" ]
+		# List of Tarfiles in PDB directory
+		Array[File]+ PDB_DIR = [ PDB_ref_bucket + "/pdbs_0.tar", PDB_ref_bucket + "/pdbs_1.tar", PDB_ref_bucket + "/pdbs_2.tar", PDB_ref_bucket + "/pdbs_3.tar", PDB_ref_bucket + "/pdbs_4.tar", PDB_ref_bucket + "/pdbs_5.tar", PDB_ref_bucket + "/pdbs_6.tar", PDB_ref_bucket + "/pdbs_7.tar", PDB_ref_bucket + "/pdbs_8.tar", PDB_ref_bucket + "/pdbs_9.tar", PDB_ref_bucket + "/pdbs_a.tar", PDB_ref_bucket + "/pdbs_b.tar", PDB_ref_bucket + "/pdbs_c.tar", PDB_ref_bucket + "/pdbs_d.tar", PDB_ref_bucket + "/pdbs_e.tar", PDB_ref_bucket + "/pdbs_f.tar", PDB_ref_bucket + "/pdbs_g.tar", PDB_ref_bucket + "/pdbs_h.tar", PDB_ref_bucket + "/pdbs_i.tar", PDB_ref_bucket + "/pdbs_j.tar", PDB_ref_bucket + "/pdbs_k.tar", PDB_ref_bucket + "/pdbs_l.tar", PDB_ref_bucket + "/pdbs_m.tar", PDB_ref_bucket + "/pdbs_n.tar", PDB_ref_bucket + "/pdbs_o.tar", PDB_ref_bucket + "/pdbs_p.tar", PDB_ref_bucket + "/pdbs_q.tar", PDB_ref_bucket + "/pdbs_r.tar", PDB_ref_bucket + "/pdbs_s.tar", PDB_ref_bucket + "/pdbs_t.tar", PDB_ref_bucket + "/pdbs_u.tar", PDB_ref_bucket + "/pdbs_v.tar", PDB_ref_bucket + "/pdbs_w.tar", PDB_ref_bucket + "/pdbs_x.tar", PDB_ref_bucket + "/pdbs_y.tar", PDB_ref_bucket + "/pdbs_z.tar" ]
 
-	String? accession_col						# id column (in var_sites_file / diff_exp_file) with protein accession id
-	String? variable_sites_col					# column (in var_sites_file) with variable sites (e.g. 'T527t')
+		String? accession_col						# id column (in var_sites_file / diff_exp_file) with protein accession id
+		String? variable_sites_col					# column (in var_sites_file) with variable sites (e.g. 'T527t')
 
-	Boolean? run_combined						# toggle for running all PTM sites combined
+		Boolean? run_combined						# toggle for running all PTM sites combined
 
-	String? weight_col							# column (in diff_exp_file) with weights to use for clumpsptm
+		String? weight_col							# column (in diff_exp_file) with weights to use for clumpsptm
 
-	String output_prefix="results"
-	File yaml_file
+		String output_prefix="results"
+		File yaml_file
 
-	Boolean? DEBUG_MODE=false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
+		Boolean? DEBUG_MODE=false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
 
-	Int? memory
-	Int? disk_space
-	Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
-	Int? num_preemptions
-	
+		Int? memory
+		Int? disk_space
+		Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
+		Int? num_preemptions
+	}
+
 	command {
 		set -euo pipefail
 
@@ -83,4 +86,5 @@ task panoply_clumps_ptm {
 ## workflow
 workflow panoply_clumps_ptm_workflow {
 	call panoply_clumps_ptm
+
 }

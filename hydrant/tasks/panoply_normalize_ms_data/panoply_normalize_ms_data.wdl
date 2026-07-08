@@ -1,24 +1,28 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_normalize_ms_data {
-  File inputData
-  String type
-  String standalone
-  String analysisDir
-  File yaml
-  String? normalizeProteomics
-  String? normMethod
-  String? altMethod
-  Int? ndigits
+  input {
+    File inputData
+    String type
+    String standalone
+    String analysisDir
+    File yaml
+    String? normalizeProteomics
+    String? normMethod
+    String? altMethod
+    Int? ndigits
 
-  String outTar = "panoply_normalize_ms_data-output.tar"
-  String outTable = "normalized_table-output.gct"
+    String outTar = "panoply_normalize_ms_data-output.tar"
+    String outTable = "normalized_table-output.gct"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command  <<<
     set -euo pipefail
@@ -81,6 +85,7 @@ task panoply_normalize_ms_data {
 }
 
 workflow panoply_normalize_ms_data_workflow {
+
 
   call panoply_normalize_ms_data
 

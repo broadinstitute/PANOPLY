@@ -1,18 +1,21 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
+
 task panoply_sampleqc {
-  File tarball   # output from panoply_harmonize
-  String type
-  File yaml
-  Float? corThreshold
-  String outFile = "panoply_sampleqc-output.tar"
+  input {
+    File tarball   # output from panoply_harmonize
+    String type
+    File yaml
+    Float? corThreshold
+    String outFile = "panoply_sampleqc-output.tar"
 
-  Int? memory
-  Int? disk_space
-  Int? num_threads
-  Int? num_preemptions
-
+    Int? memory
+    Int? disk_space
+    Int? num_threads
+    Int? num_preemptions
+  }
 
   command {
     set -euo pipefail
@@ -45,4 +48,5 @@ task panoply_sampleqc {
 
 workflow panoply_sampleqc_workflow {
   call panoply_sampleqc
+
 }

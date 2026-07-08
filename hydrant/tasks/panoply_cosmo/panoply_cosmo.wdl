@@ -1,13 +1,16 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
+version 1.0
 
 workflow panoply_cosmo_workflow {
-	String STANDALONE
-	File yaml_file
-	File? panoply_harmonize_tar
-	String label
-	String? ome_type
+	input {
+		String STANDALONE
+		File yaml_file
+		File? panoply_harmonize_tar
+		String label
+		String? ome_type
+	}
 
 	call panoply_cosmo {
 		input:
@@ -34,21 +37,23 @@ workflow panoply_cosmo_workflow {
 }
 
 task panoply_cosmo {
-	String STANDALONE
-	File yaml_file
-	Boolean? run_cosmo
-	String? sample_label
-	String? ome_type
+	input {
+		String STANDALONE
+		File yaml_file
+		Boolean? run_cosmo
+		String? sample_label
+		String? ome_type
 
-	File? panoply_harmonize_tar
-  File? d1_file
-  File? d2_file
-  File? sample_file
+		File? panoply_harmonize_tar
+	  File? d1_file
+	  File? d2_file
+	  File? sample_file
 
-	Int? cpu
-  Int? memory
-  Int? local_disk_gb
-  Int? num_preemptions
+		Int? cpu
+	  Int? memory
+	  Int? local_disk_gb
+	  Int? num_preemptions
+	}
 
 	command {
 		set -euo pipefail
@@ -134,14 +139,16 @@ task panoply_cosmo {
 }
 
 task panoply_cosmo_report {
-	File cosmo_output_tar
-	String d1_file_name
-	String d2_file_name
-	String label
+	input {
+		File cosmo_output_tar
+		String d1_file_name
+		String d2_file_name
+		String label
 
-  Int? memory
-  Int? local_disk_gb
-  Int? num_preemptions
+	  Int? memory
+	  Int? local_disk_gb
+	  Int? num_preemptions
+	}
 
   command {
     set -euo pipefail

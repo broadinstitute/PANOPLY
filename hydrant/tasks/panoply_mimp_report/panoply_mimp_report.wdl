@@ -1,10 +1,14 @@
-task panoply_mimp_report {
-    Float? memory
-    Int? disk_space
-    Int? num_preemptions
+version 1.0
 
-    File tar_file
-    String output_prefix
+task panoply_mimp_report {
+    input {
+      Float? memory
+      Int? disk_space
+      Int? num_preemptions
+
+      File tar_file
+      String output_prefix
+    }
 
     command {
         set -euo pipefail
@@ -32,4 +36,5 @@ task panoply_mimp_report {
 workflow panoply_mimp_report_workflow {
 
     call panoply_mimp_report
+
 }
