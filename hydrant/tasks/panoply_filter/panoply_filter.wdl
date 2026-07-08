@@ -30,7 +30,7 @@ task panoply_filter {
     Int? num_preemptions
   }
 
-  command  <<<
+  command  {
     set -euo pipefail
     
     codeDir="/prot/proteomics/Projects/PGDAC/src"
@@ -75,7 +75,7 @@ task panoply_filter {
     outGCT=`find ${analysisDir}/filtered-data -type f -iname "*-ratio-norm-filt.gct"` # grab filtered file
     outTableName=${type}-${outTable} 
     cp $outGCT $outTableName
-  >>>
+  }
 
   output {
     File outputs = "${type}-${outTable}"

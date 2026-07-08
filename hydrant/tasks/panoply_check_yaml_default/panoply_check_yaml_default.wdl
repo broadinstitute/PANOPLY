@@ -14,7 +14,7 @@ task panoply_check_yaml_default {
   }
 
   command <<<
-    R -s -e "if ('${param}'=='') {cat(yaml::read_yaml('${yaml}')[['${param_lookup}']])} else {cat('${param}')}"
+    R -s -e "if ('~{param}'=='') {cat(yaml::read_yaml('~{yaml}')[['~{param_lookup}']])} else {cat('~{param}')}"
   >>>
 
   output {

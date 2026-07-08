@@ -24,7 +24,7 @@ task panoply_normalize_ms_data {
     Int? num_preemptions
   }
 
-  command  <<<
+  command  {
     set -euo pipefail
     
     codeDir="/prot/proteomics/Projects/PGDAC/src"
@@ -62,7 +62,7 @@ task panoply_normalize_ms_data {
     outTableName=${type}-${outTable} 
     cp $outGCT $outTableName
     
-  >>>
+  }
 
   output {
     File outputs = "${type}-${outTable}"
