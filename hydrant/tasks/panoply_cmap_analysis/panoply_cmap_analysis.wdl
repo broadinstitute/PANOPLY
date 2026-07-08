@@ -56,7 +56,7 @@ task panoply_cmap_connectivity {
     fi
 
     # combine shards/gather and run conectivity score calculations
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${default="0" permutations} -CMAPpmt ${permutation_dir} -CMAPcfg "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r" ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} -y "final_output_params.yaml"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${select_first([permutations, "0"])} -CMAPpmt ${permutation_dir} -CMAPcfg "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r" ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} -y "final_output_params.yaml"
   }
 
   output {

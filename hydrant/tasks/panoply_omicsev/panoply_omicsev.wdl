@@ -44,7 +44,7 @@ task panoply_omicsev {
   	
     else
       data_files="${sep=',' data_files}"
-  		rna_file=${default='' rna_file}
+  		rna_file=${select_first([rna_file, ''])}
   		sample_anno_file="${sample_anno_file}"
   	fi
   
@@ -98,7 +98,7 @@ task panoply_omicsev {
         /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_run_OmicsEV.R \
         dataset \
         sample_list.tsv \
-        ${default=6 num_threads} \
+        ${select_first([num_threads, 6])} \
         protein \
         x2.tsv \
         $(cat do_function_prediction.txt) \
