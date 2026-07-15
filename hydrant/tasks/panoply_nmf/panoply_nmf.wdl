@@ -37,7 +37,14 @@ task panoply_nmf {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} ${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} ${"-u " + z_score} ${"-v " + z_score_mode} ${"-a " + gene_column} ${"-i " + organism_id} ${"--kmin " + kmin} ${"--kmax " + kmax} ${"-e " + exclude_2} ${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} -x ${output_prefix} ${"-y " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep(",", ome_gcts)} -o ${sep(",", ome_labels)} \
+			${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} \
+			${"-u " + z_score} ${"-v " + z_score_mode} \
+			${"-a " + gene_column} ${"-i " + organism_id} \
+			${"--kmin " + kmin} ${"--kmax " + kmax} ${"-e " + exclude_2} \
+			${"-n " + nrun} ${"-m " + nmf_method} ${"-s " + seed} \
+			-x ${output_prefix} ${"-y " + yaml_file} \
+			--libdir /prot/proteomics/Projects/PGDAC/src/
 	}
 
 	output {

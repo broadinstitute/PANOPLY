@@ -7,7 +7,7 @@ task panoply_cmap_annotate {
   input {
     File tarball                  # output from pgdac_cmap_connectivity
     File cmap_data_file           # CMAP level 5 geneKD data (gctx)
-    File? cmap_enrichment_groups   # groups file (ala experiment design file)
+    File cmap_enrichment_groups   # groups file (ala experiment design file)
     File yaml
     String? cmap_grp
     String? cmap_typ

@@ -39,7 +39,7 @@ task panoply_nmf_assemble_results {
 
 
     ## Compile Multiomic Results
-    if [ ${mo_nmf_results} != '' ]; then
+    if [ "${defined(mo_nmf_results)}" = "true" ]; then
       mkdir nmf_results/mo_nmf # make general mo_nmf directory
 
       ## untar panoply_nmf tar
@@ -49,13 +49,13 @@ task panoply_nmf_assemble_results {
       ## untar panoply_nmf_postprocessing tar
       mkdir nmf_results/mo_nmf/mo_nmf_figures
       tar -C nmf_results/mo_nmf/mo_nmf_figures -zxf ${mo_nmf_figures} #untar file in appropriate directory
-      
+
       ## copy in report
       cp ${mo_nmf_report} nmf_results/mo_nmf/ #copy report to results
       cp ${mo_nmf_report} nmf_reports/ #copy report to reports
     fi
     ## Multi-omic ssGSEA
-    if [ ${mo_nmf_ssgsea_report} != '' ]; then
+    if [ "${defined(mo_nmf_ssgsea_report)}" = "true" ]; then
       ## copy in ssgsea results
       mkdir nmf_results/mo_nmf/mo_nmf_ssgsea
       tar -C nmf_results/mo_nmf/mo_nmf_ssgsea -zxf ${mo_nmf_ssgsea_tar} #untar file in appropriate directory
@@ -69,13 +69,13 @@ task panoply_nmf_assemble_results {
 
 
     ## Compile Single-Ome Results
-    if [ ${sep='' so_nmf_results} != '' ]; then
+    if [ "${defined(so_nmf_results)}" = "true" ]; then
       mkdir nmf_results/so_nmf # make general so_nmf directory
 
       ## untar panoply_nmf tar
-      if [ ${sep='' so_nmf_results} != '' ]; then
+      if [ "${defined(so_nmf_results)}" = "true" ]; then
         mkdir nmf_results/so_nmf/so_nmf_results
-        for tar in ${sep=' ' so_nmf_results}
+        for tar in ${if defined(so_nmf_results) then sep(' ', select_all(select_first([so_nmf_results]))) else ""}
         do
           cp $tar nmf_results/so_nmf/so_nmf_results #copy tars into folder
           for filename in nmf_results/so_nmf/so_nmf_results/*.tar.gz
@@ -88,9 +88,9 @@ task panoply_nmf_assemble_results {
 
 
       ## untar panoply_nmf_postprocess tar
-      if [ ${sep='' so_nmf_figures} != '' ]; then
+      if [ "${defined(so_nmf_figures)}" = "true" ]; then
         mkdir nmf_results/so_nmf/so_nmf_figures
-        for tar in ${sep=' ' so_nmf_figures}
+        for tar in ${if defined(so_nmf_figures) then sep(' ', select_all(select_first([so_nmf_figures]))) else ""}
         do
           cp $tar nmf_results/so_nmf/so_nmf_figures #copy tars into folder
           for filename in nmf_results/so_nmf/so_nmf_figures/*.tar.gz
@@ -104,18 +104,18 @@ task panoply_nmf_assemble_results {
       # copy in reports
       mkdir nmf_results/so_nmf/so_nmf_report
       mkdir nmf_reports/so_nmf
-      if [ ${sep='' so_nmf_report} != '' ]; then
-        cp ${sep=' ' so_nmf_report} nmf_results/so_nmf/so_nmf_report #copy reports to results
-        cp ${sep=' ' so_nmf_report} nmf_reports/so_nmf #copy reports to reports
+      if [ "${defined(so_nmf_report)}" = "true" ]; then
+        cp ${if defined(so_nmf_report) then sep(' ', select_all(select_first([so_nmf_report]))) else ""} nmf_results/so_nmf/so_nmf_report #copy reports to results
+        cp ${if defined(so_nmf_report) then sep(' ', select_all(select_first([so_nmf_report]))) else ""} nmf_reports/so_nmf #copy reports to reports
       fi
     fi
 
     ## Single-omic ssGSEA
-    if [ ${sep='' so_nmf_ssgsea_tar} != '' ]; then
+    if [ "${defined(so_nmf_ssgsea_tar)}" = "true" ]; then
       # copy in ssgsea results
       mkdir nmf_results/so_nmf/so_nmf_ssgsea
-      if [ ${sep='' so_nmf_ssgsea_tar} != '' ]; then
-        cp ${sep=' ' so_nmf_ssgsea_tar} nmf_results/so_nmf/so_nmf_ssgsea #copy tars in
+      if [ "${defined(so_nmf_ssgsea_tar)}" = "true" ]; then
+        cp ${if defined(so_nmf_ssgsea_tar) then sep(' ', select_all(select_first([so_nmf_ssgsea_tar]))) else ""} nmf_results/so_nmf/so_nmf_ssgsea #copy tars in
         for filename in nmf_results/so_nmf/so_nmf_ssgsea/*.tar.gz
           do mkdir nmf_results/so_nmf/so_nmf_ssgsea/$(basename "$filename" .tar.gz) #make directory
       tar -C nmf_results/so_nmf/so_nmf_ssgsea/$(basename "$filename" .tar.gz) -zxf $filename #untar file
@@ -126,16 +126,16 @@ task panoply_nmf_assemble_results {
       # copy in ssgsea reports
       mkdir nmf_results/so_nmf/so_nmf_ssgsea_report
       mkdir nmf_reports/so_nmf_ssgsea
-      if [ ${sep='' so_nmf_ssgsea_report} != '' ]; then
-        cp ${sep=' ' so_nmf_ssgsea_report} nmf_results/so_nmf/so_nmf_ssgsea_report #copy reports to results
-        cp ${sep=' ' so_nmf_ssgsea_report} nmf_reports/so_nmf_ssgsea #copy reports to reports
+      if [ "${defined(so_nmf_ssgsea_report)}" = "true" ]; then
+        cp ${if defined(so_nmf_ssgsea_report) then sep(' ', select_all(select_first([so_nmf_ssgsea_report]))) else ""} nmf_results/so_nmf/so_nmf_ssgsea_report #copy reports to results
+        cp ${if defined(so_nmf_ssgsea_report) then sep(' ', select_all(select_first([so_nmf_ssgsea_report]))) else ""} nmf_reports/so_nmf_ssgsea #copy reports to reports
       fi
     fi
 
 
 
     ## Compile Sankey Results
-    if [ ${sankey_tar} != '' ]; then
+    if [ "${defined(sankey_tar)}" = "true" ]; then
       mkdir nmf_results/sankey # make general mo_nmf directory
 
       ## untar sankey_tar

@@ -24,11 +24,11 @@ task panoply_clumps_ptm {
 		String output_prefix="results"
 		File yaml_file
 
-		Boolean? DEBUG_MODE=false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
+		Boolean DEBUG_MODE = false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
 
 		Int? memory
 		Int? disk_space
-		Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
+		Int num_threads = 32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
 		Int? num_preemptions
 	}
 
@@ -39,9 +39,9 @@ task panoply_clumps_ptm {
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
 		pdb_dir=pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
 		mkdir -p $pdb_dir # make PDB directory
-		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep=" " PDB_DIR} # untar each tar file
+		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep(" ", PDB_DIR)} # untar each tar file
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
-		parallel -j ${num_threads} 'rm' ::: ${sep=' ' PDB_DIR} # remove tar-files to save space
+		parallel -j ${num_threads} 'rm' ::: ${sep(' ', PDB_DIR)} # remove tar-files to save space
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished removing PDB Tars"
 
 		mkdir clumpsptm_runs
@@ -50,7 +50,7 @@ task panoply_clumps_ptm {
 			--input ${diff_exp_file} --maps ${var_sites_file} --pdbstore pdbs/ \
 			${'--protein_id ' + accession_col} ${'--site_id ' + variable_sites_col} \
 			${'--weight ' + weight_col} \
-			${true="--run_combined true" false="--run_combined false" run_combined} \
+			${if defined(run_combined) then "--run_combined " + (if select_first([run_combined]) then "true" else "false") else ""} \
 			--threads ${num_threads} \
 			$( [ ${DEBUG_MODE} = true ] && echo "-t" )
 

@@ -56,101 +56,101 @@ task panoply_unified_assemble_results {
 
     ### Dump results files into the given folders
     # MAIN 
-    if [ ${sep='' main_full} != '' ]; then
-      mv ${sep=' ' main_full} results/proteogenomics_analysis
+    if [ ${sep='' select_all(main_full))} != '' ]; then
+      mv ${sep=' ' select_all(main_full))} results/proteogenomics_analysis
       for filename in results/proteogenomics_analysis/*.tar;do tar -C results/proteogenomics_analysis -xvf $filename;rm $filename;done
     fi
 
-    if [ ${sep='' main_summary} != '' ]; then
+    if [ ${sep='' select_all(main_summary))} != '' ]; then
       mkdir results/proteogenomics_analysis/summary_files
-      mv ${sep=' ' main_summary} results/proteogenomics_analysis/summary_files
+      mv ${sep=' ' select_all(main_summary))} results/proteogenomics_analysis/summary_files
       for filename in results/proteogenomics_analysis/summary_files/*.tar;do tar -C results/proteogenomics_analysis/summary_files -xvf $filename;rm $filename;done
     fi
     
-    if [ ${sep='' cmap_output} != '' ]; then
+    if [ ${sep='' select_all(cmap_output))} != '' ]; then
       mkdir results/proteogenomics_analysis/proteome_cmap_analysis
-      mv ${sep=' ' cmap_output} results/proteogenomics_analysis/proteome_cmap_analysis
+      mv ${sep=' ' select_all(cmap_output))} results/proteogenomics_analysis/proteome_cmap_analysis
       for filename in results/proteogenomics_analysis/proteome_cmap_analysis/*.tar;do tar -C results/proteogenomics_analysis/proteome_cmap_analysis -xvf $filename;rm $filename;done
     fi
     
-    if [ ${sep='' cmap_ssgsea_output} != '' ]; then
-      mv ${sep=' ' cmap_ssgsea_output} results/proteogenomics_analysis/proteome_cmap_analysis
+    if [ ${sep='' select_all(cmap_ssgsea_output))} != '' ]; then
+      mv ${sep=' ' select_all(cmap_ssgsea_output))} results/proteogenomics_analysis/proteome_cmap_analysis
       for filename in results/proteogenomics_analysis/proteome_cmap_analysis/*.tar;do tar -C results/proteogenomics_analysis/proteome_cmap_analysis -xvf $filename;rm $filename;done
     fi
 
     # MAIN REPORTS
     mkdir results/proteogenomics_analysis/all_html_reports
-    if [ ${sep='' norm_report} != '' ]; then
-      cp ${sep=' ' norm_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' norm_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(norm_report))} != '' ]; then
+      cp ${sep=' ' select_all(norm_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(norm_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' rna_corr_report} != '' ]; then
-      cp ${sep=' ' rna_corr_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' rna_corr_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(rna_corr_report))} != '' ]; then
+      cp ${sep=' ' select_all(rna_corr_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(rna_corr_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' cna_corr_report} != '' ]; then
-      cp ${sep=' ' cna_corr_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' cna_corr_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(cna_corr_report))} != '' ]; then
+      cp ${sep=' ' select_all(cna_corr_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(cna_corr_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' ssgsea_ome_report} != '' ]; then
-      cp ${sep=' ' ssgsea_ome_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' ssgsea_ome_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(ssgsea_ome_report))} != '' ]; then
+      cp ${sep=' ' select_all(ssgsea_ome_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(ssgsea_ome_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' ptmsea_ome_report} != '' ]; then
-      cp ${sep=' ' ptmsea_ome_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' ptmsea_ome_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(ptmsea_ome_report))} != '' ]; then
+      cp ${sep=' ' select_all(ptmsea_ome_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(ptmsea_ome_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' omicsev_report} != '' ]; then
-      cp ${sep=' ' omicsev_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' omicsev_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(omicsev_report))} != '' ]; then
+      cp ${sep=' ' select_all(omicsev_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(omicsev_report))} reports/proteogenomics_analysis
     fi
     
-    if [ ${sep='' cosmo_report} != '' ]; then
-      cp ${sep=' ' cosmo_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' cosmo_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(cosmo_report))} != '' ]; then
+      cp ${sep=' ' select_all(cosmo_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(cosmo_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' sampleqc_report} != '' ]; then
-      cp ${sep=' ' sampleqc_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' sampleqc_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(sampleqc_report))} != '' ]; then
+      cp ${sep=' ' select_all(sampleqc_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(sampleqc_report))} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' assoc_report} != '' ]; then
-      cp ${sep=' ' assoc_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' assoc_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(assoc_report))} != '' ]; then
+      cp ${sep=' ' select_all(assoc_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(assoc_report))} reports/proteogenomics_analysis
     fi
     
-    if [ ${sep='' blacksheep_report} != '' ]; then
-      cp ${sep=' ' blacksheep_report} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' blacksheep_report} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(blacksheep_report))} != '' ]; then
+      cp ${sep=' ' select_all(blacksheep_report))} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(blacksheep_report))} reports/proteogenomics_analysis
     fi
 
 
     # RNA RESULTS
     mkdir results/rna_analysis/all_html_reports # make folder for all reports
-    if [ ${immune_tar} != '' ]; then
+    if [ "${defined(immune_tar)}" = "true" ]; then
       mkdir results/rna_analysis/immune_analysis
       mv ${immune_tar} results/rna_analysis/immune_analysis
       for filename in results/rna_analysis/immune_analysis/*.tar;do tar -C results/rna_analysis/immune_analysis -xvf $filename;rm $filename;done
     fi
-    if [ ${immune_report} != '' ]; then
+    if [ "${defined(immune_report)}" = "true" ]; then
       cp ${immune_report} results/rna_analysis/all_html_reports
       mv ${immune_report} reports/rna_analysis
     fi
-    if [ ${ssgsea_rna_report} != '' ]; then
+    if [ "${defined(ssgsea_rna_report)}" = "true" ]; then
       cp ${ssgsea_rna_report} results/rna_analysis/all_html_reports
       mv ${ssgsea_rna_report} reports/rna_analysis
     fi
-    if [ ${rna_blacksheep_report} != '' ]; then
+    if [ "${defined(rna_blacksheep_report)}" = "true" ]; then
       cp ${rna_blacksheep_report} results/rna_analysis/all_html_reports
       mv ${rna_blacksheep_report} reports/rna_analysis
     fi
-    if [ ${rna_assoc_report} != '' ]; then
+    if [ "${defined(rna_assoc_report)}" = "true" ]; then
       cp ${rna_assoc_report} results/rna_analysis/all_html_reports
       mv ${rna_assoc_report} reports/rna_analysis
     fi
@@ -158,16 +158,16 @@ task panoply_unified_assemble_results {
     # UNIFIED RESULTS
 
     # NMF Results
-    if [ ${nmf_results} != '' ]; then
+    if [ "${defined(nmf_results)}" = "true" ]; then
       tar -C results/nmf -xvf ${nmf_results} --strip-components 1 # note: results tar already contains reports
     fi
-    if [ ${nmf_reports} != '' ]; then
+    if [ "${defined(nmf_reports)}" = "true" ]; then
       tar -C reports/nmf -xvf ${nmf_reports} --strip-components 1
     fi
 
     # ClumpsPTM
-    if [ ${sep='' clumpsptm_results} != '' ]; then
-      mv ${sep=' ' clumpsptm_results} results/clumpsptm
+    if [ "${defined(clumpsptm_results)}" = "true" ]; then
+      mv ${if defined(clumpsptm_results) then sep(' ', select_all(select_first([clumpsptm_results]))) else ""} results/clumpsptm
       for filename in results/clumpsptm/*.tar;do 
         foldername=$(basename "$filename" .tar)
         mkdir -p "results/clumpsptm/$foldername"
@@ -175,14 +175,15 @@ task panoply_unified_assemble_results {
         rm "$filename"
       done
     fi
-    if [ ${clumpsptm_report} != '' ]; then
+    if [ "${defined(clumpsptm_report)}" = "true" ]; then
+      mkdir -p results/clumpsptm/all_html_reports
       cp ${clumpsptm_report} results/clumpsptm/all_html_reports
       mv ${clumpsptm_report} reports/clumpsptm
     fi
 
     # MetaboAnalyst
-    if [ ${sep='' metaboanalyst_results} != '' ]; then
-      mv ${sep=' ' metaboanalyst_results} results/metaboanalyst
+    if [ "${defined(metaboanalyst_results)}" = "true" ]; then
+      mv ${if defined(metaboanalyst_results) then sep(' ', select_all(select_first([metaboanalyst_results]))) else ""} results/metaboanalyst
       for filename in results/metaboanalyst/*.tar.gz;do 
         foldername=$(basename "$filename" .tar.gz)
         mkdir -p "results/metaboanalyst/$foldername"
@@ -190,9 +191,9 @@ task panoply_unified_assemble_results {
         rm "$filename"
       done
     fi
-    if [ ${sep='' metaboanalyst_reports} != '' ]; then
-      cp ${sep=' ' metaboanalyst_reports} results/metaboanalyst
-      mv ${sep=' ' metaboanalyst_reports} reports/metaboanalyst
+    if [ "${defined(metaboanalyst_reports)}" = "true" ]; then
+      cp ${if defined(metaboanalyst_reports) then sep(' ', select_all(select_first([metaboanalyst_reports]))) else ""} results/metaboanalyst
+      mv ${if defined(metaboanalyst_reports) then sep(' ', select_all(select_first([metaboanalyst_reports]))) else ""} reports/metaboanalyst
     fi
 
     ### Zip up final directories

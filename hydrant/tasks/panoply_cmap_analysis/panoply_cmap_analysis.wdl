@@ -9,7 +9,7 @@ task panoply_cmap_connectivity {
     File yaml
     String? cmap_grp
     String? cmap_typ
-    Int? permutations
+    Int permutations
     Array[File] subset_scores
     Array[File]? permutation_scores
     String scores_dir = "cmap-subset-scores"
@@ -49,18 +49,18 @@ task panoply_cmap_connectivity {
       mkdir ${scores_dir}
     fi
     # ... and copy subset scores
-    mv ${sep=" " subset_scores} ${scores_dir}
+    mv ${sep(" ", subset_scores)} ${scores_dir}
 
     # same for perumations scores ...
     if [ ${permutations} -gt 0 ]; then
       if [ ! -d ${permutation_dir} ]; then
         mkdir ${permutation_dir}
       fi
-      mv ${sep=" " permutation_scores} ${permutation_dir}
+      mv ${if defined(permutation_scores) then sep(" ", select_first([permutation_scores])) else ""} ${permutation_dir}
     fi
 
     # combine shards/gather and run conectivity score calculations
-    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${select_first([permutations, "0"])} -CMAPpmt ${permutation_dir} -CMAPcfg "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r" ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} -y "final_output_params.yaml"
+    /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh CMAPconn -i ${tarball} -o ${outFile} -CMAPscr ${scores_dir} -CMAPnperm ${permutations} -CMAPpmt ${permutation_dir} -CMAPcfg "/prot/proteomics/Projects/PGDAC/src/cmap-config-custom.r" ${"-CMAPgroup " + cmap_group} ${"-CMAPtype " + cmap_type} -y "final_output_params.yaml"
   }
 
   output {
@@ -152,7 +152,7 @@ task panoply_cmap_annotate {
   input {
     File tarball                  # output from pgdac_cmap_connectivity
     File cmap_data_file           # CMAP level 5 geneKD data (gctx)
-    File? cmap_enrichment_groups   # groups file (ala experiment design file)
+    File cmap_enrichment_groups   # groups file (ala experiment design file)
     File yaml
     String? cmap_grp
     String? cmap_typ
@@ -325,7 +325,7 @@ workflow run_cmap_analysis {
     String? group
     String? data_type
     File yaml
-    File? cmap_enrichment_groups
+    File cmap_enrichment_groups
 
     Float? cna_threshold
     Int? cna_effects_threshold

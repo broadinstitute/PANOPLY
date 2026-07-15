@@ -36,11 +36,11 @@ task panoply_clumps_ptm_mapping {
 		String output_prefix="results"
 		File yaml_file
 
-		Boolean? DEBUG_MODE=false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
+		Boolean DEBUG_MODE = false			# turn on debug mode, which limits the number of proteins mapped to 50 (randomly chosen)
 
 		Int? memory
 		Int? disk_space
-		Int? num_threads=32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
+		Int num_threads = 32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
 		Int? num_preemptions
 	}
 
@@ -51,9 +51,9 @@ task panoply_clumps_ptm_mapping {
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
 		pdb_dir=pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
 		mkdir -p $pdb_dir # make PDB directory
-		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep=" " PDB_DIR} # untar each tar file
+		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep(" ", PDB_DIR)} # untar each tar file
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
-		parallel -j ${num_threads} 'rm' ::: ${sep=' ' PDB_DIR} # remove tar-files to save space
+		parallel -j ${num_threads} 'rm' ::: ${sep(' ', PDB_DIR)} # remove tar-files to save space
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished removing PDB Tars"
 
 		# Run Mapping Scripts 
@@ -62,8 +62,8 @@ task panoply_clumps_ptm_mapping {
 		--FASTA_ref_file ${FASTA_ref_file} ${'--FASTA_sep_type ' + FASTA_sep_type}  \
 		${'--accession_col ' + accession_col} ${'--gene_column ' + gene_column} \
 		${'--variable_sites_col ' + variable_sites_col} ${'--variable_sites_sep ' + '"' + variable_sites_sep + '"'} \
-		${true="--keep_multi_sites true" false="--keep_multi_sites false" keep_multi_sites} \
-		${true="--filter_duplicate_sites true" false="--filter_duplicate_sites false" filter_duplicate_sites} \
+		${if defined(keep_multi_sites) then "--keep_multi_sites " + (if select_first([keep_multi_sites]) then "true" else "false") else ""} \
+		${if defined(filter_duplicate_sites) then "--filter_duplicate_sites " + (if select_first([filter_duplicate_sites]) then "true" else "false") else ""} \
 		--UNIPROT_SWISSPROT ${UNIPROT_SWISSPROT} --SIFTS_DB ${SIFTS_DB} \
 		--output_prefix ${output_prefix} --yaml ${yaml_file} --num_threads ${num_threads} \
 		$( [ ${DEBUG_MODE} = true ] && echo "--DEBUG_MODE" )

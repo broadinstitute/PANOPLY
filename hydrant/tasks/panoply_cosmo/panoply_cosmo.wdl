@@ -74,15 +74,15 @@ task panoply_cosmo {
 			echo "Running COSMO"
 			
 			if [ ${STANDALONE} == "false" ]; then
-  			tar -xf ${panoply_harmonize_tar}
+  			tar -xf ${select_first([panoply_harmonize_tar, ""])}
   	  
     	  # get the root directory of the tar file
-    	  tar -tf ${panoply_harmonize_tar} > all_files_in_tar.txt
+    	  tar -tf ${select_first([panoply_harmonize_tar, ""])} > all_files_in_tar.txt
     	  tar_dir=$(pwd)/$(basename $(head -n 1 all_files_in_tar.txt))
     	  
-    	  Rscript /prot/proteomics/Projects/PGDAC/src/cosmo/validate_harmonize_tar.R $tar_dir ${ome_type}
+    	  Rscript /prot/proteomics/Projects/PGDAC/src/cosmo/validate_harmonize_tar.R $tar_dir ${select_first([ome_type, ""])}
   
-  			d1_file="$tar_dir/harmonized-data/${ome_type}-matrix.csv"
+  			d1_file="$tar_dir/harmonized-data/${select_first([ome_type, ""])}-matrix.csv"
   			d2_file="$tar_dir/harmonized-data/rna-matrix.csv"
   			sample_file="$tar_dir/harmonized-data/sample-info.csv"
   	

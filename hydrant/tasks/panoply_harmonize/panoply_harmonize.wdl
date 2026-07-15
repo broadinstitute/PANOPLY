@@ -55,7 +55,7 @@ task panoply_harmonize {
     else
       /prot/proteomics/Projects/PGDAC/src/run-pipeline.sh harmonize \
                   -f ${inputData} \
-                  -r ${analysisDir} \
+                  -r ${select_first([analysisDir, ""])} \
                   -t ${type} \
                   -c $codeDir \
                   -d $dataDir \

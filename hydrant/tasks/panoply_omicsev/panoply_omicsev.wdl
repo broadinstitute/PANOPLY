@@ -35,22 +35,22 @@ task panoply_omicsev {
   
   	if [ ${STANDALONE} == "false" ]; then
   	
-  	  tar -xf ${panoply_harmonize_tar_file}
+  	  tar -xf ${select_first([panoply_harmonize_tar_file, ""])}
   	  
   	  # get the root directory of the tar file
-  	  tar -tf ${panoply_harmonize_tar_file} > all_files_in_tar.txt
+  	  tar -tf ${select_first([panoply_harmonize_tar_file, ""])} > all_files_in_tar.txt
   	  tar_dir=$(pwd)/$(basename $(head -n 1 all_files_in_tar.txt))
   	  
-  	  Rscript /prot/proteomics/Projects/PGDAC/src/omicsev/validate_harmonize_tar.R $tar_dir ${ome_type}
+  	  Rscript /prot/proteomics/Projects/PGDAC/src/omicsev/validate_harmonize_tar.R $tar_dir ${select_first([ome_type, ""])}
   	  
-  	  data_files="$tar_dir/harmonized-data/${ome_type}-matrix.csv"
+  	  data_files="$tar_dir/harmonized-data/${select_first([ome_type, ""])}-matrix.csv"
   		rna_file="$tar_dir/harmonized-data/rna-matrix.csv"
   		sample_anno_file="$tar_dir/harmonized-data/sample-info.csv"
   	
     else
-      data_files="${sep=',' data_files}"
+      data_files="${if defined(data_files) then sep(',', select_first([data_files])) else ""}"
   		rna_file=${select_first([rna_file, ''])}
-  		sample_anno_file="${sample_anno_file}"
+  		sample_anno_file="${select_first([sample_anno_file, ""])}"
   	fi
   
     output_dir="$(pwd)/omicsev-data"
@@ -64,11 +64,11 @@ task panoply_omicsev {
     	/prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     	--module omicsev \
     	--master_yaml ${yaml_file} \
-    	${if defined(class_column_name) then "--omicsev_class_column_name " else ""}${class_column_name} \
-    	${if defined(batch_column_name) then "--omicsev_batch_column_name " else ""}${batch_column_name} \
-    	${if defined(data_log_transformed) then "--omicsev_data_log_transformed " else ""}${data_log_transformed} \
-    	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " else ""}${rna_log_transformed} \
-    	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " else ""}${do_function_prediction}
+    	${if defined(class_column_name) then "--omicsev_class_column_name " + select_first([class_column_name]) else ""} \
+    	${if defined(batch_column_name) then "--omicsev_batch_column_name " + select_first([batch_column_name]) else ""} \
+    	${if defined(data_log_transformed) then "--omicsev_data_log_transformed " + select_first([data_log_transformed]) else ""} \
+    	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " + select_first([rna_log_transformed]) else ""} \
+    	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " + select_first([do_function_prediction]) else ""}
   
   	if [ ${STANDALONE} == "false" ]; then
   		cp final_output_params.yaml $tar_dir/updated-master-parameter.yaml

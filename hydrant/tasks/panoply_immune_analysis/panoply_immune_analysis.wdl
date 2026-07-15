@@ -43,7 +43,7 @@ task panoply_immune_analysis {
                   -rna ${inputData} \
                   -t ${type} \
                   -c $codeDir \
-                  -r ${analysisDir} \
+                  -r ${select_first([analysisDir, ""])} \
                   -o ${outFile} \
                   ${"-g " + groupsFile} \
                   ${"-z " + fdr} \

@@ -14,7 +14,7 @@ task panoply_ptm_normalization {
       File ptm_gct
       File yaml
 
-      String? output_prefix = basename (ptm_gct, ".gct")
+      String output_prefix = basename (ptm_gct, ".gct")
 
       String? accession_number_col
       String? accession_numbers_col

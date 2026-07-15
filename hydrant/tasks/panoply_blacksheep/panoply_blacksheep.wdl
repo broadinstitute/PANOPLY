@@ -35,8 +35,8 @@ task panoply_blacksheep {
 
         Rscript /prot/proteomics/Projects/PGDAC/src/blacksheep_rcode.R "${input_gct}" "final_output_params.yaml"
 
-        if [ "${groups_file}" != "" ]; then
-            cp ${groups_file} "blacksheep"
+        if [ "${defined(groups_file)}" = "true" ]; then
+            cp ${select_first([groups_file, ""])} "blacksheep"
         fi
 
         tar -czvf "${output_prefix}_blacksheep.tar" blacksheep final_output_params.yaml

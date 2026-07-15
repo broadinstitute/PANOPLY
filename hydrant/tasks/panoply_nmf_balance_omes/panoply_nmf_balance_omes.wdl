@@ -25,7 +25,7 @@ task panoply_nmf_balance_omes {
         set -euo pipefail
 
         ## run balanace filter
-        Rscript /home/pgdac/src/filter-gcts-to-balance-omes.R -f ${sep="," ome_gcts} -l ${sep="," ome_labels} -t ${select_first([tol, "0.01"])} -v ${select_first([var, "0.9"])} -z ${select_first([zscore_mode, "rowcol"])}
+        Rscript /home/pgdac/src/filter-gcts-to-balance-omes.R -f ${sep(",", ome_gcts)} -l ${sep(",", ome_labels)} -t ${select_first([tol, "0.01"])} -v ${select_first([var, "0.9"])} -z ${select_first([zscore_mode, "rowcol"])}
        
     }
 

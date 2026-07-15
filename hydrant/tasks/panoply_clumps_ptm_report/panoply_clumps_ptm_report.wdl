@@ -20,7 +20,7 @@ task panoply_clumps_ptm_report {
 
     command {
         set -euo pipefail
-        Rscript /prot/proteomics/Projects/PGDAC/src/clumps_ptm-renderRMD.R -i ${sep="," postprocess_results} ${"-m " + mapping_params} ${"-x " + label}
+        Rscript /prot/proteomics/Projects/PGDAC/src/clumps_ptm-renderRMD.R -i ${sep(",", postprocess_results)} ${"-m " + mapping_params} ${"-x " + label}
     }
 
     output {

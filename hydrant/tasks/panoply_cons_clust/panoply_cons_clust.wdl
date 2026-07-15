@@ -45,7 +45,7 @@ task panoply_cons_clust {
             -f ${inputData} \ 
             -t ${type} \ 
             -c $codeDir \
-            -r ${analysisDir} \
+            -r ${select_first([analysisDir, ""])} \
             -o ${outFile} \
             -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
             ${"-g " + groupsFile} \

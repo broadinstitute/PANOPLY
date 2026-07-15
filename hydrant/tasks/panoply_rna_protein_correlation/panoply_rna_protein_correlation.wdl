@@ -47,7 +47,7 @@ task panoply_rna_protein_correlation {
                   -c $codeDir \
                   -d $dataDir \
                   -rna ${rnaExpr} \
-                  -r ${analysisDir} \
+                  -r ${select_first([analysisDir, ""])} \
                   -o ${outFile} \
                   -p "/prot/proteomics/Projects/PGDAC/src/new-config-custom.r" \
                   -y "final_output_params.yaml";

@@ -50,7 +50,7 @@ task panoply_association {
                   -f ${inputData} \
                   -t ${type} \
                   -c $codeDir \
-                  -r ${analysisDir} \
+                  -r ${select_first([analysisDir, ""])} \
                   -o ${outFile} \
                   -g ${groupsFile} \
                   -y "final_output_params.yaml" \

@@ -6,9 +6,9 @@ version 1.0
 task panoply_accumulate {
   input {
     File input_tar
-    String? output_tar = "panoply_contrasts.tar"
+    String output_tar = "panoply_contrasts.tar"
     String module
-    String? analysisDir = "input_tarball"
+    String analysisDir = "input_tarball"
 
     Int? memory
     Int? disk_space
