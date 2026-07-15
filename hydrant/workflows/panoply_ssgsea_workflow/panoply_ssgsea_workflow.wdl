@@ -52,7 +52,6 @@ workflow panoply_ssgsea_workflow {
 		call preprocess_wdl.panoply_preprocess_gct as preprocess {
 		input:
 			input_ds = input_ds,
-			gene_col = gene_col,
 			yaml_file = yaml_file,
 
 			level = level,
