@@ -71,7 +71,7 @@ workflow panoply_clumps_ptm_workflow {
 		call analysis_wdl.panoply_clumps_ptm as analysis {
 		    input:
 		    	diff_exp_file = diff_exp,
-		    	var_sites_file = "${if defined(mapping_file) then mapping_file else mapping.filt_results}",
+		    	var_sites_file = select_first([mapping_file, mapping.filt_results]),
 		        PDB_ref_bucket = PDB_ref_bucket,
 				accession_col = accession_col,
 				variable_sites_col = variable_sites_col,
@@ -90,7 +90,7 @@ workflow panoply_clumps_ptm_workflow {
 	call report_wdl.panoply_clumps_ptm_report as report {
 	    input:
 	    	postprocess_results = postprocess.results, 			 # array of results AND figures from postprocess module
-	    	mapping_params = "${if defined(mapping_params) then mapping_params else mapping.mapping_params}",
+	    	mapping_params = select_first([mapping_params, mapping.mapping_params]),
 	    	label = output_prefix
 	}
 

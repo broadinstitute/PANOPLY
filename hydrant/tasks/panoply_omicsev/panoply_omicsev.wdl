@@ -120,10 +120,10 @@ task panoply_omicsev {
 
     runtime {
     	docker: "broadcptacdev/panoply_omicsev:latest"
-        memory: "${if defined(memory) then memory else '96'}GB"
-        disks : "local-disk ${if defined(disk_space) then disk_space else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
-        cpu : "${if defined(num_threads) then num_threads else '6'}"
+        memory: "${select_first([memory, 96])}GB"
+        disks : "local-disk ${select_first([disk_space, 10])} HDD"
+        preemptible : select_first([num_preemptions, 0])
+        cpu : select_first([num_threads, 6])
     }
     output {
         File report = "omicsev_" + label + ".html"

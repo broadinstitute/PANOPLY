@@ -52,9 +52,9 @@ task panoply_mimp {
 
     runtime {
         docker : "broadcptacdev/panoply_mimp:latest"
-        memory: "${if defined(memory) then memory else '2'}GB"
-        disks : "local-disk ${if defined(disk_space) then disk_space else '10'} HDD"
-        preemptible : "${if defined(num_preemptions) then num_preemptions else '0'}"
+        memory: "${select_first([memory, 2])}GB"
+        disks : "local-disk ${select_first([disk_space, 10])} HDD"
+        preemptible : select_first([num_preemptions, 0])
     }
 
     meta {

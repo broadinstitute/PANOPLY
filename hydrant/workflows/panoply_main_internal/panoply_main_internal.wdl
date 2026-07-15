@@ -64,7 +64,7 @@ workflow panoply_main_internal {
     input: 
       inputData = input_ome, 
       standalone = "true",
-      association_groups = "${if defined(groups_file_association) then groups_file_association else groups_file}",
+      association_groups = select_first([groups_file_association, groups_file]),
       geneset_db=geneset_db,
       ome_type = ome_type,
       job_identifier = job_identifier,
@@ -84,7 +84,7 @@ workflow panoply_main_internal {
         ome_gcts=[input_ome],
 
         yaml_file = yaml,
-        groups_file = "${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",
+        groups_file = select_first([groups_file_nmf, groups_file]),
         gene_set_database = geneset_db
     }
   }
@@ -96,7 +96,7 @@ workflow panoply_main_internal {
       master_yaml = yaml,
       output_prefix = job_identifier,
       type = ome_type,
-      groups_file="${if defined(groups_file_blacksheep) then groups_file_blacksheep else groups_file}"
+      groups_file=select_first([groups_file_blacksheep, groups_file])
   }
 
 
@@ -116,7 +116,7 @@ workflow panoply_main_internal {
           yaml=yaml,
           analysisDir=job_identifier,
           label=job_identifier,
-          groupsFile="${if defined(groups_file_immune) then groups_file_immune else groups_file}"
+          groupsFile=select_first([groups_file_immune, groups_file])
     }
   }
 

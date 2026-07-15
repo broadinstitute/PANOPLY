@@ -181,7 +181,7 @@ workflow panoply_unified_workflow {
           omic_gct = pair.right,
           ome_type = pair.left,
           output_prefix = "${job_id}-${pair.left}",
-          groups_file = "${if defined(groups_file_metaboanlayst) then groups_file_metaboanlayst else groups_file}",
+          groups_file = select_first([groups_file_metaboanlayst, groups_file]),
           yaml_file = yaml
       }
     }
@@ -195,7 +195,7 @@ workflow panoply_unified_workflow {
 
         label = job_id,                     # default parameters & figure colors
         yaml_file = yaml,                   # default parameters & figure colors
-        groups_file="${if defined(groups_file_nmf) then groups_file_nmf else groups_file}",
+        groups_file=select_first([groups_file_nmf, groups_file]),
 
         gene_set_database=geneset_db,
 

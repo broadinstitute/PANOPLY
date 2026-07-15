@@ -180,10 +180,10 @@ workflow panoply_main {
             CNAcorr_tarball = panoply_cna_correlation.outputs,
             subset_list_file = subset_list_file,
             cmap_level5_data = cmap_level5_data,
-            annotation_pathway_db = "${if defined(geneset_db_cmap) then geneset_db_cmap else geneset_db}",
+            annotation_pathway_db = select_first([geneset_db_cmap, geneset_db]),
             subset_bucket = subset_bucket,
             n_permutations = cmap_n_permutations,
-            cmap_enrichment_groups = "${if defined(groups_file_cmap_enrichment) then groups_file_cmap_enrichment else groups_file}",
+            cmap_enrichment_groups = select_first([groups_file_cmap_enrichment, groups_file]),
             yaml = yaml
           
         }
