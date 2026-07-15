@@ -97,7 +97,7 @@ workflow panoply_association_workflow {
       type=dataType,
       standalone=standalone,
       analysisDir=analysisDir,
-      groupsFile=groupsFile,
+      groupsFile=select_first([groupsFile]),
       yaml=yaml,
       fdr_assoc=fdr_assoc,
       sample_na_max=sample_na_max,

@@ -103,10 +103,10 @@ workflow panoply_nmf_internal_workflow {
 			input:
 				input_ds=postprocess.feature_matrix_w,
 				preprocess_gct=true,
-				gene_set_database=gene_set_database,
+				gene_set_database=select_first([gene_set_database]),
 				gene_col=gene_column,
 				tolerate_min_overlap_err="true", # tolerate having < min_overlap genes in common with gene_set_database, since W-matrix feature space may be small for some ome-types
-				yaml_file=yaml_file,
+				yaml_file=select_first([yaml_file]),
 				output_prefix=label
 				
 		}

@@ -33,7 +33,7 @@ task panoply_ssgsea {
 		set -euo pipefail
 		
 		# run ssgsea/ptm-sea
-		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${select_first([output_prefix, NA])} -n ${select_first([sample_norm_type, NA])} -w ${select_first([weight, NA])} -c ${select_first([correl_type, NA])} -t ${select_first([statistic, NA])} -s ${select_first([output_score_type, NA])} -p ${select_first([nperm, NA])} -m ${select_first([min_overlap, NA])} ${"-q " + tolerate_min_overlap_err} -g ${select_first([global_fdr, NA])} -z /home/pgdac
+		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${select_first([output_prefix, "NA"])} -n ${select_first([sample_norm_type, "NA"])} -w ${select_first([weight, "NA"])} -c ${select_first([correl_type, "NA"])} -t ${select_first([statistic, "NA"])} -s ${select_first([output_score_type, "NA"])} -p ${select_first([nperm, "NA"])} -m ${select_first([min_overlap, "NA"])} ${"-q " + tolerate_min_overlap_err} -g ${select_first([global_fdr, "NA"])} -z /home/pgdac
 
 
 		## tar results

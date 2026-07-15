@@ -73,7 +73,7 @@ workflow panoply_ssgsea_workflow {
 	## Run ssGSEA
 	call ssgsea_wdl.panoply_ssgsea as ssgsea {
 	input:
-		input_ds = if defined(preprocess.result) then preprocess.result else input_ds,
+		input_ds = select_first([preprocess.result, input_ds]),
 		gene_set_database = gene_set_database,
 		output_prefix = output_prefix,
 		yaml_file = yaml_file,
