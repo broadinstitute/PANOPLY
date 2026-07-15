@@ -18,7 +18,7 @@ workflow panoply_main_internal {
     String job_identifier
     String ome_type
     String? run_ptmsea # "true" or "false"
-    String? run_nmf = "true"
+    String run_nmf = "true"
 
     ## inputs
     File input_ome

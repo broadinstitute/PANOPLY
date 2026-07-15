@@ -28,8 +28,8 @@ workflow panoply_main {
     String ome_type
     String? run_ptmsea # "true" or "false"
     String run_cmap   # "true" or "false"
-    String? run_nmf = "true"
-    String? run_omicsev = "true"
+    String run_nmf = "true"
+    String run_omicsev = "true"
 
     ## inputs
     File input_pome

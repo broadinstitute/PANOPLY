@@ -23,7 +23,7 @@ workflow panoply_nmf_internal_workflow {
 		File? groups_file
 
 		## ssGSEA parameters
-		Boolean? run_ssgsea=true
+		Boolean run_ssgsea=true
 		File? gene_set_database
 
 		## Balance Toggle
