@@ -64,7 +64,7 @@ task panoply_cosmo {
 			--module cosmo \
 			--master_yaml ${yaml_file} \
 			${if defined(run_cosmo) then "--cosmo_run_cosmo " + "'${run_cosmo}'" else ""} \
-			${if defined(sample_label) then "--cosmo_sample_label " + "'${sample_label}'" else ""}
+			${"--cosmo_sample_label " + sample_label}
 
     yaml_file="final_output_params.yaml"
 		R -e "cat(tolower(yaml::read_yaml('$yaml_file')[['cosmo.params']][['run_cosmo']]), file = 'run_cosmo.txt', sep = '\n')"

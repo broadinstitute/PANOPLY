@@ -64,8 +64,8 @@ task panoply_omicsev {
     	/prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
     	--module omicsev \
     	--master_yaml ${yaml_file} \
-    	${if defined(class_column_name) then "--omicsev_class_column_name " + select_first([class_column_name]) else ""} \
-    	${if defined(batch_column_name) then "--omicsev_batch_column_name " + select_first([batch_column_name]) else ""} \
+    	${"--omicsev_class_column_name " + class_column_name} \
+    	${"--omicsev_batch_column_name " + batch_column_name} \
     	${if defined(data_log_transformed) then "--omicsev_data_log_transformed " + select_first([data_log_transformed]) else ""} \
     	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " + select_first([rna_log_transformed]) else ""} \
     	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " + select_first([do_function_prediction]) else ""}
