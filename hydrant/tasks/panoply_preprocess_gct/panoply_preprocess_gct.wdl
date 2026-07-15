@@ -36,7 +36,7 @@ task panoply_preprocess_gct {
 		set -euo pipefail
 		
 		# prepare GCT file
-		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${select_first([level, NA])} -t ${select_first([id_type, NA])} -o ${select_first([id_type_out, NA])} -a ${select_first([acc_type, NA])} -s ${select_first([seqwin_col, NA])} --gene_symbol_column ${select_first([gene_col, NA])} -k ${select_first([humanize_gene, NA])}  -v ${select_first([SGT_col, NA])} -d ${select_first([loc, NA])} -m ${select_first([mode, NA])} -r "${select_first([mod_res, NA])}" -p '${select_first([mod_type, NA])}' -u TRUE -z /home/pgdac/src
+		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${select_first([level, "NA"])} -t ${select_first([id_type, "NA"])} -o ${select_first([id_type_out, "NA"])} -a ${select_first([acc_type, "NA"])} -s ${select_first([seqwin_col, "NA"])} --gene_symbol_column ${select_first([gene_col, "NA"])} -k ${select_first([humanize_gene, "NA"])}  -v ${select_first([SGT_col, "NA"])} -d ${select_first([loc, "NA"])} -m ${select_first([mode, "NA"])} -r "${select_first([mod_res, "NA"])}" -p '${select_first([mod_type, "NA"])}' -u TRUE -z /home/pgdac/src
 
 		mkdir file_output
 		mv `cat fn.out` file_output/ # move the output file from preprocessGCR.R into a folder
