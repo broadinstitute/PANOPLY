@@ -49,7 +49,7 @@ task panoply_cmap_connectivity {
       mkdir ${scores_dir}
     fi
     # ... and copy subset scores
-    mv ${sep(" ", subset_scores)} ${scores_dir}
+    mv ${sep=" " subset_scores} ${scores_dir}
 
     # same for perumations scores ...
     if [ ${permutations} -gt 0 ]; then

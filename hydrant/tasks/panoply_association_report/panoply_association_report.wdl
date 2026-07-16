@@ -27,7 +27,7 @@ task panoply_association_report {
         ${"--fdr_value " + fdr_value}
 
         # compile tars into useable format, equivalent to scatter_processing() in panoply_downloads
-        bash /prot/proteomics/Projects/PGDAC/src/compile_tars.sh ${sep(' ', ssgsea_assoc_tars)}
+        bash /prot/proteomics/Projects/PGDAC/src/compile_tars.sh ${sep=' ' ssgsea_assoc_tars}
 
         Rscript /prot/proteomics/Projects/PGDAC/src/rmd_association.r "ssgsea_assoc.tar" "final_output_params.yaml" "${label}" "${type}"
     }

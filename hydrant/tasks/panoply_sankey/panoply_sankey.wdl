@@ -27,7 +27,7 @@ task panoply_sankey {
     command {
         set -euo pipefail
 
-        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r -x ${label} -f ${sep(",", annot_files)} -l ${sep(",", annot_file_labels)} ${"-j " + annot_file_primary} ${"-m " + annot_label_primary} ${"-i " + id_column} -a ${annot_column} ${"-p " + annot_prefix} ${"-c '" + color_str + "'"}
+        Rscript /prot/proteomics/Projects/PGDAC/src/sankey.r -x ${label} -f ${sep="," annot_files} -l ${sep="," annot_file_labels} ${"-j " + annot_file_primary} ${"-m " + annot_label_primary} ${"-i " + id_column} -a ${annot_column} ${"-p " + annot_prefix} ${"-c '" + color_str + "'"}
         tar -czvf "${label}_sankey_diagrams.tar" sankey-*html sankey-*pdf sankey_labels.txt # tar all HTMLs and PDFs, and the TXT with all file-labels
     }
 

@@ -41,7 +41,7 @@ task panoply_download {
     fi
 
     index=0
-    for file in ${sep(' ', ssgsea_assoc_tars)} ; do
+    for file in ${sep=' ' ssgsea_assoc_tars} ; do
       basefilename=$(basename $file)
       index=$((index+1))
       cp $file ${ssgsea_assoc_dir}/$basefilename-$index.tar;

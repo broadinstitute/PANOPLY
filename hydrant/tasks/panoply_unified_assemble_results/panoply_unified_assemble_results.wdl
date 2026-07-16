@@ -56,78 +56,78 @@ task panoply_unified_assemble_results {
 
     ### Dump results files into the given folders
     # MAIN 
-    if [ ${sep='' select_all(main_full))} != '' ]; then
-      mv ${sep=' ' select_all(main_full))} results/proteogenomics_analysis
+    if [ ${sep='' select_all(main_full)} != '' ]; then
+      mv ${sep=' ' select_all(main_full)} results/proteogenomics_analysis
       for filename in results/proteogenomics_analysis/*.tar;do tar -C results/proteogenomics_analysis -xvf $filename;rm $filename;done
     fi
 
-    if [ ${sep='' select_all(main_summary))} != '' ]; then
+    if [ ${sep='' select_all(main_summary)} != '' ]; then
       mkdir results/proteogenomics_analysis/summary_files
-      mv ${sep=' ' select_all(main_summary))} results/proteogenomics_analysis/summary_files
+      mv ${sep=' ' select_all(main_summary)} results/proteogenomics_analysis/summary_files
       for filename in results/proteogenomics_analysis/summary_files/*.tar;do tar -C results/proteogenomics_analysis/summary_files -xvf $filename;rm $filename;done
     fi
     
-    if [ ${sep='' select_all(cmap_output))} != '' ]; then
+    if [ ${sep='' select_all(cmap_output)} != '' ]; then
       mkdir results/proteogenomics_analysis/proteome_cmap_analysis
-      mv ${sep=' ' select_all(cmap_output))} results/proteogenomics_analysis/proteome_cmap_analysis
+      mv ${sep=' ' select_all(cmap_output)} results/proteogenomics_analysis/proteome_cmap_analysis
       for filename in results/proteogenomics_analysis/proteome_cmap_analysis/*.tar;do tar -C results/proteogenomics_analysis/proteome_cmap_analysis -xvf $filename;rm $filename;done
     fi
     
-    if [ ${sep='' select_all(cmap_ssgsea_output))} != '' ]; then
-      mv ${sep=' ' select_all(cmap_ssgsea_output))} results/proteogenomics_analysis/proteome_cmap_analysis
+    if [ ${sep='' select_all(cmap_ssgsea_output)} != '' ]; then
+      mv ${sep=' ' select_all(cmap_ssgsea_output)} results/proteogenomics_analysis/proteome_cmap_analysis
       for filename in results/proteogenomics_analysis/proteome_cmap_analysis/*.tar;do tar -C results/proteogenomics_analysis/proteome_cmap_analysis -xvf $filename;rm $filename;done
     fi
 
     # MAIN REPORTS
     mkdir results/proteogenomics_analysis/all_html_reports
-    if [ ${sep='' select_all(norm_report))} != '' ]; then
-      cp ${sep=' ' select_all(norm_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(norm_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(norm_report)} != '' ]; then
+      cp ${sep=' ' select_all(norm_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(norm_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(rna_corr_report))} != '' ]; then
-      cp ${sep=' ' select_all(rna_corr_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(rna_corr_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(rna_corr_report)} != '' ]; then
+      cp ${sep=' ' select_all(rna_corr_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(rna_corr_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(cna_corr_report))} != '' ]; then
-      cp ${sep=' ' select_all(cna_corr_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(cna_corr_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(cna_corr_report)} != '' ]; then
+      cp ${sep=' ' select_all(cna_corr_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(cna_corr_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(ssgsea_ome_report))} != '' ]; then
-      cp ${sep=' ' select_all(ssgsea_ome_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(ssgsea_ome_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(ssgsea_ome_report)} != '' ]; then
+      cp ${sep=' ' select_all(ssgsea_ome_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(ssgsea_ome_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(ptmsea_ome_report))} != '' ]; then
-      cp ${sep=' ' select_all(ptmsea_ome_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(ptmsea_ome_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(ptmsea_ome_report)} != '' ]; then
+      cp ${sep=' ' select_all(ptmsea_ome_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(ptmsea_ome_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(omicsev_report))} != '' ]; then
-      cp ${sep=' ' select_all(omicsev_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(omicsev_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(omicsev_report)} != '' ]; then
+      cp ${sep=' ' select_all(omicsev_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(omicsev_report)} reports/proteogenomics_analysis
     fi
     
-    if [ ${sep='' select_all(cosmo_report))} != '' ]; then
-      cp ${sep=' ' select_all(cosmo_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(cosmo_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(cosmo_report)} != '' ]; then
+      cp ${sep=' ' select_all(cosmo_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(cosmo_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(sampleqc_report))} != '' ]; then
-      cp ${sep=' ' select_all(sampleqc_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(sampleqc_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(sampleqc_report)} != '' ]; then
+      cp ${sep=' ' select_all(sampleqc_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(sampleqc_report)} reports/proteogenomics_analysis
     fi
 
-    if [ ${sep='' select_all(assoc_report))} != '' ]; then
-      cp ${sep=' ' select_all(assoc_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(assoc_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(assoc_report)} != '' ]; then
+      cp ${sep=' ' select_all(assoc_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(assoc_report)} reports/proteogenomics_analysis
     fi
     
-    if [ ${sep='' select_all(blacksheep_report))} != '' ]; then
-      cp ${sep=' ' select_all(blacksheep_report))} results/proteogenomics_analysis/all_html_reports
-      mv ${sep=' ' select_all(blacksheep_report))} reports/proteogenomics_analysis
+    if [ ${sep='' select_all(blacksheep_report)} != '' ]; then
+      cp ${sep=' ' select_all(blacksheep_report)} results/proteogenomics_analysis/all_html_reports
+      mv ${sep=' ' select_all(blacksheep_report)} reports/proteogenomics_analysis
     fi
 
 

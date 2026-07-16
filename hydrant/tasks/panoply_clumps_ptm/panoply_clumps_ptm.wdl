@@ -39,9 +39,9 @@ task panoply_clumps_ptm {
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Untarring PDB Archive"
 		pdb_dir=pdbs/ftp.wwpdb.org/pub/pdb/data/structures/divided/pdb/
 		mkdir -p $pdb_dir # make PDB directory
-		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep(" ", PDB_DIR)} # untar each tar file
+		parallel -j ${num_threads} "tar -C $pdb_dir -xf" ::: ${sep=" " PDB_DIR} # untar each tar file
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished untarring PDB Archive"
-		parallel -j ${num_threads} 'rm' ::: ${sep(' ', PDB_DIR)} # remove tar-files to save space
+		parallel -j ${num_threads} 'rm' ::: ${sep=' ' PDB_DIR} # remove tar-files to save space
 		echo "[`date +'%Y-%m-%d %T'`] INFO: Finished removing PDB Tars"
 
 		mkdir clumpsptm_runs

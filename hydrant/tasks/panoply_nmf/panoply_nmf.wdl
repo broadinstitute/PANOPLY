@@ -37,7 +37,7 @@ task panoply_nmf {
 	command {
 		set -euo pipefail
 		
-		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep(",", ome_gcts)} -o ${sep(",", ome_labels)} \
+		Rscript /prot/proteomics/Projects/PGDAC/src/nmf.r -d ${sep="," ome_gcts} -o ${sep="," ome_labels} \
 			${"-f " + sd_filt_min} ${"-g " + sd_filt_mode} \
 			${"-u " + z_score} ${"-v " + z_score_mode} \
 			${"-a " + gene_column} ${"-i " + organism_id} \

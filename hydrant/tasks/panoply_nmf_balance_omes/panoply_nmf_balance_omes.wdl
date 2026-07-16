@@ -25,7 +25,7 @@ task panoply_nmf_balance_omes {
         set -euo pipefail
 
         ## run balanace filter
-        Rscript /home/pgdac/src/filter-gcts-to-balance-omes.R -f ${sep(",", ome_gcts)} -l ${sep(",", ome_labels)} -t ${select_first([tol, "0.01"])} -v ${select_first([var, "0.9"])} -z ${select_first([zscore_mode, "rowcol"])}
+        Rscript /home/pgdac/src/filter-gcts-to-balance-omes.R -f ${sep=',' ome_gcts} -l ${sep=',' ome_labels} -t ${select_first([tol, "0.01"])} -v ${select_first([var, "0.9"])} -z ${select_first([zscore_mode, "rowcol"])}
        
     }
 
@@ -36,10 +36,10 @@ task panoply_nmf_balance_omes {
 
     runtime {
         docker : "broadcptacdev/panoply_nmf_balance_omes:latest"
-        memory: select_first ([memory, 16]) + "GB"
-        disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
-        cpu   : select_first ([num_threads, 1]) + ""
-        preemptible : select_first ([num_preemptions, 0])
+        memory: "${select_first([memory, 16])}GB"
+        disks : "local-disk ${select_first([disk_space, 10])} SSD"
+        cpu   : select_first([num_threads, 1])
+        preemptible : select_first([num_preemptions, 0])
     }
 
     meta {
