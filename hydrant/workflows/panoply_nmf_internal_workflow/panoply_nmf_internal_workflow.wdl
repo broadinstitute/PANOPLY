@@ -62,7 +62,7 @@ workflow panoply_nmf_internal_workflow {
 
 	call panoply_nmf_wdl.panoply_nmf as nmf {
 		input:
-			ome_gcts=if defined(balance.ome_gcts_balanced) then balance.ome_gcts_balanced else ome_gcts,
+			ome_gcts=select_first([balance.ome_gcts_balanced, ome_gcts]),
 			ome_labels=ome_labels,
 			output_prefix=label,
 			yaml_file=yaml_file,

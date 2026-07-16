@@ -131,7 +131,7 @@ workflow panoply_nmf_workflow {
 			input:
 				label = label,
 
-				annot_files = so_nmf.nmf_membership,			## array of so-NMF results
+				annot_files = select_first([so_nmf.nmf_membership]),			## array of so-NMF results
 				annot_file_labels = select_pairs.pair_string,	## array of ome labels
 
 				annot_file_primary = mo_nmf.nmf_membership, 	## single file with mo-NMF results

@@ -59,7 +59,7 @@ workflow panoply_clumps_ptm_workflow {
 				PDB_ref_bucket = PDB_ref_bucket,
 				UNIPROT_SWISSPROT = UNIPROT_SWISSPROT,
 				SIFTS_DB = SIFTS_DB,
-				FASTA_ref_file = FASTA_ref_file,
+				FASTA_ref_file = select_first([FASTA_ref_file]),
 				accession_col = accession_col,
 				variable_sites_col = variable_sites_col,
 				yaml_file = yaml_file,

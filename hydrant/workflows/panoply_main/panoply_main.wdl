@@ -77,7 +77,7 @@ workflow panoply_main {
       input:
         inputData = input_pome,
         type = ome_type,
-        rnaExpr = input_rna,
+        rnaExpr = select_first([input_rna]),
         analysisDir = job_identifier,
         standalone = "true",
         yaml = yaml
@@ -97,8 +97,8 @@ workflow panoply_main {
     call harmonize_wdl.panoply_harmonize {
       input:
         inputData = panoply_rna_protein_correlation.outputs,
-        rnaExpr = input_rna,
-        cnaExpr = input_cna,
+        rnaExpr = select_first([input_rna]),
+        cnaExpr = select_first([input_cna]),
         standalone = standalone,
         type = ome_type,
         yaml = yaml,

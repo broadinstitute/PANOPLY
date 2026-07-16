@@ -122,19 +122,20 @@ workflow panoply_unified_workflow {
   }
 
   ### MAIN for RNA:
-  call main_internal_wdl.panoply_main_internal as rna {
-    input:
-      input_ome=rna_data,
-      ome_type="rna",
-      job_identifier="${job_id}-rna",
-      geneset_db=geneset_db,
-      run_ptmsea=false,
-      ptm_db=ptm_db,
-      run_nmf = "false",
-      groups_file=groups_file,
-      yaml=yaml
+  if (defined(rna_data)) {
+    call main_internal_wdl.panoply_main_internal as rna {
+      input:
+        input_ome=select_first([rna_data]),
+        ome_type="rna",
+        job_identifier="${job_id}-rna",
+        geneset_db=geneset_db,
+        run_ptmsea=false,
+        ptm_db=ptm_db,
+        run_nmf = "false",
+        groups_file=groups_file,
+        yaml=yaml
+    }
   }
-
 
   ### ClumpsPTM
   # check yaml default for run.clumpsptm (Terra param takes precedence)
@@ -150,7 +151,7 @@ workflow panoply_unified_workflow {
         pSTY_gct = phospho_ome,
         acK_gct = acetyl_ome,
         ubK_gct = ubiquityl_ome,
-        groupsFile = groups_file_clumpsptm,
+        groupsFile = select_first([groups_file_clumpsptm]), # NOTE: this will fail somewhat lazily if groups_file_clumpsptm is not provided
         output_prefix = job_id,
         yaml_file = yaml
     }
@@ -164,7 +165,7 @@ workflow panoply_unified_workflow {
       yaml = yaml,
       param_lookup = "run.metab"
   }
-  if ( "${metabol_ome}" != '' && check_metab_default.param_boolean ){
+  if ( defined(metabol_ome) && check_metab_default.param_boolean ){
     # Proteome and Transcriptome pair
     Array[Pair[String?, File?]] pg_pairs_input =
       [ ("proteome", prote_ome),
@@ -177,7 +178,7 @@ workflow panoply_unified_workflow {
     scatter (pair in pg_pairs.pairs) {
       call metab_wdl.panoply_metaboanalyst_workflow as metab {
         input:
-          meta_gct = metabol_ome,
+          meta_gct = select_first([metabol_ome]),
           omic_gct = pair.right,
           ome_type = pair.left,
           output_prefix = "${job_id}-${pair.left}",
