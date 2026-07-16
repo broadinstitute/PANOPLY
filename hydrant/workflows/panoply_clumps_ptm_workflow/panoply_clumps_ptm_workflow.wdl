@@ -22,7 +22,7 @@ workflow panoply_clumps_ptm_workflow {
 
 		## Default Database Files		
 		# Google-Cloud Bucket with PDB Directory, split into tarfiles
-		String PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars"
+		String PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars/"
 		# Uniprot FASTA reference file
 		File UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
 		# SIFTS database
