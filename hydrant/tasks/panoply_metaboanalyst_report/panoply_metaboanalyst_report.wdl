@@ -26,7 +26,7 @@ task panoply_metaboanalyst_report {
     }
 
     runtime {
-        docker : "broadcptacdev/panoply_metaboanalyst_report:latest"
+        docker : "broadcptacdev/panoply_metaboanalyst_report:DEV"
         memory: select_first ([memory, 16]) + "GB"
         disks : "local-disk " + select_first ([disk_space, 10]) + " SSD"
         cpu : select_first ([num_threads, 1]) + ""
