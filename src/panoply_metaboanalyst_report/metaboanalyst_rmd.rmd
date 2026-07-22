@@ -265,13 +265,13 @@ send_param_to_js(multiomic, "multiomic")
 # Results
 
 ```{=html}
-<!-- Load jquery.js -->
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+<!-- Load jquery.js (bundled offline at Docker build time, see Dockerfile) -->
+<script src="/prot/proteomics/Projects/PGDAC/src/lib/jquery.min.js"></script>
 <!-- Load d3.js -->
-<script src="https://d3js.org/d3.v4.js"></script>
+<script src="/prot/proteomics/Projects/PGDAC/src/lib/d3.v4.js"></script>
 <!-- Load DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/2.1.8/css/dataTables.dataTables.css" />
-<script src="https://cdn.datatables.net/2.1.8/js/dataTables.js"></script>
+<link rel="stylesheet" href="/prot/proteomics/Projects/PGDAC/src/lib/dataTables.dataTables.css" />
+<script src="/prot/proteomics/Projects/PGDAC/src/lib/dataTables.js"></script>
 ```
 
 

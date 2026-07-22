@@ -8,6 +8,10 @@ ENV wd /home/pgdac/
 COPY . $wd
 WORKDIR $wd
 
+## add curl
+RUN apt-get update
+RUN apt-get install curl
+
 ## install R-packages
 RUN R -e "devtools::install_github('cmap/morpheus.R')"
 RUN R -e "library(pacman);p_install('DT')"

@@ -70,7 +70,7 @@ rmd_cna_analysis <- function(tar.file, label='pipeline-test', type, fdr.sig=0.05
     rmd <- ''
     rmd <- paste(rmd, '\n
                  
-\n<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+\n<script src="/home/pgdac/lib/jquery-3.3.1.min.js"></script>
 
 \n<style>
 \n.zoomDiv {
