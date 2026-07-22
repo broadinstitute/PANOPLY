@@ -4,9 +4,11 @@ MAINTAINER proteogenomics@broadinstitute.org
 ## set to stable repository
 RUN sed -Ei 's/CRAN = .+?\), download/CRAN = \"packagemanager.rstudio.com\/cran\/2021-12-31\"\), download/' /usr/local/lib/R/etc/Rprofile.site # for rbase docker
 
-## disable BiocManager's startup repository/version check, which stalls ~60s per R session
-## (including each PSOCK cluster worker) when there is no internet access at runtime
-RUN echo 'options(BiocManager.check_repositories = FALSE)' >> /usr/local/lib/R/etc/Rprofile.site
+## disable BiocManager's online version-diagnostics check (fetches bioconductor.org/config.yaml
+## on every R startup, including each PSOCK cluster worker), which stalls ~60s per session
+## when there is no internet access at runtime
+ENV R_BIOCONDUCTOR_ONLINE_VERSION_DIAGNOSTICS=FALSE
+RUN echo 'options(BiocManager.online_version_diagnostics = FALSE)' >> /usr/local/lib/R/etc/Rprofile.site
 
 COPY --from=broadcptacdev/panoply_common:latest /prot/proteomics/Projects/PGDAC/src /prot/proteomics/Projects/PGDAC/src
 
