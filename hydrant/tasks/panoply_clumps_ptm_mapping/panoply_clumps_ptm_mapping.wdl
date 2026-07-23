@@ -10,11 +10,8 @@ task panoply_clumps_ptm_mapping {
 		File? acK_gct
 		File? ubK_gct
 
-		# Google-Cloud Bucket with PDB Directory split into tarfiles
-		String PDB_ref_bucket
-
-		# List of Tarfiles in PDB directory
-		Array[File]+ PDB_DIR = [ PDB_ref_bucket + "pdbs_0.tar", PDB_ref_bucket + "pdbs_1.tar", PDB_ref_bucket + "pdbs_2.tar", PDB_ref_bucket + "pdbs_3.tar", PDB_ref_bucket + "pdbs_4.tar", PDB_ref_bucket + "pdbs_5.tar", PDB_ref_bucket + "pdbs_6.tar", PDB_ref_bucket + "pdbs_7.tar", PDB_ref_bucket + "pdbs_8.tar", PDB_ref_bucket + "pdbs_9.tar", PDB_ref_bucket + "pdbs_a.tar", PDB_ref_bucket + "pdbs_b.tar", PDB_ref_bucket + "pdbs_c.tar", PDB_ref_bucket + "pdbs_d.tar", PDB_ref_bucket + "pdbs_e.tar", PDB_ref_bucket + "pdbs_f.tar", PDB_ref_bucket + "pdbs_g.tar", PDB_ref_bucket + "pdbs_h.tar", PDB_ref_bucket + "pdbs_i.tar", PDB_ref_bucket + "pdbs_j.tar", PDB_ref_bucket + "pdbs_k.tar", PDB_ref_bucket + "pdbs_l.tar", PDB_ref_bucket + "pdbs_m.tar", PDB_ref_bucket + "pdbs_n.tar", PDB_ref_bucket + "pdbs_o.tar", PDB_ref_bucket + "pdbs_p.tar", PDB_ref_bucket + "pdbs_q.tar", PDB_ref_bucket + "pdbs_r.tar", PDB_ref_bucket + "pdbs_s.tar", PDB_ref_bucket + "pdbs_t.tar", PDB_ref_bucket + "pdbs_u.tar", PDB_ref_bucket + "pdbs_v.tar", PDB_ref_bucket + "pdbs_w.tar", PDB_ref_bucket + "pdbs_x.tar", PDB_ref_bucket + "pdbs_y.tar", PDB_ref_bucket + "pdbs_z.tar" ]
+		# List of Tarfiles in PDB directory, resolved by panoply_clumps_ptm_workflow.wdl
+		Array[File]+ PDB_DIR
 
 		# ID Mapping
 		File FASTA_ref_file				# file with FASTA reference sequences, to be blasted against UNIPROT

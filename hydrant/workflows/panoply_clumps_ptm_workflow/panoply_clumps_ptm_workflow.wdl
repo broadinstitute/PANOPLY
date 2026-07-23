@@ -20,9 +20,11 @@ workflow panoply_clumps_ptm_workflow {
 
 		File groupsFile
 
-		## Default Database Files		
+		## Default Database Files
 		# Google-Cloud Bucket with PDB Directory, split into tarfiles
 		String PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars/"
+		# Index file listing all tars in the bucket
+		File PDB_manifest = PDB_ref_bucket+"index.txt"
 		# Uniprot FASTA reference file
 		File UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
 		# SIFTS database
@@ -38,6 +40,13 @@ workflow panoply_clumps_ptm_workflow {
 
 		String output_prefix
 		File yaml_file
+	}
+
+	## Resolve bucket + filename into explicit File-typed declarations via scatter
+	## Forces WDL engine recognizes each entry as a file to localize, not a string
+	Array[String] PDB_filenames = read_lines(PDB_manifest)
+	scatter (fname in PDB_filenames) {
+		File pdb_file_resolved = PDB_ref_bucket + fname
 	}
 
 	call diffexp_wdl.panoply_clumps_ptm_diffexp as diffexp {
@@ -56,7 +65,7 @@ workflow panoply_clumps_ptm_workflow {
 				pSTY_gct = pSTY_gct,
 				acK_gct = acK_gct,
 				ubK_gct = ubK_gct,
-				PDB_ref_bucket = PDB_ref_bucket,
+				PDB_DIR = pdb_file_resolved,
 				UNIPROT_SWISSPROT = UNIPROT_SWISSPROT,
 				SIFTS_DB = SIFTS_DB,
 				FASTA_ref_file = select_first([FASTA_ref_file]),
@@ -72,7 +81,7 @@ workflow panoply_clumps_ptm_workflow {
 		    input:
 		    	diff_exp_file = diff_exp,
 		    	var_sites_file = select_first([mapping_file, mapping.filt_results]),
-		        PDB_ref_bucket = PDB_ref_bucket,
+		        PDB_DIR = pdb_file_resolved,
 				accession_col = accession_col,
 				variable_sites_col = variable_sites_col,
 	        	yaml_file = yaml_file,
