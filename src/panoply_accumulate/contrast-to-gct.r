@@ -4,9 +4,10 @@
 if( !suppressMessages( require( "pacman" ) ) ) install.packages( "pacman" )
 p_load( cmapR )
 p_load( glue )
-if ( !requireNamespace("BiocManager", quietly = TRUE ) ) 
+if ( !requireNamespace("BiocManager", quietly = TRUE ) )
   install.packages( "BiocManager" )
-BiocManager::install( "org.Hs.eg.db" )
+if ( !requireNamespace("org.Hs.eg.db", quietly = TRUE ) )
+  BiocManager::install( "org.Hs.eg.db" )
 library( org.Hs.eg.db )
 source ('config.r')
 
