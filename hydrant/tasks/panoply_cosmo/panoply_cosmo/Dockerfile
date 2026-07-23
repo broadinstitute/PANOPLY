@@ -11,8 +11,6 @@ RUN sed -Ei 's/CRAN = .+?\), download/CRAN = \"packagemanager.rstudio.com\/cran\
 ## still installed and usable via BiocManager:: calls, it's just no longer force-loaded at
 ## startup.
 RUN sed -i "/defaultPackages.*BiocManager/d" /usr/local/lib/R/etc/Rprofile.site
-## Belt-and-suspenders: keep any other startup network call fast rather than a 60s hang.
-RUN sed -i '1i options(timeout = 5)' /usr/local/lib/R/etc/Rprofile.site
 
 COPY --from=broadcptacdev/panoply_common:latest /prot/proteomics/Projects/PGDAC/src /prot/proteomics/Projects/PGDAC/src
 
@@ -21,3 +19,10 @@ COPY src /prot/proteomics/Projects/PGDAC/src/cosmo
 RUN R -e "BiocManager::install(c('cmapR', 'ComplexHeatmap'))"
 
 RUN R -e "install.packages(c('pacman', 'optparse', 'rmarkdown', 'kableExtra'))"
+
+## Belt-and-suspenders: keep any *runtime* startup network call fast rather than a 60s hang.
+## Applied only after the package installs above, since Rprofile.site is sourced by every R
+## invocation including these build steps -- a 5s timeout here previously caused
+## BiocManager::install() to silently drop packages (e.g. cmapR) that took >5s to download,
+## without failing the build (install.packages() only warns on a per-package failure).
+RUN sed -i '1i options(timeout = 5)' /usr/local/lib/R/etc/Rprofile.site
