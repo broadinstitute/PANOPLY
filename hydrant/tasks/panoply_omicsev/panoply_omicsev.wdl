@@ -119,7 +119,7 @@ task panoply_omicsev {
     }
 
     runtime {
-    	docker: "broadcptacdev/panoply_omicsev:DEV1"
+    	docker: "broadcptacdev/panoply_omicsev:DEV2"
         memory: "${select_first([memory, 96])}GB"
         disks : "local-disk ${select_first([disk_space, 10])} HDD"
         preemptible : select_first([num_preemptions, 0])

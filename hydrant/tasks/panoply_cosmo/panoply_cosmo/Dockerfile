@@ -4,9 +4,14 @@ MAINTAINER proteogenomics@broadinstitute.org
 ## set to stable repository
 RUN sed -Ei 's/CRAN = .+?\), download/CRAN = \"packagemanager.rstudio.com\/cran\/2021-12-31\"\), download/' /usr/local/lib/R/etc/Rprofile.site # for rbase docker
 
-## disable BiocManager's online version-diagnostics check (fetches bioconductor.org/config.yaml
-## on every R startup, including each PSOCK cluster worker), which stalls ~60s per session
-## when there is no internet access at runtime
+## Whatever in this base image's Rprofile.site triggers a bioconductor.org/config.yaml fetch on
+## every R startup (including each PSOCK cluster worker) runs before any options we *append* to
+## the file, so appending BiocManager-specific switches (check_repositories,
+## online_version_diagnostics) has proven ineffective -- the call already ran by the time our
+## line is reached. Instead, PREPEND a short, generic base-R connection timeout so that whatever
+## network call fires first fails in a few seconds instead of hanging the default 60s per R
+## session -- this works regardless of which package/mechanism makes the call.
+RUN sed -i '1i options(timeout = 5)' /usr/local/lib/R/etc/Rprofile.site
 ENV R_BIOCONDUCTOR_ONLINE_VERSION_DIAGNOSTICS=FALSE
 RUN echo 'options(BiocManager.online_version_diagnostics = FALSE)' >> /usr/local/lib/R/etc/Rprofile.site
 
