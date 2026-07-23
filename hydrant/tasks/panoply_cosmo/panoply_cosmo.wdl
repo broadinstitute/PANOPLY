@@ -122,7 +122,7 @@ task panoply_cosmo {
 	}
 
 	runtime {
-		docker: "broadcptacdev/panoply_cosmo:DEV2"
+		docker: "broadcptacdev/panoply_cosmo:DEV3"
 		memory: "${select_first([memory, 16])}GB"
     disks : "local-disk ${select_first([local_disk_gb, 32])} HDD"
     preemptible : select_first([num_preemptions, 0])
@@ -170,7 +170,7 @@ task panoply_cosmo_report {
   }
 
   runtime {
-      docker : "broadcptacdev/panoply_cosmo:DEV2"
+      docker : "broadcptacdev/panoply_cosmo:DEV3"
       memory: "${select_first([memory, 2])}GB"
       disks : "local-disk ${select_first([local_disk_gb, 10])} HDD"
       preemptible : select_first([num_preemptions, 0])

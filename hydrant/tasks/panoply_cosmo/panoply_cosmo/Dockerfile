@@ -4,16 +4,15 @@ MAINTAINER proteogenomics@broadinstitute.org
 ## set to stable repository
 RUN sed -Ei 's/CRAN = .+?\), download/CRAN = \"packagemanager.rstudio.com\/cran\/2021-12-31\"\), download/' /usr/local/lib/R/etc/Rprofile.site # for rbase docker
 
-## Whatever in this base image's Rprofile.site triggers a bioconductor.org/config.yaml fetch on
-## every R startup (including each PSOCK cluster worker) runs before any options we *append* to
-## the file, so appending BiocManager-specific switches (check_repositories,
-## online_version_diagnostics) has proven ineffective -- the call already ran by the time our
-## line is reached. Instead, PREPEND a short, generic base-R connection timeout so that whatever
-## network call fires first fails in a few seconds instead of hanging the default 60s per R
-## session -- this works regardless of which package/mechanism makes the call.
+## This base image's Rprofile.site adds BiocManager to `defaultPackages` (twice, redundantly),
+## so it is auto-attached (library()'d) on every R startup, including every PSOCK cluster
+## worker -- BiocManager's .onAttach() hook is what fetches bioconductor.org/config.yaml. This
+## isn't gated by any BiocManager option, so remove the auto-attach itself; BiocManager is
+## still installed and usable via BiocManager:: calls, it's just no longer force-loaded at
+## startup.
+RUN sed -i "/defaultPackages.*BiocManager/d" /usr/local/lib/R/etc/Rprofile.site
+## Belt-and-suspenders: keep any other startup network call fast rather than a 60s hang.
 RUN sed -i '1i options(timeout = 5)' /usr/local/lib/R/etc/Rprofile.site
-ENV R_BIOCONDUCTOR_ONLINE_VERSION_DIAGNOSTICS=FALSE
-RUN echo 'options(BiocManager.online_version_diagnostics = FALSE)' >> /usr/local/lib/R/etc/Rprofile.site
 
 COPY --from=broadcptacdev/panoply_common:latest /prot/proteomics/Projects/PGDAC/src /prot/proteomics/Projects/PGDAC/src
 
