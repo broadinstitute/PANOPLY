@@ -7,8 +7,8 @@ task panoply_cmap_connectivity {
   input {
     File tarball
     File yaml
-    String? cmap_grp
-    String? cmap_typ
+    String cmap_group='all'
+    String cmap_type='pome'
     Int permutations
     Array[File] subset_scores
     Array[File]? permutation_scores
@@ -27,9 +27,6 @@ task panoply_cmap_connectivity {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-
-    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
   }
 
   command {
@@ -85,8 +82,8 @@ task panoply_cmap_input {
   input {
     File tarball   # output from panoply_cna_correlation
     File yaml
-    String? cmap_grp
-    String? cmap_typ
+    String cmap_group='all'
+    String cmap_type='pome'
     Int? cmap_permutations
     String outFile = "panoply_cmapsetup-output.tar"
     String outGmtFile = "cmap-trans-genesets.gmt"
@@ -104,9 +101,6 @@ task panoply_cmap_input {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-
-    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
   }
 
   command {
@@ -154,8 +148,8 @@ task panoply_cmap_annotate {
     File cmap_data_file           # CMAP level 5 geneKD data (gctx)
     File cmap_enrichment_groups   # groups file (ala experiment design file)
     File yaml
-    String? cmap_grp
-    String? cmap_typ
+    String cmap_group='all'
+    String cmap_type='pome'
     String outFile = "panoply_cmap-annotate-output.tar"
 
     Float? cna_threshold
@@ -166,9 +160,6 @@ task panoply_cmap_annotate {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-
-    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
   }
 
   command {
@@ -349,8 +340,8 @@ workflow run_cmap_analysis {
     input:
       tarball=CNAcorr_tarball,
       cmap_permutations=n_permutations,
-      cmap_grp=group,
-      cmap_typ=data_type,
+      cmap_group=group,
+      cmap_type=data_type,
       yaml=yaml,
       cna_threshold=cna_threshold,
       cna_effects_threshold=cna_effects_threshold,
@@ -363,11 +354,14 @@ workflow run_cmap_analysis {
      
   }
 
+  ## Resolve bucket + filename into an explicit File-typed declaration via scatter
+  ## Forces WDL engine to recognize each entry as a file to localize, not a string
   # run ssGSEA on the geneset
   scatter (f in subset_files) {
+    File subset_file_resolved = subset_bucket + "/" + f
     call panoply_cmap_ssgsea {
       input:
-        input_ds="${subset_bucket}/${f}",
+        input_ds=subset_file_resolved,
         gene_set_database=panoply_cmap_input.genesets,
           yaml=yaml
     }
@@ -377,10 +371,12 @@ workflow run_cmap_analysis {
   if ( n_permutations > 0 ) {
     Array[Int] n_perm_range = range( n_permutations )
     Array[Pair[String,Int]] fxp = cross ( subset_files, n_perm_range )
+
     scatter (x in fxp) {
+      File perm_file_resolved = subset_bucket + "/" + x.left
       call panoply_cmap_ssgsea as permutation {
         input:
-          input_ds="${subset_bucket}/${x.left}",
+          input_ds=perm_file_resolved,
           gene_set_database=panoply_cmap_input.permuted_genesets[x.right],
           permutation_num=x.right,
             yaml=yaml
@@ -394,8 +390,8 @@ workflow run_cmap_analysis {
       subset_scores=panoply_cmap_ssgsea.scores,
       permutations=n_permutations,
       permutation_scores=permutation.scores,
-      cmap_grp=group,
-      cmap_typ=data_type,
+      cmap_group=group,
+      cmap_type=data_type,
       yaml=yaml,
       fdr_pvalue=fdr_pvalue,
       cis_fdr=cis_fdr,
@@ -409,8 +405,8 @@ workflow run_cmap_analysis {
     input:
       tarball=panoply_cmap_connectivity.outputs,
       cmap_data_file=cmap_level5_data,
-      cmap_grp=group,
-      cmap_typ=data_type,
+      cmap_group=group,
+      cmap_type=data_type,
       yaml=yaml,
       cmap_enrichment_groups=cmap_enrichment_groups,
       cna_threshold=cna_threshold,

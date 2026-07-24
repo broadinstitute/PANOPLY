@@ -9,8 +9,8 @@ task panoply_cmap_annotate {
     File cmap_data_file           # CMAP level 5 geneKD data (gctx)
     File cmap_enrichment_groups   # groups file (ala experiment design file)
     File yaml
-    String? cmap_grp
-    String? cmap_typ
+    String cmap_group='all'
+    String cmap_type='pome'
     String outFile = "panoply_cmap-annotate-output.tar"
 
     Float? cna_threshold
@@ -21,9 +21,6 @@ task panoply_cmap_annotate {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-
-    String cmap_group = "${if defined (cmap_grp) then cmap_grp else 'all'}"
-    String cmap_type = "${if defined (cmap_typ) then cmap_typ else 'pome'}"
   }
 
   command {

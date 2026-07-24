@@ -20,15 +20,20 @@ workflow panoply_clumps_ptm_workflow {
 
 		File groupsFile
 
+
 		## Default Database Files
 		# Google-Cloud Bucket with PDB Directory, split into tarfiles
 		String PDB_ref_bucket = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars/"
-		# Index file listing all tars in the bucket
-		File PDB_manifest = PDB_ref_bucket+"index.txt"
+
+		# Manifest listing the current tarfile names in PDB_ref_bucket, one per line
+		File PDB_manifest = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars/index.txt"
+
 		# Uniprot FASTA reference file
 		File UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta"
+
 		# SIFTS database
 		File SIFTS_DB = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/pdb_chain_uniprot.tsv"
+
 
 		File? FASTA_ref_file
 
@@ -43,7 +48,7 @@ workflow panoply_clumps_ptm_workflow {
 	}
 
 	## Resolve bucket + filename into explicit File-typed declarations via scatter
-	## Forces WDL engine recognizes each entry as a file to localize, not a string
+	## Forces WDL engine to recognize each entry as a file to localize, not a string
 	Array[String] PDB_filenames = read_lines(PDB_manifest)
 	scatter (fname in PDB_filenames) {
 		File pdb_file_resolved = PDB_ref_bucket + fname
