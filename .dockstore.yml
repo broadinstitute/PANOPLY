@@ -1,0 +1,215 @@
+version: 1.2
+filters:
+    branches:
+        - dev
+        - issue-githubWDL
+workflows:
+  - name: panoply_association_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_association_report/panoply_association_report.wdl
+  - name: panoply_blacksheep_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_blacksheep_workflow/panoply_blacksheep_workflow.wdl
+  - name: panoply_harmonize_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_harmonize/panoply_harmonize.wdl
+  - name: panoply_main
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_main/panoply_main.wdl
+  - name: panoply_sampleqc_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_sampleqc/panoply_sampleqc.wdl
+  - name: quilts_workflow_73
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_quilts/panoply_quilts.wdl
+  - name: panoply_sankey_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_sankey_report/panoply_sankey_report.wdl
+  - name: panoply_check_yaml_default_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl
+  - name: panoply_clumps_ptm_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_clumps_ptm_report/panoply_clumps_ptm_report.wdl
+  - name: panoply_sampleqc_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_sampleqc_report/panoply_sampleqc_report.wdl
+  - name: panoply_cna_setup_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cna_setup/panoply_cna_setup.wdl
+  - name: panoply_filter_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_filter/panoply_filter.wdl
+  - name: panoply_preprocess_gct_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl
+  - name: panoply_association_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_association_workflow/panoply_association_workflow.wdl
+  - name: panoply_sankey_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_sankey/panoply_sankey.wdl
+  - name: panoply_immune_analysis_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_immune_analysis_workflow/panoply_immune_analysis_workflow.wdl
+  - name: panoply_ssgsea_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_ssgsea_report/panoply_ssgsea_report.wdl
+  - name: panoply_cons_clust_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cons_clust_report/panoply_cons_clust_report.wdl
+  - name: panoply_sankey_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_sankey_workflow/panoply_sankey_workflow.wdl
+  - name: panoply_rna_protein_correlation_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_rna_protein_correlation/panoply_rna_protein_correlation.wdl
+  - name: panoply_clumps_ptm_mapping_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_clumps_ptm_mapping/panoply_clumps_ptm_mapping.wdl
+  - name: panoply_mimp_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_mimp_report/panoply_mimp_report.wdl
+  - name: panoply_clumps_ptm_postprocess_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_clumps_ptm_postprocess/panoply_clumps_ptm_postprocess.wdl
+  - name: panoply_nmf_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_nmf_report/panoply_nmf_report.wdl
+  - name: panoply_blacksheep_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_blacksheep/panoply_blacksheep.wdl
+  - name: panoply_ssgsea_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_ssgsea/panoply_ssgsea.wdl
+  - name: panoply_cna_correlation_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cna_correlation/panoply_cna_correlation.wdl
+  - name: panoply_parse_sm_table_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_parse_sm_table/panoply_parse_sm_table.wdl
+  - name: panoply_normalize_filter_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_normalize_filter_workflow/panoply_normalize_filter_workflow.wdl
+  - name: panoply_clumps_ptm_diffexp_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_clumps_ptm_diffexp/panoply_clumps_ptm_diffexp.wdl
+  - name: panoply_normalize_ms_data_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_normalize_ms_data_report/panoply_normalize_ms_data_report.wdl
+  - name: panoply_cmap_annotate_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cmap_annotate/panoply_cmap_annotate.wdl
+  - name: panoply_mimp_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_mimp/panoply_mimp.wdl
+  - name: panoply_nmf_postprocess_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_nmf_postprocess/panoply_nmf_postprocess.wdl
+  - name: panoply_clumps_ptm_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_clumps_ptm/panoply_clumps_ptm.wdl
+  - name: panoply_process_SM_table
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_process_SM_table/panoply_process_SM_table.wdl
+  - name: panoply_cosmo_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cosmo/panoply_cosmo.wdl
+  - name: panoply_metaboanalyst_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_metaboanalyst/panoply_metaboanalyst.wdl
+  - name: panoply_select_all_pairs
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_select_all_pairs/panoply_select_all_pairs.wdl
+  - name: panoply_main_internal
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_main_internal/panoply_main_internal.wdl
+  - name: panoply_omicsev_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_omicsev/panoply_omicsev.wdl
+  - name: panoply_metaboanalyst_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_metaboanalyst_report/panoply_metaboanalyst_report.wdl
+  - name: panoply_cons_clust_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cons_clust/panoply_cons_clust.wdl
+  - name: run_cmap_analysis_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cmap_analysis/panoply_cmap_analysis.wdl
+  - name: panoply_nmf_internal_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_nmf_internal_workflow/panoply_nmf_internal_workflow.wdl
+  - name: panoply_download_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_download/panoply_download.wdl
+  - name: panoply_nmf_balance_omes_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_nmf_balance_omes/panoply_nmf_balance_omes.wdl
+  - name: panoply_accumulate_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_accumulate/panoply_accumulate.wdl
+  - name: panoply_unified_assemble_results_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_unified_assemble_results/panoply_unified_assemble_results.wdl
+  - name: panoply_immune_analysis_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_immune_analysis/panoply_immune_analysis.wdl
+  - name: panoply_rna_protein_correlation_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_rna_protein_correlation_report/panoply_rna_protein_correlation_report.wdl
+  - name: panoply_blacksheep_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_blacksheep_report/panoply_blacksheep_report.wdl
+  - name: panoply_metaboanalyst_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_metaboanalyst_workflow/panoply_metaboanalyst_workflow.wdl
+  - name: panoply_nmf_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_nmf/panoply_nmf.wdl
+  - name: panoply_clumps_ptm_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_clumps_ptm_workflow/panoply_clumps_ptm_workflow.wdl
+  - name: panoply_unified_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_unified_workflow/panoply_unified_workflow.wdl
+  - name: panoply_nmf_assemble_results_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_nmf_assemble_results/panoply_nmf_assemble_results.wdl
+  - name: panoply_normalize_ms_data_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl
+  - name: panoply_cna_correlation_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_cna_correlation_report/panoply_cna_correlation_report.wdl
+  - name: panoply_immune_analysis_report_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_immune_analysis_report/panoply_immune_analysis_report.wdl
+  - name: panoply_ptm_normalization_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_ptm_normalization/panoply_ptm_normalization.wdl
+  - name: panoply_ssgsea_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl
+  - name: panoply_association_task
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/tasks/panoply_association/panoply_association.wdl
+  - name: panoply_nmf_workflow
+    subclass: WDL
+    primaryDescriptorPath: /hydrant/workflows/panoply_nmf_workflow/panoply_nmf_workflow.wdl
+notebooks:
+  - name: PTM_SEA
+    format: jupyter
+    language: Python
+    path: /ptm-sea-notebook/PTM_SEA.ipynb
+  - name: PANOPLY-modules-startup-notebook
+    format: jupyter
+    language: Python
+    path: /panda/PANOPLY-modules-startup-notebook.ipynb
+  - name: PDC_Direct_Data_Import
+    format: jupyter
+    language: Python
+    path: /pdc-data-import/PDC_Direct_Data_Import.ipynb
+  - name: PANOPLY-startup-notebook
+    format: jupyter
+    language: Python
+    path: /panda/PANOPLY-startup-notebook.ipynb
