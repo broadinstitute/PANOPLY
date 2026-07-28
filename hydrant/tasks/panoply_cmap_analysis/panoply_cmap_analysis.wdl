@@ -335,6 +335,8 @@ workflow run_cmap_analysis {
   }
 
   Array[String] subset_files = read_lines ("${subset_list_file}")
+  # Strip any trailing slash so subset_bucket works whether or not the user includes one
+  String subset_bucket_norm = sub(subset_bucket, "/$", "")
 
   call panoply_cmap_input {
     input:
@@ -358,7 +360,7 @@ workflow run_cmap_analysis {
   ## Forces WDL engine to recognize each entry as a file to localize, not a string
   # run ssGSEA on the geneset
   scatter (f in subset_files) {
-    File subset_file_resolved = subset_bucket + "/" + f
+    File subset_file_resolved = subset_bucket_norm + "/" + f
     call panoply_cmap_ssgsea {
       input:
         input_ds=subset_file_resolved,
@@ -373,7 +375,7 @@ workflow run_cmap_analysis {
     Array[Pair[String,Int]] fxp = cross ( subset_files, n_perm_range )
 
     scatter (x in fxp) {
-      File perm_file_resolved = subset_bucket + "/" + x.left
+      File perm_file_resolved = subset_bucket_norm + "/" + x.left
       call panoply_cmap_ssgsea as permutation {
         input:
           input_ds=perm_file_resolved,

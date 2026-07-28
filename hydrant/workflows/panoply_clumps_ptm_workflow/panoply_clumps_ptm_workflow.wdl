@@ -49,9 +49,11 @@ workflow panoply_clumps_ptm_workflow {
 
 	## Resolve bucket + filename into explicit File-typed declarations via scatter
 	## Forces WDL engine to recognize each entry as a file to localize, not a string
+	# Strip any trailing slash so PDB_ref_bucket works whether or not the user includes one
+	String PDB_ref_bucket_norm = sub(PDB_ref_bucket, "/$", "")
 	Array[String] PDB_filenames = read_lines(PDB_manifest)
 	scatter (fname in PDB_filenames) {
-		File pdb_file_resolved = PDB_ref_bucket + fname
+		File pdb_file_resolved = PDB_ref_bucket_norm + "/" + fname
 	}
 
 	call diffexp_wdl.panoply_clumps_ptm_diffexp as diffexp {
