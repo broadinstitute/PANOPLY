@@ -356,14 +356,18 @@ workflow run_cmap_analysis {
      
   }
 
-  ## Resolve bucket + filename into an explicit File-typed declaration via scatter
-  ## Forces WDL engine to recognize each entry as a file to localize, not a string
-  # run ssGSEA on the geneset
+  # Standalone scatter (no task call inside) gathers S3 URIs into Array[File].
+  # HealthOmics localizes gathered File arrays correctly when passed as task inputs;
+  # it does NOT localize a File that is both created and consumed within the same scatter body.
   scatter (f in subset_files) {
     File subset_file_resolved = subset_bucket_norm + "/" + f
+  }
+
+  # run ssGSEA on the geneset
+  scatter (input_file in subset_file_resolved) {
     call panoply_cmap_ssgsea {
       input:
-        input_ds=subset_file_resolved,
+        input_ds=input_file,
         gene_set_database=panoply_cmap_input.genesets,
           yaml=yaml
     }
@@ -372,13 +376,13 @@ workflow run_cmap_analysis {
   # run ssGSEA on the permuted genesets (if any)
   if ( n_permutations > 0 ) {
     Array[Int] n_perm_range = range( n_permutations )
-    Array[Pair[String,Int]] fxp = cross ( subset_files, n_perm_range )
+    Array[Int] file_indices = range( length(subset_file_resolved) )
+    Array[Pair[Int,Int]] fxp = cross ( file_indices, n_perm_range )
 
     scatter (x in fxp) {
-      File perm_file_resolved = subset_bucket_norm + "/" + x.left
       call panoply_cmap_ssgsea as permutation {
         input:
-          input_ds=perm_file_resolved,
+          input_ds=subset_file_resolved[x.left],
           gene_set_database=panoply_cmap_input.permuted_genesets[x.right],
           permutation_num=x.right,
             yaml=yaml
