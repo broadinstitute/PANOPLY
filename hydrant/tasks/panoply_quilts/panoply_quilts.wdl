@@ -25,60 +25,60 @@ task quilts {
 	}
 
 	command {
-		set -euo pipefail
-		som_call=''
-		germ_call=''
-		junc_call=''
-		fus_call=''
+        set -euo pipefail
+        som_call=''
+        germ_call=''
+        junc_call=''
+        fus_call=''
 
         if [ "${defined(input_somatic_vcfs)}" = "true" ]; then
-        	somatic="somatic"
-        	mkdir $somatic
-        	mv ${if defined(input_somatic_vcfs) then sep(' ', select_first([input_somatic_vcfs])) else ""} $somatic
-        	som_call=" --somatic somatic"
+            somatic="somatic"
+            mkdir $somatic
+            mv ${if defined(input_somatic_vcfs) then sep(' ', select_first([input_somatic_vcfs])) else ""} $somatic
+            som_call=" --somatic somatic"
         fi
         if [ "${defined(input_germline_vcfs)}" = "true" ]; then
-        	germline="germline"
-        	mkdir $germline
-        	mv ${if defined(input_germline_vcfs) then sep(' ', select_first([input_germline_vcfs])) else ""} $germline
-        	germ_call=" --germline germline"
+            germline="germline"
+            mkdir $germline
+            mv ${if defined(input_germline_vcfs) then sep(' ', select_first([input_germline_vcfs])) else ""} $germline
+            germ_call=" --germline germline"
         fi
         if [ "${defined(input_splice_junctions_files)}" = "true" ]; then
-        	junction="junction"
-        	mkdir $junction
-        	mv ${if defined(input_splice_junctions_files) then sep(' ', select_first([input_splice_junctions_files])) else ""} $junction
-        	junc_call=" --junction junction"
+            junction="junction"
+            mkdir $junction
+            mv ${if defined(input_splice_junctions_files) then sep(' ', select_first([input_splice_junctions_files])) else ""} $junction
+            junc_call=" --junction junction"
         fi
         if [ "${defined(input_gene_fusions_files)}" = "true" ]; then
-        	fusion="fusion"
-        	mkdir $fusion
-        	mv ${if defined(input_gene_fusions_files) then sep(' ', select_first([input_gene_fusions_files])) else ""} $fusion
-        	fus_call=" --fusion fusion"
+            fusion="fusion"
+            mkdir $fusion
+            mv ${if defined(input_gene_fusions_files) then sep(' ', select_first([input_gene_fusions_files])) else ""} $fusion
+            fus_call=" --fusion fusion"
         fi
         quilts_call="$som_call$germ_call$junc_call$fus_call"
         
         /src/QUILTS/src/quilts_references.sh \
-        	-g ${reference_genome} \
-        	-p ${reference_proteome}
+            -g ${reference_genome} \
+            -p ${reference_proteome}
         
-		python2 /src/QUILTS/pyQUILTS/quilts.py \
-		--output_dir ${output_dir} \
-		--genome ./genome \
-		--proteome ./proteome \
-		$quilts_call \
-		${"--junction_file_type " + junction_file_type} \
-		${"--threshB " + threshB} \
-		${"--threshD " + threshD} \
-		${"--threshN " + threshN} \
-		${"--variant-quality-threshold " + variant_quality_threshold}
+        python2 /src/QUILTS/pyQUILTS/quilts.py \
+        --output_dir ${output_dir} \
+        --genome ./genome \
+        --proteome ./proteome \
+        $quilts_call \
+        ${"--junction_file_type " + junction_file_type} \
+        ${"--threshB " + threshB} \
+        ${"--threshD " + threshD} \
+        ${"--threshN " + threshN} \
+        ${"--variant-quality-threshold " + variant_quality_threshold}
 
-		home=`pwd`
-		cd ${output_dir}
-		base=$(basename $PWD)
+        home=`pwd`
+        cd ${output_dir}
+        base=$(basename $PWD)
         cd ..
-		tar -czf ${out_file} $base
+        tar -czf ${out_file} $base
         mv ${out_file} $home
-	}
+    }
 
 	output {
 		File outputs = "${out_file}"

@@ -31,51 +31,51 @@ task panoply_omicsev {
 	}
 
   command {
-  	set -euo pipefail
+    set -euo pipefail
   
-  	if [ ${STANDALONE} == "false" ]; then
-  	
-  	  tar -xf ${select_first([panoply_harmonize_tar_file, ""])}
-  	  
-  	  # get the root directory of the tar file
-  	  tar -tf ${select_first([panoply_harmonize_tar_file, ""])} > all_files_in_tar.txt
-  	  tar_dir=$(pwd)/$(basename $(head -n 1 all_files_in_tar.txt))
-  	  
-  	  Rscript /prot/proteomics/Projects/PGDAC/src/omicsev/validate_harmonize_tar.R $tar_dir ${select_first([ome_type, ""])}
-  	  
-  	  data_files="$tar_dir/harmonized-data/${select_first([ome_type, ""])}-matrix.csv"
-  		rna_file="$tar_dir/harmonized-data/rna-matrix.csv"
-  		sample_anno_file="$tar_dir/harmonized-data/sample-info.csv"
-  	
+    if [ ${STANDALONE} == "false" ]; then
+    
+      tar -xf ${select_first([panoply_harmonize_tar_file, ""])}
+      
+      # get the root directory of the tar file
+      tar -tf ${select_first([panoply_harmonize_tar_file, ""])} > all_files_in_tar.txt
+      tar_dir=$(pwd)/$(basename $(head -n 1 all_files_in_tar.txt))
+      
+      Rscript /prot/proteomics/Projects/PGDAC/src/omicsev/validate_harmonize_tar.R $tar_dir ${select_first([ome_type, ""])}
+      
+      data_files="$tar_dir/harmonized-data/${select_first([ome_type, ""])}-matrix.csv"
+        rna_file="$tar_dir/harmonized-data/rna-matrix.csv"
+        sample_anno_file="$tar_dir/harmonized-data/sample-info.csv"
+    
     else
       data_files="${if defined(data_files) then sep(',', select_first([data_files])) else ""}"
-  		rna_file=${select_first([rna_file, ''])}
-  		sample_anno_file="${select_first([sample_anno_file, ""])}"
-  	fi
+        rna_file=${select_first([rna_file, ''])}
+        sample_anno_file="${select_first([sample_anno_file, ""])}"
+    fi
   
     output_dir="$(pwd)/omicsev-data"
-  	mkdir -p $output_dir
-  	cd $output_dir
+    mkdir -p $output_dir
+    cd $output_dir
   
   
-  	echo "Managing parameters"
+    echo "Managing parameters"
   
-  	Rscript \
-    	/prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
-    	--module omicsev \
-    	--master_yaml ${yaml_file} \
-    	${"--omicsev_class_column_name " + class_column_name} \
-    	${"--omicsev_batch_column_name " + batch_column_name} \
-    	${if defined(data_log_transformed) then "--omicsev_data_log_transformed " + select_first([data_log_transformed]) else ""} \
-    	${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " + select_first([rna_log_transformed]) else ""} \
-    	${if defined(do_function_prediction) then "--omicsev_do_function_prediction " + select_first([do_function_prediction]) else ""}
+    Rscript \
+        /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
+        --module omicsev \
+        --master_yaml ${yaml_file} \
+        ${"--omicsev_class_column_name " + class_column_name} \
+        ${"--omicsev_batch_column_name " + batch_column_name} \
+        ${if defined(data_log_transformed) then "--omicsev_data_log_transformed " + select_first([data_log_transformed]) else ""} \
+        ${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " + select_first([rna_log_transformed]) else ""} \
+        ${if defined(do_function_prediction) then "--omicsev_do_function_prediction " + select_first([do_function_prediction]) else ""}
   
-  	if [ ${STANDALONE} == "false" ]; then
-  		cp final_output_params.yaml $tar_dir/updated-master-parameter.yaml
-  	fi
+    if [ ${STANDALONE} == "false" ]; then
+        cp final_output_params.yaml $tar_dir/updated-master-parameter.yaml
+    fi
   
   
-  	echo "Preprocessing"
+    echo "Preprocessing"
       
     if [ -z $rna_file ]; then
       Rscript \
@@ -85,7 +85,7 @@ task panoply_omicsev {
         --data_files $data_files \
         --sample_anno_file $sample_anno_file
         
-  	else
+    else
       Rscript \
         /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_omicsev_preprocessing.R \
         --STANDALONE ${STANDALONE} \
@@ -97,7 +97,7 @@ task panoply_omicsev {
     fi
   
   
-  	echo "Running OmicsEV"
+    echo "Running OmicsEV"
   
       Rscript \
         /prot/proteomics/Projects/PGDAC/src/omicsev/panoply_run_OmicsEV.R \
@@ -109,10 +109,10 @@ task panoply_omicsev {
         $(cat do_function_prediction.txt) \
         "./"
   
-  	cd ..
+    cd ..
   
-  	cp "$output_dir/final_evaluation_report.html" "final_evaluation_report.html"
-  	mv "final_evaluation_report.html" "omicsev_${label}.html"
+    cp "$output_dir/final_evaluation_report.html" "final_evaluation_report.html"
+    mv "final_evaluation_report.html" "omicsev_${label}.html"
       
     tar -czvf "omicsev_output.tar" $(basename $output_dir)
       

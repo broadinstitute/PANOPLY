@@ -40,9 +40,9 @@ task panoply_mimp {
         ${"--mimp_sample_id_col " + sample_id_col} \
         ${"--mimp_transcript_id_col " + transcript_id_col}
 
-		Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml"
+        Rscript /prot/proteomics/Projects/PGDAC/src/panoply_mimp.R "${mutation_file}" "${phospho_file}" "${fasta_file}" "${ids_file}" "final_output_params.yaml"
 
-		tar -czvf "${output_prefix}_mimp_output.tar" mimp_results_dir
+        tar -czvf "${output_prefix}_mimp_output.tar" mimp_results_dir
 
     }
 
