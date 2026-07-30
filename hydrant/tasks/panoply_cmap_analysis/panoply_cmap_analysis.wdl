@@ -200,7 +200,7 @@ task panoply_cmap_ssgsea {
     File input_ds
     File gene_set_database
     Int? permutation_num
-    String output_prefix = "${basename (input_ds, '.gctx')}" + "${if defined (permutation_num) then '-'+permutation_num else ''}"
+    String? output_prefix
     File yaml
 
     # other ssgsea options (below) are fixed for CMAP analysis
@@ -223,13 +223,15 @@ task panoply_cmap_ssgsea {
     Int? num_preemptions
   }
 
+  String output_prefix_ = select_first([output_prefix, basename(input_ds, '.gctx') + if defined(permutation_num) then '-' + select_first([permutation_num]) else ''])
+
   command {
     set -euo pipefail
-    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output} -z /home/pgdac/
+    /home/pgdac/ssgsea-cli.R -y ${yaml} -i ${input_ds} -d ${gene_set_database} -o ${output_prefix_} -n ${sample_norm_type} -w ${weight} -c ${correl_type} -t ${statistic} -s ${output_score_type} -p ${nperm} -m ${min_overlap} -g ${global_fdr} -e ${export_sigs} -x ${ext_output} -z /home/pgdac/
   }
 
   output {
-    File scores="${output_prefix}-scores.gct"
+    File scores="${output_prefix_}-scores.gct"
   }
 
   runtime {
