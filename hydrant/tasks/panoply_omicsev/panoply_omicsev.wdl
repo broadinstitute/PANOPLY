@@ -1,4 +1,4 @@
-version 1.0
+version 1.1
 
 workflow panoply_omicsev_workflow {
     call panoply_omicsev

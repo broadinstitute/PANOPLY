@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl" as normalize_wdl
 import "../../tasks/panoply_filter/panoply_filter.wdl" as filter_wdl

@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../panoply_association_workflow/panoply_association_workflow.wdl" as assoc_workflow
 import "../panoply_blacksheep_workflow/panoply_blacksheep_workflow.wdl" as blacksheep_wdl

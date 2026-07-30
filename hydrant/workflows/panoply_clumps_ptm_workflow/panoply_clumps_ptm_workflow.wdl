@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_clumps_ptm_diffexp/panoply_clumps_ptm_diffexp.wdl" as diffexp_wdl
 import "../../tasks/panoply_clumps_ptm_mapping/panoply_clumps_ptm_mapping.wdl" as mapping_wdl

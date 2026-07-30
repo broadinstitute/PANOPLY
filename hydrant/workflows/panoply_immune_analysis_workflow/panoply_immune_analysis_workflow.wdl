@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_immune_analysis/panoply_immune_analysis.wdl" as immune_wdl
 import "../../tasks/panoply_immune_analysis_report/panoply_immune_analysis_report.wdl" as immune_report_wdl

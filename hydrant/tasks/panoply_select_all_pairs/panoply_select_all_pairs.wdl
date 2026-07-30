@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 workflow panoply_select_all_pairs {
   input {

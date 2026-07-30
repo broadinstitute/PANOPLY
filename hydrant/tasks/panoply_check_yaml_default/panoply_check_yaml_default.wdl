@@ -4,7 +4,7 @@
 
 
 # Compare Terra toggle to YAML toggle, to determine if 
-version 1.0
+version 1.1
 
 task panoply_check_yaml_default {
   input {

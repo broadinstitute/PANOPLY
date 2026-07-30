@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_nmf_balance_omes/panoply_nmf_balance_omes.wdl" as panoply_nmf_balance_omes_wdl
 import "../../tasks/panoply_nmf/panoply_nmf.wdl" as panoply_nmf_wdl

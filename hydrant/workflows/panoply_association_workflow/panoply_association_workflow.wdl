@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_association/panoply_association.wdl" as assoc_wdl
 import "../../tasks/panoply_accumulate/panoply_accumulate.wdl" as accum_wdl

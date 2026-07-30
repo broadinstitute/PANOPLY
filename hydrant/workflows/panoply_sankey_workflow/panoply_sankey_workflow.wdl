@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_sankey/panoply_sankey.wdl" as sankey_wdl
 import "../../tasks/panoply_sankey_report/panoply_sankey_report.wdl" as sankey_report_wdl

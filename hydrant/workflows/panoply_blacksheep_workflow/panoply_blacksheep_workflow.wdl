@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_blacksheep/panoply_blacksheep.wdl" as blacksheep_wdl
 import "../../tasks/panoply_blacksheep_report/panoply_blacksheep_report.wdl" as blacksheep_report_wdl

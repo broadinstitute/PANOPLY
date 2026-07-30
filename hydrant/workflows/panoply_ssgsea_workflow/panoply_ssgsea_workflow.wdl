@@ -1,7 +1,7 @@
 #
 # Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
-version 1.0
+version 1.1
 
 import "../../tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
 import "../../tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
