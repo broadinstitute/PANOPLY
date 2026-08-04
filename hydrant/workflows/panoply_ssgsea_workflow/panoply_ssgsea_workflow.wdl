@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2024 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_preprocess_gct/panoply_preprocess_gct.wdl" as preprocess_wdl
 import "../../tasks/panoply_ssgsea/panoply_ssgsea.wdl" as ssgsea_wdl
@@ -11,7 +10,6 @@ import "../../tasks/panoply_ssgsea_report/panoply_ssgsea_report.wdl" as ssgsea_r
 ##  workflow: panoply_preprocess_gct + panoply_ssgsea + panoply_ssgsea_report
 workflow panoply_ssgsea_workflow {
 
-	input {
 		File input_ds
 		File gene_set_database
 		File yaml_file
@@ -46,7 +44,6 @@ workflow panoply_ssgsea_workflow {
 		Boolean? global_fdr
 
 		## Preprocess GCT (optional) // Convert GCT to gene-centric or single-site-centric
-	}
 
 	if (preprocess_gct) {
 		call preprocess_wdl.panoply_preprocess_gct as preprocess {

@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_parse_sm_table {
-  input {
     File SMtable
     File exptDesign
     String analysisDir
@@ -21,7 +19,6 @@ task panoply_parse_sm_table {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail

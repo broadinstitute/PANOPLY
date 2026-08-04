@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_clumps_ptm {
-	input {
 		File diff_exp_file
 		File var_sites_file
 
@@ -27,7 +25,6 @@ task panoply_clumps_ptm {
 		Int? disk_space
 		Int num_threads = 32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
 		Int? num_preemptions
-	}
 
 	command {
 		set -euo pipefail

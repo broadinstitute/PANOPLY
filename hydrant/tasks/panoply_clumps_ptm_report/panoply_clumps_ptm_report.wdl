@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_clumps_ptm_report {
-    input {
       String label
 
       # output(s) from panoply_clumps_ptm_postprocess
@@ -16,7 +14,6 @@ task panoply_clumps_ptm_report {
       Int? disk_space
       Int? num_threads
       Int? num_preemptions
-    }
 
     command {
         set -euo pipefail

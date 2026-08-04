@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_unified_assemble_results {
-  input {
     ## main pipeline
     Array[File?] main_full
     Array[File?] main_summary
@@ -43,7 +41,6 @@ task panoply_unified_assemble_results {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail

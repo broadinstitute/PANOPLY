@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_sankey {
-    input {
       Int? memory
       Int? disk_space
       Int? num_threads
@@ -22,7 +20,6 @@ task panoply_sankey {
       String? color_str                   # string of colors (comma separated) to use for sankey diagrams (e.g. '#AA0000,#0000AA' will create a gradient from red to blue)
 
       String label
-    }
 
     command {
         set -euo pipefail

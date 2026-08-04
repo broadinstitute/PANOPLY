@@ -1,7 +1,5 @@
-version 1.1
 
 task panoply_mimp {
-    input {
       Float? memory
       Int? disk_space
       Int? num_preemptions
@@ -22,7 +20,6 @@ task panoply_mimp {
   	String? mutation_type_col
   	String? sample_id_col 
   	String? transcript_id_col
-    }
 
     command {
         set -euo pipefail

@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_association_report {
-    input {
       Int? memory
       Int? disk_space
       Int? num_threads
@@ -16,7 +14,6 @@ task panoply_association_report {
       String type
 
       Float? fdr_value
-    }
 
     command {
         set -euo pipefail

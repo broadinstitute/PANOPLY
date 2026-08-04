@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_preprocess_gct {
-	input {
 
 		File input_ds
 		File yaml_file
@@ -30,7 +28,6 @@ task panoply_preprocess_gct {
 		Int? disk_space
 		Int? num_threads
 		Int? num_preemptions
-	}
 
 	command {
 		set -euo pipefail

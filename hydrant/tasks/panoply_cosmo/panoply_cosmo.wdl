@@ -1,16 +1,13 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 workflow panoply_cosmo_workflow {
-	input {
 		String STANDALONE
 		File yaml_file
 		File? panoply_harmonize_tar
 		String label
 		String? ome_type
-	}
 
 	call panoply_cosmo {
 		input:
@@ -37,7 +34,6 @@ workflow panoply_cosmo_workflow {
 }
 
 task panoply_cosmo {
-	input {
 		String STANDALONE
 		File yaml_file
 		Boolean? run_cosmo
@@ -53,7 +49,6 @@ task panoply_cosmo {
 	  Int? memory
 	  Int? local_disk_gb
 	  Int? num_preemptions
-	}
 
 	command {
         set -euo pipefail
@@ -139,7 +134,6 @@ task panoply_cosmo {
 }
 
 task panoply_cosmo_report {
-	input {
 		File cosmo_output_tar
 		String d1_file_name
 		String d2_file_name
@@ -148,7 +142,6 @@ task panoply_cosmo_report {
 	  Int? memory
 	  Int? local_disk_gb
 	  Int? num_preemptions
-	}
 
   command {
     set -euo pipefail

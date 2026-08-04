@@ -1,14 +1,11 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 workflow panoply_select_all_pairs {
-  input {
     Array[Pair[String?,File?]]+ pairs_input
 
     ## Separate Array[Pair[String,File?]] into array of extant labels and extant files
-  }
 
   scatter (pair in pairs_input) {             ## for each pair
     if (defined(pair.left) && defined(pair.right)) {      ## if label AND file are defined

@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_normalize_ms_data_report {
-  input {
     File tarball
     String label
     String type
@@ -15,7 +13,6 @@ task panoply_normalize_ms_data_report {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail
@@ -54,4 +51,3 @@ workflow panoply_normalize_ms_data_report_workflow {
   call panoply_normalize_ms_data_report
 
 }
-

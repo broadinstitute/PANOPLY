@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_harmonize {
-  input {
     File inputData
     File rnaExpr
     File cnaExpr
@@ -25,7 +23,6 @@ task panoply_harmonize {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail
@@ -86,7 +83,6 @@ task panoply_harmonize {
 }
 
 workflow panoply_harmonize_workflow {
-    input {
       String standalone
       File inputData
       File rnaExpr
@@ -97,7 +93,6 @@ workflow panoply_harmonize_workflow {
       Float? na_max
       String? duplicate_gene_policy
       String? gene_id_col
-    }
 
   call panoply_harmonize {
     input:

@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_nmf_postprocess {
-    input {
       File nmf_results		# tar w/ expr GCT files + res.rank & parameters .Rdata files
       Int nclust				# best number of cluster
 
@@ -24,7 +22,6 @@ task panoply_nmf_postprocess {
   	Int? disk_space
   	Int? num_threads
   	Int? num_preemptions
-    }
 
 	command {
 		set -euo pipefail

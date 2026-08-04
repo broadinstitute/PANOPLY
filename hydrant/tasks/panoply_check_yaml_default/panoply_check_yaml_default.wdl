@@ -4,17 +4,14 @@
 
 
 # Compare Terra toggle to YAML toggle, to determine if 
-version 1.1
 
 task panoply_check_yaml_default {
-  input {
     String? param          # current (Terra set) parameter value, may or may not be set
     File yaml               # yaml file with defaults
     String param_lookup     # parameter lookup value in yaml
-  }
 
   command <<<
-    R -s -e "if ('~{param}'=='') {cat(yaml::read_yaml('~{yaml}')[['~{param_lookup}']])} else {cat('~{param}')}"
+    R -s -e "if ('${param}'=='') {cat(yaml::read_yaml('${yaml}')[['${param_lookup}']])} else {cat('${param}')}"
   >>>
 
   output {

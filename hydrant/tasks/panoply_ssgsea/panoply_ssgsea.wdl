@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_ssgsea {
-	input {
 
 		File input_ds
 		File gene_set_database
@@ -27,7 +25,6 @@ task panoply_ssgsea {
 		Int? disk_space
 		Int? num_threads
 		Int? num_preemptions
-	}
 
 	command {
 		set -euo pipefail

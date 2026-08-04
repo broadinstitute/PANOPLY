@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_association/panoply_association.wdl" as assoc_wdl
 import "../../tasks/panoply_accumulate/panoply_accumulate.wdl" as accum_wdl
@@ -13,7 +12,6 @@ import "../../tasks/panoply_association_report/panoply_association_report.wdl" a
 ##  workflow: panoply_association + panoply_accumulate + panoply_ssgsea + panoply_association_report
 workflow panoply_association_workflow {
 
-  	input {
 	  	String job_identifier
 	  	String ome_type
 		String standalone
@@ -30,7 +28,6 @@ workflow panoply_association_workflow {
 
 		File geneset_db
 		# Boolean is_ptmsigdb
-  	}
 
 	call assoc_wdl.panoply_association as assoc {
     input: 

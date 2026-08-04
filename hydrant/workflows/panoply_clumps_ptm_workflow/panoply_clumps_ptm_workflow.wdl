@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_clumps_ptm_diffexp/panoply_clumps_ptm_diffexp.wdl" as diffexp_wdl
 import "../../tasks/panoply_clumps_ptm_mapping/panoply_clumps_ptm_mapping.wdl" as mapping_wdl
@@ -13,7 +12,6 @@ import "../../tasks/panoply_clumps_ptm_report/panoply_clumps_ptm_report.wdl" as 
 ##  workflow: panoply_clumps_ptm_diffexp + panoply_clumps_ptm_mapping + panoply_clumps_ptm
 workflow panoply_clumps_ptm_workflow {
 	# PTM GCT files; must include at least one
-	input {
 		File? pSTY_gct
 		File? acK_gct
 		File? ubK_gct
@@ -45,7 +43,6 @@ workflow panoply_clumps_ptm_workflow {
 
 		String output_prefix
 		File yaml_file
-	}
 
 	## Resolve bucket + filename into explicit File-typed declarations via scatter
 	## Forces WDL engine to recognize each entry as a file to localize, not a string

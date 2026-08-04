@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_cmap_connectivity {
-  input {
     File tarball
     File yaml
     String cmap_group='all'
@@ -27,7 +25,6 @@ task panoply_cmap_connectivity {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail
@@ -79,7 +76,6 @@ task panoply_cmap_connectivity {
 }
 
 task panoply_cmap_input {
-  input {
     File tarball   # output from panoply_cna_correlation
     File yaml
     String cmap_group='all'
@@ -101,7 +97,6 @@ task panoply_cmap_input {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail
@@ -143,7 +138,6 @@ task panoply_cmap_input {
 
 
 task panoply_cmap_annotate {
-  input {
     File tarball                  # output from pgdac_cmap_connectivity
     File cmap_data_file           # CMAP level 5 geneKD data (gctx)
     File cmap_enrichment_groups   # groups file (ala experiment design file)
@@ -160,7 +154,6 @@ task panoply_cmap_annotate {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail
@@ -195,7 +188,6 @@ task panoply_cmap_annotate {
 
 
 task panoply_cmap_ssgsea {
-  input {
     # task adapted from panoply_ssgsea; many inputs are set to specfic values for CMAP analysis
     File input_ds
     File gene_set_database
@@ -221,7 +213,6 @@ task panoply_cmap_ssgsea {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   String output_prefix_ = select_first([output_prefix, basename(input_ds, '.gctx') + if defined(permutation_num) then '-' + select_first([permutation_num]) else ''])
 
@@ -251,7 +242,6 @@ task panoply_cmap_ssgsea {
 
 
 task panoply_cmap_annotate_ssgsea {
-  input {
     # task adapted from panoply_ssgsea; many inputs are set to specific values for CMAP annotation
     File input_ds
     File gene_set_database
@@ -277,7 +267,6 @@ task panoply_cmap_annotate_ssgsea {
     Int? disk_space
     Int? num_threads
     Int? num_preemptions
-  }
 
   command {
     set -euo pipefail
@@ -308,7 +297,6 @@ task panoply_cmap_annotate_ssgsea {
 
 
 workflow run_cmap_analysis {
-  input {
     File CNAcorr_tarball
     File subset_list_file
     File cmap_level5_data
@@ -334,7 +322,6 @@ workflow run_cmap_analysis {
     Int? mean_rankpt_threshold
     Float? cmap_fdr
     String? alpha
-  }
 
   Array[String] subset_files = read_lines ("${subset_list_file}")
   # Strip any trailing slash so subset_bucket works whether or not the user includes one
@@ -434,4 +421,3 @@ workflow run_cmap_analysis {
     File ssgseaOutput = panoply_cmap_annotate_ssgsea.outputs
   }
 }
-

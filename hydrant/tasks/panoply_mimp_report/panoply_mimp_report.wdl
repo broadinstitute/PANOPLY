@@ -1,14 +1,11 @@
-version 1.1
 
 task panoply_mimp_report {
-    input {
       Float? memory
       Int? disk_space
       Int? num_preemptions
 
       File tar_file
       String output_prefix
-    }
 
     command {
         set -euo pipefail

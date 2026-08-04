@@ -1,4 +1,3 @@
-version 1.1
 
 workflow panoply_omicsev_workflow {
     call panoply_omicsev
@@ -7,7 +6,6 @@ workflow panoply_omicsev_workflow {
 
 
 task panoply_omicsev {
-	input {
 		String STANDALONE
 	  File yaml_file
 		String label
@@ -28,7 +26,6 @@ task panoply_omicsev {
 	  Int? disk_space
 	  Int? num_threads
 	  Int? num_preemptions
-	}
 
   command {
     set -euo pipefail

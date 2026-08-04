@@ -1,14 +1,12 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_normalize_ms_data/panoply_normalize_ms_data.wdl" as normalize_wdl
 import "../../tasks/panoply_filter/panoply_filter.wdl" as filter_wdl
 import "../../tasks/panoply_normalize_ms_data_report/panoply_normalize_ms_data_report.wdl" as normalize_report_wdl
 
 workflow panoply_normalize_filter_workflow {
-	input {
 		File input_pome
 		String ome_type
 		String job_identifier
@@ -24,7 +22,6 @@ workflow panoply_normalize_filter_workflow {
 	  	Float? naMax
 	  	String? noNA
 	  	Float? sdFilterThreshold
-	}
 
 	call normalize_wdl.panoply_normalize_ms_data {
     	input:

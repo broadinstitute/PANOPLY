@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_clumps_ptm_mapping {
-	input {
 		# PTM GCT files; must include at least one
 		File? pSTY_gct
 		File? acK_gct
@@ -39,7 +37,6 @@ task panoply_clumps_ptm_mapping {
 		Int? disk_space
 		Int num_threads = 32 		# set default in inputs, rather than in runtime, so the argument can be used by clumps
 		Int? num_preemptions
-	}
 
 	command {
 		set -euo pipefail

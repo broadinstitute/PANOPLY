@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_blacksheep_report {
-    input {
       Int? memory
       Int? disk_space
       Int? num_threads
@@ -13,7 +11,6 @@ task panoply_blacksheep_report {
       File input_tar
       String output_prefix
       String type
-    }
 
     command {
         set -euo pipefail
@@ -45,4 +42,3 @@ workflow panoply_blacksheep_report_workflow {
     call panoply_blacksheep_report
 
 }
-

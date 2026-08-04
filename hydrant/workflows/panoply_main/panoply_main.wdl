@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../panoply_main_internal/panoply_main_internal.wdl" as panoply_main_internal
 ## Proteogenomic
@@ -23,7 +22,6 @@ import "../../tasks/panoply_download/panoply_download.wdl" as download_wdl
 
 workflow panoply_main {
 
-  input {
     String job_identifier
     String ome_type
     String? run_ptmsea # "true" or "false"
@@ -68,7 +66,6 @@ workflow panoply_main {
     ###################################
     ###   Proteogenomics Analyses   ###
     ###################################
-  }
 
   if (defined(input_rna) && defined(input_cna)) {
 

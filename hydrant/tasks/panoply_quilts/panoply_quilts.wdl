@@ -1,7 +1,5 @@
-version 1.1
 
 task quilts {
-	input {
 		Array[File]? input_somatic_vcfs
 		Array[File]? input_germline_vcfs
 		Array[File]? input_splice_junctions_files # .bed .txt or .tab (see below)
@@ -22,7 +20,6 @@ task quilts {
 	  	Int? disk_space
 	  	Int? num_threads
 	  	Int? num_preemptions
-	}
 
 	command {
         set -euo pipefail

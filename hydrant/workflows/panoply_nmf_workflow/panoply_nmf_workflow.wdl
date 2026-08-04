@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_select_all_pairs/panoply_select_all_pairs.wdl" as select_pairs
 import "../panoply_nmf_internal_workflow/panoply_nmf_internal_workflow.wdl" as nmf_wdl
@@ -12,7 +11,6 @@ import "../../tasks/panoply_nmf_assemble_results/panoply_nmf_assemble_results.wd
 ################################################
 ##  workflow: mo_nmf + so_nmf + sankey + assemble
 workflow panoply_nmf_workflow {
-	input {
 		String label
 
 		## Data Upload
@@ -59,7 +57,6 @@ workflow panoply_nmf_workflow {
 		Boolean run_sankey
 
 		# select extant pairs from ome_pairs
-	}
 
     call select_pairs.panoply_select_all_pairs as select_pairs {
     	input:

@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2025 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_metaboanalyst/panoply_metaboanalyst.wdl" as metaboanalyst_wdl
 import "../../tasks/panoply_metaboanalyst_report/panoply_metaboanalyst_report.wdl" as metaboanalyst_report_wdl
@@ -9,7 +8,6 @@ import "../../tasks/panoply_metaboanalyst_report/panoply_metaboanalyst_report.wd
 ################################################
 ##  workflow: panoply_metaboanalyst + panoply_metaboanalyst_report
 workflow panoply_metaboanalyst_workflow {
-	input {
 		File meta_gct
 		File? omic_gct
 		String? ome_type
@@ -17,7 +15,6 @@ workflow panoply_metaboanalyst_workflow {
 		String output_prefix
 		File groups_file
 		File yaml_file
-	}
 
 	call metaboanalyst_wdl.panoply_metaboanalyst {
 	    input:

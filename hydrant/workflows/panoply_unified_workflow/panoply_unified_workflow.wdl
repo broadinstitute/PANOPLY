@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_select_all_pairs/panoply_select_all_pairs.wdl" as select_pairs
 import "../panoply_normalize_filter_workflow/panoply_normalize_filter_workflow.wdl" as norm_filt_wdl
@@ -16,7 +15,6 @@ import "../../tasks/panoply_check_yaml_default/panoply_check_yaml_default.wdl" a
 
 
 workflow panoply_unified_workflow {
-  input {
     File? prote_ome
     File? phospho_ome
     File? acetyl_ome
@@ -55,7 +53,6 @@ workflow panoply_unified_workflow {
     ### Organize omics data into pairs
 
     # proteomic pairs
-  }
 
   Array[Pair[String?, File?]] ome_pairs_input =
     [ ("proteome", prote_ome),

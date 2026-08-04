@@ -1,7 +1,6 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_nmf_balance_omes/panoply_nmf_balance_omes.wdl" as panoply_nmf_balance_omes_wdl
 import "../../tasks/panoply_nmf/panoply_nmf.wdl" as panoply_nmf_wdl
@@ -13,7 +12,6 @@ import "../panoply_ssgsea_workflow/panoply_ssgsea_workflow.wdl" as panoply_ssgse
 ##  workflow: nmf_balance_omes + nmf + nmf_report + ssgsea + ssgsea_report
 workflow panoply_nmf_internal_workflow {
 	
-	input {
 		String label
 		# Array[Pair[String,File]]+ ome_pairs
 	    Array[File]+ ome_gcts			# array of GCT files
@@ -47,7 +45,6 @@ workflow panoply_nmf_internal_workflow {
 		String? seed			# 'random' for random seed, or numeric for explicit seed
 
 		# Toggle Balance Module -- run if we have multi-omic data && balancing is on
-	}
 
 	if (length(ome_gcts) > 1 && select_first([balance_omes, false])) { # false by default, if balance_omes not provided
 		call panoply_nmf_balance_omes_wdl.panoply_nmf_balance_omes as balance {

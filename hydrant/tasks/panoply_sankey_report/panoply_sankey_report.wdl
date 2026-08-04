@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_sankey_report {
-    input {
       Int? memory
       Int? disk_space
       Int? num_threads
@@ -14,7 +12,6 @@ task panoply_sankey_report {
 
       String label
       File sankey_tar
-    }
 
     command {
         set -euo pipefail

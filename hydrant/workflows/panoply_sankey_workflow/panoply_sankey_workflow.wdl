@@ -1,14 +1,12 @@
 #
 # Copyright (c) 2020 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 import "../../tasks/panoply_sankey/panoply_sankey.wdl" as sankey_wdl
 import "../../tasks/panoply_sankey_report/panoply_sankey_report.wdl" as sankey_report_wdl
 
 
 workflow panoply_sankey_workflow {
-  input {
     Array[File]+ annot_files          # annotation file(s)
     Array[String]+ annot_file_labels  # datatype(s) / label(s) for the provided annotation file(s)
 
@@ -23,7 +21,6 @@ workflow panoply_sankey_workflow {
     String label
 
     ## generate Sankey Diagrams comparing clustering results between -omes
-  }
 
   call sankey_wdl.panoply_sankey as sankey {
     input:

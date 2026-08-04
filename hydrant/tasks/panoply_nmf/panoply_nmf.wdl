@@ -1,10 +1,8 @@
 #
 # Copyright (c) 2023 The Broad Institute, Inc. All rights reserved.
 #
-version 1.1
 
 task panoply_nmf {
-    input {
       Array[File]+ ome_gcts
       Array[String]+ ome_labels
 
@@ -32,7 +30,6 @@ task panoply_nmf {
   	Int? disk_space
   	Int? num_threads
   	Int? num_preemptions
-    }
 
 	command {
 		set -euo pipefail
