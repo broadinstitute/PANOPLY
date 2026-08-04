@@ -44,7 +44,7 @@ task panoply_metaboanalyst {
 			${"--pthw_db " + pthw_db} \
 			${"--anal_type " + anal_type} ${"--pval_comb " + pval_comb} ${"--pval_signif " + pval_signif} \
 			${"--top_n_networks " + top_n_networks} ${"--min_overlap " + min_overlap} \
-			${if defined(background_filter) then "--background_filter " + (if select_first([background_filter]) then "true" else "false") else ""} \
+			${if defined(background_filter) then "--background_filter ${if select_first([background_filter]) then 'true' else 'false'}" else ""} \
 			${"--output_prefix " + output_prefix} \
 			${"--yaml " + yaml_file} --libdir /prot/proteomics/Projects/PGDAC/src/
 	}

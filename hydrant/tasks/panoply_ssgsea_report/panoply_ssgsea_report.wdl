@@ -29,9 +29,9 @@ task panoply_ssgsea_report {
     set -euo pipefail
     Rscript /home/pgdac/src/ssgsea-renderRMD.R -t ${tarball} -l ${label} \
       ${"-g " + geneset_groups_file} \
-      ${if defined(split_by_prefix) then "-s " + (if select_first([split_by_prefix]) then "TRUE" else "FALSE") else ""} \
+      ${if defined(split_by_prefix) then "-s ${if select_first([split_by_prefix]) then 'TRUE' else 'FALSE'}" else ""} \
       ${"-f " + fdr} ${"-n " + top_n} \
-      ${if defined(cluster_rows) then "-c " + (if select_first([cluster_rows]) then "TRUE" else "FALSE") else ""} ${"-m " + ser_meth} \
+      ${if defined(cluster_rows) then "-c ${if select_first([cluster_rows]) then 'TRUE' else 'FALSE'}" else ""} ${"-m " + ser_meth} \
       -y ${cfg_yaml} -z /home/pgdac/src/
   }
 

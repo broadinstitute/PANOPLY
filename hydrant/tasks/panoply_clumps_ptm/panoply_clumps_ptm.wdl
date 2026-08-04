@@ -47,7 +47,7 @@ task panoply_clumps_ptm {
 			--input ${diff_exp_file} --maps ${var_sites_file} --pdbstore pdbs/ \
 			${'--protein_id ' + accession_col} ${'--site_id ' + variable_sites_col} \
 			${'--weight ' + weight_col} \
-			${if defined(run_combined) then "--run_combined " + (if select_first([run_combined]) then "true" else "false") else ""} \
+			${if defined(run_combined) then "--run_combined ${if select_first([run_combined]) then 'true' else 'false'}" else ""} \
 			--threads ${num_threads} \
 			$( [ ${DEBUG_MODE} = true ] && echo "-t" )
 

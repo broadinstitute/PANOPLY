@@ -66,9 +66,9 @@ task panoply_omicsev {
         --master_yaml ${yaml_file} \
         ${"--omicsev_class_column_name " + class_column_name} \
         ${"--omicsev_batch_column_name " + batch_column_name} \
-        ${if defined(data_log_transformed) then "--omicsev_data_log_transformed " + select_first([data_log_transformed]) else ""} \
-        ${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed " + select_first([rna_log_transformed]) else ""} \
-        ${if defined(do_function_prediction) then "--omicsev_do_function_prediction " + select_first([do_function_prediction]) else ""}
+        ${if defined(data_log_transformed) then "--omicsev_data_log_transformed ${select_first([data_log_transformed])}" else ""} \
+        ${if defined(rna_log_transformed) then "--omicsev_rna_log_transformed ${select_first([rna_log_transformed])}" else ""} \
+        ${if defined(do_function_prediction) then "--omicsev_do_function_prediction ${select_first([do_function_prediction])}" else ""}
   
     if [ ${STANDALONE} == "false" ]; then
         cp final_output_params.yaml $tar_dir/updated-master-parameter.yaml

@@ -35,7 +35,7 @@ task panoply_ptm_normalization {
         ${"--accession_numbers_colname " + accession_numbers_col} \
         ${"--accession_numbers_separator " + accession_numbers_sep} \
         ${"--score_colname" + score_col} \
-        ${"--use_gene_symbol" + use_gene_symbol} \
+        ${"--use_gene_symbol${use_gene_symbol}"} \
         ${"--gene_symbol_colname" + gene_symbol_colname} \
         ${"--mode" + mode} 
 

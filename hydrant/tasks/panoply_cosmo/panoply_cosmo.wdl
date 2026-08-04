@@ -63,7 +63,7 @@ task panoply_cosmo {
         Rscript /prot/proteomics/Projects/PGDAC/src/parameter_manager.r \
             --module cosmo \
             --master_yaml ${yaml_file} \
-            ${if defined(run_cosmo) then "--cosmo_run_cosmo " + "'${run_cosmo}'" else ""} \
+            ${if defined(run_cosmo) then "--cosmo_run_cosmo '${run_cosmo}'" else ""} \
             ${"--cosmo_sample_label " + sample_label}
 
     yaml_file="final_output_params.yaml"

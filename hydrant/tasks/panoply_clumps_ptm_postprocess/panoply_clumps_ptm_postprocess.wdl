@@ -27,7 +27,7 @@ task panoply_clumps_ptm_postprocess {
 		python -u /prot/proteomics/Projects/PGDAC/src/clumps_ptm_postprocess.py \
 			--results_tar ${results_tar} -y ${yaml_file} --output_prefix ${output_prefix} \
 			${'--fdr_threshold ' + fdr_threshold} \
-			${if defined(pymol_gen) then "--pymol_gen " + (if select_first([pymol_gen]) then "true" else "false") else ""} \
+			${if defined(pymol_gen) then "--pymol_gen ${if select_first([pymol_gen]) then 'true' else 'false'}" else ""} \
 			${'-t ' + pymol_upper_limit}
 
 		# tar full results

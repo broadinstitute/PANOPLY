@@ -59,8 +59,8 @@ task panoply_clumps_ptm_mapping {
 		--FASTA_ref_file ${FASTA_ref_file} ${'--FASTA_sep_type ' + FASTA_sep_type}  \
 		${'--accession_col ' + accession_col} ${'--gene_column ' + gene_column} \
 		${'--variable_sites_col ' + variable_sites_col} ${'--variable_sites_sep ' + '"' + variable_sites_sep + '"'} \
-		${if defined(keep_multi_sites) then "--keep_multi_sites " + (if select_first([keep_multi_sites]) then "true" else "false") else ""} \
-		${if defined(filter_duplicate_sites) then "--filter_duplicate_sites " + (if select_first([filter_duplicate_sites]) then "true" else "false") else ""} \
+		${if defined(keep_multi_sites) then "--keep_multi_sites ${if select_first([keep_multi_sites]) then 'true' else 'false'}" else ""} \
+		${if defined(filter_duplicate_sites) then "--filter_duplicate_sites ${if select_first([filter_duplicate_sites]) then 'true' else 'false'}" else ""} \
 		--UNIPROT_SWISSPROT ${UNIPROT_SWISSPROT} --SIFTS_DB ${SIFTS_DB} \
 		--output_prefix ${output_prefix} --yaml ${yaml_file} --num_threads ${num_threads} \
 		$( [ ${DEBUG_MODE} = true ] && echo "--DEBUG_MODE" )
