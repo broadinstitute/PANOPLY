@@ -75,55 +75,27 @@ if [[ $a_flag == "true" ]]; then
 fi
 
 
-## update ssGSEA and PTM-SEA databases
+## update ssGSEA and PTM-SEA databases in the shared defaults/ (also used by workbench/, see
+## workbench/deploy-workbench.sh) from the latest broadinstitute/ssGSEA2.0 release
 if [[ $d_flag == "true" ]]; then
-  cd $panoply/panda
-
-  ## clone ssGSEA repository
-  git clone https://github.com/broadinstitute/ssGSEA2.0.git
-
-  ## update Hallmarks Pathway
-  hallmark=`ls $panoply/panda/ssGSEA2.0/db/msigdb/h.all.v*`
-  if [[ -n $hallmark ]]; then
-    hallmark_old=`ls $panoply/panda/panda-src/defaults/h.all.v*`
-    if [[ -n $hallmark_old ]]; then
-      rm $hallmark_old
-    fi
-    echo $GREEN Updating Hallmarks Geneset DB to \'`basename $hallmark`\' $NC
-    cp $hallmark $panoply/panda/panda-src/defaults/
-  else
-    echo $RED Could not find new hallmark pathway database in ssGSEA2.0 repository $NC
-  fi
-
-  ## update PTM-Signature Database
-  ptmsig_ver=`ls -v $panoply/panda/ssGSEA2.0/db/ptmsigdb/ | tail -n 1`
-  if [[ -n $ptmsig_ver ]]; then
-    ptmsig_fl=`ls $panoply/panda/ssGSEA2.0/db/ptmsigdb/$ptmsig_ver/all/ptm.sig.db.all.flanking.human.$ptmsig_ver.gmt`
-    ptmsig_uni=`ls $panoply/panda/ssGSEA2.0/db/ptmsigdb/$ptmsig_ver/all/ptm.sig.db.all.uniprot.human.$ptmsig_ver.gmt`
-    if [[ -n $ptmsig_fl && -n $ptmsig_uni ]]; then
-      ptmsig_old=`ls $panoply/panda/panda-src/defaults/ptm.sig.db.all*`
-      if [[ -n $ptmsig_old ]]; then
-        rm $ptmsig_old
-      fi
-      echo $GREEN Updating PTM-Signature DBs to \'`basename $ptmsig_fl`\' and \'`basename $ptmsig_uni`\' $NC
-      cp $ptmsig_fl $panoply/panda/panda-src/defaults/
-      cp $ptmsig_uni $panoply/panda/panda-src/defaults/
-    else
-      echo $RED Could not find new PTM-Signature database\(s\) in ssGSEA2.0 repository $NC
-    fi
-  else
-    echo $RED Could not find PTM-Signature version directory in ssGSEA2.0 repository $NC
-  fi
-
-  ## cleanup
-  rm -rf $panoply/panda/ssGSEA2.0
+  $panoply/defaults/update-ssgsea-databases.sh
 fi
 
 
 
+# stage panda-src/defaults/ for this build -- the panda-src/Dockerfile's build context is
+# panda/panda-src/, so it can only COPY files that live within it; panda-src/defaults/ is
+# therefore a build-time staging target populated here, not a permanently-committed
+# directory. master-parameters.yaml and compound_db.qs are staged directly from their own
+# canonical src/ locations (not stashed as redundant copies in defaults/); the gmt databases
+# come from the shared defaults/ (which workbench/deploy-workbench.sh also stages from, for
+# the same reason).
+mkdir -p $panoply/panda/panda-src/defaults
+cp $panoply/src/panoply_common/master-parameters.yaml $panoply/panda/panda-src/defaults/.
+cp $panoply/src/panoply_metaboanalyst/pathway_db/compound_db.qs $panoply/panda/panda-src/defaults/.
+cp $panoply/defaults/*.gmt $panoply/panda/panda-src/defaults/
+
 # final docker
-cp $panoply/src/panoply_common/master-parameters.yaml $panoply/panda/panda-src/defaults/. # copy in parameters
-cp $panoply/src/panoply_metaboanalyst/pathway_db/compound_db.qs $panoply/panda/panda-src/defaults/. # copy in metabolite ID mapping
 cd $panoply/panda/panda-src
 final_docker1="$docker_ns/panda:$docker_tag"
 final_docker2="$docker_ns/panda:latest"

@@ -171,9 +171,20 @@ wb_setup <- function() {
       conda_names <- ifelse(missing_pkgs %in% bioc_pkgs,
                             paste0("bioconductor-", tolower(missing_pkgs)),
                             paste0("r-", tolower(missing_pkgs)))
-      args <- c("install", "-y", "-c", "conda-forge", "-c", "bioconda")
+      # --freeze-installed keeps every already-installed package (R itself included) as a
+      # hard constraint, so the solver can only ever *add* the requested package -- never
+      # upgrade R or anything else to satisfy it. Without this, an unpinned "install
+      # r-qs" can be solved by bumping R itself (and everything built against it) to
+      # whatever newer R version has the newest builds, silently trashing the environment
+      # the notebook is actually running in.
+      args <- c("install", "-y", "--freeze-installed", "-c", "conda-forge", "-c", "bioconda")
       if (nzchar(conda_prefix)) args <- c(args, "--prefix", conda_prefix)
-      system2(conda_bin, c(args, conda_names))
+      # One call per package, not one batched call for all of them: if any single name
+      # isn't resolvable on these channels (e.g. some CRAN-only packages were never
+      # published to conda-forge/bioconda under an "r-<pkg>" name), mamba aborts the
+      # *whole* transaction and installs nothing -- silently blocking every other
+      # package in the batch that would otherwise have resolved fine on its own.
+      for (name in conda_names) system2(conda_bin, c(args, name))
       missing_pkgs <- is_missing(all_pkgs)  # re-check -- don't trust exit status alone
     }
 

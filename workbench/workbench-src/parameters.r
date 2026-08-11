@@ -2,14 +2,25 @@
 # merged with notebook-collected runtime overrides.
 
 wb_load_default_master_parameters <- function(github_ref = GITHUB_REF) {
-  local_fallback <- file.path("workbench-src", "defaults", "master-parameters.yaml")
+  # Local fallback candidates, in priority order: a staged copy (populated by
+  # deploy-workbench.sh directly from the canonical src/panoply_common/ right before upload)
+  # first, then a dev-mode fallback for running straight out of a full repo checkout.
+  local_candidates <- c(
+    file.path("workbench-src", "defaults", "master-parameters.yaml"),
+    file.path("..", "src", "panoply_common", "master-parameters.yaml")
+  )
   tryCatch({
     text <- wb_gh_fetch("src/panoply_common/master-parameters.yaml", ref = github_ref, raw = TRUE)
     yaml::yaml.load(paste(text, collapse = "\n"))
   }, error = function(e) {
+    local_fallback <- local_candidates[file.exists(local_candidates)][1]
+    if (is.na(local_fallback)) {
+      stop("Could not fetch master-parameters.yaml from GitHub (", conditionMessage(e),
+           "), and no local fallback found at: ", paste(local_candidates, collapse = ", "))
+    }
     wb_msg("WARNING", sprintf(
-      "Could not fetch master-parameters.yaml from GitHub (%s); using bundled fallback copy.",
-      conditionMessage(e)
+      "Could not fetch master-parameters.yaml from GitHub (%s); using local fallback copy at %s.",
+      conditionMessage(e), local_fallback
     ))
     yaml::read_yaml(local_fallback)
   })

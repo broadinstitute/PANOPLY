@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
-# Uploads this whole workbench/ folder (self-contained -- no dependency on panda/ or anything
-# else in the repo) to a project's Manifold workbench on S3:
+# Stages default reference data into workbench-src/defaults/ -- master-parameters.yaml and
+# master_compound_db.qs from their own canonical src/ locations, and the gmt databases from
+# the repo's shared defaults/ (also used by panda/, see build-notebook-docker.sh) -- then
+# uploads this whole workbench/ folder to a project's Manifold workbench on S3:
 #
 #   s3://<bucket>/research/projects/<project-id>/<folder>/
 #
@@ -70,21 +72,14 @@ fi
 print_credential_help() {
   cat << 'EOF'
 
-AWS credentials are missing or have expired. To refresh them:
+AWS credentials are missing or have expired. To refresh them, on the AWS server run:
 
-1) On the AWS server, run:
+   eval "$(aws configure export-credentials --format env)"; \
+   echo "aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID"; \
+   echo "aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY"; \
+   echo "aws configure set aws_session_token $AWS_SESSION_TOKEN"
 
-   aws configure export-credentials --format env; \
-   echo export S3_BUCKET=$S3_BUCKET; \
-   echo export PROJECT_ID=$PROJECT_ID
-
-2) Copy the output and paste it into this terminal, then run:
-
-   aws configure set aws_access_key_id "$AWS_ACCESS_KEY_ID"
-   aws configure set aws_secret_access_key "$AWS_SECRET_ACCESS_KEY"
-   aws configure set aws_session_token "$AWS_SESSION_TOKEN"
-
-Then re-run this script.
+then copy the 3 lines it prints and run them here. Then re-run this script.
 EOF
 }
 
@@ -94,13 +89,29 @@ if ! aws sts get-caller-identity > /dev/null 2>&1; then
 fi
 
 WORKBENCH_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${WORKBENCH_DIR}/.." && pwd)"
+DEFAULTS_DIR="${WORKBENCH_DIR}/workbench-src/defaults"
 DEST="s3://${BUCKET}/research/projects/${PROJECT_ID}/${FOLDER}/"
+
+echo "Staging shared defaults into workbench-src/defaults/ ..."
+mkdir -p "${DEFAULTS_DIR}"
+for src in "${REPO_ROOT}/src/panoply_common/master-parameters.yaml" \
+           "${REPO_ROOT}/src/panoply_metaboanalyst/pathway_db/master_compound_db.qs" \
+           "${REPO_ROOT}/defaults/h.all.v7.0.symbols.gmt" \
+           "${REPO_ROOT}/defaults/ptm.sig.db.all.flanking.human.v2.0.0.gmt"; do
+  if [[ -f "$src" ]]; then
+    cp "$src" "${DEFAULTS_DIR}/"
+    echo "  staged $(basename "$src")"
+  else
+    echo "  WARNING: expected reference file not found, skipping: $src" >&2
+  fi
+done
 
 SYNC_ARGS=(
   s3 sync "${WORKBENCH_DIR}/" "${DEST}"
   --exclude "deploy-workbench.sh"
-  --exclude ".DS_Store"
-  --exclude ".ipynb_checkpoints/*"
+  --exclude "*.DS_Store"
+  --exclude "*.ipynb_checkpoints/*"
 )
 $DELETE && SYNC_ARGS+=(--delete)
 $DRY_RUN && SYNC_ARGS+=(--dryrun)

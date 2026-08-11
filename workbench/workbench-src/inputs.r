@@ -6,17 +6,28 @@ wb_list_data_categories <- function() {
   cat("   0: (none of the above)\n")
 }
 
-wb_default_asset <- function(pattern, defaults_dir = file.path("workbench-src", "defaults")) {
-  # Default assets (GSEA/PTM-SEA gmt databases) are committed directly under
-  # workbench-src/defaults/ -- workbench/ is self-contained and does not rely on panda/ (which
-  # is being phased out) or any other sibling directory. The pattern match (rather than a fixed
-  # filename) just means a future version bump can drop in a new file and be picked up as "most
-  # recent" without a code change.
-  candidates <- list.files(defaults_dir, pattern = pattern, full.names = TRUE)
-  if (length(candidates) == 0) {
-    stop(sprintf("No default asset found matching '%s' under %s.", pattern, defaults_dir))
+wb_default_asset <- function(pattern) {
+  # GSEA/PTM-SEA gmt databases live in the repo's shared defaults/ (also used by panda/), not
+  # committed under workbench-src/defaults/ -- that directory is a build-time staging target
+  # populated by deploy-workbench.sh right before upload, so the deployed workbench/ tree is
+  # still self-contained (only workbench/ gets synced to S3, not the whole repo). The second
+  # candidate is a dev-mode fallback for running straight out of a full repo checkout without
+  # having run the deploy script first. The pattern match (rather than a fixed filename) just
+  # means a future version bump can drop in a new file and be picked up as "most recent"
+  # without a code change.
+  candidate_dirs <- c(file.path("workbench-src", "defaults"), file.path("..", "defaults"))
+  source_path <- NULL
+  for (dir in candidate_dirs) {
+    # First directory with ANY match wins entirely (staged copy takes priority over the
+    # dev-mode fallback) -- within a directory, prefer the alphabetically-last match, in case
+    # more than one versioned file matches the pattern.
+    hits <- list.files(dir, pattern = pattern, full.names = TRUE)
+    if (length(hits) > 0) { source_path <- sort(hits, decreasing = TRUE)[1]; break }
   }
-  source_path <- sort(candidates, decreasing = TRUE)[1]
+  if (is.null(source_path)) {
+    stop(sprintf("No default asset found matching '%s' under: %s.", pattern,
+                 paste(candidate_dirs, collapse = ", ")))
+  }
 
   seeded_dir <- file.path(wb_workbench_root(), "defaults")
   dir.create(seeded_dir, showWarnings = FALSE, recursive = TRUE)
@@ -174,16 +185,33 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
 }
 
 wb_metab_compound_db_path <- function(github_ref = GITHUB_REF) {
-  # Unlike the gmt files in wb_default_asset() (which have no home outside panda/, which is
-  # being removed), master_compound_db.qs already has a stable canonical home in
-  # src/panoply_metaboanalyst/pathway_db/ -- used often enough to want a real check against it,
-  # but not often enough to justify a permanent duplicate copy in workbench/. Fetch it live from
-  # GitHub instead (same pattern as master-parameters.yaml), cached locally per ref.
+  # Treated the same as master-parameters.yaml (see wb_load_default_master_parameters()):
+  # fetch live from GitHub, cached locally per ref. On failure, fall back to a staged copy
+  # (populated by deploy-workbench.sh directly from the canonical src/panoply_metaboanalyst/
+  # right before upload -- temporary, not a permanent duplicate) or, for local dev, that
+  # canonical location directly.
   cache_path <- file.path(wb_workbench_root(), ".repo_cache", github_ref, "master_compound_db.qs")
-  if (!file.exists(cache_path)) {
+  if (file.exists(cache_path)) return(cache_path)
+
+  local_candidates <- c(
+    file.path("workbench-src", "defaults", "master_compound_db.qs"),
+    file.path("..", "src", "panoply_metaboanalyst", "pathway_db", "master_compound_db.qs")
+  )
+  tryCatch({
     wb_gh_fetch_binary("src/panoply_metaboanalyst/pathway_db/master_compound_db.qs", cache_path, ref = github_ref)
-  }
-  cache_path
+    cache_path
+  }, error = function(e) {
+    local_fallback <- local_candidates[file.exists(local_candidates)][1]
+    if (is.na(local_fallback)) {
+      stop("Could not fetch master_compound_db.qs from GitHub (", conditionMessage(e),
+           "), and no local fallback found at: ", paste(local_candidates, collapse = ", "))
+    }
+    wb_msg("WARNING", sprintf(
+      "Could not fetch master_compound_db.qs from GitHub (%s); using local fallback copy at %s.",
+      conditionMessage(e), local_fallback
+    ))
+    local_fallback
+  })
 }
 
 wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITHUB_REF) {

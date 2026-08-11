@@ -22,3 +22,8 @@ panda/.ipynb_checkpoints/
 
 workbench/.ipynb_checkpoints/
 
+# Shared reference databases (defaults/) are staged into these build/deploy-time targets by
+# build-notebook-docker.sh and deploy-workbench.sh respectively -- not permanently committed
+# here to avoid duplicating the same large files across three locations.
+panda/panda-src/defaults/
+workbench/workbench-src/defaults/
