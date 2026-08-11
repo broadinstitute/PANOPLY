@@ -1,0 +1,6 @@
+repo: broadinstitute/proteomics-Rutil
+ref: master
+commit: c39cadd342cbb7f5436c56d76ecdaaa095d59ff4
+synced: 2026-08-06T18:30:52Z
+files: color-mod-utils.r, map-to-genes.r, io.r, misc.r
+note: pinned copies -- re-run ./sync-rutils.sh to refresh. See workbench/workbench-src/r-utils/sync-rutils.sh.
