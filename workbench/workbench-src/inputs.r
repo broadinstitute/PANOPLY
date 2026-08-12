@@ -42,16 +42,29 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
   if (!is.null(zip_path)) utils::unzip(zip_path, exdir = input_dir, junkpaths = TRUE)
 
   files <- list.files(input_dir, pattern = "\\.(gct|csv|ya?ml|gmt)$", full.names = FALSE)
+  if (length(files) == 0 && is.null(zip_path)) {
+    stop(sprintf(
+      "No .gct/.csv/.yaml/.gmt files found in %s. Place your input files there, or pass ",
+      input_dir
+    ), "zip_path= to unzip one, then re-run.")
+  }
+
   already_mapped <- unlist(state$typemap, use.names = FALSE)
   files <- files[!file.path(input_dir, files) %in% already_mapped]
 
   for (f in files) {
     wb_list_data_categories()
-    repeat {
-      choice <- suppressWarnings(as.integer(trimws(readline(sprintf("  %s -> category index: ", f)))))
-      if (!is.na(choice) && choice >= 0 && choice <= length(CAT_MAP)) break
-      cat(sprintf("Invalid index, please enter a number from 0 to %d.\n", length(CAT_MAP)))
-    }
+    choice <- wb_smart_readline(
+      sprintf("  %s -> category index: ", f),
+      valid = function(ch) {
+        n <- suppressWarnings(as.integer(ch))
+        if (is.na(n) || n < 0 || n > length(CAT_MAP)) {
+          sprintf("Invalid index, please enter a number from 0 to %d.", length(CAT_MAP))
+        } else TRUE
+      }
+    )
+    if (is.null(choice)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); break }
+    choice <- as.integer(choice)
     if (choice == 0) next
     state$typemap[[CAT_MAP[choice]]] <- file.path(input_dir, f)
   }
@@ -126,19 +139,26 @@ wb_validate_gene_id_column <- function(gct_path, ome, params) {
 
   repeat {
     cat(sprintf("\n%s row-annotation columns: %s\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
-    choice <- trimws(readline(paste0(
-      "To create a Gene ID column for ", toupper(ome), ", choose:\n",
-      "  1) Select an existing column with HUGO gene symbols\n",
-      "  2) Convert a protein-ID column ('", protein_id_col, "', type ", protein_id_type, ") to HUGO gene symbols\n",
-      "  3) Skip (proceed without a validated gene-ID column)\n> ")))
+    choice <- wb_smart_readline(
+      paste0("To create a Gene ID column for ", toupper(ome), ", choose:\n",
+             "  1) Select an existing column with HUGO gene symbols\n",
+             "  2) Convert a protein-ID column ('", protein_id_col, "', type ", protein_id_type, ") to HUGO gene symbols\n",
+             "  3) Skip (proceed without a validated gene-ID column)\n> "),
+      valid = function(ch) if (ch %in% c("1", "2", "3")) TRUE else "Please enter 1, 2, or 3 (or 'quit' to cancel)."
+    )
+    if (is.null(choice) || choice == "3") {
+      wb_msg("WARNING", sprintf("Skipping gene-ID validation for %s data. Many PANOPLY modules require this column.", toupper(ome)))
+      break
+    }
     if (choice == "1") {
-      col <- trimws(readline("Column with HUGO gene symbols: "))
-      if (!(col %in% rdesc_names)) { cat("Column not found, try again.\n"); next }
+      col <- wb_smart_readline("Column with HUGO gene symbols: ",
+                               valid = function(ch) if (ch %in% rdesc_names) TRUE else "Column not found, try again.")
+      if (is.null(col)) next
       gct@rdesc[[gene_id_col_default]] <- gct@rdesc[[col]]
       cmapR::write_gct(gct, gct_path, appenddim = FALSE)
       wb_msg("INFO", sprintf("Using column '%s' as '%s' for %s data.", col, gene_id_col_default, toupper(ome)))
       break
-    } else if (choice == "2") {
+    } else {
       if (!(protein_id_col %in% rdesc_names)) {
         stop(sprintf("Configured protein-ID column '%s' not found in %s data.", protein_id_col, toupper(ome)))
       }
@@ -149,11 +169,6 @@ wb_validate_gene_id_column <- function(gct_path, ome, params) {
       cmapR::write_gct(gct, gct_path, appenddim = FALSE)
       wb_msg("INFO", sprintf("Converted '%s' (%s) to gene symbols for %s data.", protein_id_col, protein_id_type, toupper(ome)))
       break
-    } else if (choice == "3") {
-      wb_msg("WARNING", sprintf("Skipping gene-ID validation for %s data. Many PANOPLY modules require this column.", toupper(ome)))
-      break
-    } else {
-      cat("Invalid choice, try again.\n")
     }
   }
   invisible(gct_path)
@@ -172,15 +187,21 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
   }
   wb_msg("WARNING", sprintf("Default flanking-sequence column '%s' missing or invalid.", seqwin_default))
   cat(sprintf("PHOSPHOPROTEOME columns: %s\n", paste(rdesc_names, collapse = ", ")))
-  repeat {
-    col <- trimws(readline("Column with flanking sequences: "))
-    if (!(col %in% rdesc_names)) { cat("Column not found, try again.\n"); next }
-    if (!any(grepl(pattern, gct@rdesc[[col]]))) { cat("No valid flanking sequences found in that column, try again.\n"); next }
-    gct@rdesc[[seqwin_default]] <- gct@rdesc[[col]]
-    cmapR::write_gct(gct, gct_path, appenddim = FALSE)
-    wb_msg("INFO", sprintf("Using column '%s' as '%s'.", col, seqwin_default))
-    break
+  col <- wb_smart_readline(
+    "Column with flanking sequences: ",
+    valid = function(ch) {
+      if (!(ch %in% rdesc_names)) return("Column not found, try again.")
+      if (!any(grepl(pattern, gct@rdesc[[ch]]))) return("No valid flanking sequences found in that column, try again.")
+      TRUE
+    }
+  )
+  if (is.null(col)) {
+    wb_msg("WARNING", "Skipped flanking-sequence setup. PTM-SEA requires this column.")
+    return(invisible(gct_path))
   }
+  gct@rdesc[[seqwin_default]] <- gct@rdesc[[col]]
+  cmapR::write_gct(gct, gct_path, appenddim = FALSE)
+  wb_msg("INFO", sprintf("Using column '%s' as '%s'.", col, seqwin_default))
   invisible(gct_path)
 }
 
@@ -237,18 +258,30 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
   wb_msg("WARNING", sprintf("Default metabolite-ID column '%s' missing or invalid.", metab_id_col_default))
   cat(sprintf("METABOLOME columns: %s (or '0' to use GCT row IDs)\n", paste(rdesc_names, collapse = ", ")))
   repeat {
-    col <- trimws(readline("Column with metabolite IDs (or 0 for row IDs): "))
+    col <- wb_smart_readline(
+      "Column with metabolite IDs (or 0 for row IDs): ",
+      valid = function(ch) if (identical(ch, "0") || ch %in% rdesc_names) TRUE else "Column not found, try again."
+    )
+    if (is.null(col)) {
+      wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
+      return(invisible(gct_path))
+    }
     if (identical(col, "0")) { ids <- gct@rid; col_label <- "rid" }
-    else if (col %in% rdesc_names) { ids <- gct@rdesc[[col]]; col_label <- col }
-    else { cat("Column not found, try again.\n"); next }
+    else { ids <- gct@rdesc[[col]]; col_label <- col }
 
     id_type <- metab_id_type_default
     if (!wb_confirm(sprintf("Does '%s' use %s IDs?", col_label, metab_id_type_default))) {
       cat(sprintf("Supported ID types: %s\n", paste(names(compound_map), collapse = ", ")))
-      id_type <- trimws(readline("ID type: "))
-      if (!(id_type %in% names(compound_map))) { cat("Unsupported ID type, try again.\n"); next }
+      id_type <- wb_smart_readline(
+        "ID type: ",
+        valid = function(ch) if (ch %in% names(compound_map)) TRUE else "Unsupported ID type, try again."
+      )
+      if (is.null(id_type)) {
+        wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
+        return(invisible(gct_path))
+      }
     }
-    if (!any(!is.na(ids) & ids %in% compound_map[[id_type]])) { cat("No valid IDs found, try again.\n"); next }
+    if (!any(!is.na(ids) & ids %in% compound_map[[id_type]])) { wb_msg("WARNING", "No valid IDs found, try again."); next }
 
     gct@rdesc[[metab_id_col_default]] <- if (identical(col, "0")) {
       gct@rid

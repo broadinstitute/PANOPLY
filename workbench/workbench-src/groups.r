@@ -4,6 +4,7 @@ wb_list_annotation_columns <- function(state) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   cat("Annotation columns:\n")
   for (col in colnames(annot)) cat(" -", col, "\n")
+  flush.console()
   invisible(colnames(annot))
 }
 
@@ -53,6 +54,7 @@ wb_select_groups <- function(state, columns = NULL, max_categories = 10) {
   if (length(state$groups_cols_continuous) > 0) {
     cat("Continuous groups:\n"); for (col in state$groups_cols_continuous) cat(" -", col, "\n")
   }
+  flush.console()
 
   wb_reset_colors(state, annot = annot)
 }
@@ -81,6 +83,7 @@ wb_show_colors <- function(state) {
     vals <- state$groups_colors[[group]]
     for (v in names(vals)) cat(sprintf("  %-20s %s\n", v, vals[[v]]))
   }
+  flush.console()
   invisible(state$groups_colors)
 }
 
@@ -117,22 +120,30 @@ wb_select_cosmo_attributes <- function(state, columns = NULL) {
 
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   candidates <- setdiff(colnames(annot), IGNORE_COLS)
-  valid <- Filter(function(col) {
+  valid_attrs <- Filter(function(col) {
     tab <- table(annot[[col]])
     length(tab) == 2 && min(tab) >= min(10, nrow(annot) / 5) && !any(is.na(annot[[col]]))
   }, candidates)
 
-  if (length(valid) == 0) {
+  if (length(valid_attrs) == 0) {
     wb_msg("WARNING", "No valid (binary, balanced, NA-free) attributes found. COSMO will not be run.")
     state$cosmo_params <- list(run_cosmo = FALSE, sample_label = "")
     return(wb_save_state(state))
   }
 
-  cat("Valid COSMO attributes:\n"); for (col in valid) cat(" -", col, "\n")
+  cat("Valid COSMO attributes:\n"); for (col in valid_attrs) cat(" -", col, "\n")
+  flush.console()
   if (is.null(columns)) {
-    columns <- strsplit(trimws(readline("Select attribute(s), comma-separated: ")), "\\s*,\\s*")[[1]]
+    columns <- wb_smart_readline(
+      "Select attribute(s), comma-separated: ",
+      valid = function(ch) {
+        picked <- intersect(strsplit(ch, "\\s*,\\s*")[[1]], valid_attrs)
+        if (length(picked) == 0) "None of those match a valid attribute above, try again." else TRUE
+      }
+    )
+    columns <- if (is.null(columns)) character(0) else strsplit(columns, "\\s*,\\s*")[[1]]
   }
-  columns <- intersect(columns, valid)
+  columns <- intersect(columns, valid_attrs)
 
   if (length(columns) == 0) {
     wb_msg("WARNING", "No valid attributes selected. COSMO will not be run.")
@@ -163,9 +174,19 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   if (is.null(columns)) {
     wb_list_annotation_columns(state)
-    columns <- strsplit(trimws(readline(
-      "Select up to 3 categorical annotations for Clumps-PTM, comma-separated: "
-    )), "\\s*,\\s*")[[1]]
+    columns <- wb_smart_readline(
+      "Select up to 3 categorical annotations for Clumps-PTM, comma-separated: ",
+      valid = function(ch) {
+        picked <- intersect(strsplit(ch, "\\s*,\\s*")[[1]], colnames(annot))
+        if (length(picked) == 0) "None of those match a known annotation column, try again." else TRUE
+      }
+    )
+    if (is.null(columns)) {
+      wb_msg("WARNING", "Skipped Clumps-PTM annotation selection. Clumps-PTM will not be run.")
+      state$toggles$run_clumpsptm <- FALSE
+      return(wb_save_state(state))
+    }
+    columns <- strsplit(columns, "\\s*,\\s*")[[1]]
   }
   columns <- intersect(columns, colnames(annot))
   if (length(columns) > 3) {

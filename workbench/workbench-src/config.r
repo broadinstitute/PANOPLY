@@ -105,16 +105,51 @@ wb_run_cmd <- function(cmd, args = character(0)) {
   out
 }
 
-wb_confirm <- function(prompt) {
+# flush.console() after every status message -- Jupyter/IRkernel can otherwise buffer cat()
+# output instead of showing it right away, which is especially misleading right before a
+# step that takes a while (looks like the cell has silently hung).
+wb_msg <- function(type, ...) { cat(sprintf("[%s] %s\n", type, paste0(...))); flush.console() }
+
+wb_trim <- function(x) gsub("^\\s+|\\s+$", "", x)
+
+# Recognized at any wb_smart_readline() prompt (case-insensitive) to back out of the current
+# step cleanly, instead of being stuck in a validation loop with no escape but a kernel
+# interrupt. Ported from build-config.r's exit_commands/valid_choice()/smart_readline().
+WB_EXIT_COMMANDS <- c("q", "quit", "exit", "cancel")
+
+wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE) {
+  # readline() that re-prompts until the response is valid, and lets the user type an exit
+  # command to cancel out at any point -- returns NULL in that case, so callers can just
+  # check is.null(result) rather than each needing their own escape hatch.
+  #
+  # `valid`, if given, is called on the trimmed input and should return TRUE (accept),
+  # FALSE (reject with a generic message), or a character string (reject with THAT specific
+  # message) -- e.g. valid = function(x) if (x %in% choices) TRUE else "Not a valid choice."
   repeat {
-    choice <- tolower(trimws(readline(paste0(prompt, " (y/n): "))))
-    if (choice %in% c("y", "yes")) return(TRUE)
-    if (choice %in% c("n", "no")) return(FALSE)
-    cat("Please answer y or n.\n")
+    choice <- wb_trim(readline(prompt))
+    flush.console()
+    if (tolower(choice) %in% WB_EXIT_COMMANDS) {
+      wb_msg("CANCELLED", "No changes made.")
+      return(NULL)
+    }
+    if (!allow_empty && !nzchar(choice)) {
+      cat("Input cannot be empty (or type 'quit' to cancel). Please try again.\n")
+      next
+    }
+    result <- if (is.null(valid)) TRUE else valid(choice)
+    if (isTRUE(result)) return(choice)
+    cat(if (is.character(result)) result else "Invalid input (or type 'quit' to cancel).", "\n")
   }
 }
 
-wb_msg <- function(type, ...) cat(sprintf("[%s] %s\n", type, paste0(...)))
+wb_confirm <- function(prompt) {
+  choice <- wb_smart_readline(
+    paste0(prompt, " (y/n): "),
+    valid = function(ch) if (tolower(ch) %in% c("y", "yes", "n", "no")) TRUE else "Please answer y or n (or 'quit' to cancel)."
+  )
+  if (is.null(choice)) return(FALSE)  # quitting a y/n question is treated as declining
+  tolower(choice) %in% c("y", "yes")
+}
 
 `%||%` <- function(a, b) if (is.null(a)) b else a
 
@@ -145,6 +180,13 @@ wb_source_rutil_vendor <- function(dir = "workbench-src/r-utils") {
 ### ===
 
 wb_setup <- function() {
+  # cat() output can sit in Jupyter/IRkernel's console buffer instead of displaying right
+  # away -- particularly unhelpful right before a step that can take a while, since it looks
+  # like the cell is silently hanging rather than working. flush.console() forces whatever's
+  # been printed so far to actually show up before moving on (same reason the old
+  # panda-src/build-config.r sprinkled it after every user-facing print).
+  cat("Checking installed packages...\n"); flush.console()
+
   cran_pkgs <- c("yaml", "jsonlite", "RColorBrewer", "dplyr", "khroma", "qs", "BiocManager")
   bioc_pkgs <- c("cmapR", "org.Hs.eg.db", "EnsDb.Hsapiens.v79")
   all_pkgs  <- c(cran_pkgs, bioc_pkgs)
@@ -155,6 +197,7 @@ wb_setup <- function() {
   if (length(missing_pkgs) > 0) {
     cat("Installing missing packages (first run only -- this can take a while):\n -",
         paste(missing_pkgs, collapse = ", "), "\n")
+    flush.console()
 
     conda_bin <- Sys.which("mamba"); if (!nzchar(conda_bin)) conda_bin <- Sys.which("conda")
     if (nzchar(conda_bin)) {
@@ -205,6 +248,7 @@ wb_setup <- function() {
   } else {
     cat("All required packages are available.\n")
   }
+  flush.console()
 
   invisible(wb_source_rutil_vendor())
   invisible(length(still_missing) == 0)
