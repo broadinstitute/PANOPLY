@@ -42,7 +42,9 @@ wb_list_github_workflows <- function(ref = GITHUB_REF, repo = GITHUB_REPO) {
   listing <- wb_gh_fetch("hydrant/workflows", ref = ref, raw = FALSE, repo = repo)
   entries <- jsonlite::fromJSON(paste(listing, collapse = "\n"), simplifyDataFrame = FALSE)
   names <- vapply(entries, function(e) if (identical(e$type, "dir")) e$name else NA_character_, character(1))
-  sort(names[!is.na(names)])
+  result <- sort(names[!is.na(names)])
+  wb_done()
+  result
 }
 
 wb_fetch_workflow_wdl <- function(workflow_name, ref = GITHUB_REF, repo = GITHUB_REPO, use_cache = TRUE) {
@@ -244,6 +246,7 @@ wb_update_inputs_json_for_subset <- function(state, subset_name,
     dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
     jsonlite::write_json(fresh, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
     wb_msg("INFO", sprintf("Wrote a new inputs.json to %s", out_path))
+    wb_done()
     return(out_path)
   }
 
@@ -260,5 +263,6 @@ wb_update_inputs_json_for_subset <- function(state, subset_name,
   jsonlite::write_json(existing, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
   wb_msg("INFO", sprintf("Updated file-path inputs in %s for subset '%s' (backup at %s.bak)",
                         out_path, subset_name, existing_inputs_path))
+  wb_done()
   out_path
 }

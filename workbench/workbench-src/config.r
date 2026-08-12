@@ -89,19 +89,23 @@ wb_load_state <- function() {
   # itself means "missing" and "exists but unreadable" are handled identically -- both just
   # fall through to a fresh default state, with no error and no complaint either way.
   saved <- suppressWarnings(tryCatch(yaml::read_yaml(path), error = function(e) NULL))
-  if (is.null(saved)) return(wb_default_state())
+  if (is.null(saved)) { wb_done(); return(wb_default_state()) }
 
   if (!wb_confirm(sprintf("Found a previous session (%s). Load it?", path))) {
     wb_msg("INFO", "Starting a fresh session instead.")
+    wb_done()
     return(wb_default_state())
   }
   wb_msg("INFO", sprintf("Loaded existing session state from %s.", path))
-  modifyList(wb_default_state(), saved)
+  result <- modifyList(wb_default_state(), saved)
+  wb_done()
+  result
 }
 
 wb_save_state <- function(state) {
   dir.create(dirname(wb_state_path()), showWarnings = FALSE, recursive = TRUE)
   yaml::write_yaml(state, wb_state_path())
+  wb_done()
   invisible(state)
 }
 
@@ -126,6 +130,11 @@ wb_run_cmd <- function(cmd, args = character(0)) {
 # output instead of showing it right away, which is especially misleading right before a
 # step that takes a while (looks like the cell has silently hung).
 wb_msg <- function(type, ...) { cat(sprintf("[%s] %s\n", type, paste0(...))); flush.console() }
+
+# Printed by every top-level wb_*() function the notebook calls directly, right before it
+# returns, so it's unambiguous in the cell output that the function actually finished (as
+# opposed to still running, or having silently stopped partway through).
+wb_done <- function() { cat("=== DONE ===\n"); flush.console() }
 
 wb_trim <- function(x) gsub("^\\s+|\\s+$", "", x)
 
@@ -270,7 +279,9 @@ wb_setup <- function() {
   flush.console()
 
   invisible(wb_source_rutil_vendor())
-  invisible(length(still_missing) == 0)
+  result <- length(still_missing) == 0
+  wb_done()
+  invisible(result)
 }
 
 ### ===

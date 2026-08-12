@@ -55,5 +55,6 @@ wb_build_master_parameters_yaml <- function(state,
   yaml::write_yaml(merged, out_path, handlers = list(logical = function(x) {
     structure(ifelse(x, "TRUE", "FALSE"), class = "verbatim")
   }))
+  wb_done()
   out_path
 }

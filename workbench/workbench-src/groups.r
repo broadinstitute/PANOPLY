@@ -1,10 +1,13 @@
 # Group selection, colors, COSMO attributes, ClumpsPTM groups.
 
-wb_list_annotation_columns <- function(state) {
+wb_list_annotation_columns <- function(state, done = TRUE) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   cat("Annotation columns:\n")
   for (col in colnames(annot)) cat(" -", col, "\n")
   flush.console()
+  # done = FALSE for internal callers (e.g. wb_select_clumpsptm_groups()) that use this as a
+  # mid-function listing, not their final action -- printing "done" here would be premature.
+  if (done) wb_done()
   invisible(colnames(annot))
 }
 
@@ -76,6 +79,7 @@ wb_assign_colors <- function(annot, groups_cols) {
 wb_show_colors <- function(state) {
   if (length(state$groups_colors) == 0) {
     wb_msg("WARNING", "No colors assigned yet. Run wb_reset_colors() first.")
+    wb_done()
     return(invisible(NULL))
   }
   for (group in names(state$groups_colors)) {
@@ -84,6 +88,7 @@ wb_show_colors <- function(state) {
     for (v in names(vals)) cat(sprintf("  %-20s %s\n", v, vals[[v]]))
   }
   flush.console()
+  wb_done()
   invisible(state$groups_colors)
 }
 
@@ -173,7 +178,7 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
 
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   if (is.null(columns)) {
-    wb_list_annotation_columns(state)
+    wb_list_annotation_columns(state, done = FALSE)
     columns <- wb_smart_readline(
       "Select up to 3 categorical annotations for Clumps-PTM, comma-separated: ",
       valid = function(ch) {
