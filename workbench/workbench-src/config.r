@@ -83,11 +83,20 @@ wb_default_state <- function() {
 
 wb_load_state <- function() {
   path <- wb_state_path()
-  if (file.exists(path)) {
-    message("Loaded existing session state from ", path)
-    return(modifyList(wb_default_state(), yaml::read_yaml(path)))
+  # Try the read directly rather than gating on file.exists() first: on some Manifold home
+  # directory mounts, file.exists() can still report TRUE for a just-deleted file (stale
+  # directory-listing metadata) even though the actual open then fails. Catching the read
+  # itself means "missing" and "exists but unreadable" are handled identically -- both just
+  # fall through to a fresh default state, with no error and no complaint either way.
+  saved <- suppressWarnings(tryCatch(yaml::read_yaml(path), error = function(e) NULL))
+  if (is.null(saved)) return(wb_default_state())
+
+  if (!wb_confirm(sprintf("Found a previous session (%s). Load it?", path))) {
+    wb_msg("INFO", "Starting a fresh session instead.")
+    return(wb_default_state())
   }
-  wb_default_state()
+  wb_msg("INFO", sprintf("Loaded existing session state from %s.", path))
+  modifyList(wb_default_state(), saved)
 }
 
 wb_save_state <- function(state) {
