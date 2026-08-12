@@ -206,32 +206,32 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
 }
 
 wb_metab_compound_db_path <- function(github_ref = GITHUB_REF) {
-  # Treated the same as master-parameters.yaml (see wb_load_default_master_parameters()):
-  # fetch live from GitHub, cached locally per ref. On failure, fall back to a staged copy
-  # (populated by deploy-workbench.sh directly from the canonical src/panoply_metaboanalyst/
-  # right before upload -- temporary, not a permanent duplicate) or, for local dev, that
-  # canonical location directly.
-  cache_path <- file.path(wb_workbench_root(), ".repo_cache", github_ref, "master_compound_db.qs")
-  if (file.exists(cache_path)) return(cache_path)
-
-  local_candidates <- c(
+  # Same staged-first, live-fetch-as-backup pattern as wb_load_default_master_parameters():
+  # the staged copy (populated by deploy-workbench.sh directly from the canonical
+  # src/panoply_metaboanalyst/ right before upload) is the stable, version-pinned copy that
+  # shipped with this deployment. Dev-mode fallback for running straight out of a full repo
+  # checkout. Only if neither is present do we live-fetch from GitHub as a backup -- with a
+  # warning, since a live fetch may not match the version actually pinned at deployment.
+  staged_candidates <- c(
     file.path("workbench-src", "defaults", "master_compound_db.qs"),
     file.path("..", "src", "panoply_metaboanalyst", "pathway_db", "master_compound_db.qs")
   )
+  staged <- staged_candidates[file.exists(staged_candidates)][1]
+  if (!is.na(staged)) return(staged)
+
+  wb_msg("WARNING", sprintf(
+    paste("No staged master_compound_db.qs found (expected at %s); live-fetching from",
+          "GitHub (%s@%s) as a backup -- this may not match the stable, version-pinned copy",
+          "normally staged when the workbench is deployed."),
+    paste(staged_candidates, collapse = " or "), GITHUB_REPO, github_ref
+  ))
+  out_path <- tempfile(fileext = ".qs")
   tryCatch({
-    wb_gh_fetch_binary("src/panoply_metaboanalyst/pathway_db/master_compound_db.qs", cache_path, ref = github_ref)
-    cache_path
+    wb_gh_fetch_binary("src/panoply_metaboanalyst/pathway_db/master_compound_db.qs", out_path, ref = github_ref)
+    out_path
   }, error = function(e) {
-    local_fallback <- local_candidates[file.exists(local_candidates)][1]
-    if (is.na(local_fallback)) {
-      stop("Could not fetch master_compound_db.qs from GitHub (", conditionMessage(e),
-           "), and no local fallback found at: ", paste(local_candidates, collapse = ", "))
-    }
-    wb_msg("WARNING", sprintf(
-      "Could not fetch master_compound_db.qs from GitHub (%s); using local fallback copy at %s.",
-      conditionMessage(e), local_fallback
-    ))
-    local_fallback
+    stop("No staged master_compound_db.qs found, and the live GitHub fetch failed too (",
+         conditionMessage(e), ").")
   })
 }
 

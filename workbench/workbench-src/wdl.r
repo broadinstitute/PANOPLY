@@ -49,6 +49,10 @@ wb_fetch_workflow_wdl <- function(workflow_name, ref = GITHUB_REF, repo = GITHUB
   cache_dir <- file.path(wb_workbench_root(), ".wdl_cache", ref)
   cache_path <- file.path(cache_dir, paste0(workflow_name, ".wdl"))
   if (use_cache && file.exists(cache_path)) {
+    wb_msg("INFO", sprintf(
+      "Using cached %s.wdl from a previous fetch (%s). Delete this file, or pass use_cache=FALSE, to force a fresh fetch.",
+      workflow_name, cache_path
+    ))
     return(paste(readLines(cache_path, warn = FALSE), collapse = "\n"))
   }
 
