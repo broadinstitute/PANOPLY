@@ -55,6 +55,7 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
 
   if (length(files) > 0) wb_list_data_categories()
 
+  cancelled <- FALSE
   for (f in files) {
     choice <- wb_smart_readline(
       sprintf("  %s -> category index: ", f),
@@ -65,11 +66,12 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
         } else TRUE
       }
     )
-    if (is.null(choice)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); break }
+    if (is.null(choice)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); cancelled <- TRUE; break }
     choice <- as.integer(choice)
     if (choice == 0) next
     state$typemap[[CAT_MAP[choice]]] <- file.path(input_dir, f)
   }
+  if (!cancelled && length(files) > 0) wb_msg("INFO", "All files have been sorted.")
 
   if (is.null(state$typemap$ptmseaDB)) {
     state$typemap$ptmseaDB <- wb_default_asset("^ptm\\.sig\\.db\\.all\\.flanking\\.human.*\\.gmt$")
@@ -77,6 +79,12 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
   if (is.null(state$typemap$gseaDB)) {
     state$typemap$gseaDB <- wb_default_asset("^h\\.all.*\\.symbols\\.gmt$")
   }
+
+  cat("\nCurrent file mappings:\n")
+  for (cat_name in intersect(CAT_MAP, names(state$typemap))) {
+    cat(sprintf("  %-16s -> %s\n", cat_name, state$typemap[[cat_name]]))
+  }
+  flush.console()
 
   wb_save_state(state)
 }
