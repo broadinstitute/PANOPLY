@@ -146,9 +146,9 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
   }
   if (valid) return(invisible(gct_path))
 
+  cat(sprintf("\n%s row-annotation columns: %s\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
+  flush.console()
   repeat {
-    cat(sprintf("\n%s row-annotation columns: %s\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
-    flush.console()
     choice <- wb_smart_readline(
       paste0("To create a Gene ID column for ", toupper(ome), ", choose:\n",
              "  1) Select an existing column with HUGO gene symbols\n",
