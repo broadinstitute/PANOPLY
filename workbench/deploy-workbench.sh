@@ -75,11 +75,16 @@ print_credential_help() {
 AWS credentials are missing or have expired. To refresh them, on the AWS server run:
 
    eval "$(aws configure export-credentials --format env)"; \
+   echo "unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_CREDENTIAL_EXPIRATION"; \
    echo "aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID"; \
    echo "aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY"; \
-   echo "aws configure set aws_session_token $AWS_SESSION_TOKEN"
+   echo "aws configure set aws_session_token $AWS_SESSION_TOKEN"; \
+   unset AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_SESSION_TOKEN AWS_CREDENTIAL_EXPIRATION
 
-then copy the 3 lines it prints and run them here. Then re-run this script.
+then copy the 3 lines it prints and run them here, then re-run this script.
+
+If this fails to resolve the issue, please try deleting and rebooting your Manifold environment.
+
 EOF
 }
 
