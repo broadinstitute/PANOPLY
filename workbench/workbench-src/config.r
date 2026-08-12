@@ -52,7 +52,15 @@ wb_local_to_s3 <- function(local_path) {
 ### Session state -- round-tripped as a single yaml file, replaces Terra's config.yaml restore
 ### ===
 
-wb_state_path <- function() file.path(wb_workbench_root(), ".panoply-session.yaml")
+# Stored alongside the deployed notebook/workbench-src (the notebook's own working directory
+# -- see the file header comment) rather than one level up at wb_workbench_root(), so it lands
+# in whatever subfolder deploy-workbench.sh actually deployed to (workbench-setup/ by default)
+# instead of loose in the project's ~/workbench/ root next to inputs/, subsets/, etc. This is
+# also exactly the folder deploy-workbench.sh's --delete mirrors from the git repo, so it's
+# explicitly excluded from that sync (see deploy-workbench.sh) -- otherwise a redeploy with
+# --delete would wipe saved session progress, since this file only ever exists on the deployed
+# side and has no local-repo counterpart.
+wb_state_path <- function() file.path(getwd(), ".panoply-session.yaml")
 
 wb_default_state <- function() {
   list(
@@ -83,7 +91,7 @@ wb_load_state <- function() {
 }
 
 wb_save_state <- function(state) {
-  dir.create(wb_workbench_root(), showWarnings = FALSE, recursive = TRUE)
+  dir.create(dirname(wb_state_path()), showWarnings = FALSE, recursive = TRUE)
   yaml::write_yaml(state, wb_state_path())
   invisible(state)
 }

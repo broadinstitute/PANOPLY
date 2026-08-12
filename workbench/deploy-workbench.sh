@@ -37,8 +37,10 @@ Options:
   -f, --folder NAME     Destination subfolder under research/projects/ID/ (default: ${FOLDER})
   -b, --bucket NAME     S3 bucket (default: ${BUCKET})
       --delete          Mirror-delete files at the destination that no longer exist locally
-                         (scoped to this subfolder only -- never touches the rest of the
-                         project's ~/workbench/, e.g. inputs/, subsets/, session state).
+                         (scoped to this subfolder only -- never touches inputs/, subsets/,
+                         or other project data one level up in the project's ~/workbench/.
+                         The session-state yaml lives inside this subfolder but is explicitly
+                         excluded from the sync below, so a redeploy never wipes it either).
       --dry-run         Show what would be uploaded without actually uploading
   -y, --yes             Skip the confirmation prompt (for non-interactive/CI use)
   -h, --help            Show this help
@@ -117,6 +119,7 @@ SYNC_ARGS=(
   --exclude "deploy-workbench.sh"
   --exclude "*.DS_Store"
   --exclude "*.ipynb_checkpoints/*"
+  --exclude "*.panoply-session.yaml"
 )
 $DELETE && SYNC_ARGS+=(--delete)
 $DRY_RUN && SYNC_ARGS+=(--dryrun)

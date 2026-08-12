@@ -59,7 +59,7 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
       valid = function(ch) {
         n <- suppressWarnings(as.integer(ch))
         if (is.na(n) || n < 0 || n > length(CAT_MAP)) {
-          sprintf("Invalid index, please enter a number from 0 to %d.", length(CAT_MAP))
+          sprintf("Invalid category number (0-%d).", length(CAT_MAP))
         } else TRUE
       }
     )
