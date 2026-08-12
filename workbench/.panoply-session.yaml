@@ -1,0 +1,23 @@
+typemap:
+  proteome: /var/folders/4n/69hlm14j10771k1lmww54w1w0000gq/T//RtmpUs5Kud/inputs_f59b7612f2cb/myfile.gct
+  ptmseaDB: /Users/wcorinne/workbench/defaults/ptm.sig.db.all.flanking.human.v2.0.0.gmt
+  gseaDB: /Users/wcorinne/workbench/defaults/h.all.v7.0.symbols.gmt
+groups_cols: []
+groups_cols_continuous: []
+groups_colors: []
+toggles:
+  normalize_proteomics: no
+  filter_proteomics: no
+  run_ptmsea: no
+  run_metab: no
+  run_clumpsptm: no
+  run_cmap: no
+  run_mo_nmf: no
+  run_so_nmf: yes
+cosmo_params:
+  run_cosmo: no
+  sample_label: ''
+job_id: ~
+subsets: []
+github_ref: issue-githubWDL
+target_workflow: panoply_unified_workflow

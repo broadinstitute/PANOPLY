@@ -151,11 +151,13 @@ wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE) {
     }
     if (!allow_empty && !nzchar(choice)) {
       cat("Input cannot be empty (or type 'quit' to cancel). Please try again.\n")
+      flush.console()
       next
     }
     result <- if (is.null(valid)) TRUE else valid(choice)
     if (isTRUE(result)) return(choice)
     cat(if (is.character(result)) result else "Invalid input (or type 'quit' to cancel).", "\n")
+    flush.console()
   }
 }
 

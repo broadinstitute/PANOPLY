@@ -4,6 +4,7 @@ wb_list_data_categories <- function() {
   cat("Data categories:\n")
   for (i in seq_along(CAT_MAP)) cat(sprintf("  %2d: %s\n", i, CAT_MAP[i]))
   cat("   0: (none of the above)\n")
+  flush.console()
 }
 
 wb_default_asset <- function(pattern) {
@@ -139,6 +140,7 @@ wb_validate_gene_id_column <- function(gct_path, ome, params) {
 
   repeat {
     cat(sprintf("\n%s row-annotation columns: %s\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
+    flush.console()
     choice <- wb_smart_readline(
       paste0("To create a Gene ID column for ", toupper(ome), ", choose:\n",
              "  1) Select an existing column with HUGO gene symbols\n",
@@ -187,6 +189,7 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
   }
   wb_msg("WARNING", sprintf("Default flanking-sequence column '%s' missing or invalid.", seqwin_default))
   cat(sprintf("PHOSPHOPROTEOME columns: %s\n", paste(rdesc_names, collapse = ", ")))
+  flush.console()
   col <- wb_smart_readline(
     "Column with flanking sequences: ",
     valid = function(ch) {
@@ -257,6 +260,7 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
   }
   wb_msg("WARNING", sprintf("Default metabolite-ID column '%s' missing or invalid.", metab_id_col_default))
   cat(sprintf("METABOLOME columns: %s (or '0' to use GCT row IDs)\n", paste(rdesc_names, collapse = ", ")))
+  flush.console()
   repeat {
     col <- wb_smart_readline(
       "Column with metabolite IDs (or 0 for row IDs): ",
@@ -272,6 +276,7 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
     id_type <- metab_id_type_default
     if (!wb_confirm(sprintf("Does '%s' use %s IDs?", col_label, metab_id_type_default))) {
       cat(sprintf("Supported ID types: %s\n", paste(names(compound_map), collapse = ", ")))
+      flush.console()
       id_type <- wb_smart_readline(
         "ID type: ",
         valid = function(ch) if (ch %in% names(compound_map)) TRUE else "Unsupported ID type, try again."
