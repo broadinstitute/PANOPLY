@@ -21,6 +21,7 @@ panda/.ipynb_checkpoints/
 *.zip
 
 workbench/.ipynb_checkpoints/
+workbench/.panoply-session.yaml
 
 # Shared reference databases (defaults/) are staged into these build/deploy-time targets by
 # build-notebook-docker.sh and deploy-workbench.sh respectively -- not permanently committed

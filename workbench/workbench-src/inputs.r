@@ -53,8 +53,9 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
   already_mapped <- unlist(state$typemap, use.names = FALSE)
   files <- files[!file.path(input_dir, files) %in% already_mapped]
 
+  if (length(files) > 0) wb_list_data_categories()
+
   for (f in files) {
-    wb_list_data_categories()
     choice <- wb_smart_readline(
       sprintf("  %s -> category index: ", f),
       valid = function(ch) {
@@ -107,7 +108,7 @@ wb_validate_sample_ids <- function(data_type, data_ids, annot_ids) {
   invisible(TRUE)
 }
 
-wb_validate_gene_id_column <- function(gct_path, ome, params) {
+wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
   if (ome == "metabolome") {
     wb_msg("INFO", "Skipping gene-ID column check for METABOLOME data.")
     return(invisible(NULL))
@@ -117,7 +118,6 @@ wb_validate_gene_id_column <- function(gct_path, ome, params) {
   protein_id_col       <- params$global_parameters$gene_mapping$protein_id_col
   protein_id_type      <- params$global_parameters$gene_mapping$protein_id_type
 
-  gct <- cmapR::parse_gctx(gct_path)
   rdesc_names <- colnames(gct@rdesc)
 
   valid <- FALSE
@@ -313,14 +313,13 @@ wb_validate_inputs <- function(state) {
 
   params <- if (!is.null(state$typemap$parameters)) yaml::read_yaml(state$typemap$parameters) else wb_load_default_master_parameters(state$github_ref)
 
-  wb_msg("INFO", "Validating sample IDs across all mapped GCT files...")
+  wb_msg("INFO", "Validating sample IDs and gene-ID columns in GCT files...")
   for (cat_name in gct_categories) {
-    gct <- cmapR::parse_gctx(state$typemap[[cat_name]])
+    gct_path <- state$typemap[[cat_name]]
+    gct <- cmapR::parse_gctx(gct_path)
     wb_validate_sample_ids(cat_name, gct@cid, annot$Sample.ID)
+    wb_validate_gene_id_column(gct, gct_path, cat_name, params)
   }
-
-  wb_msg("INFO", "Validating gene-ID columns in GCT files...")
-  for (cat_name in gct_categories) wb_validate_gene_id_column(state$typemap[[cat_name]], cat_name, params)
 
   wb_save_state(state)
 }
