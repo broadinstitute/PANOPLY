@@ -1,16 +1,16 @@
 # Input upload, category mapping, and validation.
 
-# cmapR::write_gct() can take a real while on a full-size dataset (seconds to tens of
-# seconds), and it writes directly to `path` -- if that write gets interrupted partway
-# (e.g. a kernel force-stop because it looked hung), `path` is left truncated/corrupted,
-# with no way back short of re-copying from the original upload. Writing to a temp file in
-# the same directory first, then renaming it into place, means an interrupted write only
-# ever loses the temp file -- `path` itself isn't touched until the write has fully
-# succeeded. (Same file.rename()-for-atomicity pattern as wb_copy_session_tree().)
+# cmapR::write_gct() works poorly in server settings; write-times balloon out of control
+# due to inefficient file-writing, and partial writes can result in corrupted files.
+# To avoid this, the file is instead written to a temporary local directory, then copied
+# to its final location.
 wb_write_gct_atomic <- function(gct, path) {
   wb_msg("INFO", "Writing changes -- this can take a while for large files, please wait...")
+  local_tmp <- tempfile(fileext = ".gct")
+  on.exit(unlink(local_tmp), add = TRUE)
+  cmapR::write_gct(gct, local_tmp, appenddim = FALSE)
   tmp_path <- tempfile(tmpdir = dirname(path), fileext = ".gct")
-  cmapR::write_gct(gct, tmp_path, appenddim = FALSE)
+  file.copy(local_tmp, tmp_path)
   file.rename(tmp_path, path)
   invisible(path)
 }
