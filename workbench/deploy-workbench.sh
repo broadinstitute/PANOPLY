@@ -138,7 +138,8 @@ echo "Dry run:     ${DRY_RUN}"
 echo
 
 if $DELETE && ! $DRY_RUN && ! $FORCE; then
-  echo "--delete will remove sessions/current-session/ on the remote (it only exists there)."
+  echo "WARNING: --delete will also discard any current session information on Manifold."
+  echo "Please ensure you have finalized any current sessions before using this flag."
   echo "Named saved sessions under sessions/<name>/ are excluded from this sync and are safe."
   read -r -p "Continue? (y/n): " confirm_delete
   if [[ ! "$confirm_delete" =~ ^[Yy]$ ]]; then

@@ -103,6 +103,14 @@ wb_load_state <- function() {
   current <- wb_try_read_state()
   saved_names <- wb_list_saved_sessions()
 
+  # Nothing to choose between -- a new session is the only sensible outcome, so skip the
+  # menu entirely rather than making the user pick the one option that exists.
+  if (is.null(current) && length(saved_names) == 0) {
+    wb_msg("INFO", "No existing session found -- starting a new one.")
+    wb_done()
+    return(wb_default_state())
+  }
+
   options <- character(0)
   if (!is.null(current)) options["resume"] <- "Use the current session (resume where you left off)"
   options["new"] <- "Start a new session (current-session/ will be reset)"

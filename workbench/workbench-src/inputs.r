@@ -1,5 +1,20 @@
 # Input upload, category mapping, and validation.
 
+# cmapR::write_gct() can take a real while on a full-size dataset (seconds to tens of
+# seconds), and it writes directly to `path` -- if that write gets interrupted partway
+# (e.g. a kernel force-stop because it looked hung), `path` is left truncated/corrupted,
+# with no way back short of re-copying from the original upload. Writing to a temp file in
+# the same directory first, then renaming it into place, means an interrupted write only
+# ever loses the temp file -- `path` itself isn't touched until the write has fully
+# succeeded. (Same file.rename()-for-atomicity pattern as wb_copy_session_tree().)
+wb_write_gct_atomic <- function(gct, path) {
+  wb_msg("INFO", "Writing changes -- this can take a while for large files, please wait...")
+  tmp_path <- tempfile(tmpdir = dirname(path), fileext = ".gct")
+  cmapR::write_gct(gct, tmp_path, appenddim = FALSE)
+  file.rename(tmp_path, path)
+  invisible(path)
+}
+
 wb_list_data_categories <- function() {
   cat("Data categories:\n")
   for (i in seq_along(CAT_MAP)) cat(sprintf("  %2d: %s\n", i, CAT_MAP[i]))
@@ -124,6 +139,29 @@ wb_validate_sample_ids <- function(data_type, data_ids, annot_ids) {
   invisible(TRUE)
 }
 
+# A single lucky match is easy to hit by chance in a large dataset, so validity is judged by
+# match RATE, not mere existence of one hit -- callers compare this against
+# GENE_SYMBOL_MATCH_THRESHOLD. Any failure along the way (package missing, unexpected data,
+# etc.) returns 0 rather than raising an error, which fails any positive threshold the same
+# way a genuine zero match rate would.
+GENE_SYMBOL_MATCH_THRESHOLD <- 0.10
+
+wb_gene_symbol_match_rate <- function(values) {
+  tryCatch({
+    if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) stop("org.Hs.eg.db not installed")
+    suppressPackageStartupMessages(library(org.Hs.eg.db))
+    ids <- as.character(stats::na.omit(unique(values)))
+    if (length(ids) == 0) return(0)
+    # columns = "SYMBOL" here would be a degenerate self-lookup that just echoes every key
+    # straight back regardless of whether it's a real symbol (AnnotationDbi::select() only
+    # actually validates keys against a genuinely different target column) -- ENTREZID is
+    # that real target; a row with a non-NA ENTREZID means the key resolved to an actual gene.
+    result <- suppressMessages(AnnotationDbi::select(org.Hs.eg.db, keys = ids, keytype = "SYMBOL", columns = "ENTREZID"))
+    matched <- unique(result$SYMBOL[!is.na(result$ENTREZID)])
+    length(matched) / length(ids)
+  }, error = function(e) 0)
+}
+
 wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
   if (ome == "metabolome") {
     wb_msg("INFO", "Skipping gene-ID column check for METABOLOME data.")
@@ -138,16 +176,14 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
 
   valid <- FALSE
   if (gene_id_col_default %in% rdesc_names) {
-    valid <- tryCatch({
-      if (!requireNamespace("org.Hs.eg.db", quietly = TRUE)) stop("org.Hs.eg.db not installed")
-      suppressPackageStartupMessages(library(org.Hs.eg.db))
-      ids <- as.character(stats::na.omit(unique(gct@rdesc[[gene_id_col_default]])))
-      nrow(AnnotationDbi::select(org.Hs.eg.db, keys = ids, keytype = "SYMBOL", columns = "SYMBOL")) > 0
-    }, error = function(e) FALSE)
+    match_rate <- wb_gene_symbol_match_rate(gct@rdesc[[gene_id_col_default]])
+    valid <- match_rate >= GENE_SYMBOL_MATCH_THRESHOLD
     if (valid) {
-      wb_msg("INFO", sprintf("Default gene-ID column '%s' detected and valid in %s data.", gene_id_col_default, toupper(ome)))
+      wb_msg("INFO", sprintf("Default gene-ID column '%s' detected and valid (%d%%) in %s data.",
+                              gene_id_col_default, round(match_rate * 100), toupper(ome)))
     } else {
-      wb_msg("WARNING", sprintf("Column '%s' in %s data does not contain valid HUGO gene symbols.", gene_id_col_default, toupper(ome)))
+      wb_msg("WARNING", sprintf("Column '%s' in %s data does not contain valid HUGO gene symbols (%d%% matched).",
+                                 gene_id_col_default, toupper(ome), round(match_rate * 100)))
     }
   } else {
     wb_msg("WARNING", sprintf("Default gene-ID column '%s' not found in %s data.", gene_id_col_default, toupper(ome)))
@@ -165,16 +201,28 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
       valid = function(ch) if (ch %in% c("1", "2", "3")) TRUE else "Please enter 1, 2, or 3 (or 'quit' to cancel)."
     )
     if (is.null(choice) || choice == "3") {
-      wb_msg("WARNING", sprintf("Skipping gene-ID validation for %s data. Many PANOPLY modules require this column.", toupper(ome)))
+      wb_msg("WARNING", sprintf("Skipping gene-ID validation for %s data. WARNING: Many PANOPLY modules require this column.", toupper(ome)))
       break
     }
     if (choice == "1") {
-      col <- wb_smart_readline("Column with HUGO gene symbols: ",
-                               valid = function(ch) if (ch %in% rdesc_names) TRUE else "Column not found, try again.")
+      col <- wb_smart_readline(
+        "Column with HUGO gene symbols: ",
+        valid = function(ch) {
+          if (!(ch %in% rdesc_names)) return("Column not found, try again.")
+          rate <- wb_gene_symbol_match_rate(gct@rdesc[[ch]])
+          if (rate < GENE_SYMBOL_MATCH_THRESHOLD) {
+            return(sprintf("'%s' does not appear to contain valid HUGO gene symbols (%d%% matched), try again.",
+                           ch, round(rate * 100)))
+          }
+          TRUE
+        }
+      )
       if (is.null(col)) next
+      match_rate <- wb_gene_symbol_match_rate(gct@rdesc[[col]])
       gct@rdesc[[gene_id_col_default]] <- gct@rdesc[[col]]
-      cmapR::write_gct(gct, gct_path, appenddim = FALSE)
-      wb_msg("INFO", sprintf("Using column '%s' as '%s' for %s data.", col, gene_id_col_default, toupper(ome)))
+      wb_write_gct_atomic(gct, gct_path)
+      wb_msg("INFO", sprintf("Using column '%s' (%d%% matched) as '%s' for %s data.",
+                              col, round(match_rate * 100), gene_id_col_default, toupper(ome)))
       break
     } else {
       if (!(protein_id_col %in% rdesc_names)) {
@@ -184,7 +232,7 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
         stop("map_id() is unavailable (vendored proteomics-Rutil scripts failed to load) -- cannot convert protein IDs.")
       }
       gct@rdesc[[gene_id_col_default]] <- map_id(gct@rdesc[[protein_id_col]], keytype_from = protein_id_type, keytype_to = "SYMBOL")
-      cmapR::write_gct(gct, gct_path, appenddim = FALSE)
+      wb_write_gct_atomic(gct, gct_path)
       wb_msg("INFO", sprintf("Converted '%s' (%s) to gene symbols for %s data.", protein_id_col, protein_id_type, toupper(ome)))
       break
     }
@@ -219,7 +267,7 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
     return(invisible(gct_path))
   }
   gct@rdesc[[seqwin_default]] <- gct@rdesc[[col]]
-  cmapR::write_gct(gct, gct_path, appenddim = FALSE)
+  wb_write_gct_atomic(gct, gct_path)
   wb_msg("INFO", sprintf("Using column '%s' as '%s'.", col, seqwin_default))
   invisible(gct_path)
 }
@@ -311,7 +359,7 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
     } else {
       ids
     }
-    cmapR::write_gct(gct, gct_path, appenddim = FALSE)
+    wb_write_gct_atomic(gct, gct_path)
     wb_msg("INFO", sprintf("Using column '%s' (%s) as '%s'.", col_label, id_type, metab_id_col_default))
     break
   }
