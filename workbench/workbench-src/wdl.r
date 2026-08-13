@@ -190,7 +190,7 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
                                   github_ref = state$github_ref %||% GITHUB_REF) {
   specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
   subset_files <- wb_subset_files(state, subset_name)
-  master_params_path <- file.path(wb_workbench_root(), "master-parameters.yaml")
+  master_params_path <- file.path(wb_session_dir(state$active_named_session), "master-parameters.yaml")
 
   inputs <- list()
   for (i in seq_len(nrow(specs))) {
@@ -237,8 +237,16 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
 wb_update_inputs_json_for_subset <- function(state, subset_name,
                                               workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                               github_ref = state$github_ref %||% GITHUB_REF,
-                                              existing_inputs_path = file.path(wb_workbench_root(), "inputs.json"),
+                                              existing_inputs_path = NULL,
                                               out_path = NULL) {
+  # Requires a named session (not current-session) so this file's S3 paths -- once baked
+  # into a submitted job -- can't be silently invalidated by later, unrelated work in
+  # current-session. See wb_save_session() in sessions.r.
+  if (is.null(state$active_named_session)) {
+    stop("No named session found -- run `state <- wb_save_session(state, \"your-name\")` first ",
+         "(see the Sessions section) before generating inputs.json.")
+  }
+  existing_inputs_path <- existing_inputs_path %||% file.path(wb_session_dir(state$active_named_session), "inputs.json")
   out_path <- out_path %||% existing_inputs_path
   fresh <- wb_build_inputs_json(state, subset_name, workflow_name, github_ref)
 

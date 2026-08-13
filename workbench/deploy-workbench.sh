@@ -25,6 +25,7 @@ PROJECT_ID=""
 DRY_RUN=false
 ASSUME_YES=false
 DELETE=false
+FORCE=false
 
 usage() {
   cat << EOF
@@ -39,10 +40,13 @@ Options:
       --delete          Mirror-delete files at the destination that no longer exist locally
                          (scoped to this subfolder only -- never touches inputs/, subsets/,
                          or other project data one level up in the project's ~/workbench/.
-                         The session-state yaml lives inside this subfolder but is explicitly
-                         excluded from the sync below, so a redeploy never wipes it either).
+                         This DOES remove sessions/current-session/ on the remote, since it
+                         only ever exists on the deployed side -- named saved sessions under
+                         sessions/<name>/ are excluded from the sync and are never touched).
       --dry-run         Show what would be uploaded without actually uploading
-  -y, --yes             Skip the confirmation prompt (for non-interactive/CI use)
+  -y, --yes             Skip the general upload confirmation prompt (for non-interactive/CI use)
+      --force           Skip the extra confirmation that --delete prints (see above);
+                         independent of -y/--yes, which only covers the general upload prompt
   -h, --help            Show this help
 EOF
 }
@@ -55,6 +59,7 @@ while [[ $# -gt 0 ]]; do
     --delete) DELETE=true; shift ;;
     --dry-run) DRY_RUN=true; shift ;;
     -y|--yes) ASSUME_YES=true; shift ;;
+    --force) FORCE=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -119,7 +124,8 @@ SYNC_ARGS=(
   --exclude "deploy-workbench.sh"
   --exclude "*.DS_Store"
   --exclude "*.ipynb_checkpoints/*"
-  --exclude "*.panoply-session.yaml"
+  --exclude "sessions/*"
+  --include "sessions/current-session/*"
 )
 $DELETE && SYNC_ARGS+=(--delete)
 $DRY_RUN && SYNC_ARGS+=(--dryrun)
@@ -130,6 +136,17 @@ echo "Destination: ${DEST}"
 echo "Delete mode: ${DELETE}"
 echo "Dry run:     ${DRY_RUN}"
 echo
+
+if $DELETE && ! $DRY_RUN && ! $FORCE; then
+  echo "--delete will remove sessions/current-session/ on the remote (it only exists there)."
+  echo "Named saved sessions under sessions/<name>/ are excluded from this sync and are safe."
+  read -r -p "Continue? (y/n): " confirm_delete
+  if [[ ! "$confirm_delete" =~ ^[Yy]$ ]]; then
+    echo "Aborted."
+    exit 1
+  fi
+  echo
+fi
 
 if ! $DRY_RUN && ! $ASSUME_YES; then
   read -r -p "This will upload to a production bucket. Proceed? (y/n): " confirm

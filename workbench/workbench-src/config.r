@@ -49,22 +49,31 @@ wb_local_to_s3 <- function(local_path) {
 }
 
 ### ===
+### Sessions -- a session is a self-contained folder (mapped-file copies, subsets, and once
+### named/saved, the built master-parameters.yaml/inputs.json) under sessions/ alongside the
+### deployed notebook/workbench-src (the notebook's own working directory -- see the file
+### header comment). "current-session" is always the live, actively-edited session; naming
+### and saving one (wb_save_session(), see sessions.r) snapshots it into its own named folder.
+### This is also exactly the folder deploy-workbench.sh's --delete mirrors from the git repo:
+### current-session/ is fair game for that (it only ever exists on the deployed side), but
+### named sessions are explicitly excluded from that sync (see deploy-workbench.sh) so saving
+### one actually protects it from a redeploy.
+### ===
+
+wb_sessions_root <- function() file.path(getwd(), "sessions")
+wb_session_dir <- function(name = "current-session") file.path(wb_sessions_root(), name)
+
+### ===
 ### Session state -- round-tripped as a single yaml file, replaces Terra's config.yaml restore
 ### ===
 
-# Stored alongside the deployed notebook/workbench-src (the notebook's own working directory
-# -- see the file header comment) rather than one level up at wb_workbench_root(), so it lands
-# in whatever subfolder deploy-workbench.sh actually deployed to (workbench-setup/ by default)
-# instead of loose in the project's ~/workbench/ root next to inputs/, subsets/, etc. This is
-# also exactly the folder deploy-workbench.sh's --delete mirrors from the git repo, so it's
-# explicitly excluded from that sync (see deploy-workbench.sh) -- otherwise a redeploy with
-# --delete would wipe saved session progress, since this file only ever exists on the deployed
-# side and has no local-repo counterpart.
-wb_state_path <- function() file.path(getwd(), ".panoply-session.yaml")
+wb_state_path <- function() file.path(wb_session_dir(), ".panoply-session.yaml")
 
 wb_default_state <- function() {
   list(
     typemap = list(),
+    typemap_originals = list(),
+    active_named_session = NULL,
     groups_cols = character(0),
     groups_cols_continuous = character(0),
     groups_colors = list(),
@@ -81,31 +90,94 @@ wb_default_state <- function() {
   )
 }
 
-wb_load_state <- function() {
-  path <- wb_state_path()
-  # Try the read directly rather than gating on file.exists() first: on some Manifold home
-  # directory mounts, file.exists() can still report TRUE for a just-deleted file (stale
-  # directory-listing metadata) even though the actual open then fails. Catching the read
-  # itself means "missing" and "exists but unreadable" are handled identically -- both just
-  # fall through to a fresh default state, with no error and no complaint either way.
-  saved <- suppressWarnings(tryCatch(yaml::read_yaml(path), error = function(e) NULL))
-  if (is.null(saved)) { wb_done(); return(wb_default_state()) }
+# Reads current-session/.panoply-session.yaml if present, without gating on file.exists()
+# first: on some Manifold home directory mounts, file.exists() can still report TRUE for a
+# just-deleted file (stale directory-listing metadata) even though the actual open then
+# fails. Catching the read itself means "missing" and "exists but unreadable" are handled
+# identically. Returns NULL (not an error) either way -- callers decide what that means.
+wb_try_read_state <- function(path = wb_state_path()) {
+  suppressWarnings(tryCatch(yaml::read_yaml(path), error = function(e) NULL))
+}
 
-  if (!wb_confirm(sprintf("Found a previous session (%s). Load it?", path))) {
-    wb_msg("INFO", "Starting a fresh session instead.")
+wb_load_state <- function() {
+  current <- wb_try_read_state()
+  saved_names <- wb_list_saved_sessions()
+
+  options <- character(0)
+  if (!is.null(current)) options["resume"] <- "Use the current session (resume where you left off)"
+  options["new"] <- "Start a new session (current-session/ will be reset)"
+  if (length(saved_names) > 0) {
+    options["load"] <- sprintf("Load a saved session (%s)", paste(saved_names, collapse = ", "))
+  }
+
+  # Falling back to "resume" (if a current session exists) or plain in-memory defaults is
+  # never destructive -- used for both an outright quit and a declined destructive confirm.
+  fall_back <- function() {
+    if (!is.null(current)) {
+      wb_msg("INFO", "Keeping the existing current session.")
+      result <- modifyList(wb_default_state(), current)
+    } else {
+      result <- wb_default_state()
+    }
+    wb_done()
+    result
+  }
+
+  menu <- paste0(
+    "How would you like to start?\n",
+    paste(sprintf("  %d) %s", seq_along(options), unname(options)), collapse = "\n"),
+    "\n> "
+  )
+  idx <- wb_smart_readline(menu, valid = function(ch) {
+    n <- suppressWarnings(as.integer(ch))
+    if (is.na(n) || n < 1 || n > length(options)) {
+      sprintf("Please enter a number from 1 to %d.", length(options))
+    } else TRUE
+  })
+  if (is.null(idx)) return(fall_back())
+  choice <- names(options)[as.integer(idx)]
+
+  if (choice == "resume") {
+    wb_msg("INFO", sprintf("Resuming the current session (%s).", wb_state_path()))
+    result <- modifyList(wb_default_state(), current)
+    wb_done()
+    return(result)
+  }
+
+  if (choice == "new") {
+    if (!is.null(current) &&
+        !wb_confirm("This will erase current-session/ (mapped files, subsets, outputs). Continue?")) {
+      return(fall_back())
+    }
+    unlink(wb_session_dir(), recursive = TRUE)
+    dir.create(wb_session_dir(), recursive = TRUE)
+    wb_msg("INFO", "Starting a new session.")
     wb_done()
     return(wb_default_state())
   }
-  wb_msg("INFO", sprintf("Loaded existing session state from %s.", path))
-  result <- modifyList(wb_default_state(), saved)
+
+  # choice == "load"
+  name <- wb_smart_readline(
+    sprintf("Which saved session? (%s): ", paste(saved_names, collapse = ", ")),
+    valid = function(ch) if (ch %in% saved_names) TRUE else "Not a known saved session, try again."
+  )
+  if (is.null(name)) return(fall_back())
+  if (!is.null(current) &&
+      !wb_confirm(sprintf("This will overwrite current-session/ with the contents of '%s'. Continue?", name))) {
+    return(fall_back())
+  }
+  wb_copy_session_tree(wb_session_dir(name), wb_session_dir())
+  loaded <- wb_try_read_state()
+  wb_msg("INFO", sprintf("Loaded saved session '%s'.", name))
+  result <- modifyList(wb_default_state(), loaded)
   wb_done()
   result
 }
 
-wb_save_state <- function(state) {
+wb_save_state <- function(state, done = TRUE) {
   dir.create(dirname(wb_state_path()), showWarnings = FALSE, recursive = TRUE)
   yaml::write_yaml(state, wb_state_path())
-  wb_done()
+  if (done) wb_done()
   invisible(state)
 }
 
@@ -288,6 +360,7 @@ wb_setup <- function() {
 ### Load the rest of the module
 ### ===
 
+source("workbench-src/sessions.r")
 source("workbench-src/inputs.r")
 source("workbench-src/groups.r")
 source("workbench-src/subsets.r")

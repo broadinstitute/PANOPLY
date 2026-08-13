@@ -29,9 +29,16 @@ wb_load_default_master_parameters <- function(github_ref = GITHUB_REF) {
   })
 }
 
-wb_build_master_parameters_yaml <- function(state,
-                                             out_path = file.path(wb_workbench_root(), "master-parameters.yaml"),
-                                             github_ref = state$github_ref) {
+wb_build_master_parameters_yaml <- function(state, out_path = NULL, github_ref = state$github_ref) {
+  # Requires a named session (not current-session) so this file's S3 path -- once baked
+  # into a submitted job's inputs.json -- can't be silently invalidated by later,
+  # unrelated work in current-session. See wb_save_session() in sessions.r.
+  if (is.null(state$active_named_session)) {
+    stop("No named session found -- run `state <- wb_save_session(state, \"your-name\")` first ",
+         "(see the Sessions section) before building master-parameters.yaml.")
+  }
+  out_path <- out_path %||% file.path(wb_session_dir(state$active_named_session), "master-parameters.yaml")
+
   defaults <- if (!is.null(state$typemap$parameters)) {
     yaml::read_yaml(state$typemap$parameters)
   } else {

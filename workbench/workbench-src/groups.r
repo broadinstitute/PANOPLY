@@ -174,7 +174,7 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
   if (is.null(fasta_path) || !file.exists(fasta_path)) {
     stop("Clumps-PTM requires a reference FASTA file -- pass its local path as fasta_path=.")
   }
-  state$typemap$clumpsFASTA <- fasta_path
+  state$typemap$clumpsFASTA <- wb_copy_into_session(fasta_path)
 
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   if (is.null(columns)) {

@@ -50,7 +50,10 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
     ), "zip_path= to unzip one, then re-run.")
   }
 
-  already_mapped <- unlist(state$typemap, use.names = FALSE)
+  # Dedup against the ORIGINAL upload paths already consumed, not state$typemap -- typemap
+  # holds the session-local COPY path (see below), which would never match input_dir's
+  # paths and would cause every already-mapped file to be re-offered on every re-run.
+  already_mapped <- unlist(state$typemap_originals, use.names = FALSE)
   files <- files[!file.path(input_dir, files) %in% already_mapped]
 
   if (length(files) > 0) wb_list_data_categories()
@@ -69,7 +72,12 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
     if (is.null(choice)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); cancelled <- TRUE; break }
     choice <- as.integer(choice)
     if (choice == 0) next
-    state$typemap[[CAT_MAP[choice]]] <- file.path(input_dir, f)
+    original_path <- file.path(input_dir, f)
+    # Copy into the session rather than pointing typemap at the original upload directly --
+    # downstream validators write in-place fixes (gene-ID column, etc.) to whatever path they're
+    # given, so mapping the copy here is what keeps the original in ~/workbench/inputs/ untouched.
+    state$typemap[[CAT_MAP[choice]]] <- wb_copy_into_session(original_path)
+    state$typemap_originals[[CAT_MAP[choice]]] <- original_path
   }
   if (!cancelled && length(files) > 0) wb_msg("INFO", "All files have been sorted.")
 

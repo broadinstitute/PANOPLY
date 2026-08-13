@@ -1,7 +1,7 @@
 # Local-folder sample subsetting -- replaces Terra sample sets.
 
 wb_create_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
-                              out_root = file.path(wb_workbench_root(), "subsets")) {
+                              out_root = file.path(wb_session_dir(), "subsets")) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   sample_ids <- if (is.null(filter_col)) {
     annot$Sample.ID

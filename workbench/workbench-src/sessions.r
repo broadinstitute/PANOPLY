@@ -1,0 +1,52 @@
+# Session save/load/copy mechanics. "current-session" is the live, actively-edited
+# session (see config.r for wb_sessions_root()/wb_session_dir()/wb_state_path()); named
+# sessions under sessions/<name>/ are point-in-time snapshots of it.
+
+wb_copy_session_tree <- function(from_dir, to_dir) {
+  if (!dir.exists(from_dir)) stop(sprintf("Session directory not found: %s", from_dir))
+  parent <- dirname(to_dir)
+  dir.create(parent, showWarnings = FALSE, recursive = TRUE)
+  # Copy into a temp directory *alongside* to_dir (same filesystem, so the final
+  # file.rename() is atomic) before touching the real destination -- a mid-copy failure
+  # (large GCTs, disk full, an interrupted kernel) then never leaves to_dir half-overwritten.
+  staging_dir <- tempfile("session-copy-", tmpdir = parent)
+  dir.create(staging_dir)
+  entries <- list.files(from_dir, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  if (length(entries) > 0) file.copy(entries, staging_dir, recursive = TRUE)
+  if (dir.exists(to_dir)) unlink(to_dir, recursive = TRUE)
+  file.rename(staging_dir, to_dir)
+  invisible(to_dir)
+}
+
+wb_copy_into_session <- function(source_path) {
+  dest_dir <- file.path(wb_session_dir(), "inputs")
+  dir.create(dest_dir, showWarnings = FALSE, recursive = TRUE)
+  dest_path <- file.path(dest_dir, basename(source_path))
+  file.copy(source_path, dest_path, overwrite = TRUE)
+  dest_path
+}
+
+wb_list_saved_sessions <- function() {
+  root <- wb_sessions_root()
+  if (!dir.exists(root)) return(character(0))
+  setdiff(list.dirs(root, recursive = FALSE, full.names = FALSE), "current-session")
+}
+
+wb_save_session <- function(state, name) {
+  if (identical(name, "current-session")) stop("'current-session' is reserved -- choose a different name.")
+  if (!grepl("^[A-Za-z0-9_.-]+$", name)) {
+    stop("Session names may only contain letters, numbers, '-', '_', and '.'.")
+  }
+  if (dir.exists(wb_session_dir(name)) &&
+      !wb_confirm(sprintf("A saved session named '%s' already exists. Overwrite it?", name))) {
+    wb_msg("CANCELLED", "Session not saved.")
+    wb_done()
+    return(state)
+  }
+  state$active_named_session <- name
+  state <- wb_save_state(state, done = FALSE)
+  wb_copy_session_tree(wb_session_dir(), wb_session_dir(name))
+  wb_msg("INFO", sprintf("Session saved as '%s' (%s).", name, wb_session_dir(name)))
+  wb_done()
+  state
+}
