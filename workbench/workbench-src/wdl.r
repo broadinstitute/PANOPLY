@@ -258,7 +258,10 @@ wb_update_inputs_json_for_subset <- function(state, subset_name,
     return(out_path)
   }
 
-  file.copy(existing_inputs_path, paste0(existing_inputs_path, ".bak"), overwrite = TRUE)
+  backup_path <- paste0(existing_inputs_path, ".bak")
+  if (!file.copy(existing_inputs_path, backup_path, overwrite = TRUE)) {
+    stop(sprintf("Failed to back up '%s' to '%s' -- aborting without touching it.", existing_inputs_path, backup_path))
+  }
   existing <- jsonlite::fromJSON(existing_inputs_path, simplifyVector = FALSE)
 
   specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)

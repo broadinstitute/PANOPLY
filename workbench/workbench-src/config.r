@@ -157,8 +157,15 @@ wb_load_state <- function() {
         !wb_confirm("This will erase current-session/ (mapped files, subsets, outputs). Continue?")) {
       return(fall_back())
     }
-    unlink(wb_session_dir(), recursive = TRUE)
-    dir.create(wb_session_dir(), recursive = TRUE)
+    if (unlink(wb_session_dir(), recursive = TRUE) != 0) {
+      stop(sprintf("Failed to fully clear '%s' -- check for locked/in-use files and try again.", wb_session_dir()))
+    }
+    # dir.create() returns FALSE both on a genuine failure AND when the directory already
+    # exists -- check dir.exists() too so the (harmless) "already there" case isn't mistaken
+    # for a real error. This situation is unlikely after unlink() but technically possible.
+    if (!dir.create(wb_session_dir(), recursive = TRUE) && !dir.exists(wb_session_dir())) {
+      stop(sprintf("Failed to create a fresh '%s'.", wb_session_dir()))
+    }
     wb_msg("INFO", "Starting a new session.")
     wb_done()
     return(wb_default_state())

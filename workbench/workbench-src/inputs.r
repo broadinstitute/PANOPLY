@@ -7,11 +7,19 @@
 wb_write_gct_atomic <- function(gct, path) {
   wb_msg("INFO", "Writing changes -- this can take a while for large files, please wait...")
   local_tmp <- tempfile(fileext = ".gct")
-  on.exit(unlink(local_tmp), add = TRUE)
-  cmapR::write_gct(gct, local_tmp, appenddim = FALSE)
+  on.exit(unlink(local_tmp), add = TRUE) # clear temporary file on exit
+  # invisible(capture.output()) used to silence cmapR::write_gct() printouts,
+  # since the user doesn't need to see the temporary file-path.
+  # note: genuine failure from write_gct() itself still surfaces normally.
+  invisible(capture.output(cmapR::write_gct(gct, local_tmp, appenddim = FALSE)))
   tmp_path <- tempfile(tmpdir = dirname(path), fileext = ".gct")
-  file.copy(local_tmp, tmp_path)
-  file.rename(tmp_path, path)
+  on.exit(unlink(tmp_path), add = TRUE) # clear temporary file on exit
+  if (!file.copy(local_tmp, tmp_path)) { # attempt to copy file to server
+    stop(sprintf("Failed to copy the written file into '%s'.", dirname(path)))
+  }
+  if (!file.rename(tmp_path, path)) { # rename file to permanent path (automatically overwrites)
+    stop(sprintf("Failed to move the written file into place at '%s'.", path))
+  }
   invisible(path)
 }
 
@@ -48,7 +56,9 @@ wb_default_asset <- function(pattern) {
   seeded_dir <- file.path(wb_workbench_root(), "defaults")
   dir.create(seeded_dir, showWarnings = FALSE, recursive = TRUE)
   seeded_path <- file.path(seeded_dir, basename(source_path))
-  if (!file.exists(seeded_path)) file.copy(source_path, seeded_path)
+  if (!file.exists(seeded_path) && !file.copy(source_path, seeded_path)) {
+    stop(sprintf("Failed to seed default asset '%s' to '%s'.", source_path, seeded_path))
+  }
   seeded_path
 }
 
@@ -182,7 +192,7 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
       wb_msg("INFO", sprintf("Default gene-ID column '%s' detected and valid (%d%%) in %s data.",
                               gene_id_col_default, round(match_rate * 100), toupper(ome)))
     } else {
-      wb_msg("WARNING", sprintf("Column '%s' in %s data does not contain valid HUGO gene symbols (%d%% matched).",
+      wb_msg("WARNING", sprintf("Column '%s' in %s data does not contain valid HUGO gene symbols (%d%% valid).",
                                  gene_id_col_default, toupper(ome), round(match_rate * 100)))
     }
   } else {
@@ -190,7 +200,7 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
   }
   if (valid) return(invisible(gct_path))
 
-  cat(sprintf("\n%s row-annotation columns: %s\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
+  cat(sprintf("\n%s row-annotation columns: %s\n\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
   flush.console()
   repeat {
     choice <- wb_smart_readline(
@@ -211,18 +221,19 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
           if (!(ch %in% rdesc_names)) return("Column not found, try again.")
           rate <- wb_gene_symbol_match_rate(gct@rdesc[[ch]])
           if (rate < GENE_SYMBOL_MATCH_THRESHOLD) {
-            return(sprintf("'%s' does not appear to contain valid HUGO gene symbols (%d%% matched), try again.",
+            return(sprintf("'%s' does not appear to contain valid HUGO gene symbols (%d%% valid), try again.",
                            ch, round(rate * 100)))
           }
           TRUE
         }
       )
       if (is.null(col)) next
+      # report successful mapping-- not just failure-- to confirm to the user that provided column is valid
       match_rate <- wb_gene_symbol_match_rate(gct@rdesc[[col]])
+      wb_msg("INFO", sprintf("Column '%s' validated (%d%% matched HUGO gene symbols).", col, round(match_rate * 100)))
       gct@rdesc[[gene_id_col_default]] <- gct@rdesc[[col]]
+      wb_msg("INFO", sprintf("Using column '%s' as '%s' for %s data.", col, gene_id_col_default, toupper(ome)))
       wb_write_gct_atomic(gct, gct_path)
-      wb_msg("INFO", sprintf("Using column '%s' (%d%% matched) as '%s' for %s data.",
-                              col, round(match_rate * 100), gene_id_col_default, toupper(ome)))
       break
     } else {
       if (!(protein_id_col %in% rdesc_names)) {
@@ -231,9 +242,19 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
       if (!exists("map_id")) {
         stop("map_id() is unavailable (vendored proteomics-Rutil scripts failed to load) -- cannot convert protein IDs.")
       }
-      gct@rdesc[[gene_id_col_default]] <- map_id(gct@rdesc[[protein_id_col]], keytype_from = protein_id_type, keytype_to = "SYMBOL")
-      wb_write_gct_atomic(gct, gct_path)
+      converted <- map_id(gct@rdesc[[protein_id_col]], keytype_from = protein_id_type, keytype_to = "SYMBOL")
+      match_rate <- wb_gene_symbol_match_rate(converted)
+      if (match_rate < GENE_SYMBOL_MATCH_THRESHOLD) {
+        wb_msg("WARNING", sprintf(
+          "Converting '%s' (%s) produced mostly invalid gene symbols (%d%% matched) -- not using it.",
+          protein_id_col, protein_id_type, round(match_rate * 100)
+        ))
+        next
+      }
+      wb_msg("INFO", sprintf("Conversion validated (%d%% matched HUGO gene symbols).", round(match_rate * 100)))
+      gct@rdesc[[gene_id_col_default]] <- converted
       wb_msg("INFO", sprintf("Converted '%s' (%s) to gene symbols for %s data.", protein_id_col, protein_id_type, toupper(ome)))
+      wb_write_gct_atomic(gct, gct_path)
       break
     }
   }
@@ -267,8 +288,8 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
     return(invisible(gct_path))
   }
   gct@rdesc[[seqwin_default]] <- gct@rdesc[[col]]
-  wb_write_gct_atomic(gct, gct_path)
   wb_msg("INFO", sprintf("Using column '%s' as '%s'.", col, seqwin_default))
+  wb_write_gct_atomic(gct, gct_path)
   invisible(gct_path)
 }
 
@@ -359,8 +380,8 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
     } else {
       ids
     }
-    wb_write_gct_atomic(gct, gct_path)
     wb_msg("INFO", sprintf("Using column '%s' (%s) as '%s'.", col_label, id_type, metab_id_col_default))
+    wb_write_gct_atomic(gct, gct_path)
     break
   }
   invisible(gct_path)

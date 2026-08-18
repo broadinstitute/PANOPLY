@@ -23,7 +23,7 @@ wb_create_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
       next
     }
     sub <- cmapR::subset_gct(gct, cid = keep)
-    cmapR::write_gct(sub, file.path(subset_dir, paste0(cat_name, ".gct")), appenddim = FALSE)
+    wb_write_gct_atomic(sub, file.path(subset_dir, paste0(cat_name, ".gct")))
   }
 
   csv_categories <- intersect(names(state$typemap), c("annotation", "groups", "groups_clumpsptm"))
