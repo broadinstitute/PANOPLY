@@ -37,13 +37,29 @@ wb_verify_group_validity <- function(annot, columns, max_categories) {
 wb_select_groups <- function(state, columns = NULL, max_categories = 10) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   all_cols <- colnames(annot)
+  valid_cols <- setdiff(all_cols, c(REQUIRED_COLS, IGNORE_COLS))
 
   if (is.null(columns)) {
-    if (!is.null(state$typemap$groups)) {
+    if (!is.null(state$typemap$groups) &&
+        wb_confirm("A groups file was provided. Use its columns as groups?")) {
       columns <- as.vector(unlist(read.csv(state$typemap$groups, stringsAsFactors = FALSE, quote = '"')))
       wb_msg("INFO", "Using columns from the provided groups file.")
+    } else if (!is.null(state$typemap$groups)) {
+      # Declined the groups file above -- let the user specify columns manually instead of
+      # falling all the way back to "every valid column" (that's still available by quitting).
+      wb_msg("INFO", "Discarding the provided groups file for this selection.")
+      cat("Valid annotation columns:\n"); for (col in valid_cols) cat(" -", col, "\n")
+      flush.console()
+      picked <- wb_smart_readline(
+        "Select column(s) to use as groups, comma-separated (or 'quit' for all valid columns): ",
+        valid = function(ch) {
+          matched <- intersect(strsplit(ch, "\\s*,\\s*")[[1]], valid_cols)
+          if (length(matched) == 0) "None of those match a valid annotation column, try again." else TRUE
+        }
+      )
+      columns <- if (is.null(picked)) valid_cols else strsplit(picked, "\\s*,\\s*")[[1]]
     } else {
-      columns <- setdiff(all_cols, c(REQUIRED_COLS, IGNORE_COLS))
+      columns <- valid_cols
       wb_msg("INFO", "No groups specified; using all valid annotation columns.")
     }
   }
