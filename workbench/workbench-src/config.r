@@ -11,7 +11,7 @@
 CAT_MAP <- c(
   "proteome", "phosphoproteome", "acetylome", "ubiquitylome", "methylation",
   "nglycoproteome", "rna", "cna", "metabolome", "annotation", "groups",
-  "parameters", "ptmseaDB", "gseaDB"
+  "parameters", "ptmseaDB", "gseaDB", "clumpsFASTA"
 )
 PROTEOME_TYPES <- c("proteome", "phosphoproteome", "acetylome", "ubiquitylome", "methylation", "nglycoproteome")
 REQUIRED_COLS  <- c("Sample.ID", "Type")
@@ -46,6 +46,21 @@ wb_local_to_s3 <- function(local_path) {
   }
   rel <- sub("^/+", "", substring(abs_path, nchar(root) + 1))
   paste0("s3://", bucket, "/research/projects/", project, "/", rel)
+}
+
+# Inverse of wb_local_to_s3(): given an s3:// URI, returns the corresponding local path under
+# wb_workbench_root() IF that URI is for this session's own bucket/project -- i.e. it's a
+# well-formed local upload just quoted back in its S3 form (Manifold shows both). Returns NULL
+# (not an error) for anything else -- a different project's URI, a malformed one, or
+# S3_BUCKET/PROJECT_ID not being set -- since callers use this as a best-effort "maybe it's
+# actually local" check, not a real S3 fetch (this never touches S3 itself).
+wb_s3_to_local <- function(s3_uri) {
+  bucket  <- Sys.getenv("S3_BUCKET")
+  project <- Sys.getenv("PROJECT_ID")
+  if (!nzchar(bucket) || !nzchar(project)) return(NULL)
+  prefix <- paste0("s3://", bucket, "/research/projects/", project, "/")
+  if (!startsWith(s3_uri, prefix)) return(NULL)
+  file.path(wb_workbench_root(), substring(s3_uri, nchar(prefix) + 1))
 }
 
 ### ===

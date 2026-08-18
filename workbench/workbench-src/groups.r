@@ -171,10 +171,26 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
   state$toggles$run_clumpsptm <- wb_confirm("PTM data detected. Should Clumps-PTM be run?")
   if (!state$toggles$run_clumpsptm) return(wb_save_state(state))
 
-  if (is.null(fasta_path) || !file.exists(fasta_path)) {
-    stop("Clumps-PTM requires a reference FASTA file -- pass its local path as fasta_path=.")
+  if (!is.null(fasta_path)) {
+    # Explicit override -- validate and copy in like any other manually-specified path.
+    if (!file.exists(fasta_path) || !grepl("\\.(fasta|fa)$", fasta_path, ignore.case = TRUE)) {
+      stop(sprintf("'%s' is not an existing .fasta/.fa file.", fasta_path))
+    }
+    state$typemap$clumpsFASTA <- wb_copy_into_session(fasta_path)
+  } else if (is.null(state$typemap$clumpsFASTA)) {
+    # Not already mapped via wb_load_and_map_inputs() either -- prompt for it.
+    path <- wb_smart_readline(
+      "Path to the reference FASTA file (.fasta/.fa): ",
+      valid = wb_validate_fasta_input
+    )
+    if (is.null(path)) {
+      wb_msg("WARNING", "No reference FASTA provided. Clumps-PTM will not be run.")
+      state$toggles$run_clumpsptm <- FALSE
+      return(wb_save_state(state))
+    }
+    state$typemap$clumpsFASTA <- wb_copy_into_session(wb_resolve_fasta_path(path))
   }
-  state$typemap$clumpsFASTA <- wb_copy_into_session(fasta_path)
+  # else: state$typemap$clumpsFASTA was already mapped via wb_load_and_map_inputs() -- use it as-is.
 
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   if (is.null(columns)) {

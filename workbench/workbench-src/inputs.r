@@ -62,15 +62,45 @@ wb_default_asset <- function(pattern) {
   seeded_path
 }
 
+# Resolves a user-typed FASTA path to a local filesystem path. s3:// URIs are the only case
+# that need special handling -- translated via wb_s3_to_local() (the inverse of
+# wb_local_to_s3()); NA is returned if that can't resolve it (different project, malformed,
+# S3_BUCKET/PROJECT_ID unset), so the caller can give a clear "use a local path instead"
+# message rather than silently treating "s3://..." itself as a (nonexistent) local path.
+# Anything else is already a normal local path -- path.expand() handles "~", and relative/
+# absolute paths need no further wrangling (file.exists() resolves them against the cwd as-is).
+wb_resolve_fasta_path <- function(p) {
+  if (startsWith(p, "s3://")) {
+    local <- wb_s3_to_local(p)
+    return(if (is.null(local)) NA_character_ else local)
+  }
+  path.expand(p)
+}
+
+wb_validate_fasta_input <- function(raw) {
+  resolved <- wb_resolve_fasta_path(raw)
+  if (is.na(resolved)) {
+    return(paste(
+      "Cloud (s3://) paths aren't supported directly here -- please upload the FASTA under",
+      "~/workbench/ and enter its local path instead, try again."
+    ))
+  }
+  if (!file.exists(resolved)) return(sprintf("No file found at '%s', try again.", resolved))
+  if (!grepl("\\.(fasta|fa)$", resolved, ignore.case = TRUE)) {
+    return(sprintf("'%s' doesn't look like a .fasta/.fa file, try again.", resolved))
+  }
+  TRUE
+}
+
 wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_root(), "inputs"),
                                     zip_path = NULL) {
   dir.create(input_dir, showWarnings = FALSE, recursive = TRUE)
   if (!is.null(zip_path)) utils::unzip(zip_path, exdir = input_dir, junkpaths = TRUE)
 
-  files <- list.files(input_dir, pattern = "\\.(gct|csv|ya?ml|gmt)$", full.names = FALSE)
+  files <- list.files(input_dir, pattern = "\\.(gct|csv|ya?ml|gmt|fasta|fa)$", full.names = FALSE)
   if (length(files) == 0 && is.null(zip_path)) {
     stop(sprintf(
-      "No .gct/.csv/.yaml/.gmt files found in %s. Place your input files there, or pass ",
+      "No .gct/.csv/.yaml/.gmt/.fasta/.fa files found in %s. Place your input files there, or pass ",
       input_dir
     ), "zip_path= to unzip one, then re-run.")
   }
