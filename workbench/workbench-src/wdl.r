@@ -63,6 +63,8 @@ wb_list_github_workflows <- function(ref = GITHUB_REF, repo = GITHUB_REPO) {
 # so a fetch is fresh by default. use_cache = TRUE is an explicit opt-in for anyone who wants
 # to avoid repeated fetches (e.g. iterating quickly, or working offline against a copy already
 # on disk) and is willing to accept it may not reflect the branch's current state.
+wb_workflow_wdl_path <- function(workflow_name) sprintf("hydrant/workflows/%s/%s.wdl", workflow_name, workflow_name)
+
 wb_fetch_workflow_wdl <- function(workflow_name, ref = GITHUB_REF, repo = GITHUB_REPO, use_cache = FALSE) {
   cache_dir <- file.path(wb_workbench_root(), ".wdl_cache", ref)
   cache_path <- file.path(cache_dir, paste0(workflow_name, ".wdl"))
@@ -74,9 +76,24 @@ wb_fetch_workflow_wdl <- function(workflow_name, ref = GITHUB_REF, repo = GITHUB
     return(paste(readLines(cache_path, warn = FALSE), collapse = "\n"))
   }
 
-  path <- sprintf("hydrant/workflows/%s/%s.wdl", workflow_name, workflow_name)
+  path <- wb_workflow_wdl_path(workflow_name)
   text <- paste(wb_gh_fetch(path, ref = ref, raw = TRUE, repo = repo), collapse = "\n")
 
+  dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
+  writeLines(text, cache_path)
+  text
+}
+
+# A simpler, generic cached fetch for the recursive nested-input scan below (wb_gh_fetch_binary()
+# and wb_fetch_workflow_wdl() above have their own, path-shape-specific caching) -- keyed by the
+# full repo-relative path (sanitized for use as a filename) since sub-fetches range over
+# arbitrarily-nested workflow/task WDLs, not just hydrant/workflows/<name>/<name>.wdl. Fresh by
+# default, same reasoning as wb_fetch_workflow_wdl(): branches can change underfoot.
+wb_fetch_wdl_cached <- function(path, ref = GITHUB_REF, repo = GITHUB_REPO, use_cache = FALSE) {
+  cache_dir <- file.path(wb_workbench_root(), ".wdl_cache", ref, "nested")
+  cache_path <- file.path(cache_dir, gsub("[^A-Za-z0-9_.-]", "_", path))
+  if (use_cache && file.exists(cache_path)) return(paste(readLines(cache_path, warn = FALSE), collapse = "\n"))
+  text <- paste(wb_gh_fetch(path, ref = ref, raw = TRUE, repo = repo), collapse = "\n")
   dir.create(cache_dir, showWarnings = FALSE, recursive = TRUE)
   writeLines(text, cache_path)
   text
@@ -164,6 +181,162 @@ wb_parse_wdl_inputs <- function(wdl_text, workflow_name) {
 }
 
 ### ===
+### Nested (non-top-level) required-input discovery: a workflow's own input{} block only
+### covers what IT declares -- if it calls a sub-workflow without binding one of that
+### sub-workflow's own required inputs, Cromwell still needs a value for it, addressable via a
+### dot-scoped key (e.g. "panoply_unified_workflow.nmf.run_ssgsea": panoply_nmf_workflow's own
+### run_ssgsea toggle, never re-declared by panoply_unified_workflow itself). A flat scan of
+### the top workflow's input{} block alone misses these entirely.
+### ===
+
+# import "REL_PATH" as ALIAS  ->  c(ALIAS = "REL_PATH", ...)
+wb_parse_wdl_imports <- function(wdl_text) {
+  lines <- strsplit(gsub("\r", "", wdl_text), "\n")[[1]]
+  m <- regmatches(lines, regexec('^\\s*import\\s+"([^"]+)"\\s+as\\s+([A-Za-z_][A-Za-z0-9_]*)', lines))
+  hits <- m[lengths(m) == 3]
+  if (length(hits) == 0) return(character(0))
+  setNames(vapply(hits, `[[`, character(1), 2), vapply(hits, `[[`, character(1), 3))
+}
+
+# WDL import paths are relative to the importing file's own directory, same as a filesystem
+# path -- resolves e.g. "../panoply_nmf_workflow/panoply_nmf_workflow.wdl" against
+# "hydrant/workflows/panoply_unified_workflow/panoply_unified_workflow.wdl" to
+# "hydrant/workflows/panoply_nmf_workflow/panoply_nmf_workflow.wdl", collapsing ".." components.
+wb_resolve_wdl_import_path <- function(importer_path, import_path) {
+  parts <- strsplit(file.path(dirname(importer_path), import_path), "/")[[1]]
+  stack <- character(0)
+  for (p in parts) {
+    if (p == "." || p == "") next
+    if (p == "..") stack <- utils::head(stack, -1) else stack <- c(stack, p)
+  }
+  paste(stack, collapse = "/")
+}
+
+# Every `call ALIAS.CALLEE (as CALL_ALIAS)? { input: ... }` block within a workflow's own body,
+# with: the import alias, callee name, effective call alias (defaults to the callee name when
+# there's no explicit "as"), the set of parameter names bound at this call site, and whether
+# the call sits inside a scatter block (a scattered call's inputs can't be individually
+# addressed via inputs.json -- there's no single override that applies to every iteration, so
+# these are flagged for the caller to skip).
+wb_parse_wdl_calls <- function(wdl_text, workflow_name) {
+  lines <- strsplit(gsub("\r", "", wdl_text), "\n")[[1]]
+  wf_start <- grep(sprintf("^\\s*workflow\\s+%s\\s*\\{", workflow_name), lines)
+  if (length(wf_start) == 0) return(list())
+  wf_start <- wf_start[1]
+
+  depth <- 0
+  scatter_depth <- 0  # depth at which the innermost open scatter(...) began; 0 = not in one
+  calls <- list()
+  n <- length(lines)
+
+  for (i in seq(wf_start, n)) {
+    line <- lines[i]
+    trimmed <- trimws(line)
+    opens  <- lengths(regmatches(line, gregexpr("\\{", line)))
+    closes <- lengths(regmatches(line, gregexpr("\\}", line)))
+
+    if (i > wf_start && grepl("^scatter\\s*\\(", trimmed) && scatter_depth == 0) scatter_depth <- depth + 1
+
+    if (i > wf_start) {
+      call_m <- regmatches(trimmed, regexec(
+        "^call\\s+([A-Za-z_][A-Za-z0-9_]*)\\.([A-Za-z_][A-Za-z0-9_]*)(?:\\s+as\\s+([A-Za-z_][A-Za-z0-9_]*))?",
+        trimmed
+      ))[[1]]
+      if (length(call_m) == 4 && nzchar(call_m[1])) {
+        call_alias <- if (nzchar(call_m[4])) call_m[4] else call_m[3]
+        # Scan forward from this line to the call block's own matching closing brace,
+        # collecting bound parameter names from its "input:" section along the way.
+        call_depth <- opens - closes
+        bound <- character(0)
+        j <- i
+        while (call_depth > 0 && j < n) {
+          j <- j + 1
+          jline <- lines[j]
+          pm <- regmatches(trimws(jline), regexec("^([A-Za-z_][A-Za-z0-9_]*)\\s*=", trimws(jline)))[[1]]
+          if (length(pm) == 2) bound <- c(bound, pm[2])
+          call_depth <- call_depth + lengths(regmatches(jline, gregexpr("\\{", jline))) -
+            lengths(regmatches(jline, gregexpr("\\}", jline)))
+        }
+        calls[[length(calls) + 1]] <- list(
+          import_alias = call_m[2], callee = call_m[3], call_alias = call_alias,
+          bound = bound, in_scatter = scatter_depth > 0
+        )
+      }
+    }
+
+    depth <- depth + opens - closes
+    if (scatter_depth > 0 && depth < scatter_depth) scatter_depth <- 0
+    if (i > wf_start && depth <= 0) break
+  }
+  calls
+}
+
+# Recursively walks workflow-to-workflow calls (leaf tasks are out of scope -- checking every
+# task's own inputs would multiply the fetch count for comparatively little value, since tasks
+# are typically fully parameterized by their immediate caller) looking for inputs that are
+# required in some CALLED workflow but never bound at the call site. Returns a list of specs:
+# list(dot_key=, param_name=, wdl_type=, optional=, has_default=, is_file=, context=) where
+# dot_key is the full inputs.json key (already including the top workflow's own name) and
+# context is a human-readable "top -> alias (callee)" path for prompts/logs.
+wb_discover_nested_specs <- function(workflow_name, wdl_path, wdl_text, ref, repo,
+                                      key_prefix = workflow_name, context = workflow_name,
+                                      visited = character(0), max_fetches = 60, fetched = 0,
+                                      use_cache = FALSE) {
+  if (workflow_name %in% visited) return(list())  # import-cycle guard
+  visited <- c(visited, workflow_name)
+
+  imports <- wb_parse_wdl_imports(wdl_text)
+  calls <- wb_parse_wdl_calls(wdl_text, workflow_name)
+  specs <- list()
+
+  for (call in calls) {
+    if (call$in_scatter) {
+      wb_msg("INFO", sprintf(
+        "Skipping '%s' (called inside a scatter block in %s) -- its own required inputs can't be set per-subset via inputs.json.",
+        call$call_alias, context
+      ))
+      next
+    }
+    # imports is a named character vector, not a list -- [[ ]] on a missing name throws
+    # ("subscript out of bounds") rather than returning NULL, so index with [ ] instead.
+    import_path <- unname(imports[call$import_alias])
+    if (is.na(import_path)) next
+    if (fetched >= max_fetches) {
+      wb_msg("WARNING", "Reached the WDL-fetch limit while scanning for nested required inputs; some may be missed.")
+      break
+    }
+    callee_path <- wb_resolve_wdl_import_path(wdl_path, import_path)
+    callee_text <- tryCatch(wb_fetch_wdl_cached(callee_path, ref, repo, use_cache), error = function(e) NULL)
+    fetched <- fetched + 1
+    if (is.null(callee_text)) next
+
+    is_wf <- any(grepl(sprintf("^\\s*workflow\\s+%s\\s*\\{", call$callee), strsplit(callee_text, "\n")[[1]]))
+    if (!is_wf) next  # a task -- out of scope, see header comment
+
+    callee_specs <- wb_parse_wdl_inputs(callee_text, call$callee)
+    dot_prefix <- paste0(key_prefix, ".", call$call_alias)
+    this_context <- sprintf("%s -> %s (%s)", context, call$call_alias, call$callee)
+
+    for (i in seq_len(nrow(callee_specs))) {
+      s <- callee_specs[i, ]
+      if (s$name %in% call$bound) next  # already satisfied at the call site
+      specs[[length(specs) + 1]] <- list(
+        dot_key = paste0(dot_prefix, ".", s$name), param_name = s$name, wdl_type = s$wdl_type,
+        optional = s$optional, has_default = s$has_default, is_file = s$is_file, context = this_context
+      )
+    }
+
+    specs <- c(specs, wb_discover_nested_specs(
+      call$callee, callee_path, callee_text, ref, repo,
+      key_prefix = dot_prefix, context = this_context, visited = visited,
+      max_fetches = max_fetches, fetched = fetched, use_cache = use_cache
+    ))
+  }
+
+  specs
+}
+
+### ===
 ### Semantic-role aliasing, for mapping WDL input names -> known file/parameter roles
 ### ===
 
@@ -176,7 +349,8 @@ INPUT_ALIASES <- list(
   groups_file = "groups_file", groups_file_nmf = "groups_file_nmf",
   groups_file_metaboanlayst = "groups_file_metaboanlayst",
   groups_file_clumpsptm = "groups_file_clumpsptm",
-  geneset_db = "geneset_db", ptm_db = "ptm_db"
+  geneset_db = "geneset_db", ptm_db = "ptm_db",
+  fasta_ref = "FASTA_ref_file"
 )
 
 ROLE_TO_SUBSET_CATEGORY <- c(
@@ -185,7 +359,10 @@ ROLE_TO_SUBSET_CATEGORY <- c(
   metabol_ome = "metabolome", rna_data = "rna", cna_data = "cna",
   groups_file = "groups", groups_file_clumpsptm = "groups_clumpsptm"
 )
-ROLE_TO_STATIC_CATEGORY <- c(geneset_db = "gseaDB", ptm_db = "ptmseaDB")
+# fasta_ref (panoply_clumps_ptm_workflow's own FASTA_ref_file) isn't a top-level input of
+# panoply_unified_workflow at all -- it's only ever reached via wb_discover_nested_specs()'s
+# recursive scan, using the same role-mapping machinery as top-level static files.
+ROLE_TO_STATIC_CATEGORY <- c(geneset_db = "gseaDB", ptm_db = "ptmseaDB", fasta_ref = "clumpsFASTA")
 
 TOGGLE_ALIASES <- c(
   run_cmap = "run_cmap", run_mo_nmf = "run_mo_nmf", run_so_nmf = "run_so_nmf",
@@ -205,26 +382,67 @@ wb_map_semantic_role <- function(spec_name) {
   NA_character_
 }
 
-# Prompts for whichever top-level boolean toggles the CURRENT target workflow actually declares
-# as required (per its own WDL, via TOGGLE_ALIASES) and that aren't already handled by one of
-# the more specific steps above -- keeps this generic across workflows instead of hardcoding a
-# fixed set of toggle names (e.g. run_mo_nmf) that only make sense for panoply_unified_workflow.
+# Prompts for whichever required toggles the CURRENT target workflow actually declares -- both
+# its own top-level ones (via TOGGLE_ALIASES) and ones buried in a called sub-workflow that
+# were never re-declared at the top (e.g. panoply_nmf_workflow's own run_ssgsea, unbound in
+# panoply_unified_workflow's call to it -- see wb_discover_nested_specs()) -- skipping anything
+# already handled by one of the more specific steps above. Keeps this generic across workflows
+# instead of hardcoding a fixed set of toggle names that only make sense for one of them.
 wb_select_workflow_toggles <- function(state, workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                         github_ref = state$github_ref %||% GITHUB_REF) {
-  specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
-  required <- specs[grepl("^Boolean", specs$wdl_type) & !specs$optional & !specs$has_default, , drop = FALSE]
+  wdl_path <- wb_workflow_wdl_path(workflow_name)
+  wdl_text <- wb_fetch_workflow_wdl(workflow_name, github_ref)
+  specs <- wb_parse_wdl_inputs(wdl_text, workflow_name)
+
+  ask_toggle <- function(label, store_key) {
+    current <- state$toggles[[store_key]]
+    hint <- if (!is.null(current)) sprintf(" (currently %s)", toupper(as.character(current))) else ""
+    state$toggles[[store_key]] <<- wb_confirm(sprintf("Run %s%s?", label, hint))
+  }
 
   asked <- FALSE
+
+  # Top-level: required (no default), name matches a known toggle -- works for Boolean- or
+  # String-typed WDL toggles alike (e.g. run_cmap is declared String, not Boolean, in
+  # panoply_unified_workflow.wdl; filtering by WDL type alone silently missed it before).
+  required <- specs[!specs$optional & !specs$has_default & specs$name %in% names(TOGGLE_ALIASES), , drop = FALSE]
   for (i in seq_len(nrow(required))) {
     wdl_name <- required$name[i]
     state_field <- unname(TOGGLE_ALIASES[wdl_name])
-    if (is.na(state_field) || state_field %in% TOGGLES_HANDLED_ELSEWHERE) next
+    if (state_field %in% TOGGLES_HANDLED_ELSEWHERE) next
     asked <- TRUE
-    current <- state$toggles[[state_field]]
-    hint <- if (!is.null(current)) sprintf(" (currently %s)", toupper(as.character(current))) else ""
-    state$toggles[[state_field]] <- wb_confirm(sprintf("Run %s%s?", wdl_name, hint))
+    ask_toggle(wdl_name, state_field)
   }
-  if (!asked) wb_msg("INFO", sprintf("No additional top-level toggles required by '%s'.", workflow_name))
+
+  # Nested: required Boolean inputs from a called sub-workflow, unbound at the call site.
+  # Anything required but not Boolean-typed (or a File -- handled by wb_build_inputs_json()'s
+  # file-role mapping instead) is reported rather than guessed at, since there's no generically
+  # safe way to collect an arbitrary String/Int value interactively.
+  wb_msg("INFO", "Scanning called sub-workflows for their own required inputs -- this may take a moment...")
+  nested <- tryCatch(
+    wb_discover_nested_specs(workflow_name, wdl_path, wdl_text, github_ref, GITHUB_REPO),
+    error = function(e) {
+      wb_msg("WARNING", sprintf("Could not fully scan nested sub-workflow inputs (%s); some may be missed.", conditionMessage(e)))
+      list()
+    }
+  )
+  for (s in Filter(function(s) !isTRUE(s$optional) && !isTRUE(s$has_default), nested)) {
+    if (isTRUE(s$is_file)) next
+    toggle_name <- unname(TOGGLE_ALIASES[s$param_name])
+    store_key <- if (!is.na(toggle_name)) toggle_name else s$dot_key
+    if (!is.na(toggle_name) && toggle_name %in% TOGGLES_HANDLED_ELSEWHERE) next
+    if (!grepl("^Boolean", s$wdl_type)) {
+      wb_msg("WARNING", sprintf(
+        "Required input '%s' (%s) in %s has no default and isn't auto-promptable -- set it manually in inputs.json (key: %s).",
+        s$param_name, s$wdl_type, s$context, s$dot_key
+      ))
+      next
+    }
+    asked <- TRUE
+    ask_toggle(sprintf("%s [%s]", s$param_name, s$context), store_key)
+  }
+
+  if (!asked) wb_msg("INFO", sprintf("No additional required toggles found for '%s'.", workflow_name))
 
   wb_save_state(state)
 }
@@ -251,39 +469,53 @@ wb_in_named_session <- function(state, local_path) {
   local_path
 }
 
+# Returns list(inputs=, file_keys=) -- file_keys (both top-level and nested dot-scoped) is what
+# wb_update_inputs_json_for_subset()'s surgical-update path refreshes when regenerating
+# inputs.json for a different subset, without touching any hand-edited toggle/parameter.
 wb_build_inputs_json <- function(state, subset_name, workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                   github_ref = state$github_ref %||% GITHUB_REF) {
-  specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
+  wdl_path <- wb_workflow_wdl_path(workflow_name)
+  wdl_text <- wb_fetch_workflow_wdl(workflow_name, github_ref)
+  specs <- wb_parse_wdl_inputs(wdl_text, workflow_name)
   subset_files <- wb_subset_files(state, subset_name)  # already resolved against the named session
   master_params_path <- wb_in_named_session(state, file.path(wb_session_dir(), "master-parameters.yaml"))
 
+  resolve_file_role <- function(role) {
+    if (is.na(role)) return(NULL)
+    if (role == "yaml") return(master_params_path)
+    if (role %in% names(ROLE_TO_SUBSET_CATEGORY)) return(subset_files[[ROLE_TO_SUBSET_CATEGORY[[role]]]])
+    if (role %in% names(ROLE_TO_STATIC_CATEGORY)) return(wb_in_named_session(state, state$typemap[[ROLE_TO_STATIC_CATEGORY[[role]]]]))
+    NULL
+  }
+
   inputs <- list()
+  file_keys <- character(0)
+
+  set_file_input <- function(key, param_name, optional, role) {
+    file_keys <<- c(file_keys, key)
+    local_path <- resolve_file_role(role)
+    if (!is.null(local_path) && !is.na(local_path) && file.exists(local_path)) {
+      inputs[[key]] <<- wb_local_to_s3(local_path)
+    } else if (!optional) {
+      wb_msg("WARNING", sprintf("Required File input '%s' could not be resolved -- fill it in manually.", param_name))
+    }
+  }
+
   for (i in seq_len(nrow(specs))) {
     spec <- specs[i, ]
     role <- wb_map_semantic_role(spec$name)
     key <- paste0(workflow_name, ".", spec$name)
 
     if (isTRUE(spec$is_file)) {
-      local_path <- NULL
-      if (!is.na(role)) {
-        if (role == "yaml") {
-          local_path <- master_params_path
-        } else if (role %in% names(ROLE_TO_SUBSET_CATEGORY)) {
-          local_path <- subset_files[[ROLE_TO_SUBSET_CATEGORY[[role]]]]
-        } else if (role %in% names(ROLE_TO_STATIC_CATEGORY)) {
-          local_path <- wb_in_named_session(state, state$typemap[[ROLE_TO_STATIC_CATEGORY[[role]]]])
-        }
-      }
-      if (!is.null(local_path) && !is.na(local_path) && file.exists(local_path)) {
-        inputs[[key]] <- wb_local_to_s3(local_path)
-      } else if (!spec$optional) {
-        wb_msg("WARNING", sprintf("Required File input '%s' could not be resolved -- fill it in manually.", spec$name))
-      }
+      set_file_input(key, spec$name, spec$optional, role)
       next
     }
 
     if (!is.na(role) && role == "job_id") {
-      inputs[[key]] <- as.character(state$job_id %||% subset_name)
+      # Combine the named session with the subset, e.g. "odg-v4-ODG" -- not just the subset
+      # name, which alone can't distinguish output labeled with the same subset name across
+      # different named sessions/runs. state$job_id, if explicitly set, still overrides this.
+      inputs[[key]] <- as.character(state$job_id %||% paste0(state$active_named_session, "-", subset_name))
       next
     }
 
@@ -296,7 +528,30 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
     }
   }
 
-  inputs
+  # Nested (non-top-level) specs -- unbound at their call site inside some sub-workflow, so
+  # never appear in the top workflow's own input{} block (e.g. panoply_clumps_ptm_workflow's
+  # own FASTA_ref_file, or panoply_nmf_workflow's own run_ssgsea). See wb_discover_nested_specs().
+  nested <- tryCatch(
+    wb_discover_nested_specs(workflow_name, wdl_path, wdl_text, github_ref, GITHUB_REPO),
+    error = function(e) {
+      wb_msg("WARNING", sprintf("Could not fully scan nested sub-workflow inputs (%s); some may be missed.", conditionMessage(e)))
+      list()
+    }
+  )
+  for (s in nested) {
+    role <- wb_map_semantic_role(s$param_name)
+    if (isTRUE(s$is_file)) {
+      set_file_input(s$dot_key, s$param_name, s$optional, role)
+      next
+    }
+    toggle_name <- unname(TOGGLE_ALIASES[s$param_name])
+    value <- if (!is.na(toggle_name)) state$toggles[[toggle_name]] else state$toggles[[s$dot_key]]
+    if (!is.null(value)) {
+      inputs[[s$dot_key]] <- if (grepl("^Boolean", s$wdl_type)) as.logical(value) else tolower(as.character(value))
+    }
+  }
+
+  list(inputs = inputs, file_keys = file_keys)
 }
 
 wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
@@ -349,7 +604,8 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
     }
   }
   out_path <- out_path %||% existing_inputs_path
-  fresh <- wb_build_inputs_json(state, subset_name, workflow_name, github_ref)
+  built <- wb_build_inputs_json(state, subset_name, workflow_name, github_ref)
+  fresh <- built$inputs
 
   if (is.null(existing_inputs_path) || !file.exists(existing_inputs_path)) {
     dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
@@ -365,12 +621,9 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
   }
   existing <- jsonlite::fromJSON(existing_inputs_path, simplifyVector = FALSE)
 
-  specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
-  file_specs <- specs[specs$is_file, , drop = FALSE]
-  for (i in seq_len(nrow(file_specs))) {
-    key <- paste0(workflow_name, ".", file_specs$name[i])
-    existing[[key]] <- fresh[[key]]
-  }
+  # Only file-path inputs get refreshed here (both top-level and nested dot-scoped keys) --
+  # any hand-edited or previously-set toggle/parameter is left untouched.
+  for (key in built$file_keys) existing[[key]] <- fresh[[key]]
 
   jsonlite::write_json(existing, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
   wb_msg("INFO", sprintf("Updated file-path inputs in %s for subset '%s' (backup at %s.bak)",
