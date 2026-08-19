@@ -245,7 +245,7 @@ wb_trim <- function(x) gsub("^\\s+|\\s+$", "", x)
 # interrupt. Ported from build-config.r's exit_commands/valid_choice()/smart_readline().
 WB_EXIT_COMMANDS <- c("q", "quit", "exit", "cancel")
 
-wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE) {
+wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE, cancel_msg="No changes made.") {
   # readline() that re-prompts until the response is valid, and lets the user type an exit
   # command to cancel out at any point -- returns NULL in that case, so callers can just
   # check is.null(result) rather than each needing their own escape hatch.
@@ -257,7 +257,7 @@ wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE) {
     choice <- wb_trim(readline(prompt))
     flush.console()
     if (tolower(choice) %in% WB_EXIT_COMMANDS) {
-      wb_msg("CANCELLED", "No changes made.")
+      wb_msg("CANCELLED", cancel_msg)
       return(NULL)
     }
     if (!allow_empty && !nzchar(choice)) {
@@ -272,10 +272,11 @@ wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE) {
   }
 }
 
-wb_confirm <- function(prompt) {
+wb_confirm <- function(prompt, ...) {
   choice <- wb_smart_readline(
     paste0(prompt, " (y/n): "),
-    valid = function(ch) if (tolower(ch) %in% c("y", "yes", "n", "no")) TRUE else "Please answer y or n (or 'quit' to cancel)."
+    valid = function(ch) if (tolower(ch) %in% c("y", "yes", "n", "no")) TRUE else "Please answer y or n (or 'quit' to cancel).",
+    ...
   )
   if (is.null(choice)) return(FALSE)  # quitting a y/n question is treated as declining
   tolower(choice) %in% c("y", "yes")
