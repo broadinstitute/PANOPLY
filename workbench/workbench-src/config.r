@@ -196,6 +196,7 @@ wb_load_state <- function() {
       !wb_confirm(sprintf("This will overwrite current-session/ with the contents of '%s'. Continue?", name))) {
     return(fall_back())
   }
+  wb_msg("INFO", "Copying session files -- this can take a while for large GCTs, please wait...")
   wb_copy_session_tree(wb_session_dir(name), wb_session_dir())
   loaded <- wb_try_read_state()
   wb_msg("INFO", sprintf("Loaded saved session '%s'.", name))
