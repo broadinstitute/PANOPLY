@@ -54,14 +54,17 @@ wb_write_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
 
   gct_categories <- intersect(names(state$typemap), c(PROTEOME_TYPES, "rna", "cna", "metabolome"))
   for (cat_name in gct_categories) {
-    gct <- cmapR::parse_gctx(state$typemap[[cat_name]])
+    # cmapR::parse_gctx()'s own "parsing as GCT v1.3" printout is silenced here -- the single
+    # status line below is all that's needed per GCT, per subset.
+    suppressMessages(invisible(capture.output(gct <- cmapR::parse_gctx(state$typemap[[cat_name]]))))
     keep <- intersect(sample_ids, gct@cid)
     if (length(keep) == 0) {
       wb_msg("WARNING", sprintf("No samples from this subset found in '%s'; skipping.", cat_name))
       next
     }
     sub <- cmapR::subset_gct(gct, cid = keep)
-    wb_write_gct_atomic(sub, file.path(subset_dir, paste0(cat_name, ".gct")))
+    wb_msg("INFO", sprintf("Writing %s GCT for '%s'.", cat_name, name))
+    wb_write_gct_atomic(sub, file.path(subset_dir, paste0(cat_name, ".gct")), quiet = TRUE)
   }
 
   csv_categories <- intersect(names(state$typemap), c("annotation", "groups", "groups_clumpsptm"))
@@ -89,12 +92,16 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
   pending_names <- function() vapply(requests, function(r) r$name, character(1))
 
   filter_cols <- setdiff(colnames(annot), "Sample.ID")
+  printed_cols <- FALSE
   repeat {
     if (!wb_confirm("Create an additional subset?")) break
 
-    cat("Annotation columns:\n")
-    for (i in seq_along(filter_cols)) cat(sprintf("  %2d: %s\n", i, filter_cols[i]))
-    flush.console()
+    if (!printed_cols) {
+      cat("Annotation columns:\n")
+      for (i in seq_along(filter_cols)) cat(sprintf("  %2d: %s\n", i, filter_cols[i]))
+      flush.console()
+      printed_cols <- TRUE
+    }
     col_idx <- wb_smart_readline(
       "Select an annotation column to filter on (or 'quit' to cancel): ",
       valid = function(ch) {

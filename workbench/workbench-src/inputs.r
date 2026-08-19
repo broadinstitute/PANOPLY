@@ -4,8 +4,10 @@
 # due to inefficient file-writing, and partial writes can result in corrupted files.
 # To avoid this, the file is instead written to a temporary local directory, then copied
 # to its final location.
-wb_write_gct_atomic <- function(gct, path) {
-  wb_msg("INFO", "Writing changes -- this can take a while for large files, please wait...")
+wb_write_gct_atomic <- function(gct, path, quiet = FALSE) {
+  # quiet = TRUE lets a caller that already printed its own more specific status line (e.g.
+  # wb_write_subset(), writing several GCTs in a batch) skip this generic one.
+  if (!quiet) wb_msg("INFO", "Writing changes -- this can take a while for large files, please wait...")
   local_tmp <- tempfile(fileext = ".gct")
   on.exit(unlink(local_tmp), add = TRUE) # clear temporary file on exit
   # invisible(capture.output()) used to silence cmapR::write_gct() printouts,
