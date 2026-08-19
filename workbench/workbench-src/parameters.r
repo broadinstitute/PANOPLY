@@ -30,14 +30,14 @@ wb_load_default_master_parameters <- function(github_ref = GITHUB_REF) {
 }
 
 wb_build_master_parameters_yaml <- function(state, out_path = NULL, github_ref = state$github_ref) {
-  # Requires a named session (not current-session) so this file's S3 path -- once baked
-  # into a submitted job's inputs.json -- can't be silently invalidated by later,
-  # unrelated work in current-session. See wb_save_session() in sessions.r.
-  if (is.null(state$active_named_session)) {
-    stop("No named session found -- run `state <- wb_save_session(state)` first ",
-         "(see the Sessions section) before building master-parameters.yaml.")
-  }
-  out_path <- out_path %||% file.path(wb_session_dir(state$active_named_session), "master-parameters.yaml")
+  # Unlike inputs.json, nothing in this file's own *content* is a file path (local or S3) --
+  # it's just PANOPLY's default module parameters merged with plain values (toggles, COSMO
+  # label, group column names, hex colors). So it's built directly in current-session/, same
+  # as subsets -- no named session required here. It still needs to actually be carried into
+  # the named session (via wb_save_session(), before or after building this) for
+  # wb_build_inputs_json() to find it when generating inputs.json, since inputs.json embeds
+  # this file's own S3 path as one of its File inputs (see wb_in_named_session() in wdl.r).
+  out_path <- out_path %||% file.path(wb_session_dir(), "master-parameters.yaml")
 
   defaults <- if (!is.null(state$typemap$parameters)) {
     yaml::read_yaml(state$typemap$parameters)

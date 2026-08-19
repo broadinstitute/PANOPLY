@@ -64,11 +64,12 @@ wb_s3_to_local <- function(s3_uri) {
 }
 
 ### ===
-### Sessions -- a session is a self-contained folder (mapped-file copies, subsets, and once
-### named/saved, the built master-parameters.yaml/inputs.json) under sessions/ alongside the
-### deployed notebook/workbench-src (the notebook's own working directory -- see the file
-### header comment). "current-session" is always the live, actively-edited session; naming
-### and saving one (wb_save_session(), see sessions.r) snapshots it into its own named folder.
+### Sessions -- a session is a self-contained folder (mapped-file copies, subsets,
+### master-parameters.yaml, and once named/saved, the built inputs.json) under sessions/
+### alongside the deployed notebook/workbench-src (the notebook's own working directory -- see
+### the file header comment). "current-session" is always the live, actively-edited session;
+### naming and saving one (wb_save_session(), see sessions.r) snapshots it into its own named
+### folder.
 ### This is also exactly the folder deploy-workbench.sh's --delete mirrors from the git repo:
 ### current-session/ is fair game for that (it only ever exists on the deployed side), but
 ### named sessions are explicitly excluded from that sync (see deploy-workbench.sh) so saving
@@ -197,7 +198,7 @@ wb_load_state <- function() {
     return(fall_back())
   }
   wb_msg("INFO", "Copying session files -- this can take a while for large GCTs, please wait...")
-  wb_copy_session_tree(wb_session_dir(name), wb_session_dir())
+  wb_copy_session_tree(wb_session_dir(name), wb_session_dir(), exclude = SESSION_FINALIZED_FILES)
   loaded <- wb_try_read_state()
   wb_msg("INFO", sprintf("Loaded saved session '%s'.", name))
   result <- modifyList(wb_default_state(), loaded)

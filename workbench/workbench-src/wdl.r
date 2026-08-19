@@ -233,11 +233,29 @@ wb_select_workflow_toggles <- function(state, workflow_name = state$target_workf
 ### inputs.json build + surgical update
 ### ===
 
+# state$typemap/state$subsets[[*]]$dir always point at paths under current-session/ -- that's
+# where wb_load_and_map_inputs()/wb_create_subset() write, so ongoing edits keep working there
+# regardless of whether a session's been named yet. But current-session/ is explicitly the
+# *unprotected*, still-mutable one -- baking its paths into a submitted job's inputs.json would
+# defeat the entire point of naming and saving a session (a later edit, or clearing the session,
+# could invalidate a path the job already depends on). wb_save_session() copies the whole tree,
+# so the named session has the same file at the same relative path -- a prefix swap gives the
+# right one.
+wb_in_named_session <- function(state, local_path) {
+  if (is.null(local_path) || is.na(local_path)) return(local_path)
+  current_dir <- wb_session_dir()
+  named_dir <- wb_session_dir(state$active_named_session)
+  if (startsWith(local_path, current_dir)) {
+    return(paste0(named_dir, substring(local_path, nchar(current_dir) + 1)))
+  }
+  local_path
+}
+
 wb_build_inputs_json <- function(state, subset_name, workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                   github_ref = state$github_ref %||% GITHUB_REF) {
   specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
-  subset_files <- wb_subset_files(state, subset_name)
-  master_params_path <- file.path(wb_session_dir(state$active_named_session), "master-parameters.yaml")
+  subset_files <- lapply(wb_subset_files(state, subset_name), function(p) wb_in_named_session(state, p))
+  master_params_path <- wb_in_named_session(state, file.path(wb_session_dir(), "master-parameters.yaml"))
 
   inputs <- list()
   for (i in seq_len(nrow(specs))) {
@@ -253,7 +271,7 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
         } else if (role %in% names(ROLE_TO_SUBSET_CATEGORY)) {
           local_path <- subset_files[[ROLE_TO_SUBSET_CATEGORY[[role]]]]
         } else if (role %in% names(ROLE_TO_STATIC_CATEGORY)) {
-          local_path <- state$typemap[[ROLE_TO_STATIC_CATEGORY[[role]]]]
+          local_path <- wb_in_named_session(state, state$typemap[[ROLE_TO_STATIC_CATEGORY[[role]]]])
         }
       }
       if (!is.null(local_path) && !is.na(local_path) && file.exists(local_path)) {

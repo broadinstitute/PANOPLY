@@ -2,7 +2,16 @@
 # session (see config.r for wb_sessions_root()/wb_session_dir()/wb_state_path()); named
 # sessions under sessions/<name>/ are point-in-time snapshots of it.
 
-wb_copy_session_tree <- function(from_dir, to_dir) {
+# inputs.json (see wb_update_inputs_json_for_subset()) is only ever written directly into a
+# *named* session -- never into current-session/. Excluded here (on the load direction
+# specifically -- see wb_load_state()) so loading a saved session never pulls a copy of it back
+# into current-session/, where it would just be a stale, untracked file that happens to look
+# live. master-parameters.yaml is NOT in this list -- unlike inputs.json, it's built directly
+# in current-session/ (see wb_build_master_parameters_yaml()) and carried into a named session
+# the same way subsets/mapped inputs are, so it should round-trip on load just like those do.
+SESSION_FINALIZED_FILES <- c("inputs.json", "inputs.json.bak")
+
+wb_copy_session_tree <- function(from_dir, to_dir, exclude = character(0)) {
   if (!dir.exists(from_dir)) stop(sprintf("Session directory not found: %s", from_dir))
   parent <- dirname(to_dir)
   dir.create(parent, showWarnings = FALSE, recursive = TRUE)
@@ -12,6 +21,7 @@ wb_copy_session_tree <- function(from_dir, to_dir) {
   staging_dir <- tempfile("session-copy-", tmpdir = parent)
   dir.create(staging_dir)
   entries <- list.files(from_dir, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  entries <- entries[!basename(entries) %in% exclude]
   if (length(entries) > 0) {
     ok <- file.copy(entries, staging_dir, recursive = TRUE)
     if (!all(ok)) {
