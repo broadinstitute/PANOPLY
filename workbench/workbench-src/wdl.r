@@ -254,7 +254,7 @@ wb_in_named_session <- function(state, local_path) {
 wb_build_inputs_json <- function(state, subset_name, workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                   github_ref = state$github_ref %||% GITHUB_REF) {
   specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
-  subset_files <- lapply(wb_subset_files(state, subset_name), function(p) wb_in_named_session(state, p))
+  subset_files <- wb_subset_files(state, subset_name)  # already resolved against the named session
   master_params_path <- wb_in_named_session(state, file.path(wb_session_dir(), "master-parameters.yaml"))
 
   inputs <- list()

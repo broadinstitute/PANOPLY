@@ -89,3 +89,44 @@ wb_save_session <- function(state, name = NULL) {
   wb_done()
   state
 }
+
+# A fast alternative to wb_load_state()'s "load a saved session" option, for when all you want
+# is to regenerate inputs.json for an already-saved session -- that's the one artifact that's
+# always written directly into the named session regardless of current-session/'s contents (see
+# wb_update_inputs_json_for_subset()), so nothing needs to be copied anywhere to do it. Reads
+# the saved session's own state file directly, without touching current-session/ at all.
+#
+# IMPORTANT: only use the returned state to call wb_update_inputs_json_for_subset() (or inspect
+# it). Anything that writes based on wb_session_dir() with no argument -- wb_create_subset(),
+# wb_load_and_map_inputs(), wb_build_master_parameters_yaml(), wb_select_groups(), etc. -- always
+# targets current-session/, which this deliberately leaves untouched, so using this state for
+# further editing would silently write to the wrong place. For ongoing editing of a saved
+# session, use wb_load_state()'s "load a saved session" option instead, which fully (and more
+# slowly) copies it into current-session/ first.
+wb_open_saved_session <- function(name = NULL) {
+  saved_names <- wb_list_saved_sessions()
+  if (length(saved_names) == 0) stop("No saved sessions found -- run wb_save_session() first.")
+  if (is.null(name)) {
+    name <- wb_smart_readline(
+      sprintf("Which saved session? (%s): ", paste(saved_names, collapse = ", ")),
+      valid = function(ch) if (ch %in% saved_names) TRUE else "Not a known saved session, try again."
+    )
+    if (is.null(name)) {
+      wb_msg("CANCELLED", "No session opened.")
+      wb_done()
+      return(invisible(NULL))
+    }
+  } else if (!(name %in% saved_names)) {
+    stop(sprintf("'%s' is not a known saved session (%s).", name, paste(saved_names, collapse = ", ")))
+  }
+  loaded <- wb_try_read_state(path = file.path(wb_session_dir(name), ".panoply-session.yaml"))
+  if (is.null(loaded)) stop(sprintf("Could not read the state file for saved session '%s'.", name))
+  state <- modifyList(wb_default_state(), loaded)
+  wb_msg("INFO", sprintf(
+    paste("Opened '%s' directly, without copying it into current-session/ -- use this only to",
+          "regenerate inputs.json for it. For ongoing editing, load it via wb_load_state() instead."),
+    name
+  ))
+  wb_done()
+  state
+}

@@ -181,8 +181,15 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
 
 wb_list_subsets <- function(state) names(state$subsets)
 
+# Lists a subset's files -- resolved against the NAMED session (not state$subsets[[name]]$dir's
+# raw current-session path) whenever one's active, since this is only ever used to build
+# inputs.json, and current-session/'s copy may be stale, empty, or (if a saved session's state
+# was opened directly via wb_open_saved_session() rather than fully copied in) never populated
+# at all. See wb_in_named_session() in wdl.r.
 wb_subset_files <- function(state, name) {
   if (is.null(state$subsets[[name]])) stop(sprintf("No subset named '%s' -- run wb_create_subset() first.", name))
-  files <- list.files(state$subsets[[name]]$dir, full.names = TRUE)
+  dir <- state$subsets[[name]]$dir
+  if (!is.null(state$active_named_session)) dir <- wb_in_named_session(state, dir)
+  files <- list.files(dir, full.names = TRUE)
   setNames(as.list(files), sub("\\.(gct|csv)$", "", basename(files)))
 }
