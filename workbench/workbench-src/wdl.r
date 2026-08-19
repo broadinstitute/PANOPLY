@@ -281,7 +281,18 @@ wb_parse_wdl_calls <- function(wdl_text, workflow_name) {
 wb_discover_nested_specs <- function(workflow_name, wdl_path, wdl_text, ref, repo,
                                       key_prefix = workflow_name, context = workflow_name,
                                       visited = character(0), max_fetches = 60, fetched = 0,
-                                      use_cache = FALSE) {
+                                      use_cache = FALSE, notify_scatter = TRUE) {
+  # One blanket notice per top-level call (not per scattered call encountered, which could
+  # otherwise repeat many times across a large tree) -- scatter-called sub-workflows generally
+  # shouldn't have their own required inputs beyond what the top workflow already wires anyway,
+  # and a scattered call's inputs can't be individually addressed via inputs.json regardless.
+  # notify_scatter = FALSE for wb_build_inputs_json()'s call -- it re-runs this same discovery
+  # purely to re-derive dot-key structure for values state$toggles/state$typemap already has
+  # (there's no other way to know a nested key's shape without parsing the call graph again),
+  # not to check or prompt for anything, so the notice would just be repeated noise there.
+  if (notify_scatter && length(visited) == 0) {
+    wb_msg("INFO", "Sub-workflows called inside a scatter block are not scanned for their own required inputs.")
+  }
   if (workflow_name %in% visited) return(list())  # import-cycle guard
   visited <- c(visited, workflow_name)
 
@@ -290,13 +301,7 @@ wb_discover_nested_specs <- function(workflow_name, wdl_path, wdl_text, ref, rep
   specs <- list()
 
   for (call in calls) {
-    if (call$in_scatter) {
-      wb_msg("INFO", sprintf(
-        "Skipping '%s' (called inside a scatter block in %s) -- its own required inputs can't be set per-subset via inputs.json.",
-        call$call_alias, context
-      ))
-      next
-    }
+    if (call$in_scatter) next
     # imports is a named character vector, not a list -- [[ ]] on a missing name throws
     # ("subscript out of bounds") rather than returning NULL, so index with [ ] instead.
     import_path <- unname(imports[call$import_alias])
@@ -329,7 +334,7 @@ wb_discover_nested_specs <- function(workflow_name, wdl_path, wdl_text, ref, rep
     specs <- c(specs, wb_discover_nested_specs(
       call$callee, callee_path, callee_text, ref, repo,
       key_prefix = dot_prefix, context = this_context, visited = visited,
-      max_fetches = max_fetches, fetched = fetched, use_cache = use_cache
+      max_fetches = max_fetches, fetched = fetched, use_cache = use_cache, notify_scatter = notify_scatter
     ))
   }
 
@@ -469,9 +474,8 @@ wb_in_named_session <- function(state, local_path) {
   local_path
 }
 
-# Returns list(inputs=, file_keys=) -- file_keys (both top-level and nested dot-scoped) is what
-# wb_update_inputs_json_for_subset()'s surgical-update path refreshes when regenerating
-# inputs.json for a different subset, without touching any hand-edited toggle/parameter.
+# Returns list(inputs=, always_keys=, toggle_keys=) -- see wb_update_inputs_json_for_subset()'s
+# surgical-update path for how these two key sets get treated differently on a regeneration.
 wb_build_inputs_json <- function(state, subset_name, workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                   github_ref = state$github_ref %||% GITHUB_REF) {
   wdl_path <- wb_workflow_wdl_path(workflow_name)
@@ -489,14 +493,26 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
   }
 
   inputs <- list()
-  file_keys <- character(0)
+  # always_keys: recomputed fresh every time from the subset/session (file paths, job_id) --
+  # always safe, and correct, to overwrite on a regeneration, since the whole point of
+  # regenerating is to get the right ones for the (possibly new) subset.
+  # toggle_keys: user-preference values from state$toggles -- these *could* have been
+  # hand-edited directly in an existing inputs.json since the last build, so
+  # wb_update_inputs_json_for_subset() only overwrites them if the user opts in.
+  always_keys <- character(0)
+  toggle_keys <- character(0)
 
-  set_file_input <- function(key, param_name, optional, role) {
-    file_keys <<- c(file_keys, key)
+  set_file_input <- function(key, param_name, optional, has_default, role) {
     local_path <- resolve_file_role(role)
     if (!is.null(local_path) && !is.na(local_path) && file.exists(local_path)) {
       inputs[[key]] <<- wb_local_to_s3(local_path)
-    } else if (!optional) {
+      always_keys <<- c(always_keys, key)
+    } else if (!optional && !has_default) {
+      # Genuinely required (no WDL default to fall back on) and we have nothing to offer --
+      # a spec with its own default (e.g. panoply_clumps_ptm_workflow's PDB_manifest/
+      # UNIPROT_SWISSPROT/SIFTS_DB, each declared "File X = gs://...") is left alone entirely:
+      # no warning, and critically not added to always_keys, so a surgical update never nulls
+      # out whatever's already there (Cromwell's own default applies if nothing's set at all).
       wb_msg("WARNING", sprintf("Required File input '%s' could not be resolved -- fill it in manually.", param_name))
     }
   }
@@ -507,7 +523,7 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
     key <- paste0(workflow_name, ".", spec$name)
 
     if (isTRUE(spec$is_file)) {
-      set_file_input(key, spec$name, spec$optional, role)
+      set_file_input(key, spec$name, spec$optional, spec$has_default, role)
       next
     }
 
@@ -516,6 +532,7 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
       # name, which alone can't distinguish output labeled with the same subset name across
       # different named sessions/runs. state$job_id, if explicitly set, still overrides this.
       inputs[[key]] <- as.character(state$job_id %||% paste0(state$active_named_session, "-", subset_name))
+      always_keys <- c(always_keys, key)
       next
     }
 
@@ -524,6 +541,7 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
       value <- state$toggles[[toggle_name]]
       if (!is.null(value)) {
         inputs[[key]] <- if (grepl("^Boolean", spec$wdl_type)) as.logical(value) else tolower(as.character(value))
+        toggle_keys <- c(toggle_keys, key)
       }
     }
   }
@@ -531,8 +549,11 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
   # Nested (non-top-level) specs -- unbound at their call site inside some sub-workflow, so
   # never appear in the top workflow's own input{} block (e.g. panoply_clumps_ptm_workflow's
   # own FASTA_ref_file, or panoply_nmf_workflow's own run_ssgsea). See wb_discover_nested_specs().
+  # notify_scatter = FALSE -- this is re-deriving dot-key structure to wire values already
+  # decided by wb_select_workflow_toggles(), not checking or prompting for anything, so the
+  # scatter-skip notice (genuinely useful there) would just be repeated noise here.
   nested <- tryCatch(
-    wb_discover_nested_specs(workflow_name, wdl_path, wdl_text, github_ref, GITHUB_REPO),
+    wb_discover_nested_specs(workflow_name, wdl_path, wdl_text, github_ref, GITHUB_REPO, notify_scatter = FALSE),
     error = function(e) {
       wb_msg("WARNING", sprintf("Could not fully scan nested sub-workflow inputs (%s); some may be missed.", conditionMessage(e)))
       list()
@@ -541,17 +562,18 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
   for (s in nested) {
     role <- wb_map_semantic_role(s$param_name)
     if (isTRUE(s$is_file)) {
-      set_file_input(s$dot_key, s$param_name, s$optional, role)
+      set_file_input(s$dot_key, s$param_name, s$optional, s$has_default, role)
       next
     }
     toggle_name <- unname(TOGGLE_ALIASES[s$param_name])
     value <- if (!is.na(toggle_name)) state$toggles[[toggle_name]] else state$toggles[[s$dot_key]]
     if (!is.null(value)) {
       inputs[[s$dot_key]] <- if (grepl("^Boolean", s$wdl_type)) as.logical(value) else tolower(as.character(value))
+      toggle_keys <- c(toggle_keys, s$dot_key)
     }
   }
 
-  list(inputs = inputs, file_keys = file_keys)
+  list(inputs = inputs, always_keys = always_keys, toggle_keys = toggle_keys)
 }
 
 wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
@@ -621,13 +643,25 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
   }
   existing <- jsonlite::fromJSON(existing_inputs_path, simplifyVector = FALSE)
 
-  # Only file-path inputs get refreshed here (both top-level and nested dot-scoped keys) --
-  # any hand-edited or previously-set toggle/parameter is left untouched.
-  for (key in built$file_keys) existing[[key]] <- fresh[[key]]
+  # File paths and job_id always get refreshed -- they're recomputed from the (possibly new)
+  # subset/session every time, so there's nothing to preserve. Toggles are different: there's
+  # no reliable way to tell whether you've re-run wb_select_workflow_toggles() with a genuine
+  # change since this file was last built, versus this being the only signal that you've since
+  # hand-edited one of those same keys directly in the JSON -- so ask, rather than guess.
+  keys_to_refresh <- built$always_keys
+  if (length(built$toggle_keys) > 0 &&
+      wb_confirm(paste(
+        "Refresh required toggle/parameter values with your current settings?",
+        "(This will only impact parameters set in the previous cell; ",
+        "other parameters in inputs.json will be left as-is.)"
+      ))) {
+    keys_to_refresh <- c(keys_to_refresh, built$toggle_keys)
+  }
+  for (key in keys_to_refresh) existing[[key]] <- fresh[[key]]
 
   jsonlite::write_json(existing, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
-  wb_msg("INFO", sprintf("Updated file-path inputs in %s for subset '%s' (backup at %s.bak)",
-                        out_path, subset_name, existing_inputs_path))
+  wb_msg("INFO", sprintf("Updated %d input(s) in %s for subset '%s' (backup at %s.bak)",
+                        length(keys_to_refresh), out_path, subset_name, existing_inputs_path))
   wb_done()
   out_path
 }
