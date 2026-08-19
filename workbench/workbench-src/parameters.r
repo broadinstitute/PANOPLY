@@ -34,7 +34,7 @@ wb_build_master_parameters_yaml <- function(state, out_path = NULL, github_ref =
   # into a submitted job's inputs.json -- can't be silently invalidated by later,
   # unrelated work in current-session. See wb_save_session() in sessions.r.
   if (is.null(state$active_named_session)) {
-    stop("No named session found -- run `state <- wb_save_session(state, \"your-name\")` first ",
+    stop("No named session found -- run `state <- wb_save_session(state)` first ",
          "(see the Sessions section) before building master-parameters.yaml.")
   }
   out_path <- out_path %||% file.path(wb_session_dir(state$active_named_session), "master-parameters.yaml")

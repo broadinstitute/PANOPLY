@@ -177,9 +177,40 @@ TOGGLE_ALIASES <- c(
   normalizeProteomics = "normalize_proteomics", filterProteomics = "filter_proteomics"
 )
 
+# Toggle fields already driven by an earlier, more specific (and data-aware) step elsewhere in
+# the pipeline -- wb_select_workflow_toggles() below skips these rather than re-asking a plainer
+# version of a question that's already been answered conditionally (e.g. PTM-SEA is only ever
+# asked about if phosphoproteome data was actually mapped; asking again here, unconditionally,
+# for every workflow would be both redundant and nonsensical when that data isn't present).
+TOGGLES_HANDLED_ELSEWHERE <- c("normalize_proteomics", "filter_proteomics", "run_ptmsea", "run_metab", "run_clumpsptm")
+
 wb_map_semantic_role <- function(spec_name) {
   for (role in names(INPUT_ALIASES)) if (spec_name %in% INPUT_ALIASES[[role]]) return(role)
   NA_character_
+}
+
+# Prompts for whichever top-level boolean toggles the CURRENT target workflow actually declares
+# as required (per its own WDL, via TOGGLE_ALIASES) and that aren't already handled by one of
+# the more specific steps above -- keeps this generic across workflows instead of hardcoding a
+# fixed set of toggle names (e.g. run_mo_nmf) that only make sense for panoply_unified_workflow.
+wb_select_workflow_toggles <- function(state, workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
+                                        github_ref = state$github_ref %||% GITHUB_REF) {
+  specs <- wb_parse_wdl_inputs(wb_fetch_workflow_wdl(workflow_name, github_ref), workflow_name)
+  required <- specs[grepl("^Boolean", specs$wdl_type) & !specs$optional & !specs$has_default, , drop = FALSE]
+
+  asked <- FALSE
+  for (i in seq_len(nrow(required))) {
+    wdl_name <- required$name[i]
+    state_field <- unname(TOGGLE_ALIASES[wdl_name])
+    if (is.na(state_field) || state_field %in% TOGGLES_HANDLED_ELSEWHERE) next
+    asked <- TRUE
+    current <- state$toggles[[state_field]]
+    hint <- if (!is.null(current)) sprintf(" (currently %s)", toupper(as.character(current))) else ""
+    state$toggles[[state_field]] <- wb_confirm(sprintf("Run %s%s?", wdl_name, hint))
+  }
+  if (!asked) wb_msg("INFO", sprintf("No additional top-level toggles required by '%s'.", workflow_name))
+
+  wb_save_state(state)
 }
 
 ### ===
@@ -234,7 +265,7 @@ wb_build_inputs_json <- function(state, subset_name, workflow_name = state$targe
   inputs
 }
 
-wb_update_inputs_json_for_subset <- function(state, subset_name,
+wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
                                               workflow_name = state$target_workflow %||% TARGET_WORKFLOW,
                                               github_ref = state$github_ref %||% GITHUB_REF,
                                               existing_inputs_path = NULL,
@@ -243,10 +274,46 @@ wb_update_inputs_json_for_subset <- function(state, subset_name,
   # into a submitted job -- can't be silently invalidated by later, unrelated work in
   # current-session. See wb_save_session() in sessions.r.
   if (is.null(state$active_named_session)) {
-    stop("No named session found -- run `state <- wb_save_session(state, \"your-name\")` first ",
+    stop("No named session found -- run `state <- wb_save_session(state)` first ",
          "(see the Sessions section) before generating inputs.json.")
   }
-  existing_inputs_path <- existing_inputs_path %||% file.path(wb_session_dir(state$active_named_session), "inputs.json")
+
+  if (is.null(subset_name)) {
+    subset_names <- wb_list_subsets(state)
+    if (length(subset_names) == 0) stop("No subsets found -- run wb_create_subset() first.")
+    cat("Subsets:\n")
+    for (i in seq_along(subset_names)) cat(sprintf("  %2d: %s\n", i, subset_names[i]))
+    flush.console()
+    idx <- wb_smart_readline(
+      "Select a subset to generate inputs.json for (or 'quit' to cancel): ",
+      valid = function(ch) {
+        n <- suppressWarnings(as.integer(ch))
+        if (is.na(n) || n < 1 || n > length(subset_names)) sprintf("Please enter a number from 1 to %d.", length(subset_names)) else TRUE
+      }
+    )
+    if (is.null(idx)) {
+      wb_msg("CANCELLED", "inputs.json not generated.")
+      wb_done()
+      return(invisible(NULL))
+    }
+    subset_name <- subset_names[as.integer(idx)]
+  }
+
+  # existing_inputs_path still defaults to the standard per-session path -- but if something's
+  # already there, offer the option to point at a different copy instead (e.g. one you moved,
+  # renamed, or have been hand-editing) rather than always updating that default in place.
+  default_existing <- file.path(wb_session_dir(state$active_named_session), "inputs.json")
+  if (is.null(existing_inputs_path)) {
+    existing_inputs_path <- default_existing
+    if (file.exists(default_existing) &&
+        !wb_confirm(sprintf("Update the existing inputs.json at '%s'?", default_existing))) {
+      alt <- wb_smart_readline(
+        "Path to the inputs.json you'd like to update instead (or 'quit' to use the default): ",
+        valid = function(ch) if (file.exists(path.expand(ch))) TRUE else sprintf("No file found at '%s', try again.", ch)
+      )
+      if (!is.null(alt)) existing_inputs_path <- path.expand(alt)
+    }
+  }
   out_path <- out_path %||% existing_inputs_path
   fresh <- wb_build_inputs_json(state, subset_name, workflow_name, github_ref)
 

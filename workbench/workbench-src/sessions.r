@@ -49,10 +49,21 @@ wb_list_saved_sessions <- function() {
   setdiff(list.dirs(root, recursive = FALSE, full.names = FALSE), "current-session")
 }
 
-wb_save_session <- function(state, name) {
-  if (identical(name, "current-session")) stop("'current-session' is reserved -- choose a different name.")
-  if (!grepl("^[A-Za-z0-9_.-]+$", name)) {
-    stop("Session names may only contain letters, numbers, '-', '_', and '.'.")
+wb_save_session <- function(state, name = NULL) {
+  valid_name <- function(ch) {
+    if (identical(ch, "current-session")) return("'current-session' is reserved -- choose a different name.")
+    if (!grepl("^[A-Za-z0-9_.-]+$", ch)) return("Session names may only contain letters, numbers, '-', '_', and '.', try again.")
+    TRUE
+  }
+  if (is.null(name)) {
+    name <- wb_smart_readline("Name for this session: ", valid = valid_name)
+    if (is.null(name)) {
+      wb_msg("CANCELLED", "Session not saved.")
+      wb_done()
+      return(state)
+    }
+  } else if (!isTRUE(valid_name(name))) {
+    stop(valid_name(name))
   }
   if (dir.exists(wb_session_dir(name)) &&
       !wb_confirm(sprintf("A saved session named '%s' already exists. Overwrite it?", name))) {
@@ -62,6 +73,7 @@ wb_save_session <- function(state, name) {
   }
   state$active_named_session <- name
   state <- wb_save_state(state, done = FALSE)
+  wb_msg("INFO", "Copying session files -- this can take a while for large GCTs, please wait...")
   wb_copy_session_tree(wb_session_dir(), wb_session_dir(name))
   wb_msg("INFO", sprintf("Session saved as '%s' (%s).", name, wb_session_dir(name)))
   wb_done()
