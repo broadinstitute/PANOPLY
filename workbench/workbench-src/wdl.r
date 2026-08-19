@@ -1,40 +1,51 @@
 # GitHub fetch, WDL input parsing, and inputs.json build/update.
 
 wb_gh_fetch <- function(path, ref = GITHUB_REF, raw = FALSE, repo = GITHUB_REPO) {
-  api_path <- sprintf("repos/%s/contents/%s?ref=%s", repo, path, utils::URLencode(ref, reserved = TRUE))
-
-  if (nzchar(Sys.which("gh"))) {
-    result <- tryCatch({
-      args <- if (raw) c("api", "-H", "Accept: application/vnd.github.raw", api_path) else c("api", api_path)
-      wb_run_cmd("gh", args)
-    }, error = function(e) NULL)
-    if (!is.null(result)) return(result)
-    wb_msg("WARNING", "gh api call failed; falling back to an unauthenticated HTTPS request.")
-  }
-
+  # An anonymous request works for any public repo (which is all this notebook ever targets)
+  # and, for raw = TRUE, hits raw.githubusercontent.com's CDN rather than the much more tightly
+  # rate-limited api.github.com -- so it's tried first, with 'gh' (which most notebook users
+  # won't have authenticated) only as a fallback for the rare case the anonymous request fails
+  # (rate limiting, a private fork/branch, etc).
   url <- if (raw) {
     sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, ref, path)
   } else {
     sprintf("https://api.github.com/repos/%s/contents/%s?ref=%s", repo, path, utils::URLencode(ref, reserved = TRUE))
   }
-  readLines(url, warn = FALSE)
+  result <- tryCatch(readLines(url, warn = FALSE), error = function(e) NULL)
+  if (!is.null(result)) return(result)
+
+  if (!nzchar(Sys.which("gh"))) {
+    stop(sprintf("Failed to fetch '%s' from GitHub (anonymous request failed, and no 'gh' CLI is available to retry with).", path))
+  }
+  wb_msg("WARNING", "Anonymous GitHub request failed; retrying via the 'gh' CLI (rate-limited, or a private repo/branch?).")
+  api_path <- sprintf("repos/%s/contents/%s?ref=%s", repo, path, utils::URLencode(ref, reserved = TRUE))
+  args <- if (raw) c("api", "-H", "Accept: application/vnd.github.raw", api_path) else c("api", api_path)
+  wb_run_cmd("gh", args)
 }
 
 wb_gh_fetch_binary <- function(path, out_path, ref = GITHUB_REF, repo = GITHUB_REPO) {
   # For binary files (e.g. .qs), wb_gh_fetch()'s text-line stdout capture would corrupt the
-  # content -- redirect straight to a file instead, which preserves bytes exactly.
+  # content -- redirect straight to a file instead, which preserves bytes exactly. Anonymous
+  # first, 'gh' only as a fallback -- see wb_gh_fetch() above for why.
   dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
 
-  if (nzchar(Sys.which("gh"))) {
-    api_path <- sprintf("repos/%s/contents/%s?ref=%s", repo, path, utils::URLencode(ref, reserved = TRUE))
-    args <- shQuote(c("api", "-H", "Accept: application/vnd.github.raw", api_path))
-    status <- tryCatch(system2("gh", args, stdout = out_path, stderr = FALSE), error = function(e) 1L)
-    if (identical(status, 0L) && file.exists(out_path) && file.info(out_path)$size > 0) return(out_path)
-    wb_msg("WARNING", "gh api call failed; falling back to an unauthenticated HTTPS request.")
-  }
-
   url <- sprintf("https://raw.githubusercontent.com/%s/%s/%s", repo, ref, path)
-  utils::download.file(url, destfile = out_path, mode = "wb", quiet = TRUE)
+  ok <- tryCatch({
+    utils::download.file(url, destfile = out_path, mode = "wb", quiet = TRUE)
+    file.exists(out_path) && file.info(out_path)$size > 0
+  }, error = function(e) FALSE)
+  if (ok) return(out_path)
+
+  if (!nzchar(Sys.which("gh"))) {
+    stop(sprintf("Failed to fetch '%s' from GitHub (anonymous request failed, and no 'gh' CLI is available to retry with).", path))
+  }
+  wb_msg("WARNING", "Anonymous GitHub request failed; retrying via the 'gh' CLI (rate-limited, or a private repo/branch?).")
+  api_path <- sprintf("repos/%s/contents/%s?ref=%s", repo, path, utils::URLencode(ref, reserved = TRUE))
+  args <- shQuote(c("api", "-H", "Accept: application/vnd.github.raw", api_path))
+  status <- system2("gh", args, stdout = out_path, stderr = FALSE)
+  if (!identical(status, 0L) || !file.exists(out_path) || file.info(out_path)$size == 0) {
+    stop(sprintf("Failed to fetch '%s' from GitHub via both an anonymous request and the 'gh' CLI.", path))
+  }
   out_path
 }
 
