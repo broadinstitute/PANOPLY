@@ -58,7 +58,12 @@ wb_list_github_workflows <- function(ref = GITHUB_REF, repo = GITHUB_REPO) {
   result
 }
 
-wb_fetch_workflow_wdl <- function(workflow_name, ref = GITHUB_REF, repo = GITHUB_REPO, use_cache = TRUE) {
+# On Manifold, workflows are targeted by GitHub branch (GITHUB_REF), not a pinned release --
+# the WDL at a given (ref, workflow_name) can change at any time as that branch is pushed to,
+# so a fetch is fresh by default. use_cache = TRUE is an explicit opt-in for anyone who wants
+# to avoid repeated fetches (e.g. iterating quickly, or working offline against a copy already
+# on disk) and is willing to accept it may not reflect the branch's current state.
+wb_fetch_workflow_wdl <- function(workflow_name, ref = GITHUB_REF, repo = GITHUB_REPO, use_cache = FALSE) {
   cache_dir <- file.path(wb_workbench_root(), ".wdl_cache", ref)
   cache_path <- file.path(cache_dir, paste0(workflow_name, ".wdl"))
   if (use_cache && file.exists(cache_path)) {
