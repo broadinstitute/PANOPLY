@@ -75,7 +75,10 @@ wb_select_groups <- function(state, columns = NULL, max_categories = 10) {
   if (is.null(columns)) {
     if (!is.null(state$typemap$groups) &&
         wb_confirm("A groups file was provided. Use its columns as groups?")) {
-      columns <- as.vector(unlist(read.csv(state$typemap$groups, stringsAsFactors = FALSE, quote = '"')))
+      # header = FALSE -- this file is documented as a plain list, one annotation-column name
+      # per line, with no header row. The default header = TRUE would otherwise silently
+      # consume the first name as a column header and drop it from the result.
+      columns <- as.vector(unlist(read.csv(state$typemap$groups, header = FALSE, stringsAsFactors = FALSE, quote = '"')))
       wb_msg("INFO", "Using columns from the provided groups file.")
     } else if (!is.null(state$typemap$groups)) {
       # Declined the groups file above -- let the user specify columns manually instead of
