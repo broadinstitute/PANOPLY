@@ -547,7 +547,11 @@ wb_validate_inputs <- function(state) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   wb_validate_annotation_table(annot)
 
-  gct_categories <- intersect(names(state$typemap), c(PROTEOME_TYPES, "rna", "cna", "metabolome"))
+  # wb_gct_typemap_categories() (extension-based, see subsets.r) rather than a fixed whitelist
+  # of known -ome names -- a custom "extra -ome" registered via wb_load_and_map_inputs()'s
+  # "register as a new -ome" option gets the same sample-ID/gene-ID validation as any standard
+  # -ome; only inputs.json wiring is where it's deliberately left out.
+  gct_categories <- wb_gct_typemap_categories(state)
   if (length(gct_categories) == 0) stop("No GCT files mapped -- run wb_load_and_map_inputs() first.")
   if (length(intersect(gct_categories, PROTEOME_TYPES)) == 0) stop("No proteomics dataset mapped.")
 
