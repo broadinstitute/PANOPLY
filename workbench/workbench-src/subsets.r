@@ -33,6 +33,19 @@ wb_subset_source_mtimes <- function(state) {
   setNames(as.list(as.character(file.mtime(paths))), names(paths))
 }
 
+# Is an already-built subset stale relative to the CURRENT session data? Same underlying
+# comparison wb_write_subset() uses to decide whether to skip a rewrite, minus the
+# filter_col/filter_vals check (irrelevant here -- we're asking whether name's own recorded
+# filter is still current, not proposing a different one). Used by wb_create_subset() to detect
+# and offer to regenerate stale subsets up front, without performing any rebuild itself.
+wb_subset_is_stale <- function(state, name) {
+  existing <- state$subsets[[name]]
+  if (is.null(existing)) return(FALSE)
+  !identical(existing$source_mtimes, wb_subset_source_mtimes(state)) ||
+    !identical(existing$groups_cols, state$groups_cols) ||
+    !dir.exists(existing$dir)
+}
+
 # Does the actual file-writing for one subset -- no prompts, no wb_save_state()/wb_done()
 # (the interactive wb_create_subset() below is the only public entry point, and saves once
 # after everything it creates in one call, not once per subset). Skips the (potentially slow,
@@ -104,99 +117,155 @@ wb_write_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
   state
 }
 
-wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subsets")) {
-  annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
+wb_describe_subset <- function(name, s) {
+  desc <- if (is.null(s$filter_col)) "all samples" else sprintf("%s in {%s}", s$filter_col, paste(s$filter_vals, collapse = ", "))
+  sprintf("  %-16s -> %s (%d sample(s))", name, desc, s$n_samples)
+}
 
-  # Every subset (including 'all') is only actually written at the very end, in one batch --
-  # writing GCTs is slow, so collecting every name/filter first means the user answers all the
-  # prompts up front instead of waiting between each one.
-  wb_msg("INFO", "An 'all' subset (every sample) will always be created.")
-  requests <- list(list(name = "all", filter_col = NULL, filter_vals = NULL))
-  pending_names <- function() vapply(requests, function(r) r$name, character(1))
-
-  filter_cols <- setdiff(colnames(annot), "Sample.ID")
-  printed_cols <- FALSE
-  repeat {
-    if (!wb_confirm("Create an additional subset?")) break
-
-    if (!printed_cols) {
-      cat("Annotation columns:\n")
-      for (i in seq_along(filter_cols)) cat(sprintf("  %2d: %s\n", i, filter_cols[i]))
-      flush.console()
-      printed_cols <- TRUE
+# Column-index -> value-index(es)-> name prompt sequence for one subset, reused by the "add a
+# new subset" menu action below. Returns NULL if cancelled at any point, otherwise
+# list(name=, filter_col=, filter_vals=).
+wb_prompt_new_subset <- function(state, annot, filter_cols) {
+  cat("Annotation columns:\n")
+  for (i in seq_along(filter_cols)) cat(sprintf("  %2d: %s\n", i, filter_cols[i]))
+  flush.console()
+  col_idx <- wb_smart_readline(
+    "Select an annotation column to filter on (or 'quit' to cancel): ",
+    valid = function(ch) {
+      n <- suppressWarnings(as.integer(ch))
+      if (is.na(n) || n < 1 || n > length(filter_cols)) sprintf("Please enter a number from 1 to %d.", length(filter_cols)) else TRUE
     }
-    col_idx <- wb_smart_readline(
-      "Select an annotation column to filter on (or 'quit' to cancel): ",
+  )
+  if (is.null(col_idx)) return(NULL)
+  filter_col <- filter_cols[as.integer(col_idx)]
+
+  # NA values aren't independently selectable here (same as passing filter_vals = NA to
+  # wb_write_subset() directly never matched anything, via %in%'s own NA handling).
+  values <- sort(unique(as.character(annot[[filter_col]])))
+  values <- values[!is.na(values)]
+
+  cat(sprintf("\n'%s' values:\n", filter_col))
+  for (i in seq_along(values)) cat(sprintf("  %2d: %s\n", i, values[i]))
+  flush.console()
+
+  sel <- wb_smart_readline(
+    "Select value(s) to include -- comma-separated indexes or ranges (e.g. 1,3:5) (or 'quit' to cancel): ",
+    valid = function(ch) {
+      tokens <- wb_trim(strsplit(ch, ",")[[1]])
+      if (!all(grepl("^[0-9]+(:[0-9]+)?$", tokens))) return("Use indexes or ranges only (e.g. 1,3:5), try again.")
+      idx <- wb_parse_index_ranges(tokens)
+      if (any(idx < 1 | idx > length(values))) return(sprintf("Index out of range (1-%d), try again.", length(values)))
+      vals <- values[idx]
+      if (sum(annot[[filter_col]] %in% vals) == 0) return(sprintf("No samples match '%s' in {%s}, try again.", filter_col, paste(vals, collapse = ", ")))
+      TRUE
+    }
+  )
+  if (is.null(sel)) return(NULL)
+  filter_vals <- values[wb_parse_index_ranges(wb_trim(strsplit(sel, ",")[[1]]))]
+  n_matched <- sum(annot[[filter_col]] %in% filter_vals)
+  wb_msg("INFO", sprintf("%d sample(s) match '%s' in {%s}.", n_matched, filter_col, paste(filter_vals, collapse = ", ")))
+
+  name <- NULL
+  repeat {
+    candidate <- wb_smart_readline(
+      "Name for this subset: ",
       valid = function(ch) {
-        n <- suppressWarnings(as.integer(ch))
-        if (is.na(n) || n < 1 || n > length(filter_cols)) {
-          sprintf("Please enter a number from 1 to %d.", length(filter_cols))
-        } else TRUE
-      }
-    )
-    if (is.null(col_idx)) { wb_msg("CANCELLED", "No additional subset created."); next }
-    filter_col <- filter_cols[as.integer(col_idx)]
-
-    # NA values aren't independently selectable here (same as passing filter_vals = NA to
-    # wb_write_subset() directly never matched anything, via %in%'s own NA handling).
-    values <- sort(unique(as.character(annot[[filter_col]])))
-    values <- values[!is.na(values)]
-
-    cat(sprintf("\n'%s' values:\n", filter_col))
-    for (i in seq_along(values)) cat(sprintf("  %2d: %s\n", i, values[i]))
-    flush.console()
-
-    sel <- wb_smart_readline(
-      "Select value(s) to include -- comma-separated indexes or ranges (e.g. 1,3:5) (or 'quit' to cancel): ",
-      valid = function(ch) {
-        tokens <- wb_trim(strsplit(ch, ",")[[1]])
-        if (!all(grepl("^[0-9]+(:[0-9]+)?$", tokens))) {
-          return("Use indexes or ranges only (e.g. 1,3:5), try again.")
-        }
-        idx <- wb_parse_index_ranges(tokens)
-        if (any(idx < 1 | idx > length(values))) {
-          return(sprintf("Index out of range (1-%d), try again.", length(values)))
-        }
-        vals <- values[idx]
-        if (sum(annot[[filter_col]] %in% vals) == 0) {
-          return(sprintf("No samples match '%s' in {%s}, try again.", filter_col, paste(vals, collapse = ", ")))
-        }
+        if (!grepl("^[A-Za-z0-9_.-]+$", ch)) return("Use only letters, numbers, '-', '_', and '.', try again.")
+        # 'all' always means every sample -- never offer to overwrite it with a custom filter.
+        if (identical(ch, "all")) return("'all' is reserved for every sample -- choose a different name, try again.")
         TRUE
       }
     )
-    if (is.null(sel)) { wb_msg("CANCELLED", "No additional subset created."); next }
-    filter_vals <- values[wb_parse_index_ranges(wb_trim(strsplit(sel, ",")[[1]]))]
-    n_matched <- sum(annot[[filter_col]] %in% filter_vals)
-    wb_msg("INFO", sprintf("%d sample(s) match '%s' in {%s}.", n_matched, filter_col, paste(filter_vals, collapse = ", ")))
-
-    name <- NULL
-    repeat {
-      candidate <- wb_smart_readline(
-        "Name for this subset: ",
-        valid = function(ch) if (grepl("^[A-Za-z0-9_.-]+$", ch)) TRUE else "Use only letters, numbers, '-', '_', and '.', try again."
-      )
-      if (is.null(candidate)) break
-      if (candidate %in% union(names(state$subsets), pending_names())) {
-        if (wb_confirm(sprintf("A subset named '%s' already exists (or is already queued). Overwrite/replace it?", candidate))) {
-          name <- candidate
-          break
-        }
-        # else: loop back and ask for a different name
-      } else {
-        name <- candidate
-        break
-      }
+    if (is.null(candidate)) break
+    if (candidate %in% names(state$subsets)) {
+      if (wb_confirm(sprintf("A subset named '%s' already exists. Overwrite it?", candidate))) { name <- candidate; break }
+      # else: loop back and ask for a different name
+    } else {
+      name <- candidate
+      break
     }
-    if (is.null(name)) { wb_msg("CANCELLED", "No additional subset created."); next }
+  }
+  if (is.null(name)) return(NULL)
+  list(name = name, filter_col = filter_col, filter_vals = filter_vals)
+}
 
-    # Replace any earlier queued request with the same name -- only the latest spec is built.
-    requests <- Filter(function(r) r$name != name, requests)
-    requests[[length(requests) + 1]] <- list(name = name, filter_col = filter_col, filter_vals = filter_vals)
+# 'all' always exists (created once, the first time there are no subsets yet at all) and can't
+# be removed -- beyond that it's treated like any other subset: no automatic re-checking or
+# rebuilding on every call, since the staleness-detection prompt below and the explicit
+# add/remove/regenerate menu already give full control over when anything actually gets rebuilt.
+wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subsets")) {
+  annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
+  filter_cols <- setdiff(colnames(annot), "Sample.ID")
+
+  if (length(state$subsets) == 0) {
+    wb_msg("INFO", "An 'all' subset (every sample) will always be created.")
+    state <- wb_write_subset(state, "all", out_root = out_root)
   }
 
-  wb_msg("INFO", sprintf("Creating %d subset(s): %s", length(requests), paste(pending_names(), collapse = ", ")))
-  for (req in requests) {
-    state <- wb_write_subset(state, req$name, filter_col = req$filter_col, filter_vals = req$filter_vals, out_root = out_root)
+  stale <- Filter(function(n) wb_subset_is_stale(state, n), names(state$subsets))
+  if (length(stale) > 0 &&
+      wb_confirm(sprintf(
+        "%d subset(s) look out of date (source data or group columns changed since they were built: %s) -- regenerate them now?",
+        length(stale), paste(stale, collapse = ", ")
+      ))) {
+    for (n in stale) {
+      s <- state$subsets[[n]]
+      state <- wb_write_subset(state, n, filter_col = s$filter_col, filter_vals = s$filter_vals, out_root = out_root, force = TRUE)
+    }
+  }
+
+  repeat {
+    if (length(state$subsets) > 0) {
+      cat("\nExisting subsets:\n")
+      for (n in names(state$subsets)) cat(wb_describe_subset(n, state$subsets[[n]]), "\n")
+      flush.console()
+    }
+
+    action <- wb_smart_readline(
+      paste0(
+        "What would you like to do?\n",
+        "  1) Add a new subset (or overwrite an existing one by reusing its name)\n",
+        "  2) Remove an existing subset (not 'all')\n",
+        "  3) Regenerate all existing subsets from current session data\n",
+        "(or 'quit' to finish): "
+      ),
+      valid = function(ch) if (ch %in% c("1", "2", "3")) TRUE else "Please enter 1, 2, or 3 (or 'quit' to finish)."
+    )
+    if (is.null(action)) break
+
+    if (action == "1") {
+      spec <- wb_prompt_new_subset(state, annot, filter_cols)
+      if (is.null(spec)) { wb_msg("CANCELLED", "No subset created."); next }
+      state <- wb_write_subset(state, spec$name, filter_col = spec$filter_col, filter_vals = spec$filter_vals, out_root = out_root)
+    } else if (action == "2") {
+      removable <- setdiff(names(state$subsets), "all")
+      if (length(removable) == 0) { wb_msg("WARNING", "Nothing to remove ('all' can't be removed)."); next }
+      cat("Removable subsets:\n")
+      for (i in seq_along(removable)) cat(sprintf("  %d: %s\n", i, removable[i]))
+      flush.console()
+      idx <- wb_smart_readline(
+        "Remove which subset? Enter its number (or 'quit' to cancel): ",
+        valid = function(ch) {
+          n <- suppressWarnings(as.integer(ch))
+          if (is.na(n) || n < 1 || n > length(removable)) sprintf("Enter a number from 1 to %d.", length(removable)) else TRUE
+        }
+      )
+      if (is.null(idx)) next
+      target <- removable[as.integer(idx)]
+      if (wb_confirm(sprintf("Remove subset '%s'? This deletes its folder (%s) and cannot be undone.",
+                             target, state$subsets[[target]]$dir))) {
+        unlink(state$subsets[[target]]$dir, recursive = TRUE)
+        state$subsets[[target]] <- NULL
+        wb_msg("INFO", sprintf("Removed subset '%s'.", target))
+      }
+    } else {
+      if (length(state$subsets) == 0) { wb_msg("INFO", "No subsets to regenerate yet."); next }
+      wb_msg("INFO", sprintf("Regenerating %d subset(s): %s", length(state$subsets), paste(names(state$subsets), collapse = ", ")))
+      for (n in names(state$subsets)) {
+        s <- state$subsets[[n]]
+        state <- wb_write_subset(state, n, filter_col = s$filter_col, filter_vals = s$filter_vals, out_root = out_root, force = TRUE)
+      }
+    }
   }
 
   wb_save_state(state)
