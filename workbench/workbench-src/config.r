@@ -217,6 +217,19 @@ wb_save_state <- function(state, done = TRUE) {
 ### Small shared utilities
 ### ===
 
+# Shortens an absolute path under wherever sessions actually live (e.g.
+# ".../sessions/current-session/inputs/foo.gct") down to the portion relative to that
+# ("sessions/current-session/inputs/foo.gct") for display -- easier to read in a printed
+# listing without losing the (still-unambiguous, since it's always relative to the same root)
+# information. Deliberately derived from wb_sessions_root() rather than hardcoding getwd()
+# directly -- they're the same in the real deployment, but this stays correct if that ever
+# changes. Falls back to the path unchanged if it isn't under that root for some reason.
+wb_display_path <- function(path) {
+  root <- paste0(dirname(wb_sessions_root()), "/")
+  if (startsWith(path, root)) return(substring(path, nchar(root) + 1))
+  path
+}
+
 wb_run_cmd <- function(cmd, args = character(0)) {
   # system2() builds a shell command line without quoting args itself (e.g. a header value
   # like "Accept: application/vnd.github.raw" would otherwise be word-split on the space) --

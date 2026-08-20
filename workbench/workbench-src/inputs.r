@@ -94,17 +94,69 @@ wb_validate_fasta_input <- function(raw) {
   TRUE
 }
 
+# Suggests a CAT_MAP category for a filename by substring match (e.g. "ODG-v4-proteome-....gct"
+# -> "proteome"), checking the LONGEST category names first -- otherwise a file matching
+# "phosphoproteome" or "nglycoproteome" would incorrectly match the shorter "proteome" substring
+# they both also contain. Just a suggestion (see wb_load_and_map_inputs()): the user can always
+# accept or override it. Returns NA if nothing matches.
+wb_smart_match_category <- function(filename) {
+  ordered <- CAT_MAP[order(nchar(CAT_MAP), decreasing = TRUE)]
+  filename_lower <- tolower(filename)
+  # grepl() doesn't support ignore.case=TRUE together with fixed=TRUE (it's silently ignored,
+  # with a warning) -- lowercase both sides instead for a case-insensitive literal match.
+  hit <- ordered[vapply(ordered, function(cat) grepl(tolower(cat), filename_lower, fixed = TRUE), logical(1))]
+  if (length(hit) == 0) return(NA_integer_)
+  match(hit[1], CAT_MAP)
+}
+
 wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_root(), "inputs"),
                                     zip_path = NULL) {
   dir.create(input_dir, showWarnings = FALSE, recursive = TRUE)
-  if (!is.null(zip_path)) utils::unzip(zip_path, exdir = input_dir, junkpaths = TRUE)
+
+  if (is.null(zip_path)) {
+    # Auto-detect rather than requiring zip_path= to be passed -- but still just a suggestion:
+    # declining (or there being no zip at all) falls through to sorting input_dir's loose files
+    # exactly as before.
+    zips <- list.files(input_dir, pattern = "\\.zip$", ignore.case = TRUE, full.names = TRUE)
+    if (length(zips) == 1) {
+      if (wb_confirm(sprintf("Found '%s' -- unzip and use its contents?", basename(zips)))) zip_path <- zips
+    } else if (length(zips) > 1) {
+      cat(sprintf("Found multiple zip files in %s:\n", input_dir))
+      for (i in seq_along(zips)) cat(sprintf("  %d: %s\n", i, basename(zips[i])))
+      flush.console()
+      idx <- wb_smart_readline(
+        "Unzip and use one of these? Enter its number, or leave blank to skip all of them: ",
+        allow_empty = TRUE,
+        valid = function(ch) {
+          if (!nzchar(ch)) return(TRUE)
+          n <- suppressWarnings(as.integer(ch))
+          if (is.na(n) || n < 1 || n > length(zips)) sprintf("Enter a number from 1 to %d.", length(zips)) else TRUE
+        }
+      )
+      if (!is.null(idx) && nzchar(idx)) zip_path <- zips[as.integer(idx)]
+    }
+  } else {
+    zip_path <- path.expand(zip_path)
+    # unzip()'s own extraction backend doesn't distinguish "file not found" from "corrupt
+    # archive" -- both surface as the same generic "error 1 in extracting from zip file"
+    # warning, which makes a simple typo'd path look identical to a genuinely broken zip.
+    # Checking existence up front makes that failure mode unambiguous.
+    if (!file.exists(zip_path)) stop(sprintf("zip_path '%s' does not exist.", zip_path))
+  }
+
+  # Files that actually came from the zip, if one's being used -- so the "want to also map
+  # other files sitting in this folder?" question below can tell them apart from whatever else
+  # already happened to be in input_dir, rather than assuming both are wanted together.
+  zip_files <- character(0)
+  used_zip <- !is.null(zip_path)
+  if (used_zip) zip_files <- basename(utils::unzip(zip_path, exdir = input_dir, junkpaths = TRUE))
 
   files <- list.files(input_dir, pattern = "\\.(gct|csv|ya?ml|gmt|fasta|fa)$", full.names = FALSE)
-  if (length(files) == 0 && is.null(zip_path)) {
+  if (length(files) == 0) {
     stop(sprintf(
-      "No .gct/.csv/.yaml/.gmt/.fasta/.fa files found in %s. Place your input files there, or pass ",
+      "No .gct/.csv/.yaml/.gmt/.fasta/.fa files found in %s (a .zip there is detected automatically). ",
       input_dir
-    ), "zip_path= to unzip one, then re-run.")
+    ), "Place your input files there and re-run.")
   }
 
   # Dedup against the ORIGINAL upload paths already consumed, not state$typemap -- typemap
@@ -113,13 +165,33 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
   already_mapped <- unlist(state$typemap_originals, use.names = FALSE)
   files <- files[!file.path(input_dir, files) %in% already_mapped]
 
+  if (used_zip) {
+    other_files <- setdiff(files, zip_files)
+    files <- intersect(files, zip_files)
+    if (length(other_files) > 0 &&
+        wb_confirm(sprintf("%d other file(s) in this folder weren't part of the zip -- map those too?", length(other_files)))) {
+      files <- c(files, other_files)
+    }
+  }
+
   if (length(files) > 0) wb_list_data_categories()
 
+  skipped_files <- character(0)
   cancelled <- FALSE
+
   for (f in files) {
+    suggested <- wb_smart_match_category(f)
+    prompt <- if (!is.na(suggested)) {
+      sprintf("  %s -> category index [detected: %d) %s -- press Enter to accept, or type a different number]: ",
+              f, suggested, CAT_MAP[suggested])
+    } else {
+      sprintf("  %s -> category index: ", f)
+    }
     choice <- wb_smart_readline(
-      sprintf("  %s -> category index: ", f),
+      prompt,
+      allow_empty = !is.na(suggested),
       valid = function(ch) {
+        if (!nzchar(ch)) return(TRUE)  # accepts the smart-detected suggestion, if any
         n <- suppressWarnings(as.integer(ch))
         if (is.na(n) || n < 0 || n > length(CAT_MAP)) {
           sprintf("Invalid category number (0-%d).", length(CAT_MAP))
@@ -127,8 +199,44 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
       }
     )
     if (is.null(choice)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); cancelled <- TRUE; break }
-    choice <- as.integer(choice)
-    if (choice == 0) next
+    choice <- if (!nzchar(choice)) suggested else as.integer(choice)
+
+    if (choice == 0) {
+      if (!grepl("\\.gct$", f, ignore.case = TRUE)) {
+        # Only GCTs get the "register as a new -ome" option below -- there's no equivalent
+        # concept for an annotation/groups/parameters/database file that doesn't fit a category.
+        skipped_files <- c(skipped_files, f)
+        next
+      }
+      new_ome <- wb_smart_readline(
+        paste(
+          "If you would like to map this GCT to a new -ome, enter a name to register",
+          "(it'll be subsetted and processed like other -omes, but NOT automatically wired into inputs.json),",
+          "or leave blank to skip this file: "
+        ),
+        allow_empty = TRUE,
+        valid = function(ch) {
+          if (!nzchar(ch)) return(TRUE)
+          if (!grepl("^[A-Za-z][A-Za-z0-9_]*$", ch)) {
+            return("Use a name starting with a letter (letters, numbers, underscore only), try again.")
+          }
+          if (ch %in% CAT_MAP) {
+            return(sprintf("'%s' is already a standard category -- pick it by its index above instead, try again.", ch))
+          }
+          if (ch %in% names(state$typemap)) {
+            return(sprintf("'%s' is already used for another mapped file, try again.", ch))
+          }
+          TRUE
+        }
+      )
+      if (is.null(new_ome)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); cancelled <- TRUE; break }
+      if (!nzchar(new_ome)) { skipped_files <- c(skipped_files, f); next }
+      original_path <- file.path(input_dir, f)
+      state$typemap[[new_ome]] <- wb_copy_into_session(original_path)
+      state$typemap_originals[[new_ome]] <- original_path
+      next
+    }
+
     original_path <- file.path(input_dir, f)
     # Copy into the session rather than pointing typemap at the original upload directly --
     # downstream validators write in-place fixes (gene-ID column, etc.) to whatever path they're
@@ -147,7 +255,20 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
 
   cat("\nCurrent file mappings:\n")
   for (cat_name in intersect(CAT_MAP, names(state$typemap))) {
-    cat(sprintf("  %-16s -> %s\n", cat_name, state$typemap[[cat_name]]))
+    cat(sprintf("  %-16s -> %s\n", cat_name, wb_display_path(state$typemap[[cat_name]])))
+  }
+
+  extra_omes <- setdiff(names(state$typemap), CAT_MAP)
+  if (length(extra_omes) > 0) {
+    cat("\nAdditional -omes (available for subsetting; not wired into inputs.json automatically):\n")
+    for (cat_name in extra_omes) {
+      cat(sprintf("  %-16s -> %s\n", cat_name, wb_display_path(state$typemap[[cat_name]])))
+    }
+  }
+
+  if (length(skipped_files) > 0) {
+    cat("\nSkipped (not mapped to anything):\n")
+    for (f in skipped_files) cat(sprintf("  %s\n", f))
   }
   flush.console()
 

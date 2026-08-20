@@ -1,9 +1,18 @@
 # Local-folder sample subsetting -- replaces Terra sample sets.
 
+# Every typemap category whose mapped file is a GCT -- covers both the standard proteomics/
+# genomics categories AND any custom "extra -ome" registered via wb_load_and_map_inputs()'s
+# "register as a new -ome" option (see CAT_MAP there), so custom data gets subsetted the same
+# way without needing a fixed category-name whitelist here.
+wb_gct_typemap_categories <- function(state) {
+  if (length(state$typemap) == 0) return(character(0))
+  names(state$typemap)[vapply(state$typemap, function(p) grepl("\\.gct$", p, ignore.case = TRUE), logical(1))]
+}
+
 # The set of mapped source files a subset's contents actually depend on -- every GCT/CSV
 # category wb_write_subset() below reads from.
 wb_subset_source_paths <- function(state) {
-  gct_categories <- intersect(names(state$typemap), c(PROTEOME_TYPES, "rna", "cna", "metabolome"))
+  gct_categories <- wb_gct_typemap_categories(state)
   csv_categories <- intersect(names(state$typemap), c("annotation", "groups", "groups_clumpsptm"))
   unlist(state$typemap[c(gct_categories, csv_categories)])
 }
@@ -52,7 +61,7 @@ wb_write_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
   subset_dir <- file.path(out_root, name)
   dir.create(subset_dir, showWarnings = FALSE, recursive = TRUE)
 
-  gct_categories <- intersect(names(state$typemap), c(PROTEOME_TYPES, "rna", "cna", "metabolome"))
+  gct_categories <- wb_gct_typemap_categories(state)
   for (cat_name in gct_categories) {
     # cmapR::parse_gctx()'s own "parsing as GCT v1.3" printout is silenced here -- the single
     # status line below is all that's needed per GCT, per subset.
