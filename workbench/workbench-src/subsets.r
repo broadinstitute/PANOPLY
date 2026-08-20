@@ -10,10 +10,13 @@ wb_gct_typemap_categories <- function(state) {
 }
 
 # The set of mapped source files a subset's contents actually depend on -- every GCT/CSV
-# category wb_write_subset() below reads from.
+# category wb_write_subset() below reads from. Deliberately excludes "groups" -- unlike
+# annotation/groups_clumpsptm, the per-subset groups.csv is generated fresh from
+# annotation+groups_cols (see wb_write_subset()), not read from state$typemap$groups at all, so
+# that upload's own mtime isn't a real dependency of the output.
 wb_subset_source_paths <- function(state) {
   gct_categories <- wb_gct_typemap_categories(state)
-  csv_categories <- intersect(names(state$typemap), c("annotation", "groups", "groups_clumpsptm"))
+  csv_categories <- intersect(names(state$typemap), c("annotation", "groups_clumpsptm"))
   unlist(state$typemap[c(gct_categories, csv_categories)])
 }
 
@@ -44,6 +47,7 @@ wb_write_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
       identical(existing$filter_col, filter_col) &&
       identical(existing$filter_vals, filter_vals) &&
       identical(existing$source_mtimes, source_mtimes) &&
+      identical(existing$groups_cols, state$groups_cols) &&
       dir.exists(existing$dir)) {
     wb_msg("INFO", sprintf("Subset '%s' is already up to date; skipping.", name))
     return(state)
@@ -76,16 +80,26 @@ wb_write_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
     wb_write_gct_atomic(sub, file.path(subset_dir, paste0(cat_name, ".gct")), quiet = TRUE)
   }
 
-  csv_categories <- intersect(names(state$typemap), c("annotation", "groups", "groups_clumpsptm"))
+  csv_categories <- intersect(names(state$typemap), c("annotation", "groups_clumpsptm"))
   for (cat_name in csv_categories) {
     csv <- read.csv(state$typemap[[cat_name]], stringsAsFactors = FALSE, quote = '"')
     write.csv(csv[csv$Sample.ID %in% sample_ids, , drop = FALSE],
               file.path(subset_dir, paste0(cat_name, ".csv")), row.names = FALSE, quote = TRUE)
   }
 
+  # groups.csv (the groups_file WDL input) is a per-sample table -- Sample.ID plus the
+  # currently-selected group columns' values -- generated fresh from the annotation table each
+  # time, mirroring panda-src/bin/r-source/create-groups.r's write_groups(). It is NOT a copy or
+  # filter of state$typemap$groups: that upload is just an optional list of column NAMES used to
+  # help wb_select_groups() pick state$groups_cols in the first place, and has no Sample.ID
+  # column at all -- filtering it as if it were already a per-sample table (the previous
+  # behavior) always produced a header with zero data rows.
+  wb_write_groups_file(annot[annot$Sample.ID %in% sample_ids, , drop = FALSE],
+                       state$groups_cols, file.path(subset_dir, "groups.csv"))
+
   state$subsets[[name]] <- list(filter_col = filter_col, filter_vals = filter_vals,
                                 dir = subset_dir, n_samples = length(sample_ids),
-                                source_mtimes = source_mtimes)
+                                source_mtimes = source_mtimes, groups_cols = state$groups_cols)
   wb_msg("INFO", sprintf("Subset '%s' created with %d sample(s) at %s", name, length(sample_ids), subset_dir))
   state
 }
