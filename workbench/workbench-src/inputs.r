@@ -196,9 +196,10 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
         if (is.na(n) || n < 0 || n > length(CAT_MAP)) {
           sprintf("Invalid category number (0-%d).", length(CAT_MAP))
         } else TRUE
-      }
+      },
+      cancel_msg = "Stopped mapping remaining files -- files already mapped are saved."
     )
-    if (is.null(choice)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); cancelled <- TRUE; break }
+    if (is.null(choice)) { cancelled <- TRUE; break }
     choice <- if (!nzchar(choice)) suggested else as.integer(choice)
 
     if (choice == 0) {
@@ -227,9 +228,10 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
             return(sprintf("'%s' is already used for another mapped file, try again.", ch))
           }
           TRUE
-        }
+        },
+        cancel_msg = "Stopped mapping remaining files -- files already mapped are saved."
       )
-      if (is.null(new_ome)) { wb_msg("CANCELLED", "Stopped mapping remaining files."); cancelled <- TRUE; break }
+      if (is.null(new_ome)) { cancelled <- TRUE; break }
       if (!nzchar(new_ome)) { skipped_files <- c(skipped_files, f); next }
       original_path <- file.path(input_dir, f)
       state$typemap[[new_ome]] <- wb_copy_into_session(original_path)

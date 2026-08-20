@@ -134,7 +134,8 @@ wb_prompt_new_subset <- function(state, annot, filter_cols) {
     valid = function(ch) {
       n <- suppressWarnings(as.integer(ch))
       if (is.na(n) || n < 1 || n > length(filter_cols)) sprintf("Please enter a number from 1 to %d.", length(filter_cols)) else TRUE
-    }
+    },
+    cancel_msg = "Previous subset changes saved."
   )
   if (is.null(col_idx)) return(NULL)
   filter_col <- filter_cols[as.integer(col_idx)]
@@ -158,7 +159,8 @@ wb_prompt_new_subset <- function(state, annot, filter_cols) {
       vals <- values[idx]
       if (sum(annot[[filter_col]] %in% vals) == 0) return(sprintf("No samples match '%s' in {%s}, try again.", filter_col, paste(vals, collapse = ", ")))
       TRUE
-    }
+    },
+    cancel_msg = "Previous subset changes saved."
   )
   if (is.null(sel)) return(NULL)
   filter_vals <- values[wb_parse_index_ranges(wb_trim(strsplit(sel, ",")[[1]]))]
@@ -174,11 +176,12 @@ wb_prompt_new_subset <- function(state, annot, filter_cols) {
         # 'all' always means every sample -- never offer to overwrite it with a custom filter.
         if (identical(ch, "all")) return("'all' is reserved for every sample -- choose a different name, try again.")
         TRUE
-      }
+      },
+      cancel_msg = "Previous subset changes saved."
     )
     if (is.null(candidate)) break
     if (candidate %in% names(state$subsets)) {
-      if (wb_confirm(sprintf("A subset named '%s' already exists. Overwrite it?", candidate))) { name <- candidate; break }
+      if (wb_confirm(sprintf("A subset named '%s' already exists. Overwrite it?", candidate), cancel_msg = "Previous subset changes saved.")) { name <- candidate; break }
       # else: loop back and ask for a different name
     } else {
       name <- candidate
@@ -207,7 +210,7 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
       wb_confirm(sprintf(
         "%d subset(s) look out of date (source data or group columns changed since they were built: %s) -- regenerate them now?",
         length(stale), paste(stale, collapse = ", ")
-      ))) {
+      ), cancel_msg = "Previous subset changes saved.")) {
     for (n in stale) {
       s <- state$subsets[[n]]
       state <- wb_write_subset(state, n, filter_col = s$filter_col, filter_vals = s$filter_vals, out_root = out_root, force = TRUE)
@@ -226,10 +229,11 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
         "What would you like to do?\n",
         "  1) Add a new subset (or overwrite an existing one by reusing its name)\n",
         "  2) Remove an existing subset (not 'all')\n",
-        "  3) Regenerate all existing subsets from current session data\n",
+        "  3) Refresh all existing subsets from current session data\n",
         "(or 'quit' to finish): "
       ),
-      valid = function(ch) if (ch %in% c("1", "2", "3")) TRUE else "Please enter 1, 2, or 3 (or 'quit' to finish)."
+      valid = function(ch) if (ch %in% c("1", "2", "3")) TRUE else "Please enter 1, 2, or 3 (or 'quit' to finish).",
+      cancel_msg = "Previous subset changes saved."
     )
     if (is.null(action)) break
 
@@ -248,12 +252,13 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
         valid = function(ch) {
           n <- suppressWarnings(as.integer(ch))
           if (is.na(n) || n < 1 || n > length(removable)) sprintf("Enter a number from 1 to %d.", length(removable)) else TRUE
-        }
+        },
+        cancel_msg = "Previous subset changes saved."
       )
       if (is.null(idx)) next
       target <- removable[as.integer(idx)]
       if (wb_confirm(sprintf("Remove subset '%s'? This deletes its folder (%s) and cannot be undone.",
-                             target, state$subsets[[target]]$dir))) {
+                             target, state$subsets[[target]]$dir), cancel_msg = "Previous subset changes saved.")) {
         unlink(state$subsets[[target]]$dir, recursive = TRUE)
         state$subsets[[target]] <- NULL
         wb_msg("INFO", sprintf("Removed subset '%s'.", target))
