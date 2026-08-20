@@ -14,8 +14,10 @@
 #   ./deploy-workbench.sh --project-id 181
 #   ./deploy-workbench.sh --project-id 181 --folder workbench-setup --dry-run
 #   ./deploy-workbench.sh --project-id 181 --yes
+#   ./deploy-workbench.sh --project-id 181 --refresh-databases
 #
-# Requires: aws (CLI), authenticated with write access to the target bucket.
+# Requires: aws (CLI), authenticated with write access to the target bucket. --refresh-databases
+# additionally requires git and network access to github.com.
 
 set -euo pipefail
 
@@ -26,6 +28,7 @@ DRY_RUN=false
 ASSUME_YES=false
 DELETE=false
 FORCE=false
+REFRESH_DATABASES=false
 
 usage() {
   cat << EOF
@@ -47,6 +50,10 @@ Options:
   -y, --yes             Skip the general upload confirmation prompt (for non-interactive/CI use)
       --force           Skip the extra confirmation that --delete prints (see above);
                          independent of -y/--yes, which only covers the general upload prompt
+      --refresh-databases
+                         Run defaults/update-ssgsea-databases.sh first, to pull the latest GSEA
+                         Hallmark/PTM-SEA databases from broadinstitute/ssGSEA2.0 before staging
+                         (off by default -- the existing defaults/ copy is used as-is otherwise)
   -h, --help            Show this help
 EOF
 }
@@ -60,6 +67,7 @@ while [[ $# -gt 0 ]]; do
     --dry-run) DRY_RUN=true; shift ;;
     -y|--yes) ASSUME_YES=true; shift ;;
     --force) FORCE=true; shift ;;
+    --refresh-databases) REFRESH_DATABASES=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown argument: $1" >&2; usage >&2; exit 1 ;;
   esac
@@ -103,17 +111,63 @@ REPO_ROOT="$(cd "${WORKBENCH_DIR}/.." && pwd)"
 DEFAULTS_DIR="${WORKBENCH_DIR}/workbench-src/defaults"
 DEST="s3://${BUCKET}/research/projects/${PROJECT_ID}/${FOLDER}/"
 
+if $REFRESH_DATABASES; then
+  UPDATE_SCRIPT="${REPO_ROOT}/defaults/update-ssgsea-databases.sh"
+  if [[ ! -x "$UPDATE_SCRIPT" ]]; then
+    echo "Error: --refresh-databases was given, but ${UPDATE_SCRIPT} is missing or not executable." >&2
+    exit 1
+  fi
+  echo "Refreshing GSEA/PTM-SEA databases (defaults/update-ssgsea-databases.sh) ..."
+  "$UPDATE_SCRIPT"
+  echo
+fi
+
+# GSEA/PTM-SEA database filenames are version-suffixed (e.g. h.all.v7.0.symbols.gmt) and
+# update-ssgsea-databases.sh replaces them in place with whatever the latest release names them
+# -- matching by pattern (newest by version-sort) instead of a pinned filename means a version
+# bump (with or without --refresh-databases above) is picked up automatically here, rather than
+# silently staging a now-stale copy because the exact old filename no longer exists.
+latest_match() {
+  # shellcheck disable=SC2086 -- intentional glob expansion, not a variable to quote
+  ls -1v ${REPO_ROOT}/defaults/$1 2> /dev/null | tail -n 1
+}
+HALLMARK_SRC="$(latest_match 'h.all.v*.symbols.gmt')"
+PTMSIG_SRC="$(latest_match 'ptm.sig.db.all.flanking.human.v*.gmt')"
+
 echo "Staging shared defaults into workbench-src/defaults/ ..."
 mkdir -p "${DEFAULTS_DIR}"
 for src in "${REPO_ROOT}/src/panoply_common/master-parameters.yaml" \
            "${REPO_ROOT}/src/panoply_metaboanalyst/pathway_db/master_compound_db.qs" \
-           "${REPO_ROOT}/defaults/h.all.v7.0.symbols.gmt" \
-           "${REPO_ROOT}/defaults/ptm.sig.db.all.flanking.human.v2.0.0.gmt"; do
-  if [[ -f "$src" ]]; then
-    cp "$src" "${DEFAULTS_DIR}/"
-    echo "  staged $(basename "$src")"
+           "${HALLMARK_SRC}" \
+           "${PTMSIG_SRC}"; do
+  if [[ -n "$src" && -f "$src" ]]; then
+    dest="${DEFAULTS_DIR}/$(basename "$src")"
+    # A previously-staged file under a DIFFERENT (older-versioned) name is now stale -- drop it
+    # so workbench-src/defaults/ doesn't accumulate both, and so aws s3 sync (below) removes the
+    # old one from S3 too (it mirrors deletions within this subfolder the same as additions).
+    case "$(basename "$src")" in
+      h.all.v*.symbols.gmt) stale_pattern="h.all.v*.symbols.gmt" ;;
+      ptm.sig.db.all.flanking.human.v*.gmt) stale_pattern="ptm.sig.db.all.flanking.human.v*.gmt" ;;
+      *) stale_pattern="" ;;
+    esac
+    if [[ -n "$stale_pattern" ]]; then
+      for old in "${DEFAULTS_DIR}"/$stale_pattern; do
+        [[ -f "$old" && "$(basename "$old")" != "$(basename "$src")" ]] && rm -f "$old"
+      done
+    fi
+    # A plain `cp` here always bumps the staged copy's mtime, even when the content is
+    # unchanged -- `aws s3 sync` below decides what to re-upload by size+mtime (not content),
+    # so that alone was enough to make it re-upload every one of these files on every deploy.
+    # Only copying when the content actually differs keeps the staged file's mtime (and so the
+    # sync decision) tied to genuine changes.
+    if [[ -f "$dest" ]] && cmp -s "$src" "$dest"; then
+      echo "  up to date $(basename "$src")"
+    else
+      cp "$src" "$dest"
+      echo "  staged $(basename "$src")"
+    fi
   else
-    echo "  WARNING: expected reference file not found, skipping: $src" >&2
+    echo "  WARNING: expected reference file not found, skipping: ${src:-<none matched>}" >&2
   fi
 done
 
