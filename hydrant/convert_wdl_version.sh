@@ -23,6 +23,16 @@ set -euo pipefail
 #     legacy placeholder options (`${sep=...}`, `${default=...}`,
 #     `${true=...false=...}`) have no `~{}` equivalent at all. This is the
 #     one step that reports the files it modifies.
+#   - Terra (gs://) vs Manifold (s3://) default paths: some declarations
+#     (e.g. panoply_main.wdl's CMAP inputs, panoply_clumps_ptm_workflow.wdl's
+#     PDB/Uniprot/SIFTS inputs) carry TWO sibling declarations of the same
+#     name -- one tagged `## terra path`, one tagged `## manifold path` --
+#     since only one can be uncommented at a time (WDL doesn't allow
+#     declaring the same name twice in one scope). Converting to draft-2
+#     activates the `## terra path` line and comments out its `## manifold
+#     path` sibling; converting to a versioned WDL does the reverse.
+#     Idempotent and reversible like the version/input{} toggle above --
+#     never deletes either line, just flips which one is commented.
 #   - forward-reference check (versioned -> draft-2 only): input {} blocks
 #     let a declaration's default reference a sibling declared later;
 #     draft-2's bare, top-to-bottom declarations do not. Needs a real parse
@@ -59,9 +69,13 @@ fi
 
 if [ "$TARGET" = "draft2" ]; then
   DIRECTION=to_draft2
+  ACTIVATE_PATH_TAG=terra
+  DEACTIVATE_PATH_TAG=manifold
 else
   DIRECTION=to_versioned
   VERSION="$TARGET"
+  ACTIVATE_PATH_TAG=manifold
+  DEACTIVATE_PATH_TAG=terra
 fi
 
 if [ "$DIRECTION" = to_draft2 ]; then
@@ -153,12 +167,21 @@ find "$DIR" -name '*.wdl' -print0 | while IFS= read -r -d '' f; do
     stage2="$(printf '%s\n' "$stage1" | sed -E '/command[[:space:]]*<<</,/^[[:space:]]*>>>/ s/\$\{/~\{/g')"
   fi
 
-  if [ "$stage2" != "$stage1" ]; then
+  # Terra/Manifold path flip -- deterministic per direction (not a toggle), so re-running the
+  # same direction is a no-op: comment out the DEACTIVATE_PATH_TAG line if it isn't already
+  # commented, then uncomment the ACTIVATE_PATH_TAG line if it currently is. Applied to every
+  # `## terra path` / `## manifold path` pair regardless of which one happens to be active now.
+  stage3="$(printf '%s\n' "$stage2" | sed -E '/## '"$DEACTIVATE_PATH_TAG"' path[[:space:]]*$/{
+/^[[:space:]]*#/!s/^([[:space:]]*)/\1# /
+}')"
+  stage3="$(printf '%s\n' "$stage3" | sed -E 's/^([[:space:]]*)#[[:space:]]?(.*## '"$ACTIVATE_PATH_TAG"' path[[:space:]]*)$/\1\2/')"
+
+  if [ "$stage3" != "$stage1" ]; then
     echo "[MODIFIED] $f"
   fi
-  if [ "$stage2" != "$original" ]; then
+  if [ "$stage3" != "$original" ]; then
     trailing_newline=$'\n'
     [ -n "$(tail -c1 "$f")" ] && trailing_newline=''
-    printf '%s%s' "$stage2" "$trailing_newline" > "$f"
+    printf '%s%s' "$stage3" "$trailing_newline" > "$f"
   fi
 done
