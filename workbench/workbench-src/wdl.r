@@ -619,10 +619,10 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
     if (file.exists(default_existing) &&
         !wb_confirm(sprintf("Update the existing inputs.json at '%s'?", default_existing))) {
       alt <- wb_smart_readline(
-        "Path to the inputs.json you'd like to update instead (or 'quit' to use the default): ",
-        valid = function(ch) if (file.exists(path.expand(ch))) TRUE else sprintf("No file found at '%s', try again.", ch)
+        "Path to the inputs.json you'd like to update instead (local or this project's s3://, or 'quit' to use the default): ",
+        valid = function(ch) wb_validate_user_file(ch, extensions = "json")
       )
-      if (!is.null(alt)) existing_inputs_path <- path.expand(alt)
+      if (!is.null(alt)) existing_inputs_path <- wb_resolve_user_path(alt)
     }
   }
   out_path <- out_path %||% existing_inputs_path

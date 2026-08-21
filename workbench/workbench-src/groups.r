@@ -381,33 +381,72 @@ wb_select_cosmo_attributes <- function(state, columns = NULL) {
   wb_save_state(state)
 }
 
-# Lightweight local approximation of what panoply_clumps_ptm_mapping (clumps_ptm_mapping.py)
-# does at runtime: it splits the FASTA into per-sequence files (named per header, parsed using
-# the FASTA_sep_type delimiter), then keeps only the ones whose name contains an accession_col
-# value as a substring, hard-failing the whole Cromwell job if none match. That exact per-ID
-# split isn't reproducible here (the parsing package isn't available in this repo), so this
-# just checks for ANY substring overlap between accession values and raw FASTA header text --
-# looser, but enough to flag a wholly mismatched ID scheme before a job gets submitted, without
-# adding a FASTA-parsing dependency or reimplementing FASTA_sep_type's own delimiter logic.
+# A single lucky match is easy by chance in a large FASTA, so validity is judged by match
+# RATE, not mere existence of one hit -- mirrors GENE_SYMBOL_MATCH_THRESHOLD's own reasoning
+# (inputs.r) for the exact same reason, but kept as its own constant since the two concerns
+# (gene-symbol matching, Clumps-PTM accession matching) are independently tunable.
+ACCESSION_MATCH_THRESHOLD <- 0.10
+
 wb_fasta_header_sample <- function(fasta_path, max_lines = 200000) {
   lines <- readLines(fasta_path, n = max_lines, warn = FALSE)
   sub("^>", "", grep("^>", lines, value = TRUE))
 }
 
-wb_accession_overlaps_fasta <- function(values, fasta_headers, max_values = 2000) {
+# panoply_clumps_ptm_mapping (clumps_ptm_mapping.py) derives each FASTA sequence's ID by
+# splitting its header on FASTA_sep_type's delimiter ('cptac'=' ', 'gencode'='|' -- the only
+# two values it accepts) and keeping the leading token, then matches accession_col values
+# against those extracted IDs. This mirrors that same extraction, rather than the earlier,
+# much looser approach of substring-scanning raw header text (which could both false-positive
+# on coincidental substrings and false-negative on a real match hidden behind the wrong
+# delimiter -- and was also what blew up on PCRE's pattern-size limit for long values).
+wb_fasta_sep_delim <- function(sep_type) if (identical(sep_type, "cptac")) " " else "|"
+
+wb_fasta_header_ids <- function(fasta_headers, sep_type) {
+  delim <- wb_fasta_sep_delim(sep_type)
+  vapply(fasta_headers, function(h) strsplit(h, delim, fixed = TRUE)[[1]][1], character(1), USE.NAMES = FALSE)
+}
+
+# Exact-match rate of `values` against the FASTA's extracted leading ID tokens. A rate, not
+# "any match" -- a GCT and its reference FASTA can legitimately come from slightly different
+# database snapshot dates, so some accessions will be genuinely absent even from a correctly
+# paired file; only a low overall rate indicates a real mismatch.
+wb_accession_match_rate <- function(values, fasta_ids) {
   values <- unique(as.character(values))
   values <- values[!is.na(values) & nzchar(values)]
-  if (length(values) == 0 || length(fasta_headers) == 0) return(FALSE)
-  values <- values[seq_len(min(length(values), max_values))]
-  escaped <- values
-  # Escape regex metacharacters one at a time (backslash first) rather than via a single
-  # character-class pattern -- a class mixing '[', ']', and '{', '}' is awkward to get right
-  # and portable across regex engines; this is simpler to verify correct.
-  for (ch in c("\\", ".", "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")) {
-    escaped <- gsub(ch, paste0("\\", ch), escaped, fixed = TRUE)
+  if (length(values) == 0 || length(fasta_ids) == 0) return(0)
+  mean(values %in% fasta_ids)
+}
+
+# There are only two possible FASTA_sep_type values, so checking both is an exhaustive search,
+# not a heuristic guess. If the configured value's own match rate already clears the
+# threshold, there's nothing to suggest (returns NULL). Otherwise, if the OTHER value produces
+# a clearly better rate, that's a strong, specific signal of which one is actually correct --
+# named explicitly so the warning can say what to change rather than just that something's
+# wrong. If neither value's rate clears the threshold, this returns NULL too: that points at
+# the accession column itself (or genuine snapshot-date skew) rather than FASTA_sep_type.
+wb_suggest_fasta_sep_type <- function(values, fasta_headers, sep_type) {
+  other <- if (identical(sep_type, "cptac")) "gencode" else "cptac"
+  configured_rate <- wb_accession_match_rate(values, wb_fasta_header_ids(fasta_headers, sep_type))
+  if (configured_rate >= ACCESSION_MATCH_THRESHOLD) return(NULL)
+  other_rate <- wb_accession_match_rate(values, wb_fasta_header_ids(fasta_headers, other))
+  if (other_rate >= ACCESSION_MATCH_THRESHOLD && other_rate > configured_rate) {
+    list(suggested = other, configured_rate = configured_rate, other_rate = other_rate)
+  } else {
+    NULL
   }
-  pattern <- paste(escaped, collapse = "|")
-  any(grepl(pattern, fasta_headers, perl = TRUE))
+}
+
+wb_describe_accession_mismatch <- function(values, fasta_headers, sep_type) {
+  suggestion <- wb_suggest_fasta_sep_type(values, fasta_headers, sep_type)
+  if (!is.null(suggestion)) {
+    sprintf(paste(
+      "FASTA_sep_type is configured as '%s', but headers appear to use '%s'-style separators",
+      "instead (%d%% vs %d%% of accession values matched) -- consider updating",
+      "panoply_clumps_ptm.mapping.FASTA_sep_type in master-parameters.yaml."
+    ), sep_type, suggestion$suggested, round(suggestion$configured_rate * 100), round(suggestion$other_rate * 100))
+  } else {
+    "Double-check that the FASTA and this accession column use matching ID types."
+  }
 }
 
 # Mirrors wb_validate_gene_id_column()'s shape, with one deliberate difference: if the
@@ -415,11 +454,12 @@ wb_accession_overlaps_fasta <- function(values, fasta_headers, max_values = 2000
 # panoply_ptm_normalization.accession_number_colname) is MISSING outright, this interactively
 # fixes it (pick + validate + write an existing column in its place, like the gene-ID/
 # metabolite-ID fixups elsewhere). But if the column EXISTS and just looks malformed or doesn't
-# overlap the FASTA at all, that's only a warning -- unlike a missing column, there's no
+# match the FASTA well, that's only a warning -- unlike a missing column, there's no fully
 # confident way to guess a better one, and Clumps-PTM's own mapping step remains the authority
 # on whether it actually works.
-wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession_col, fasta_headers) {
+wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession_col, fasta_headers, fasta_sep_type) {
   rdesc_names <- colnames(gct@rdesc)
+  fasta_ids <- wb_fasta_header_ids(fasta_headers, fasta_sep_type)
 
   if (accession_col %in% rdesc_names) {
     vals <- gct@rdesc[[accession_col]]
@@ -429,15 +469,19 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
         "Accession column '%s' in %s data is empty/all-NA -- Clumps-PTM's mapping step requires valid accession IDs here.",
         accession_col, toupper(ome)
       ))
-    } else if (!wb_accession_overlaps_fasta(vals, fasta_headers)) {
-      wb_msg("WARNING", sprintf(paste(
-        "No overlap detected between '%s' values in %s data and identifiers in the provided",
-        "FASTA -- Clumps-PTM's mapping step will likely fail. Double-check that the FASTA and",
-        "this accession column use matching ID types (and FASTA_sep_type in",
-        "master-parameters.yaml, if relevant)."
-      ), accession_col, toupper(ome)))
     } else {
-      wb_msg("INFO", sprintf("Accession column '%s' detected and appears to match the provided FASTA in %s data.", accession_col, toupper(ome)))
+      rate <- wb_accession_match_rate(vals, fasta_ids)
+      if (rate < ACCESSION_MATCH_THRESHOLD) {
+        wb_msg("WARNING", sprintf(
+          "Only %d%% of '%s' values in %s data matched an ID in the provided FASTA -- Clumps-PTM's mapping step will likely fail. %s",
+          round(rate * 100), accession_col, toupper(ome), wb_describe_accession_mismatch(vals, fasta_headers, fasta_sep_type)
+        ))
+      } else {
+        wb_msg("INFO", sprintf(
+          "Accession column '%s' detected and matches the provided FASTA (%d%%) in %s data.",
+          accession_col, round(rate * 100), toupper(ome)
+        ))
+      }
     }
     return(TRUE)
   }
@@ -449,8 +493,13 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
     sprintf("Column to use as '%s' for %s data (or 'quit' to skip): ", accession_col, toupper(ome)),
     valid = function(ch) {
       if (!(ch %in% rdesc_names)) return("Column not found, try again.")
-      if (!wb_accession_overlaps_fasta(gct@rdesc[[ch]], fasta_headers)) {
-        return(sprintf("'%s' does not appear to overlap the provided FASTA, try again.", ch))
+      vals <- gct@rdesc[[ch]]
+      rate <- wb_accession_match_rate(vals, fasta_ids)
+      if (rate < ACCESSION_MATCH_THRESHOLD) {
+        return(sprintf(
+          "Only %d%% of '%s' matched the provided FASTA, try again. %s",
+          round(rate * 100), ch, wb_describe_accession_mismatch(vals, fasta_headers, fasta_sep_type)
+        ))
       }
       TRUE
     }
@@ -479,15 +528,17 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
   if (!state$toggles$run_clumpsptm) return(wb_save_state(state))
 
   if (!is.null(fasta_path)) {
-    # Explicit override -- validate and copy in like any other manually-specified path.
-    if (!file.exists(fasta_path) || !grepl("\\.(fasta|fa)$", fasta_path, ignore.case = TRUE)) {
-      stop(sprintf("'%s' is not an existing .fasta/.fa file.", fasta_path))
+    # Explicit override -- resolve (s3:// or local, see wb_resolve_user_path()) and validate
+    # like any other manually-specified path.
+    resolved_fasta <- wb_resolve_user_path(fasta_path)
+    if (is.na(resolved_fasta) || !file.exists(resolved_fasta) || !grepl("\\.(fasta|fa)$", resolved_fasta, ignore.case = TRUE)) {
+      stop(sprintf("'%s' is not an existing, resolvable .fasta/.fa file.", fasta_path))
     }
-    state$typemap$clumpsFASTA <- wb_copy_into_session(fasta_path)
+    state$typemap$clumpsFASTA <- wb_copy_into_session(resolved_fasta)
   } else if (is.null(state$typemap$clumpsFASTA)) {
     # Not already mapped via wb_load_and_map_inputs() either -- prompt for it.
     path <- wb_smart_readline(
-      "Path to the reference FASTA file (.fasta/.fa): ",
+      "Path to the reference FASTA file (.fasta/.fa, local or this project's s3://): ",
       valid = wb_validate_fasta_input
     )
     if (is.null(path)) {
@@ -495,18 +546,19 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
       state$toggles$run_clumpsptm <- FALSE
       return(wb_save_state(state))
     }
-    state$typemap$clumpsFASTA <- wb_copy_into_session(wb_resolve_fasta_path(path))
+    state$typemap$clumpsFASTA <- wb_copy_into_session(wb_resolve_user_path(path))
   }
   # else: state$typemap$clumpsFASTA was already mapped via wb_load_and_map_inputs() -- use it as-is.
 
   params <- if (!is.null(state$typemap$parameters)) yaml::read_yaml(state$typemap$parameters) else wb_load_default_master_parameters(state$github_ref)
 
   accession_col <- params$panoply_ptm_normalization$accession_number_colname %||% "id.description"
+  fasta_sep_type <- params$panoply_clumps_ptm$mapping$FASTA_sep_type %||% "gencode"
   fasta_headers <- wb_fasta_header_sample(state$typemap$clumpsFASTA)
   for (ptm_type in intersect(ptm_types, names(state$typemap))) {
     gct_path <- state$typemap[[ptm_type]]
     gct <- cmapR::parse_gctx(gct_path)
-    if (!wb_validate_clumpsptm_accession_column(gct, gct_path, ptm_type, accession_col, fasta_headers)) {
+    if (!wb_validate_clumpsptm_accession_column(gct, gct_path, ptm_type, accession_col, fasta_headers, fasta_sep_type)) {
       state$toggles$run_clumpsptm <- FALSE
       return(wb_save_state(state))
     }

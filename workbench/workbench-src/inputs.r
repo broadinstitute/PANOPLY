@@ -64,35 +64,9 @@ wb_default_asset <- function(pattern) {
   seeded_path
 }
 
-# Resolves a user-typed FASTA path to a local filesystem path. s3:// URIs are the only case
-# that need special handling -- translated via wb_s3_to_local() (the inverse of
-# wb_local_to_s3()); NA is returned if that can't resolve it (different project, malformed,
-# S3_BUCKET/PROJECT_ID unset), so the caller can give a clear "use a local path instead"
-# message rather than silently treating "s3://..." itself as a (nonexistent) local path.
-# Anything else is already a normal local path -- path.expand() handles "~", and relative/
-# absolute paths need no further wrangling (file.exists() resolves them against the cwd as-is).
-wb_resolve_fasta_path <- function(p) {
-  if (startsWith(p, "s3://")) {
-    local <- wb_s3_to_local(p)
-    return(if (is.null(local)) NA_character_ else local)
-  }
-  path.expand(p)
-}
-
-wb_validate_fasta_input <- function(raw) {
-  resolved <- wb_resolve_fasta_path(raw)
-  if (is.na(resolved)) {
-    return(paste(
-      "Cloud (s3://) paths aren't supported directly here -- please upload the FASTA under",
-      "~/workbench/ and enter its local path instead, try again."
-    ))
-  }
-  if (!file.exists(resolved)) return(sprintf("No file found at '%s', try again.", resolved))
-  if (!grepl("\\.(fasta|fa)$", resolved, ignore.case = TRUE)) {
-    return(sprintf("'%s' doesn't look like a .fasta/.fa file, try again.", resolved))
-  }
-  TRUE
-}
+# FASTA-specific instance of the generic wb_validate_user_file() (config.r) -- see there for
+# how local vs. s3:// paths are handled.
+wb_validate_fasta_input <- function(raw) wb_validate_user_file(raw, extensions = c("fasta", "fa"))
 
 # Suggests a CAT_MAP category for a filename by substring match (e.g. "ODG-v4-proteome-....gct"
 # -> "proteome"), checking the LONGEST category names first -- otherwise a file matching
@@ -136,12 +110,15 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
       if (!is.null(idx) && nzchar(idx)) zip_path <- zips[as.integer(idx)]
     }
   } else {
-    zip_path <- path.expand(zip_path)
+    resolved_zip <- wb_resolve_user_path(zip_path)
     # unzip()'s own extraction backend doesn't distinguish "file not found" from "corrupt
     # archive" -- both surface as the same generic "error 1 in extracting from zip file"
     # warning, which makes a simple typo'd path look identical to a genuinely broken zip.
     # Checking existence up front makes that failure mode unambiguous.
-    if (!file.exists(zip_path)) stop(sprintf("zip_path '%s' does not exist.", zip_path))
+    if (is.na(resolved_zip) || !file.exists(resolved_zip)) {
+      stop(sprintf("zip_path '%s' does not exist (or isn't a resolvable s3:// path).", zip_path))
+    }
+    zip_path <- resolved_zip
   }
 
   # Files that actually came from the zip, if one's being used -- so the "want to also map

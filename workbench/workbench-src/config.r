@@ -230,6 +230,48 @@ wb_display_path <- function(path) {
   path
 }
 
+# General-purpose resolver for ANY user-supplied file path -- typed at a wb_smart_readline()
+# prompt, or passed directly as a function argument (e.g. fasta_path=, zip_path=) -- so every
+# such input point behaves the same way. s3:// URIs are the only case that need special
+# handling -- translated via wb_s3_to_local() (the inverse of wb_local_to_s3()) if it's this
+# project's own bucket/path (as Manifold shows for an uploaded file, e.g.
+# "s3://<bucket>/research/projects/<id>/inputs/foo.fasta" -> "~/workbench/inputs/foo.fasta");
+# NA is returned if that can't resolve it (different bucket/project, malformed URI,
+# S3_BUCKET/PROJECT_ID unset), so the caller can give a clear "use a local path instead"
+# message rather than silently treating "s3://..." itself as a (nonexistent) local path.
+# Anything else is already a normal local path -- path.expand() handles "~", and relative/
+# absolute paths need no further wrangling (file.exists() resolves them against the cwd as-is).
+wb_resolve_user_path <- function(p) {
+  if (startsWith(p, "s3://")) {
+    local <- wb_s3_to_local(p)
+    return(if (is.null(local)) NA_character_ else local)
+  }
+  path.expand(p)
+}
+
+# Generic wb_smart_readline(valid=...) check for a user-supplied file path: resolves it (see
+# wb_resolve_user_path()), confirms it exists, and -- if `extensions` is given -- that it ends
+# in one of them (case-insensitive, without the leading '.'). Returns TRUE to accept, or a
+# message string for wb_smart_readline() to show and re-prompt.
+wb_validate_user_file <- function(raw, extensions = NULL) {
+  resolved <- wb_resolve_user_path(raw)
+  if (is.na(resolved)) {
+    return(paste(
+      "Cloud (s3://) paths aren't supported directly here unless they're this project's own",
+      "workbench bucket/path -- please upload the file under ~/workbench/ and enter its local",
+      "path instead, try again."
+    ))
+  }
+  if (!file.exists(resolved)) return(sprintf("No file found at '%s', try again.", resolved))
+  if (!is.null(extensions)) {
+    pattern <- paste0("\\.(", paste(extensions, collapse = "|"), ")$")
+    if (!grepl(pattern, resolved, ignore.case = TRUE)) {
+      return(sprintf("'%s' doesn't look like a .%s file, try again.", resolved, paste(extensions, collapse = "/.")))
+    }
+  }
+  TRUE
+}
+
 wb_run_cmd <- function(cmd, args = character(0)) {
   # system2() builds a shell command line without quoting args itself (e.g. a header value
   # like "Accept: application/vnd.github.raw" would otherwise be word-split on the space) --
