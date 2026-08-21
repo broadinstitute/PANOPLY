@@ -418,87 +418,106 @@ wb_accession_match_rate <- function(values, fasta_ids) {
 }
 
 # There are only two possible FASTA_sep_type values, so checking both is an exhaustive search,
-# not a heuristic guess. If the configured value's own match rate already clears the
-# threshold, there's nothing to suggest (returns NULL). Otherwise, if the OTHER value produces
-# a clearly better rate, that's a strong, specific signal of which one is actually correct --
-# named explicitly so the warning can say what to change rather than just that something's
-# wrong. If neither value's rate clears the threshold, this returns NULL too: that points at
-# the accession column itself (or genuine snapshot-date skew) rather than FASTA_sep_type.
-wb_suggest_fasta_sep_type <- function(values, fasta_headers, sep_type) {
+# not a heuristic guess. Always returns both rates (not just when one looks better) so callers
+# can report EITHER "sep_type is likely the problem" OR "sep_type checked out fine either way,
+# so it's not the issue" -- distinguishing those two explicitly is the whole point of comparing
+# both, rather than leaving a mismatch ambiguous between "wrong sep_type" and "wrong column".
+wb_compare_fasta_sep_types <- function(values, fasta_headers, sep_type) {
   other <- if (identical(sep_type, "cptac")) "gencode" else "cptac"
   configured_rate <- wb_accession_match_rate(values, wb_fasta_header_ids(fasta_headers, sep_type))
-  if (configured_rate >= ACCESSION_MATCH_THRESHOLD) return(NULL)
   other_rate <- wb_accession_match_rate(values, wb_fasta_header_ids(fasta_headers, other))
-  if (other_rate >= ACCESSION_MATCH_THRESHOLD && other_rate > configured_rate) {
-    list(suggested = other, configured_rate = configured_rate, other_rate = other_rate)
-  } else {
-    NULL
-  }
+  list(
+    sep_type = sep_type, sep_type_rate = configured_rate,
+    other = other, other_rate = other_rate,
+    other_looks_better = other_rate >= ACCESSION_MATCH_THRESHOLD && other_rate > configured_rate
+  )
 }
 
-wb_describe_accession_mismatch <- function(values, fasta_headers, sep_type) {
-  suggestion <- wb_suggest_fasta_sep_type(values, fasta_headers, sep_type)
-  if (!is.null(suggestion)) {
-    sprintf(paste(
-      "FASTA_sep_type is configured as '%s', but headers appear to use '%s'-style separators",
-      "instead (%d%% vs %d%% of accession values matched) -- consider updating",
-      "panoply_clumps_ptm.mapping.FASTA_sep_type in master-parameters.yaml."
-    ), sep_type, suggestion$suggested, round(suggestion$configured_rate * 100), round(suggestion$other_rate * 100))
-  } else {
-    "Double-check that the FASTA and this accession column use matching ID types."
-  }
+# TRUE if EITHER FASTA_sep_type produces a good match rate -- a column that only matches
+# under the *other* sep_type is still a genuinely correct column paired with a misconfigured
+# FASTA_sep_type, not a wrong column. Rejecting it outright would incorrectly blame the column
+# for what's actually an independently-fixable config problem.
+wb_accession_column_acceptable <- function(cmp) {
+  cmp$sep_type_rate >= ACCESSION_MATCH_THRESHOLD || cmp$other_rate >= ACCESSION_MATCH_THRESHOLD
 }
 
-# Mirrors wb_validate_gene_id_column()'s shape, with one deliberate difference: if the
-# configured accession column (default 'id.description', from
-# panoply_ptm_normalization.accession_number_colname) is MISSING outright, this interactively
-# fixes it (pick + validate + write an existing column in its place, like the gene-ID/
-# metabolite-ID fixups elsewhere). But if the column EXISTS and just looks malformed or doesn't
-# match the FASTA well, that's only a warning -- unlike a missing column, there's no fully
-# confident way to guess a better one, and Clumps-PTM's own mapping step remains the authority
-# on whether it actually works.
+# Message for when neither sep_type produced a good match -- a genuine column/ID-type problem,
+# not a FASTA_sep_type one.
+wb_describe_accession_mismatch <- function(cmp) {
+  sprintf(paste(
+    "The provided column likely uses a different ID type from the FASTA -- neither '%s'",
+    "(%d%% matched) nor '%s' (%d%% matched) style FASTA separators produced a good match."
+  ), cmp$sep_type, round(cmp$sep_type_rate * 100), cmp$other, round(cmp$other_rate * 100))
+}
+
+# Message for when the column itself is fine but only matches under the OTHER sep_type --
+# still a strong warning, not a soft note, since Clumps-PTM's actual mapping step will use
+# whatever FASTA_sep_type is CONFIGURED, not whichever one happened to match well here.
+wb_describe_sep_type_issue <- function(cmp) {
+  sprintf(paste(
+    "FASTA_sep_type is configured as '%s', but headers appear to use '%s'-style separators",
+    "instead (%d%% vs %d%% of accession values matched) -- consider updating",
+    "panoply_clumps_ptm.mapping.FASTA_sep_type in master-parameters.yaml, even though the",
+    "column itself looks fine."
+  ), cmp$sep_type, cmp$other, round(cmp$sep_type_rate * 100), round(cmp$other_rate * 100))
+}
+
+# Mirrors wb_validate_gene_id_column()'s shape: whether the configured accession column
+# (default 'id.description', from panoply_ptm_normalization.accession_number_colname) is
+# missing outright OR present-but-malformed (empty, or a low FASTA match rate under BOTH
+# possible FASTA_sep_type values), the fix is the same -- pick + validate + write an existing
+# column in its place, like the gene-ID/metabolite-ID fixups elsewhere. The one difference from
+# those: when overwriting a column that already had SOME content, that content is preserved
+# under a '<accession_col>.bak' column rather than discarded, since a low match rate doesn't
+# guarantee the original values were useless (a partial version/date mismatch, say) -- just
+# that they didn't clear the bar.
 wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession_col, fasta_headers, fasta_sep_type) {
   rdesc_names <- colnames(gct@rdesc)
-  fasta_ids <- wb_fasta_header_ids(fasta_headers, fasta_sep_type)
+  backup_col <- paste0(accession_col, ".bak")
+  exists <- accession_col %in% rdesc_names
 
-  if (accession_col %in% rdesc_names) {
+  if (exists) {
     vals <- gct@rdesc[[accession_col]]
     non_blank <- as.character(vals)[!is.na(vals) & nzchar(as.character(vals))]
     if (length(non_blank) == 0) {
-      wb_msg("WARNING", sprintf(
-        "Accession column '%s' in %s data is empty/all-NA -- Clumps-PTM's mapping step requires valid accession IDs here.",
-        accession_col, toupper(ome)
-      ))
+      problem <- sprintf("Accession column '%s' in %s data is empty/all-NA.", accession_col, toupper(ome))
     } else {
-      rate <- wb_accession_match_rate(vals, fasta_ids)
-      if (rate < ACCESSION_MATCH_THRESHOLD) {
-        wb_msg("WARNING", sprintf(
-          "Only %d%% of '%s' values in %s data matched an ID in the provided FASTA -- Clumps-PTM's mapping step will likely fail. %s",
-          round(rate * 100), accession_col, toupper(ome), wb_describe_accession_mismatch(vals, fasta_headers, fasta_sep_type)
-        ))
-      } else {
-        wb_msg("INFO", sprintf(
-          "Accession column '%s' detected and matches the provided FASTA (%d%%) in %s data.",
-          accession_col, round(rate * 100), toupper(ome)
-        ))
+      cmp <- wb_compare_fasta_sep_types(vals, fasta_headers, fasta_sep_type)
+      if (wb_accession_column_acceptable(cmp)) {
+        if (cmp$other_looks_better) {
+          wb_msg("WARNING", sprintf(
+            "Accession column '%s' in %s data matches the provided FASTA (%d%%) under a different separator than configured. %s",
+            accession_col, toupper(ome), round(cmp$other_rate * 100), wb_describe_sep_type_issue(cmp)
+          ))
+        } else {
+          wb_msg("INFO", sprintf(
+            "Accession column '%s' detected and matches the provided FASTA (%d%%) in %s data.",
+            accession_col, round(cmp$sep_type_rate * 100), toupper(ome)
+          ))
+        }
+        return(TRUE)
       }
+      problem <- sprintf(
+        "Only %d%% of '%s' values in %s data matched an ID in the provided FASTA. %s",
+        round(cmp$sep_type_rate * 100), accession_col, toupper(ome), wb_describe_accession_mismatch(cmp)
+      )
     }
-    return(TRUE)
+    wb_msg("WARNING", sprintf("%s Clumps-PTM's mapping step will likely fail.", problem))
+  } else {
+    wb_msg("WARNING", sprintf("Accession column '%s' not found in %s data.", accession_col, toupper(ome)))
   }
 
-  wb_msg("WARNING", sprintf("Accession column '%s' not found in %s data.", accession_col, toupper(ome)))
-  cat(sprintf("\n%s row-annotation columns: %s\n\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
+  cat(sprintf("\n%s row-annotation columns:\n%s\n\n", toupper(ome), paste(paste0(" * ",rdesc_names), collapse = "\n")))
   flush.console()
   col <- wb_smart_readline(
-    sprintf("Column to use as '%s' for %s data (or 'quit' to skip): ", accession_col, toupper(ome)),
+    sprintf("Column containing accession numbers for %s data (or 'quit' to skip): ", accession_col, toupper(ome)),
     valid = function(ch) {
       if (!(ch %in% rdesc_names)) return("Column not found, try again.")
-      vals <- gct@rdesc[[ch]]
-      rate <- wb_accession_match_rate(vals, fasta_ids)
-      if (rate < ACCESSION_MATCH_THRESHOLD) {
+      cmp <- wb_compare_fasta_sep_types(gct@rdesc[[ch]], fasta_headers, fasta_sep_type)
+      if (!wb_accession_column_acceptable(cmp)) {
         return(sprintf(
           "Only %d%% of '%s' matched the provided FASTA, try again. %s",
-          round(rate * 100), ch, wb_describe_accession_mismatch(vals, fasta_headers, fasta_sep_type)
+          round(cmp$sep_type_rate * 100), ch, wb_describe_accession_mismatch(cmp)
         ))
       }
       TRUE
@@ -508,6 +527,31 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
     wb_msg("WARNING", sprintf("Skipped accession-column setup for %s data. Clumps-PTM will not be run.", toupper(ome)))
     return(FALSE)
   }
+  # Accepted -- but if it only cleared the bar via the OTHER sep_type, that's still worth a
+  # strong warning naming the fix, since it was accepted as a valid column, not as evidence the
+  # configured FASTA_sep_type is right.
+  chosen_cmp <- wb_compare_fasta_sep_types(gct@rdesc[[col]], fasta_headers, fasta_sep_type)
+  if (chosen_cmp$other_looks_better) {
+    wb_msg("WARNING", wb_describe_sep_type_issue(chosen_cmp))
+  }
+
+  if (exists) {
+    if (backup_col %in% rdesc_names) {
+      if (wb_confirm(sprintf(
+        "A backup column '%s' already exists -- keep it as-is? (declining overwrites it with the current '%s' values)",
+        backup_col, accession_col
+      ))) {
+        wb_msg("INFO", sprintf("Keeping existing backup column '%s'.", backup_col))
+      } else {
+        gct@rdesc[[backup_col]] <- gct@rdesc[[accession_col]]
+        wb_msg("INFO", sprintf("Overwrote backup column '%s' with the current '%s' values.", backup_col, accession_col))
+      }
+    } else {
+      gct@rdesc[[backup_col]] <- gct@rdesc[[accession_col]]
+      wb_msg("INFO", sprintf("Backed up existing '%s' values to '%s'.", accession_col, backup_col))
+    }
+  }
+
   gct@rdesc[[accession_col]] <- gct@rdesc[[col]]
   wb_msg("INFO", sprintf("Using column '%s' as '%s' for %s data.", col, accession_col, toupper(ome)))
   wb_write_gct_atomic(gct, gct_path)
