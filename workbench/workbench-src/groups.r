@@ -34,6 +34,25 @@ wb_verify_group_validity <- function(annot, columns, max_categories) {
   list(groups_cols = keep, groups_cols_continuous = continuous)
 }
 
+# Clumps-PTM has no "treat as continuous" path -- clumps_diffexp.r just skips any annotation
+# whose unique-value count exceeds max_annot_levels outright, regardless of numeric-ness (see
+# `if (length(unique(annots[[annot_of_interest]])) > opt$max_annot_levels) next`). Filtering
+# here mirrors that exclusion locally, so a column that's certain to be skipped downstream
+# doesn't waste a same-cost Cromwell run finding that out. Each retained annotation multiplies
+# how many sub-value comparisons Clumps-PTM has to run, hence the cost framing below.
+wb_verify_clumpsptm_group_validity <- function(annot, columns, max_categories) {
+  Filter(function(col) {
+    n <- length(unique(annot[[col]]))
+    if (n > max_categories) {
+      wb_msg("WARNING", sprintf(
+        "'%s' has %d unique values (> %d) -- excluded from Clumps-PTM annotations. Each additional subvalue increases Clumps-PTM's analysis cost.",
+        col, n, max_categories
+      ))
+      FALSE
+    } else TRUE
+  }, columns)
+}
+
 # Parses a comma-separated list of 1-based indexes and/or "start:end" ranges (e.g.
 # "1,3:5,8") into a plain integer vector -- mirrors the index/range selection from
 # panda-src/build-config.r's select_groups_case(), which offered the same shorthand so users
@@ -362,10 +381,96 @@ wb_select_cosmo_attributes <- function(state, columns = NULL) {
   wb_save_state(state)
 }
 
+# Lightweight local approximation of what panoply_clumps_ptm_mapping (clumps_ptm_mapping.py)
+# does at runtime: it splits the FASTA into per-sequence files (named per header, parsed using
+# the FASTA_sep_type delimiter), then keeps only the ones whose name contains an accession_col
+# value as a substring, hard-failing the whole Cromwell job if none match. That exact per-ID
+# split isn't reproducible here (the parsing package isn't available in this repo), so this
+# just checks for ANY substring overlap between accession values and raw FASTA header text --
+# looser, but enough to flag a wholly mismatched ID scheme before a job gets submitted, without
+# adding a FASTA-parsing dependency or reimplementing FASTA_sep_type's own delimiter logic.
+wb_fasta_header_sample <- function(fasta_path, max_lines = 200000) {
+  lines <- readLines(fasta_path, n = max_lines, warn = FALSE)
+  sub("^>", "", grep("^>", lines, value = TRUE))
+}
+
+wb_accession_overlaps_fasta <- function(values, fasta_headers, max_values = 2000) {
+  values <- unique(as.character(values))
+  values <- values[!is.na(values) & nzchar(values)]
+  if (length(values) == 0 || length(fasta_headers) == 0) return(FALSE)
+  values <- values[seq_len(min(length(values), max_values))]
+  escaped <- values
+  # Escape regex metacharacters one at a time (backslash first) rather than via a single
+  # character-class pattern -- a class mixing '[', ']', and '{', '}' is awkward to get right
+  # and portable across regex engines; this is simpler to verify correct.
+  for (ch in c("\\", ".", "|", "(", ")", "[", "]", "{", "}", "^", "$", "*", "+", "?")) {
+    escaped <- gsub(ch, paste0("\\", ch), escaped, fixed = TRUE)
+  }
+  pattern <- paste(escaped, collapse = "|")
+  any(grepl(pattern, fasta_headers, perl = TRUE))
+}
+
+# Mirrors wb_validate_gene_id_column()'s shape, with one deliberate difference: if the
+# configured accession column (default 'id.description', from
+# panoply_ptm_normalization.accession_number_colname) is MISSING outright, this interactively
+# fixes it (pick + validate + write an existing column in its place, like the gene-ID/
+# metabolite-ID fixups elsewhere). But if the column EXISTS and just looks malformed or doesn't
+# overlap the FASTA at all, that's only a warning -- unlike a missing column, there's no
+# confident way to guess a better one, and Clumps-PTM's own mapping step remains the authority
+# on whether it actually works.
+wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession_col, fasta_headers) {
+  rdesc_names <- colnames(gct@rdesc)
+
+  if (accession_col %in% rdesc_names) {
+    vals <- gct@rdesc[[accession_col]]
+    non_blank <- as.character(vals)[!is.na(vals) & nzchar(as.character(vals))]
+    if (length(non_blank) == 0) {
+      wb_msg("WARNING", sprintf(
+        "Accession column '%s' in %s data is empty/all-NA -- Clumps-PTM's mapping step requires valid accession IDs here.",
+        accession_col, toupper(ome)
+      ))
+    } else if (!wb_accession_overlaps_fasta(vals, fasta_headers)) {
+      wb_msg("WARNING", sprintf(paste(
+        "No overlap detected between '%s' values in %s data and identifiers in the provided",
+        "FASTA -- Clumps-PTM's mapping step will likely fail. Double-check that the FASTA and",
+        "this accession column use matching ID types (and FASTA_sep_type in",
+        "master-parameters.yaml, if relevant)."
+      ), accession_col, toupper(ome)))
+    } else {
+      wb_msg("INFO", sprintf("Accession column '%s' detected and appears to match the provided FASTA in %s data.", accession_col, toupper(ome)))
+    }
+    return(TRUE)
+  }
+
+  wb_msg("WARNING", sprintf("Accession column '%s' not found in %s data.", accession_col, toupper(ome)))
+  cat(sprintf("\n%s row-annotation columns: %s\n\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
+  flush.console()
+  col <- wb_smart_readline(
+    sprintf("Column to use as '%s' for %s data (or 'quit' to skip): ", accession_col, toupper(ome)),
+    valid = function(ch) {
+      if (!(ch %in% rdesc_names)) return("Column not found, try again.")
+      if (!wb_accession_overlaps_fasta(gct@rdesc[[ch]], fasta_headers)) {
+        return(sprintf("'%s' does not appear to overlap the provided FASTA, try again.", ch))
+      }
+      TRUE
+    }
+  )
+  if (is.null(col)) {
+    wb_msg("WARNING", sprintf("Skipped accession-column setup for %s data. Clumps-PTM will not be run.", toupper(ome)))
+    return(FALSE)
+  }
+  gct@rdesc[[accession_col]] <- gct@rdesc[[col]]
+  wb_msg("INFO", sprintf("Using column '%s' as '%s' for %s data.", col, accession_col, toupper(ome)))
+  wb_write_gct_atomic(gct, gct_path)
+  TRUE
+}
+
 wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL) {
+  # panoply_clumps_ptm_workflow.wdl declares pSTY_gct/acK_gct/ubK_gct all optional ("must
+  # include at least one") -- so any single PTM dataset is enough to offer Clumps-PTM.
   ptm_types <- c("phosphoproteome", "acetylome", "ubiquitylome")
-  if (length(intersect(ptm_types, names(state$typemap))) < 2) {
-    wb_msg("INFO", "Fewer than 2 PTM datasets detected; Clumps-PTM will not be run.")
+  if (length(intersect(ptm_types, names(state$typemap))) < 1) {
+    wb_msg("INFO", "No PTM data detected; Clumps-PTM will not be run.")
     state$toggles$run_clumpsptm <- FALSE
     return(wb_save_state(state))
   }
@@ -394,6 +499,19 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
   }
   # else: state$typemap$clumpsFASTA was already mapped via wb_load_and_map_inputs() -- use it as-is.
 
+  params <- if (!is.null(state$typemap$parameters)) yaml::read_yaml(state$typemap$parameters) else wb_load_default_master_parameters(state$github_ref)
+
+  accession_col <- params$panoply_ptm_normalization$accession_number_colname %||% "id.description"
+  fasta_headers <- wb_fasta_header_sample(state$typemap$clumpsFASTA)
+  for (ptm_type in intersect(ptm_types, names(state$typemap))) {
+    gct_path <- state$typemap[[ptm_type]]
+    gct <- cmapR::parse_gctx(gct_path)
+    if (!wb_validate_clumpsptm_accession_column(gct, gct_path, ptm_type, accession_col, fasta_headers)) {
+      state$toggles$run_clumpsptm <- FALSE
+      return(wb_save_state(state))
+    }
+  }
+
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   if (is.null(columns)) {
     wb_list_annotation_columns(state, done = FALSE)
@@ -412,6 +530,17 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
     columns <- strsplit(columns, "\\s*,\\s*")[[1]]
   }
   columns <- intersect(columns, colnames(annot))
+
+  max_categories <- params$panoply_clumps_ptm$diff_exp$max_annot_levels %||% 10
+  columns <- wb_verify_clumpsptm_group_validity(annot, columns, max_categories)
+  if (length(columns) == 0) {
+    wb_msg("WARNING", "No annotation columns remain after filtering by subvalue count. Clumps-PTM will not be run.")
+    state$toggles$run_clumpsptm <- FALSE
+    return(wb_save_state(state))
+  }
+  # Not a hard cap -- just a strong nudge. Each additional annotation column (independent of
+  # per-column subvalue count above) multiplies the number of Clumps-PTM sub-runs, so the user
+  # is warned but free to proceed with as many as they like.
   if (length(columns) > 3) {
     wb_msg("WARNING", "More than 3 annotations selected; Clumps-PTM runs can become long and expensive.")
   }
