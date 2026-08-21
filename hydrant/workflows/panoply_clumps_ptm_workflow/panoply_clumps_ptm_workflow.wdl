@@ -27,7 +27,8 @@ workflow panoply_clumps_ptm_workflow {
 		String PDB_ref_bucket = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/pdbs_2025_tars/" ## manifold path
 
 		# Manifest listing the current tarfile names in PDB_ref_bucket, one per line
-		File PDB_manifest = PDB_ref_bucket + "index.txt"
+		# File PDB_manifest = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/pdbs_2025_tars/index.txt" ## terra path
+		File PDB_manifest = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/pdbs_2025_tars/index.txt" ## manifold path
 
 		# Uniprot FASTA reference file
 		# File UNIPROT_SWISSPROT = "gs://fc-385e9b4e-43ff-44b3-8cf7-036a2a96d102/reference_files/uniprot_sprot.fasta" ## terra path

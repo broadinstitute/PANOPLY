@@ -58,7 +58,7 @@ workflow panoply_main {
     ## Manifold Inputs
     File subset_list_file = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/cmap-data-subsets-index.txt" ## manifold path
     File cmap_level5_data = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx" ## manifold path
-    String subset_bucket = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/cmap-data-subsets" ## manifold path
+    String subset_bucket = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/cmap-data-subsets/" ## manifold path
   
 
     ## global params
