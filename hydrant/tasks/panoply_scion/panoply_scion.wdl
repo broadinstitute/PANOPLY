@@ -1,4 +1,4 @@
-version 1.0
+version 1.1
 
 ## Runs SCION network inference, sharding permutation-based FDR thresholding
 ## across one scatter shard per permutation instead of one long serial task.
@@ -12,11 +12,13 @@ version 1.0
 ## the clustering matrix from the target+regulator data (regulator data takes
 ## precedence for genes that are both) when none is supplied.
 ##
-## Known scope narrowing vs. the previous version of this task: PTM-site-aware
-## GCT row-name reconstruction (the old task's SpectrumMill/FragPipe `type`
-## logic) isn't reimplemented here -- pome_gct_file's row names are used as-is,
-## so PTM omes (phosphoproteome/acetylome/ubiquitylome) need that already baked
-## into the GCT upstream of this task.
+## pome_gct_file's row names are rebuilt from its rdesc metadata (see
+## scion_prepare_gct.R) rather than used as raw GCT row IDs: gene_id_col names
+## the rdesc column holding the gene symbol (matching the gene_id_col
+## convention used elsewhere in PANOPLY, e.g. panoply_harmonize), and for PTM
+## omes (ome = phosphoproteome/acetylome/ubiquitylome) the PTM site is also
+## extracted from the raw row ID and appended via ptm_sep, per the
+## SpectrumMill (ptm_type = "SM") or FragPipe (ptm_type = "FP") ID convention.
 
 workflow panoply_scion_workflow {
   input {
@@ -25,12 +27,12 @@ workflow panoply_scion_workflow {
     File mrna_gct_file
     File TF_file
 
-    String format = "gct"
+    String gene_id_col = "geneSymbol"
+    String ptm_type = "SM"
     String clustering_method = "kmeans"
     Float weight_threshold = 0
     Boolean normalize = false
     Int num_cores = 1
-    String engine = "randomForest"
     String ptm_sep = "_"
     Int seed = 2023
     Int nb_trees = 10000
@@ -51,12 +53,12 @@ workflow panoply_scion_workflow {
       mrna_gct_file = mrna_gct_file,
       pome_gct_file = pome_gct_file,
       TF_file = TF_file,
-      format = format,
+      gene_id_col = gene_id_col,
+      ptm_type = ptm_type,
       clustering_method = clustering_method,
       weight_threshold = weight_threshold,
       normalize = normalize,
       num_cores = num_cores,
-      engine = engine,
       ptm_sep = ptm_sep,
       seed = seed,
       nb_trees = nb_trees,
@@ -108,12 +110,12 @@ task panoply_scion_run_real {
     File mrna_gct_file
     File pome_gct_file
     File TF_file
-    String format
+    String gene_id_col
+    String ptm_type
     String clustering_method
     Float weight_threshold
     Boolean normalize
     Int num_cores
-    String engine
     String ptm_sep
     Int seed
     Int nb_trees
@@ -127,13 +129,14 @@ task panoply_scion_run_real {
     Rscript /prot/proteomics/Projects/PGDAC/src/scion_run_real.R \
       --target_data_file ~{mrna_gct_file} \
       --reg_data_file ~{pome_gct_file} \
+      --ome ~{ome} \
+      --gene_id_col '~{gene_id_col}' \
+      --ptm_type ~{ptm_type} \
       --reg_genes_file ~{TF_file} --gene_list_header FALSE \
-      --format ~{format} \
       --clustering_method ~{clustering_method} \
       --weightthreshold ~{weight_threshold} \
       --normalize ~{normalize} \
       --num_cores ~{num_cores} \
-      --engine ~{engine} \
       --ptm_sep '~{ptm_sep}' \
       --seed ~{seed} \
       --nb_trees ~{nb_trees} \
@@ -152,9 +155,9 @@ task panoply_scion_run_real {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_scion:latest"
-    memory : memory + "GB"
-    disks : "local-disk " + disk_space + " SSD"
+    container : "broadcptacdev/panoply_scion:latest"
+    memory : "~{memory}GB"
+    disks : "local-disk ~{disk_space} SSD"
     cpu : num_cores
     preemptible : num_preemptions
   }
@@ -191,7 +194,7 @@ task panoply_scion_run_permutation {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_scion:latest"
+    container : "broadcptacdev/panoply_scion:latest"
     memory : "8GB"
     disks : "local-disk 20 SSD"
     cpu : 1
@@ -210,7 +213,7 @@ task panoply_scion_aggregate_fdr {
   command <<<
     set -euo pipefail
     mkdir -p permutations
-    for f in ~{sep=" " permutation_files}; do
+    for f in ~{sep(" ", permutation_files)}; do
       cp "$f" permutations/
     done
 
@@ -230,7 +233,7 @@ task panoply_scion_aggregate_fdr {
   }
 
   runtime {
-    docker : "broadcptacdev/panoply_scion:latest"
+    container : "broadcptacdev/panoply_scion:latest"
     memory : "8GB"
     disks : "local-disk 20 SSD"
     cpu : 1

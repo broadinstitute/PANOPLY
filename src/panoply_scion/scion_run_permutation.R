@@ -39,7 +39,6 @@ permuted <- permute_network(
   weightthreshold = params$weightthreshold,
   normalize = params$normalize,
   connect_hubs = params$connect_hubs,
-  engine = params$engine,
   ptm_sep = params$ptm_sep,
   nb.trees = params$nb.trees
 )
