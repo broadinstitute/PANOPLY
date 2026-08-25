@@ -43,6 +43,13 @@ opt <- parse_args(OptionParser(option_list = option_list))
 
 dir.create(opt$out_dir, recursive = TRUE, showWarnings = FALSE)
 
+# bundled in the Docker image (see Dockerfile's `COPY src ...`) as a
+# generic default TF/regulator list; --reg_genes_file overrides it.
+if (is.null(opt$reg_genes_file)) {
+  opt$reg_genes_file <- "/prot/proteomics/Projects/PGDAC/src/TF_names_v_1.01.txt"
+  opt$gene_list_header <- FALSE
+}
+
 # phosphoproteome/acetylome/ubiquitylome regulator matrices need their PTM
 # site reconstructed from rdesc metadata; a plain proteome regulator matrix
 # still gets its row names re-derived from gene_id_col (not assumed to

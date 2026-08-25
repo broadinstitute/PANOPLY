@@ -15,6 +15,11 @@ task panoply_unified_assemble_results {
   Array[File?] blacksheep_report
   Array[File?] cmap_output
   Array[File?] cmap_ssgsea_output
+  Array[File?] scion_real_network_tsv
+  Array[File?] scion_thresholded_network_tsv
+  Array[File?] scion_fdr_curve_png
+  Array[File?] scion_weight_comparison_png
+  Array[File?] scion_network_plot_png
   File? so_nmf_results
   File? so_nmf_reports
   File? so_nmf_sankey_results
@@ -65,6 +70,26 @@ task panoply_unified_assemble_results {
     if [ ${sep='' cmap_ssgsea_output} != '' ]; then
       mv ${sep=' ' cmap_ssgsea_output} results/proteogenomics_analysis/proteome_cmap_analysis
       for filename in results/proteogenomics_analysis/proteome_cmap_analysis/*.tar;do tar -C results/proteogenomics_analysis/proteome_cmap_analysis -xvf $filename;rm $filename;done
+    fi
+
+    # SCION network inference (proteome + rna only; plain files, not tarred)
+    if [ ${sep='' scion_real_network_tsv} != '' ] || [ ${sep='' scion_thresholded_network_tsv} != '' ] || [ ${sep='' scion_fdr_curve_png} != '' ] || [ ${sep='' scion_weight_comparison_png} != '' ] || [ ${sep='' scion_network_plot_png} != '' ]; then
+      mkdir results/proteogenomics_analysis/scion_network_inference
+    fi
+    if [ ${sep='' scion_real_network_tsv} != '' ]; then
+      mv ${sep=' ' scion_real_network_tsv} results/proteogenomics_analysis/scion_network_inference
+    fi
+    if [ ${sep='' scion_thresholded_network_tsv} != '' ]; then
+      mv ${sep=' ' scion_thresholded_network_tsv} results/proteogenomics_analysis/scion_network_inference
+    fi
+    if [ ${sep='' scion_fdr_curve_png} != '' ]; then
+      mv ${sep=' ' scion_fdr_curve_png} results/proteogenomics_analysis/scion_network_inference
+    fi
+    if [ ${sep='' scion_weight_comparison_png} != '' ]; then
+      mv ${sep=' ' scion_weight_comparison_png} results/proteogenomics_analysis/scion_network_inference
+    fi
+    if [ ${sep='' scion_network_plot_png} != '' ]; then
+      mv ${sep=' ' scion_network_plot_png} results/proteogenomics_analysis/scion_network_inference
     fi
 
     # MAIN REPORTS

@@ -25,6 +25,10 @@ workflow panoply_unified_workflow {
   String run_nmf #'true' or 'false'
   Boolean run_so_nmf #'true' or 'false'
   String? run_ptmsea
+  String run_scion = "false" #'true' or 'false' -- proteome + rna_data only, see below
+  File? scion_tf_file #regulator/TF gene list; if omitted, falls back to the
+                       #generic TF_names_v_1.01.txt list bundled into the
+                       #panoply_scion Docker image
 
   # Normalize specific optional params:
   String? normalizeProteomics # "true" or "false"
@@ -74,6 +78,8 @@ workflow panoply_unified_workflow {
             run_ptmsea="${run_ptmsea}",
             run_cmap = "${run_cmap}",
             run_nmf = "false",
+            run_scion = run_scion,
+            scion_tf_file = scion_tf_file,
             input_cna="${cna_data}",
             input_rna="${rna_data}",
             sample_annotation="${sample_annotation}",
@@ -156,6 +162,11 @@ workflow panoply_unified_workflow {
       main_summary = pome.summary_and_ssgsea,
       cmap_output = pome.cmap_output,
       cmap_ssgsea_output = pome.cmap_ssgsea_output,
+      scion_real_network_tsv = pome.scion_real_network_tsv,
+      scion_thresholded_network_tsv = pome.scion_thresholded_network_tsv,
+      scion_fdr_curve_png = pome.scion_fdr_curve_png,
+      scion_weight_comparison_png = pome.scion_weight_comparison_png,
+      scion_network_plot_png = pome.scion_network_plot_png,
       norm_report = norm_filt.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,

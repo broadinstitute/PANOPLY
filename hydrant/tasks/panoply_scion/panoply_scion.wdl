@@ -19,20 +19,36 @@ version 1.1
 ## omes (ome = phosphoproteome/acetylome/ubiquitylome) the PTM site is also
 ## extracted from the raw row ID and appended via ptm_sep, per the
 ## SpectrumMill (ptm_type = "SM") or FragPipe (ptm_type = "FP") ID convention.
+##
+## standalone = "true" (the default) bundles every output into one
+## scion_results.tar.gz for a self-contained standalone download.
+## panoply_unified calls this workflow with standalone = "false" instead,
+## since its own assemble-results step consumes the individual File outputs.
+##
+## TF_file is optional: if omitted, panoply_scion_run_real falls back to the
+## generic TF_names_v_1.01.txt regulator list bundled into the Docker image
+## (see Dockerfile's `COPY src ...`) rather than requiring every run to
+## supply its own.
 
 workflow panoply_scion_workflow {
   input {
     String ome
     File pome_gct_file
     File mrna_gct_file
-    File TF_file
+    # regulator/TF gene list; if omitted, panoply_scion_run_real falls back
+    # to the generic TF_names_v_1.01.txt list bundled into the Docker image
+    File? TF_file
 
     String gene_id_col = "geneSymbol"
     String ptm_type = "SM"
     String clustering_method = "kmeans"
     Float weight_threshold = 0
     Boolean normalize = false
-    Int num_cores = 1
+    # real BRCA test data (13830 target genes x 266 filtered TF regulators,
+    # kmeans clustering) took 665s wall time and ~4GB peak memory at 8 cores;
+    # permutation shards reuse the fixed clustering and so do strictly less
+    # work, well within these same defaults.
+    Int num_cores = 8
     String ptm_sep = "_"
     Int seed = 2023
     Int nb_trees = 10000
@@ -41,6 +57,11 @@ workflow panoply_scion_workflow {
     String permute_dim = "col"
     Int base_seed = 0
     Float target_fdr = 0.05
+
+    # "true": bundle every output into one tar.gz for standalone download.
+    # "false" (panoply_unified): skip the tar, leave outputs as individual
+    # Files for panoply_unified_assemble_results to pick up on its own.
+    String standalone = "true"
 
     Int memory = 32
     Int disk_space = 50
@@ -77,6 +98,9 @@ workflow panoply_scion_workflow {
         index = i + 1,
         base_seed = base_seed,
         permute_dim = permute_dim,
+        num_cores = num_cores,
+        memory = memory,
+        disk_space = disk_space,
         num_preemptions = num_preemptions
     }
   }
@@ -84,8 +108,10 @@ workflow panoply_scion_workflow {
   call panoply_scion_aggregate_fdr {
     input:
       network_rds = panoply_scion_run_real.network_rds,
+      network_tsv = panoply_scion_run_real.network_tsv,
       permutation_files = panoply_scion_run_permutation.permutation_rds,
       target_fdr = target_fdr,
+      standalone = standalone,
       num_preemptions = num_preemptions
   }
 
@@ -96,6 +122,7 @@ workflow panoply_scion_workflow {
     File weight_comparison_png = panoply_scion_aggregate_fdr.weight_comparison_png
     File? network_plot_png = panoply_scion_aggregate_fdr.network_plot_png
     File fdr_result_rds = panoply_scion_aggregate_fdr.fdr_result_rds
+    File? results_tar = panoply_scion_aggregate_fdr.results_tar
   }
 
   meta {
@@ -109,7 +136,7 @@ task panoply_scion_run_real {
     String ome
     File mrna_gct_file
     File pome_gct_file
-    File TF_file
+    File? TF_file
     String gene_id_col
     String ptm_type
     String clustering_method
@@ -132,7 +159,7 @@ task panoply_scion_run_real {
       --ome ~{ome} \
       --gene_id_col '~{gene_id_col}' \
       --ptm_type ~{ptm_type} \
-      --reg_genes_file ~{TF_file} --gene_list_header FALSE \
+      ~{"--reg_genes_file " + TF_file} --gene_list_header FALSE \
       --clustering_method ~{clustering_method} \
       --weightthreshold ~{weight_threshold} \
       --normalize ~{normalize} \
@@ -172,6 +199,9 @@ task panoply_scion_run_permutation {
     Int index
     Int base_seed
     String permute_dim
+    Int num_cores
+    Int memory
+    Int disk_space
     Int num_preemptions
   }
 
@@ -185,7 +215,7 @@ task panoply_scion_run_permutation {
       --index ~{index} \
       --base_seed ~{base_seed} \
       --permute_dim ~{permute_dim} \
-      --num_cores 1 \
+      --num_cores ~{num_cores} \
       --out_dir out
   >>>
 
@@ -195,9 +225,9 @@ task panoply_scion_run_permutation {
 
   runtime {
     container : "broadcptacdev/panoply_scion:latest"
-    memory : "8GB"
-    disks : "local-disk 20 SSD"
-    cpu : 1
+    memory : "~{memory}GB"
+    disks : "local-disk ~{disk_space} SSD"
+    cpu : num_cores
     preemptible : num_preemptions
   }
 }
@@ -205,8 +235,10 @@ task panoply_scion_run_permutation {
 task panoply_scion_aggregate_fdr {
   input {
     File network_rds
+    File network_tsv
     Array[File] permutation_files
     Float target_fdr
+    String standalone
     Int num_preemptions
   }
 
@@ -219,8 +251,10 @@ task panoply_scion_aggregate_fdr {
 
     Rscript /prot/proteomics/Projects/PGDAC/src/scion_aggregate_fdr.R \
       --network_rds ~{network_rds} \
+      --network_tsv ~{network_tsv} \
       --permutation_dir permutations \
       --target_fdr ~{target_fdr} \
+      --standalone ~{standalone} \
       --out_dir out
   >>>
 
@@ -230,6 +264,7 @@ task panoply_scion_aggregate_fdr {
     File weight_comparison_png = "out/weight_comparison.png"
     File? network_plot_png = "out/network_plot.png"
     File fdr_result_rds = "out/fdr_result.rds"
+    File? results_tar = "out/scion_results.tar.gz"
   }
 
   runtime {
