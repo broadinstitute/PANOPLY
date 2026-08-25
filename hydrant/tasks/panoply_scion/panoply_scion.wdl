@@ -20,10 +20,10 @@ version 1.1
 ## extracted from the raw row ID and appended via ptm_sep, per the
 ## SpectrumMill (ptm_type = "SM") or FragPipe (ptm_type = "FP") ID convention.
 ##
-## standalone = "true" (the default) bundles every output into one
-## scion_results.tar.gz for a self-contained standalone download.
-## panoply_unified calls this workflow with standalone = "false" instead,
-## since its own assemble-results step consumes the individual File outputs.
+## panoply_scion_aggregate_fdr always bundles its outputs into one
+## scion_results.tar.gz, matching how panoply_cmap_analysis/blacksheep/
+## immune_analysis/so_nmf tasks each always produce a single tar output
+## regardless of caller (no standalone-vs-unified distinction needed).
 ##
 ## TF_file is optional: if omitted, panoply_scion_run_real falls back to the
 ## generic TF_names_v_1.01.txt regulator list bundled into the Docker image
@@ -57,11 +57,6 @@ workflow panoply_scion_workflow {
     String permute_dim = "col"
     Int base_seed = 0
     Float target_fdr = 0.05
-
-    # "true": bundle every output into one tar.gz for standalone download.
-    # "false" (panoply_unified): skip the tar, leave outputs as individual
-    # Files for panoply_unified_assemble_results to pick up on its own.
-    String standalone = "true"
 
     Int memory = 32
     Int disk_space = 50
@@ -111,7 +106,6 @@ workflow panoply_scion_workflow {
       network_tsv = panoply_scion_run_real.network_tsv,
       permutation_files = panoply_scion_run_permutation.permutation_rds,
       target_fdr = target_fdr,
-      standalone = standalone,
       num_preemptions = num_preemptions
   }
 
@@ -122,7 +116,7 @@ workflow panoply_scion_workflow {
     File weight_comparison_png = panoply_scion_aggregate_fdr.weight_comparison_png
     File? network_plot_png = panoply_scion_aggregate_fdr.network_plot_png
     File fdr_result_rds = panoply_scion_aggregate_fdr.fdr_result_rds
-    File? results_tar = panoply_scion_aggregate_fdr.results_tar
+    File results_tar = panoply_scion_aggregate_fdr.results_tar
   }
 
   meta {
@@ -238,7 +232,6 @@ task panoply_scion_aggregate_fdr {
     File network_tsv
     Array[File] permutation_files
     Float target_fdr
-    String standalone
     Int num_preemptions
   }
 
@@ -254,7 +247,6 @@ task panoply_scion_aggregate_fdr {
       --network_tsv ~{network_tsv} \
       --permutation_dir permutations \
       --target_fdr ~{target_fdr} \
-      --standalone ~{standalone} \
       --out_dir out
   >>>
 
@@ -264,7 +256,7 @@ task panoply_scion_aggregate_fdr {
     File weight_comparison_png = "out/weight_comparison.png"
     File? network_plot_png = "out/network_plot.png"
     File fdr_result_rds = "out/fdr_result.rds"
-    File? results_tar = "out/scion_results.tar.gz"
+    File results_tar = "out/scion_results.tar.gz"
   }
 
   runtime {

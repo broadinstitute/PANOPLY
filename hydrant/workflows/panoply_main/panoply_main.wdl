@@ -34,7 +34,7 @@ workflow panoply_main {
   File sample_annotation
   String run_cmap   # "true" or "false"
   String? run_nmf = "true"
-  String run_scion = "false"   # "true" or "false" -- only runs when ome_type == "proteome"
+  String run_scion   # "true" or "false" -- only runs when ome_type == "proteome"
   # regulator/TF gene list; if omitted, falls back to the generic
   # TF_names_v_1.01.txt list bundled into the panoply_scion Docker image
   File? scion_tf_file
@@ -259,8 +259,7 @@ workflow panoply_main {
           ome = ome_type,
           pome_gct_file = input_pome,
           mrna_gct_file = input_rna,
-          TF_file = scion_tf_file,
-          standalone = standalone
+          TF_file = scion_tf_file
       }
     }
   }
@@ -312,11 +311,7 @@ workflow panoply_main {
     File? so_nmf_ssgsea_report = so_nmf.nmf_ssgsea_report
     File? cmap_output = run_cmap_analysis.outputs
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
-    File? scion_real_network_tsv = scion.real_network_tsv
-    File? scion_thresholded_network_tsv = scion.thresholded_network_tsv
-    File? scion_fdr_curve_png = scion.fdr_curve_png
-    File? scion_weight_comparison_png = scion.weight_comparison_png
-    File? scion_network_plot_png = scion.network_plot_png
+    File? scion_output = scion.results_tar
   }
 
 }

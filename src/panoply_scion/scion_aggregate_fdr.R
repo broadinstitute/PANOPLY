@@ -10,10 +10,9 @@ suppressMessages({
 
 option_list <- list(
   make_option("--network_rds", type = "character"),
-  make_option("--network_tsv", type = "character", default = NULL),
+  make_option("--network_tsv", type = "character"),
   make_option("--permutation_dir", type = "character"),
   make_option("--target_fdr", type = "double", default = 0.05),
-  make_option("--standalone", type = "logical", default = TRUE),
   make_option("--out_dir", type = "character", default = ".")
 )
 opt <- parse_args(OptionParser(option_list = option_list))
@@ -39,24 +38,20 @@ if (nrow(fdr_result$thresholded_network) > 0) {
   grDevices::dev.off()
 }
 
-# standalone runs (outside panoply_unified) get one self-contained tarball;
-# unified's own assemble-results step consumes these same files individually,
-# so it skips the tar and takes standalone = "false".
-if (isTRUE(opt$standalone)) {
-  bundle_files <- c("thresholded_network.tsv", "fdr_curve.png", "weight_comparison.png", "fdr_result.rds")
-  if (file.exists(file.path(opt$out_dir, "network_plot.png"))) {
-    bundle_files <- c(bundle_files, "network_plot.png")
-  }
-  if (!is.null(opt$network_tsv)) {
-    file.copy(opt$network_tsv, file.path(opt$out_dir, "network.tsv"))
-    bundle_files <- c(bundle_files, "network.tsv")
-  }
-  starting_dir <- getwd()
-  on.exit(setwd(starting_dir), add = TRUE)
-  setwd(opt$out_dir)
-  utils::tar("scion_results.tar.gz", files = bundle_files, compression = "gzip")
-  setwd(starting_dir)
+# bundle everything into one tar, matching how panoply_cmap_analysis/
+# blacksheep/immune_analysis/so_nmf each always produce a single tar output
+bundle_files <- c("thresholded_network.tsv", "fdr_curve.png", "weight_comparison.png", "fdr_result.rds")
+if (file.exists(file.path(opt$out_dir, "network_plot.png"))) {
+  bundle_files <- c(bundle_files, "network_plot.png")
 }
+file.copy(opt$network_tsv, file.path(opt$out_dir, "network.tsv"))
+bundle_files <- c(bundle_files, "network.tsv")
+
+starting_dir <- getwd()
+on.exit(setwd(starting_dir), add = TRUE)
+setwd(opt$out_dir)
+utils::tar("scion_results.tar.gz", files = bundle_files, compression = "gzip")
+setwd(starting_dir)
 
 cat("Done. Threshold:", fdr_result$threshold,
     "| kept", nrow(fdr_result$thresholded_network), "of", nrow(real_network), "edges.\n")
