@@ -132,44 +132,30 @@ wb_describe_subset <- function(name, s) {
 # immediately can include names already queued-but-not-yet-written this session, not just
 # ones already on disk.
 wb_prompt_new_subset <- function(annot, filter_cols, known_names) {
-  cat("Annotation columns:\n")
-  for (i in seq_along(filter_cols)) cat(sprintf("  %2d: %s\n", i, filter_cols[i]))
-  flush.console()
-  col_idx <- wb_smart_readline(
-    "Select an annotation column to filter on (or 'quit' to cancel): ",
-    valid = function(ch) {
-      n <- suppressWarnings(as.integer(ch))
-      if (is.na(n) || n < 1 || n > length(filter_cols)) sprintf("Please enter a number from 1 to %d.", length(filter_cols)) else TRUE
-    },
+  filter_col <- wb_select_from_list(
+    "Annotation columns:", filter_cols,
+    "Select an annotation column to filter on -- name or number (or 'quit' to cancel): ",
     cancel_msg = "Previous subset changes saved."
   )
-  if (is.null(col_idx)) return(NULL)
-  filter_col <- filter_cols[as.integer(col_idx)]
+  if (is.null(filter_col)) return(NULL)
 
   # NA values aren't independently selectable here (same as passing filter_vals = NA to
   # wb_write_subset() directly never matched anything, via %in%'s own NA handling).
   values <- sort(unique(as.character(annot[[filter_col]])))
   values <- values[!is.na(values)]
 
-  cat(sprintf("\n'%s' values:\n", filter_col))
-  for (i in seq_along(values)) cat(sprintf("  %2d: %s\n", i, values[i]))
-  flush.console()
-
-  sel <- wb_smart_readline(
-    "Select value(s) to include -- comma-separated indexes or ranges (e.g. 1,3:5) (or 'quit' to cancel): ",
-    valid = function(ch) {
-      tokens <- wb_trim(strsplit(ch, ",")[[1]])
-      if (!all(grepl("^[0-9]+(:[0-9]+)?$", tokens))) return("Use indexes or ranges only (e.g. 1,3:5), try again.")
-      idx <- wb_parse_index_ranges(tokens)
-      if (any(idx < 1 | idx > length(values))) return(sprintf("Index out of range (1-%d), try again.", length(values)))
-      vals <- values[idx]
-      if (sum(annot[[filter_col]] %in% vals) == 0) return(sprintf("No samples match '%s' in {%s}, try again.", filter_col, paste(vals, collapse = ", ")))
-      TRUE
-    },
-    cancel_msg = "Previous subset changes saved."
+  filter_vals <- wb_select_from_list(
+    sprintf("\n'%s' values:", filter_col), values,
+    "Select value(s) to include -- name(s), number(s), or ranges (e.g. 1,3:5) (or 'quit' to cancel): ",
+    multi = TRUE,
+    cancel_msg = "Previous subset changes saved.",
+    extra_valid = function(vals) {
+      if (sum(annot[[filter_col]] %in% vals) == 0) {
+        sprintf("No samples match '%s' in {%s}, try again.", filter_col, paste(vals, collapse = ", "))
+      } else TRUE
+    }
   )
-  if (is.null(sel)) return(NULL)
-  filter_vals <- values[wb_parse_index_ranges(wb_trim(strsplit(sel, ",")[[1]]))]
+  if (is.null(filter_vals)) return(NULL)
   n_matched <- sum(annot[[filter_col]] %in% filter_vals)
   wb_msg("INFO", sprintf("%d sample(s) match '%s' in {%s}.", n_matched, filter_col, paste(filter_vals, collapse = ", ")))
 
@@ -267,19 +253,12 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
     } else if (action == "2") {
       removable <- setdiff(names(state$subsets), "all")
       if (length(removable) == 0) { wb_msg("WARNING", "Nothing to remove ('all' can't be removed)."); next }
-      cat("Removable subsets:\n")
-      for (i in seq_along(removable)) cat(sprintf("  %d: %s\n", i, removable[i]))
-      flush.console()
-      idx <- wb_smart_readline(
-        "Remove which subset? Enter its number (or 'quit' to cancel): ",
-        valid = function(ch) {
-          n <- suppressWarnings(as.integer(ch))
-          if (is.na(n) || n < 1 || n > length(removable)) sprintf("Enter a number from 1 to %d.", length(removable)) else TRUE
-        },
+      target <- wb_select_from_list(
+        "Removable subsets:", removable,
+        "Remove which subset -- name or number (or 'quit' to cancel): ",
         cancel_msg = "Previous subset changes saved."
       )
-      if (is.null(idx)) next
-      target <- removable[as.integer(idx)]
+      if (is.null(target)) next
       if (wb_confirm(sprintf("Remove subset '%s'? This deletes its folder (%s) and cannot be undone.",
                              target, state$subsets[[target]]$dir), cancel_msg = "Previous subset changes saved.")) {
         unlink(state$subsets[[target]]$dir, recursive = TRUE)

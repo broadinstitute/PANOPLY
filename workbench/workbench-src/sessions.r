@@ -116,9 +116,9 @@ wb_open_saved_session <- function(name = NULL) {
   saved_names <- wb_list_saved_sessions()
   if (length(saved_names) == 0) stop("No saved sessions found -- run wb_save_session() first.")
   if (is.null(name)) {
-    name <- wb_smart_readline(
-      sprintf("Which saved session? (%s): ", paste(saved_names, collapse = ", ")),
-      valid = function(ch) if (ch %in% saved_names) TRUE else "Not a known saved session, try again."
+    name <- wb_select_from_list(
+      "Saved sessions:", saved_names,
+      "Which saved session -- name or number: "
     )
     if (is.null(name)) {
       wb_msg("CANCELLED", "No session opened.")

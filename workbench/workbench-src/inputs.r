@@ -104,19 +104,20 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
     if (length(zips) == 1) {
       if (wb_confirm(sprintf("Found '%s' -- unzip and use its contents?", basename(zips)))) zip_path <- zips
     } else if (length(zips) > 1) {
-      cat(sprintf("Found multiple zip files in %s:\n", input_dir))
-      for (i in seq_along(zips)) cat(sprintf("  %d: %s\n", i, basename(zips[i])))
-      flush.console()
-      idx <- wb_smart_readline(
-        "Unzip and use one of these? Enter its number, or leave blank to skip all of them: ",
+      zip_basenames <- basename(zips)
+      wb_print_numbered_list(sprintf("Found multiple zip files in %s:", input_dir), zip_basenames)
+      picked <- wb_smart_readline(
+        "Unzip and use one of these? Enter its name or number, or leave blank to skip all of them: ",
         allow_empty = TRUE,
         valid = function(ch) {
           if (!nzchar(ch)) return(TRUE)
-          n <- suppressWarnings(as.integer(ch))
-          if (is.na(n) || n < 1 || n > length(zips)) sprintf("Enter a number from 1 to %d.", length(zips)) else TRUE
+          result <- wb_resolve_selection(ch, zip_basenames, multi = FALSE)
+          if (!is.null(result$error)) result$error else TRUE
         }
       )
-      if (!is.null(idx) && nzchar(idx)) zip_path <- zips[as.integer(idx)]
+      if (!is.null(picked) && nzchar(picked)) {
+        zip_path <- zips[wb_resolve_selection(picked, zip_basenames, multi = FALSE)$indices]
+      }
     }
   } else {
     resolved_zip <- wb_resolve_user_path(zip_path)
@@ -353,8 +354,7 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
   }
   if (valid) return(invisible(gct_path))
 
-  cat(sprintf("\n%s row-annotation columns: %s\n\n", toupper(ome), paste(rdesc_names, collapse = ", ")))
-  flush.console()
+  wb_print_numbered_list(sprintf("\n%s row-annotation columns:", toupper(ome)), rdesc_names)
   repeat {
     choice <- wb_smart_readline(
       paste0("To create a Gene ID column for ", toupper(ome), ", choose:\n",
@@ -368,16 +368,15 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
       break
     }
     if (choice == "1") {
-      col <- wb_smart_readline(
-        "Column with HUGO gene symbols: ",
-        valid = function(ch) {
-          if (!(ch %in% rdesc_names)) return("Column not found, try again.")
+      col <- wb_prompt_selection(
+        rdesc_names,
+        "Column with HUGO gene symbols -- name or number: ",
+        extra_valid = function(ch) {
           rate <- wb_gene_symbol_match_rate(gct@rdesc[[ch]])
           if (rate < GENE_SYMBOL_MATCH_THRESHOLD) {
-            return(sprintf("'%s' does not appear to contain valid HUGO gene symbols (%d%% valid), try again.",
-                           ch, round(rate * 100)))
-          }
-          TRUE
+            sprintf("'%s' does not appear to contain valid HUGO gene symbols (%d%% valid), try again.",
+                    ch, round(rate * 100))
+          } else TRUE
         }
       )
       if (is.null(col)) next
@@ -426,14 +425,11 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
     return(invisible(gct_path))
   }
   wb_msg("WARNING", sprintf("Default flanking-sequence column '%s' missing or invalid.", seqwin_default))
-  cat(sprintf("PHOSPHOPROTEOME columns: %s\n", paste(rdesc_names, collapse = ", ")))
-  flush.console()
-  col <- wb_smart_readline(
-    "Column with flanking sequences: ",
-    valid = function(ch) {
-      if (!(ch %in% rdesc_names)) return("Column not found, try again.")
-      if (!any(grepl(pattern, gct@rdesc[[ch]]))) return("No valid flanking sequences found in that column, try again.")
-      TRUE
+  col <- wb_select_from_list(
+    "PHOSPHOPROTEOME columns:", rdesc_names,
+    "Column with flanking sequences -- name or number: ",
+    extra_valid = function(ch) {
+      if (!any(grepl(pattern, gct@rdesc[[ch]]))) "No valid flanking sequences found in that column, try again." else TRUE
     }
   )
   if (is.null(col)) {
@@ -497,27 +493,33 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
     return(invisible(gct_path))
   }
   wb_msg("WARNING", sprintf("Default metabolite-ID column '%s' missing or invalid.", metab_id_col_default))
-  cat(sprintf("METABOLOME columns: %s (or '0' to use GCT row IDs)\n", paste(rdesc_names, collapse = ", ")))
-  flush.console()
+  wb_print_numbered_list("METABOLOME columns:", rdesc_names)
   repeat {
+    # "0" is a reserved sentinel (use the GCT's own row IDs), not one of the listed columns --
+    # checked first, falling through to the standard name/index resolution otherwise.
     col <- wb_smart_readline(
-      "Column with metabolite IDs (or 0 for row IDs): ",
-      valid = function(ch) if (identical(ch, "0") || ch %in% rdesc_names) TRUE else "Column not found, try again."
+      "Column with metabolite IDs -- name or number (or 0 for row IDs): ",
+      valid = function(ch) {
+        if (identical(ch, "0")) return(TRUE)
+        result <- wb_resolve_selection(ch, rdesc_names, multi = FALSE)
+        if (!is.null(result$error)) result$error else TRUE
+      }
     )
     if (is.null(col)) {
       wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
       return(invisible(gct_path))
     }
     if (identical(col, "0")) { ids <- gct@rid; col_label <- "rid" }
-    else { ids <- gct@rdesc[[col]]; col_label <- col }
+    else {
+      col <- rdesc_names[wb_resolve_selection(col, rdesc_names, multi = FALSE)$indices]
+      ids <- gct@rdesc[[col]]; col_label <- col
+    }
 
     id_type <- metab_id_type_default
     if (!wb_confirm(sprintf("Does '%s' use %s IDs?", col_label, metab_id_type_default))) {
-      cat(sprintf("Supported ID types: %s\n", paste(names(compound_map), collapse = ", ")))
-      flush.console()
-      id_type <- wb_smart_readline(
-        "ID type: ",
-        valid = function(ch) if (ch %in% names(compound_map)) TRUE else "Unsupported ID type, try again."
+      id_type <- wb_select_from_list(
+        "Supported ID types:", names(compound_map),
+        "ID type -- name or number: "
       )
       if (is.null(id_type)) {
         wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")

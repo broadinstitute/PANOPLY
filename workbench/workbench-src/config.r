@@ -188,9 +188,9 @@ wb_load_state <- function() {
   }
 
   # choice == "load"
-  name <- wb_smart_readline(
-    sprintf("Which saved session? (%s): ", paste(saved_names, collapse = ", ")),
-    valid = function(ch) if (ch %in% saved_names) TRUE else "Not a known saved session, try again."
+  name <- wb_select_from_list(
+    "Saved sessions:", saved_names,
+    "Which saved session -- name or number: "
   )
   if (is.null(name)) return(fall_back())
   if (!is.null(current) &&
@@ -270,6 +270,91 @@ wb_validate_user_file <- function(raw, extensions = NULL) {
     }
   }
   TRUE
+}
+
+### ===
+### Standardized list-selection -- one mechanism for every "print a list, pick from it" prompt
+### in workbench-src/. Accepts a comma-separated mix of literal values, 1-based indexes, and
+### (where multiple selections make sense) index ranges like "3:5" -- freely intermixed, e.g.
+### "Stage,2,4:6". An exact literal match always wins over index parsing, so a value that
+### happens to look numeric (e.g. an annotation value literally "2") is never misread as an
+### index -- this keeps the rule a single, predictable precedence order rather than
+### context-dependent. Matching is case-sensitive, matching every existing literal-value
+### validator elsewhere in this codebase (all plain %in% checks).
+### ===
+
+# Resolves one already-trimmed token against `options`: an exact literal match wins outright;
+# otherwise a plain integer is a 1-based index, and (only when multi=TRUE) "a:b" is a range of
+# indexes. Returns the 1-based indexes it names (length 1 for a literal/single-index match,
+# length >1 for a range), or NULL if the token doesn't resolve to anything at all.
+wb_resolve_selection_token <- function(token, options, multi) {
+  if (token %in% options) return(which(options == token)[1])
+  if (multi && grepl("^[0-9]+:[0-9]+$", token)) {
+    bounds <- as.integer(strsplit(token, ":")[[1]])
+    return(bounds[1]:bounds[2])
+  }
+  if (grepl("^[0-9]+$", token)) return(as.integer(token))
+  NULL
+}
+
+# Resolves a full (comma-separated) selection string against `options`. Returns
+# list(indices=) on success (1-based, in the order given, deduplicated) or list(error=) with a
+# message describing the first problem found -- never both.
+wb_resolve_selection <- function(raw, options, multi) {
+  tokens <- wb_trim(strsplit(raw, ",")[[1]])
+  if (!multi && length(tokens) > 1) {
+    return(list(error = "Only one selection is allowed here, try again."))
+  }
+  indices <- integer(0)
+  for (token in tokens) {
+    resolved <- wb_resolve_selection_token(token, options, multi)
+    if (is.null(resolved)) {
+      return(list(error = sprintf("'%s' isn't a listed value, index, or range, try again.", token)))
+    }
+    if (any(resolved < 1 | resolved > length(options))) {
+      return(list(error = sprintf("Index out of range (1-%d), try again.", length(options))))
+    }
+    indices <- c(indices, resolved)
+  }
+  list(indices = unique(indices))
+}
+
+wb_print_numbered_list <- function(header, options) {
+  cat(header, "\n", sep = "")
+  for (i in seq_along(options)) cat(sprintf("  %2d: %s\n", i, options[i]))
+  flush.console()
+}
+
+# Prompts for a selection from `options` that the caller has ALREADY displayed (e.g. via a
+# richer listing than a plain numbered one, like the color editor's swatch preview) -- see the
+# section header above for accepted input forms. `extra_valid`, if given, is called with the
+# resolved character vector of selected option(s) (length 1 unless multi=TRUE) and should
+# return TRUE or an error message, layered on top of the generic value/index/range validation.
+# Returns the selected option(s) as a character vector (length 1 unless multi=TRUE), or NULL if
+# cancelled.
+wb_prompt_selection <- function(options, prompt, multi = FALSE, cancel_msg = "No changes made.", extra_valid = NULL) {
+  raw <- wb_smart_readline(
+    prompt,
+    valid = function(ch) {
+      result <- wb_resolve_selection(ch, options, multi)
+      if (!is.null(result$error)) return(result$error)
+      if (!is.null(extra_valid)) {
+        check <- extra_valid(options[result$indices])
+        if (!isTRUE(check)) return(check)
+      }
+      TRUE
+    },
+    cancel_msg = cancel_msg
+  )
+  if (is.null(raw)) return(NULL)
+  options[wb_resolve_selection(raw, options, multi)$indices]
+}
+
+# Prints a numbered list of `options` under `header`, then prompts via wb_prompt_selection() --
+# the common case; use wb_prompt_selection() directly when the list has already been shown.
+wb_select_from_list <- function(header, options, prompt, multi = FALSE, cancel_msg = "No changes made.", extra_valid = NULL) {
+  wb_print_numbered_list(header, options)
+  wb_prompt_selection(options, prompt, multi = multi, cancel_msg = cancel_msg, extra_valid = extra_valid)
 }
 
 ### ===

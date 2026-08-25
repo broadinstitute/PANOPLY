@@ -592,22 +592,15 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
   if (is.null(subset_name)) {
     subset_names <- wb_list_subsets(state)
     if (length(subset_names) == 0) stop("No subsets found -- run wb_create_subset() first.")
-    cat("Subsets:\n")
-    for (i in seq_along(subset_names)) cat(sprintf("  %2d: %s\n", i, subset_names[i]))
-    flush.console()
-    idx <- wb_smart_readline(
-      "Select a subset to generate inputs.json for (or 'quit' to cancel): ",
-      valid = function(ch) {
-        n <- suppressWarnings(as.integer(ch))
-        if (is.na(n) || n < 1 || n > length(subset_names)) sprintf("Please enter a number from 1 to %d.", length(subset_names)) else TRUE
-      }
+    subset_name <- wb_select_from_list(
+      "Subsets:", subset_names,
+      "Select a subset to generate inputs.json for -- name or number (or 'quit' to cancel): "
     )
-    if (is.null(idx)) {
+    if (is.null(subset_name)) {
       wb_msg("CANCELLED", "inputs.json not generated.")
       wb_done()
       return(invisible(NULL))
     }
-    subset_name <- subset_names[as.integer(idx)]
   }
 
   # existing_inputs_path still defaults to the standard per-session path -- but if something's

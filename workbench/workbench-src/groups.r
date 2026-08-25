@@ -1,13 +1,9 @@
 # Group selection, colors, COSMO attributes, ClumpsPTM groups.
 
-wb_list_annotation_columns <- function(state, done = TRUE) {
+wb_list_annotation_columns <- function(state) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
-  cat("Annotation columns:\n")
-  for (col in colnames(annot)) cat(" -", col, "\n")
-  flush.console()
-  # done = FALSE for internal callers (e.g. wb_select_clumpsptm_groups()) that use this as a
-  # mid-function listing, not their final action -- printing "done" here would be premature.
-  if (done) wb_done()
+  wb_print_numbered_list("Annotation columns:", colnames(annot))
+  wb_done()
   invisible(colnames(annot))
 }
 
@@ -53,37 +49,14 @@ wb_verify_clumpsptm_group_validity <- function(annot, columns, max_categories) {
   }, columns)
 }
 
-# Parses a comma-separated list of 1-based indexes and/or "start:end" ranges (e.g.
-# "1,3:5,8") into a plain integer vector -- mirrors the index/range selection from
-# panda-src/build-config.r's select_groups_case(), which offered the same shorthand so users
-# didn't have to type out every annotation name by hand.
-wb_parse_index_ranges <- function(tokens) {
-  unlist(lapply(tokens, function(t) {
-    bounds <- as.integer(strsplit(t, ":")[[1]])
-    if (length(bounds) == 1) bounds else bounds[1]:bounds[2]
-  }))
-}
-
 wb_prompt_indexed_columns <- function(valid_cols) {
-  cat("Valid annotation columns:\n")
-  for (i in seq_along(valid_cols)) cat(sprintf("  %2d: %s\n", i, valid_cols[i]))
-  flush.console()
-  picked <- wb_smart_readline(
-    "Select column(s) to use as groups -- comma-separated indexes or ranges (e.g. 1,3:5) (or 'quit' for all valid columns): ",
-    valid = function(ch) {
-      tokens <- wb_trim(strsplit(ch, ",")[[1]])
-      if (!all(grepl("^[0-9]+(:[0-9]+)?$", tokens))) {
-        return("Use indexes or ranges only (e.g. 1,3:5), try again.")
-      }
-      idx <- wb_parse_index_ranges(tokens)
-      if (any(idx < 1 | idx > length(valid_cols))) {
-        return(sprintf("Index out of range (1-%d), try again.", length(valid_cols)))
-      }
-      TRUE
-    }
+  picked <- wb_select_from_list(
+    "Valid annotation columns:", valid_cols,
+    "Select column(s) to use as groups -- name(s), number(s), or ranges (e.g. Stage,3:5) (or 'quit' for all valid columns): ",
+    multi = TRUE
   )
   if (is.null(picked)) return(valid_cols)
-  valid_cols[wb_parse_index_ranges(wb_trim(strsplit(picked, ",")[[1]]))]
+  picked
 }
 
 wb_select_groups <- function(state, columns = NULL, max_categories = 10) {
@@ -260,20 +233,12 @@ wb_edit_color <- function(state, group = NULL, value = NULL, hex_color = NULL) {
 
   groups <- names(state$groups_colors)
   repeat {
-    cat("\nGroups:\n")
-    for (i in seq_along(groups)) cat(sprintf("  %2d: %s\n", i, groups[i]))
-    flush.console()
-
-    g_idx <- wb_smart_readline(
-      "Enter group index to edit (or 'quit' to finish): ",
-      valid = function(ch) {
-        n <- suppressWarnings(as.integer(ch))
-        if (is.na(n) || n < 1 || n > length(groups)) sprintf("Please enter a number from 1 to %d.", length(groups)) else TRUE
-      },
-      cancel_msg="Previous color-edits saved."
+    this_group <- wb_select_from_list(
+      "\nGroups:", groups,
+      "Enter a group to edit -- name or number (or 'quit' to finish): ",
+      cancel_msg = "Previous color-edits saved."
     )
-    if (is.null(g_idx)) break
-    this_group <- groups[as.integer(g_idx)]
+    if (is.null(this_group)) break
     values <- names(state$groups_colors[[this_group]])
 
     wb_print_indexed_values(this_group, values, state$groups_colors[[this_group]])
@@ -303,16 +268,12 @@ wb_edit_color <- function(state, group = NULL, value = NULL, hex_color = NULL) {
       }
     } else {
       repeat {
-        v_idx <- wb_smart_readline(
-          sprintf("Enter value index within '%s' to edit (or 'quit' to stop editing this group): ", this_group),
-          valid = function(ch) {
-            n <- suppressWarnings(as.integer(ch))
-            if (is.na(n) || n < 1 || n > length(values)) sprintf("Please enter a number from 1 to %d.", length(values)) else TRUE
-          },
-          cancel_msg="Previous color-edits saved."
+        val_name <- wb_prompt_selection(
+          values,
+          sprintf("Enter a value within '%s' to edit -- name or number (or 'quit' to stop editing this group): ", this_group),
+          cancel_msg = "Previous color-edits saved."
         )
-        if (is.null(v_idx)) break
-        val_name <- values[as.integer(v_idx)]
+        if (is.null(val_name)) break
 
         hex <- wb_smart_readline(
           sprintf("Enter hex color for '%s' (e.g. #RRGGBB): ", val_name),
@@ -359,17 +320,13 @@ wb_select_cosmo_attributes <- function(state, columns = NULL) {
     return(wb_save_state(state))
   }
 
-  cat("Valid COSMO attributes:\n"); for (col in valid_attrs) cat(" -", col, "\n")
-  flush.console()
   if (is.null(columns)) {
-    columns <- wb_smart_readline(
-      "Select attribute(s), comma-separated: ",
-      valid = function(ch) {
-        picked <- intersect(strsplit(ch, "\\s*,\\s*")[[1]], valid_attrs)
-        if (length(picked) == 0) "None of those match a valid attribute above, try again." else TRUE
-      }
+    columns <- wb_select_from_list(
+      "Valid COSMO attributes:", valid_attrs,
+      "Select attribute(s) -- name(s), number(s), or ranges (or 'quit' to skip): ",
+      multi = TRUE
     )
-    columns <- if (is.null(columns)) character(0) else strsplit(columns, "\\s*,\\s*")[[1]]
+    if (is.null(columns)) columns <- character(0)
   }
   columns <- intersect(columns, valid_attrs)
 
@@ -508,20 +465,17 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
     wb_msg("WARNING", sprintf("Accession column '%s' not found in %s data.", accession_col, toupper(ome)))
   }
 
-  cat(sprintf("\n%s row-annotation columns:\n%s\n\n", toupper(ome), paste(paste0(" * ",rdesc_names), collapse = "\n")))
-  flush.console()
-  col <- wb_smart_readline(
-    sprintf("Column containing accession numbers for %s data (or 'quit' to skip): ", accession_col, toupper(ome)),
-    valid = function(ch) {
-      if (!(ch %in% rdesc_names)) return("Column not found, try again.")
+  col <- wb_select_from_list(
+    sprintf("\n%s row-annotation columns:", toupper(ome)), rdesc_names,
+    sprintf("Column to use as '%s' for %s data -- name or number (or 'quit' to skip): ", accession_col, toupper(ome)),
+    extra_valid = function(ch) {
       cmp <- wb_compare_fasta_sep_types(gct@rdesc[[ch]], fasta_headers, fasta_sep_type)
       if (!wb_accession_column_acceptable(cmp)) {
-        return(sprintf(
+        sprintf(
           "Only %d%% of '%s' matched the provided FASTA, try again. %s",
           round(cmp$sep_type_rate * 100), ch, wb_describe_accession_mismatch(cmp)
-        ))
-      }
-      TRUE
+        )
+      } else TRUE
     }
   )
   if (is.null(col)) {
@@ -611,20 +565,16 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
 
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   if (is.null(columns)) {
-    wb_list_annotation_columns(state, done = FALSE)
-    columns <- wb_smart_readline(
-      "Select up to 3 categorical annotations for Clumps-PTM, comma-separated: ",
-      valid = function(ch) {
-        picked <- intersect(strsplit(ch, "\\s*,\\s*")[[1]], colnames(annot))
-        if (length(picked) == 0) "None of those match a known annotation column, try again." else TRUE
-      }
+    columns <- wb_select_from_list(
+      "Annotation columns:", colnames(annot),
+      "Select up to 3 categorical annotations for Clumps-PTM -- name(s), number(s), or ranges (or 'quit' to skip): ",
+      multi = TRUE
     )
     if (is.null(columns)) {
       wb_msg("WARNING", "Skipped Clumps-PTM annotation selection. Clumps-PTM will not be run.")
       state$toggles$run_clumpsptm <- FALSE
       return(wb_save_state(state))
     }
-    columns <- strsplit(columns, "\\s*,\\s*")[[1]]
   }
   columns <- intersect(columns, colnames(annot))
 
