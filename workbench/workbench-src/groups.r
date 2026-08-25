@@ -332,7 +332,9 @@ wb_edit_color <- function(state, group = NULL, value = NULL, hex_color = NULL) {
 
 wb_write_groups_file <- function(annot, groups_cols, out_path) {
   dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
-  write.csv(annot[, c("Sample.ID", groups_cols), drop = FALSE], out_path, row.names = FALSE, quote = TRUE)
+  wb_write_verified(function() {
+    write.csv(annot[, c("Sample.ID", groups_cols), drop = FALSE], out_path, row.names = FALSE, quote = TRUE)
+  }, out_path)
   out_path
 }
 
@@ -457,8 +459,7 @@ wb_describe_sep_type_issue <- function(cmp) {
   sprintf(paste(
     "FASTA_sep_type is configured as '%s', but headers appear to use '%s'-style separators",
     "instead (%d%% vs %d%% of accession values matched) -- consider updating",
-    "panoply_clumps_ptm.mapping.FASTA_sep_type in master-parameters.yaml, even though the",
-    "column itself looks fine."
+    "panoply_clumps_ptm.mapping.FASTA_sep_type parameter."
   ), cmp$sep_type, cmp$other, round(cmp$sep_type_rate * 100), round(cmp$other_rate * 100))
 }
 

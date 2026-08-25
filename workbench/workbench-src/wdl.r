@@ -631,16 +631,24 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
 
   if (is.null(existing_inputs_path) || !file.exists(existing_inputs_path)) {
     dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
-    jsonlite::write_json(fresh, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
+    wb_write_verified(function() {
+      jsonlite::write_json(fresh, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
+    }, out_path)
     wb_msg("INFO", sprintf("Wrote a new inputs.json to %s", out_path))
     wb_done()
     return(out_path)
   }
 
   backup_path <- paste0(existing_inputs_path, ".bak")
-  if (!file.copy(existing_inputs_path, backup_path, overwrite = TRUE)) {
-    stop(sprintf("Failed to back up '%s' to '%s' -- aborting without touching it.", existing_inputs_path, backup_path))
-  }
+  tryCatch(
+    wb_write_verified(function() {
+      if (!file.copy(existing_inputs_path, backup_path, overwrite = TRUE)) stop("file.copy() reported failure")
+    }, backup_path),
+    error = function(e) stop(sprintf(
+      "Failed to back up '%s' to '%s' -- aborting without touching it. (%s)",
+      existing_inputs_path, backup_path, conditionMessage(e)
+    ))
+  )
   existing <- jsonlite::fromJSON(existing_inputs_path, simplifyVector = FALSE)
 
   # File paths and job_id always get refreshed -- they're recomputed from the (possibly new)
@@ -659,7 +667,9 @@ wb_update_inputs_json_for_subset <- function(state, subset_name = NULL,
   }
   for (key in keys_to_refresh) existing[[key]] <- fresh[[key]]
 
-  jsonlite::write_json(existing, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
+  wb_write_verified(function() {
+    jsonlite::write_json(existing, out_path, auto_unbox = TRUE, pretty = TRUE, na = "null")
+  }, out_path)
   wb_msg("INFO", sprintf("Updated %d input(s) in %s for subset '%s' (backup at %s.bak)",
                         length(keys_to_refresh), out_path, subset_name, existing_inputs_path))
   wb_done()

@@ -14,14 +14,21 @@ wb_write_gct_atomic <- function(gct, path, quiet = FALSE) {
   # since the user doesn't need to see the temporary file-path.
   # note: genuine failure from write_gct() itself still surfaces normally.
   invisible(capture.output(cmapR::write_gct(gct, local_tmp, appenddim = FALSE)))
-  tmp_path <- tempfile(tmpdir = dirname(path), fileext = ".gct")
-  on.exit(unlink(tmp_path), add = TRUE) # clear temporary file on exit
-  if (!file.copy(local_tmp, tmp_path)) { # attempt to copy file to server
-    stop(sprintf("Failed to copy the written file into '%s'.", dirname(path)))
-  }
-  if (!file.rename(tmp_path, path)) { # rename file to permanent path (automatically overwrites)
-    stop(sprintf("Failed to move the written file into place at '%s'.", path))
-  }
+
+  # local_tmp above is genuinely local (R's own tempdir, not the mount) and is the slow part --
+  # only the copy-into-place below touches the s3fs-backed mount, so only THAT gets retried on
+  # a landing failure (see wb_write_verified(), config.r), rather than re-running the expensive
+  # write for every attempt.
+  wb_write_verified(function() {
+    tmp_path <- tempfile(tmpdir = dirname(path), fileext = ".gct")
+    on.exit(unlink(tmp_path), add = TRUE) # clear temporary file on exit
+    if (!file.copy(local_tmp, tmp_path)) { # attempt to copy file to server
+      stop(sprintf("Failed to copy the written file into '%s'.", dirname(path)))
+    }
+    if (!file.rename(tmp_path, path)) { # rename file to permanent path (automatically overwrites)
+      stop(sprintf("Failed to move the written file into place at '%s'.", path))
+    }
+  }, path)
   invisible(path)
 }
 
@@ -58,8 +65,10 @@ wb_default_asset <- function(pattern) {
   seeded_dir <- file.path(wb_workbench_root(), "defaults")
   dir.create(seeded_dir, showWarnings = FALSE, recursive = TRUE)
   seeded_path <- file.path(seeded_dir, basename(source_path))
-  if (!file.exists(seeded_path) && !file.copy(source_path, seeded_path)) {
-    stop(sprintf("Failed to seed default asset '%s' to '%s'.", source_path, seeded_path))
+  if (!file.exists(seeded_path)) {
+    wb_write_verified(function() {
+      if (!file.copy(source_path, seeded_path)) stop("file.copy() reported failure")
+    }, seeded_path)
   }
   seeded_path
 }
@@ -126,7 +135,19 @@ wb_load_and_map_inputs <- function(state, input_dir = file.path(wb_workbench_roo
   # already happened to be in input_dir, rather than assuming both are wanted together.
   zip_files <- character(0)
   used_zip <- !is.null(zip_path)
-  if (used_zip) zip_files <- basename(utils::unzip(zip_path, exdir = input_dir, junkpaths = TRUE))
+  if (used_zip) {
+    # unzip() extracts straight onto the s3fs-backed mount (input_dir) -- it can report
+    # extraction as successful for a file that didn't actually land there (see wb_retry(),
+    # config.r), so this re-checks every path it claims to have extracted before trusting it.
+    extracted <- wb_retry(function() {
+      result <- utils::unzip(zip_path, exdir = input_dir, junkpaths = TRUE)
+      if (length(result) == 0 || !all(file.exists(result))) {
+        stop("unzip() reported extracted files that don't actually exist afterward")
+      }
+      result
+    }, context = sprintf("extracting '%s'", basename(zip_path)))
+    zip_files <- basename(extracted)
+  }
 
   files <- list.files(input_dir, pattern = "\\.(gct|csv|ya?ml|gmt|fasta|fa)$", full.names = FALSE)
   if (length(files) == 0) {

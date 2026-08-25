@@ -96,8 +96,10 @@ wb_write_subset <- function(state, name, filter_col = NULL, filter_vals = NULL,
   csv_categories <- intersect(names(state$typemap), c("annotation", "groups_clumpsptm"))
   for (cat_name in csv_categories) {
     csv <- read.csv(state$typemap[[cat_name]], stringsAsFactors = FALSE, quote = '"')
-    write.csv(csv[csv$Sample.ID %in% sample_ids, , drop = FALSE],
-              file.path(subset_dir, paste0(cat_name, ".csv")), row.names = FALSE, quote = TRUE)
+    csv_out_path <- file.path(subset_dir, paste0(cat_name, ".csv"))
+    wb_write_verified(function() {
+      write.csv(csv[csv$Sample.ID %in% sample_ids, , drop = FALSE], csv_out_path, row.names = FALSE, quote = TRUE)
+    }, csv_out_path)
   }
 
   # groups.csv (the groups_file WDL input) is a per-sample table -- Sample.ID plus the
@@ -228,7 +230,7 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
       paste0(
         "What would you like to do?\n",
         "  1) Add a new subset (or overwrite an existing one by reusing its name)\n",
-        "  2) Remove an existing subset (not 'all')\n",
+        "  2) Remove an existing subset\n",
         "  3) Refresh all existing subsets from current session data\n",
         "(or 'quit' to finish): "
       ),

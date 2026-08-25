@@ -11,28 +11,42 @@
 # the same way subsets/mapped inputs are, so it should round-trip on load just like those do.
 SESSION_FINALIZED_FILES <- c("inputs.json", "inputs.json.bak")
 
-wb_copy_session_tree <- function(from_dir, to_dir, exclude = character(0)) {
+wb_copy_session_tree <- function(from_dir, to_dir, exclude = character(0), max_attempts = 3, retry_delay = 1) {
   if (!dir.exists(from_dir)) stop(sprintf("Session directory not found: %s", from_dir))
   parent <- dirname(to_dir)
   dir.create(parent, showWarnings = FALSE, recursive = TRUE)
+  entries <- list.files(from_dir, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  entries <- entries[!basename(entries) %in% exclude]
+
   # Copy into a temp directory *alongside* to_dir (same filesystem, so the final
   # file.rename() is atomic) before touching the real destination -- a mid-copy failure
   # (large GCTs, disk full, an interrupted kernel) then never leaves to_dir half-overwritten.
-  staging_dir <- tempfile("session-copy-", tmpdir = parent)
-  dir.create(staging_dir)
-  entries <- list.files(from_dir, all.files = TRUE, no.. = TRUE, full.names = TRUE)
-  entries <- entries[!basename(entries) %in% exclude]
-  if (length(entries) > 0) {
-    ok <- file.copy(entries, staging_dir, recursive = TRUE)
-    if (!all(ok)) {
-      unlink(staging_dir, recursive = TRUE)
-      stop(sprintf("Failed to copy into the session: %s", paste(basename(entries[!ok]), collapse = ", ")))
+  # The whole copy+rename is retried (not just re-checked) on a landing failure, since -- like
+  # any write to the s3fs-backed mount -- file.copy()/file.rename() reporting success doesn't
+  # guarantee the underlying S3 write actually happened (see wb_retry(), config.r). Verifying
+  # BEFORE deleting an existing to_dir also means a failed/incomplete copy never destroys a
+  # good, already-saved session in the process of trying to replace it.
+  wb_retry(function() {
+    staging_dir <- tempfile("session-copy-", tmpdir = parent)
+    on.exit(unlink(staging_dir, recursive = TRUE), add = TRUE)
+    dir.create(staging_dir)
+    if (length(entries) > 0) {
+      ok <- file.copy(entries, staging_dir, recursive = TRUE)
+      if (!all(ok)) stop(sprintf("Failed to copy into the session: %s", paste(basename(entries[!ok]), collapse = ", ")))
     }
-  }
-  if (dir.exists(to_dir)) unlink(to_dir, recursive = TRUE)
-  if (!file.rename(staging_dir, to_dir)) {
-    stop(sprintf("Failed to move the copied session into place at '%s'.", to_dir))
-  }
+    staged <- wb_recursive_relpaths(staging_dir)
+    if (length(entries) > 0 && length(staged) == 0) {
+      stop("staged copy is empty despite file.copy() reporting success")
+    }
+    if (dir.exists(to_dir)) unlink(to_dir, recursive = TRUE)
+    if (!file.rename(staging_dir, to_dir)) {
+      stop(sprintf("Failed to move the copied session into place at '%s'.", to_dir))
+    }
+    if (!identical(wb_recursive_relpaths(to_dir), staged)) {
+      stop("moved session tree doesn't match what was staged")
+    }
+  }, max_attempts = max_attempts, retry_delay = retry_delay, context = sprintf("copying the session into '%s'", to_dir))
+
   invisible(to_dir)
 }
 
@@ -40,17 +54,12 @@ wb_copy_into_session <- function(source_path, max_attempts = 3, retry_delay = 1)
   dest_dir <- file.path(wb_session_dir(), "inputs")
   if (!dir.exists(dest_dir)) dir.create(dest_dir, showWarnings = FALSE, recursive = TRUE) # only create dir if dir exists
   dest_path <- file.path(dest_dir, basename(source_path))
-  # attempt copy `max_attempt` times
-  for (attempt in seq_len(max_attempts)) {
-    ok <- suppressWarnings(file.copy(source_path, dest_path, overwrite = TRUE))
-    if (ok) return(dest_path) # return if successful
-    if (attempt < max_attempts) Sys.sleep(retry_delay) # try again after small delay
-  }
-  # print failure message if 
-  stop(sprintf(
-    "Failed to copy '%s' into the session (destination: '%s') after %d attempt(s). ",
-    source_path, dest_path, max_attempts),
-    "This can happen transiently on the s3fs-backed workbench mount.")
+  wb_write_verified(function() {
+    if (!suppressWarnings(file.copy(source_path, dest_path, overwrite = TRUE))) {
+      stop("file.copy() reported failure")
+    }
+  }, dest_path, max_attempts = max_attempts, retry_delay = retry_delay)
+  dest_path
 }
 
 wb_list_saved_sessions <- function() {

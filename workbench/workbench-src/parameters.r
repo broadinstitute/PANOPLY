@@ -59,9 +59,11 @@ wb_build_master_parameters_yaml <- function(state, out_path = NULL, github_ref =
   merged <- modifyList(defaults, overrides)
 
   dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
-  yaml::write_yaml(merged, out_path, handlers = list(logical = function(x) {
-    structure(ifelse(x, "TRUE", "FALSE"), class = "verbatim")
-  }))
+  wb_write_verified(function() {
+    yaml::write_yaml(merged, out_path, handlers = list(logical = function(x) {
+      structure(ifelse(x, "TRUE", "FALSE"), class = "verbatim")
+    }))
+  }, out_path)
   wb_done()
   out_path
 }

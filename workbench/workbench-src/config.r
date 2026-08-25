@@ -208,7 +208,7 @@ wb_load_state <- function() {
 
 wb_save_state <- function(state, done = TRUE) {
   dir.create(dirname(wb_state_path()), showWarnings = FALSE, recursive = TRUE)
-  yaml::write_yaml(state, wb_state_path())
+  wb_write_verified(function() yaml::write_yaml(state, wb_state_path()), wb_state_path())
   if (done) wb_done()
   invisible(state)
 }
@@ -270,6 +270,66 @@ wb_validate_user_file <- function(raw, extensions = NULL) {
     }
   }
   TRUE
+}
+
+### ===
+### s3fs-mount write verification -- ~/workbench is a FUSE (s3fs) mount, which can report a
+### local write as successful (the VFS-level write()/close() returns 0) while the underlying
+### S3 PUT happens asynchronously and fails silently, with no error surfaced back to R. This bit
+### an inputs.json write: jsonlite::write_json() returned normally, but the file never actually
+### existed in S3. Every write/copy that targets a path under the workbench mount should go
+### through wb_write_verified() (or wb_retry() directly, for shapes write_verified() doesn't
+### fit) rather than trusting a write call's own return value alone.
+### ===
+
+# Generic retry helper -- calls `fn()` up to max_attempts times. `fn` should throw (via stop())
+# to signal a retryable failure; any other return is treated as success and returned
+# immediately.
+wb_retry <- function(fn, max_attempts = 3, retry_delay = 1, context = "operation") {
+  last_error <- NULL
+  for (attempt in seq_len(max_attempts)) {
+    result <- tryCatch(list(ok = TRUE, value = fn()), error = function(e) {
+      last_error <<- e
+      list(ok = FALSE, value = NULL)
+    })
+    if (result$ok) return(result$value)
+    if (attempt < max_attempts) Sys.sleep(retry_delay)
+  }
+  stop(sprintf(
+    "Failed %s after %d attempt(s)%s. ", context, max_attempts,
+    if (!is.null(last_error)) sprintf(" (last error: %s)", conditionMessage(last_error)) else ""
+  ), "This can happen transiently on the s3fs-backed workbench mount.")
+}
+
+# A bare file.exists() after a write can't distinguish "just written" from "stale file already
+# there from before" when OVERWRITING an existing path -- exactly the inputs.json case, which
+# almost always already exists. This additionally requires the mtime to have advanced past
+# `since` (a small tolerance absorbs mtime-rounding/clock-skew on the mount, not genuine
+# staleness).
+wb_write_landed <- function(path, since) {
+  file.exists(path) && file.mtime(path) >= (since - 1)
+}
+
+# Relative file paths under `dir`, recursively, sorted -- used to structurally verify a
+# directory copy actually landed in full (see wb_copy_session_tree() in sessions.r), since
+# directory mtimes on the s3fs mount aren't a reliable freshness signal the way a plain file's
+# mtime is.
+wb_recursive_relpaths <- function(dir) {
+  sort(list.files(dir, recursive = TRUE, all.files = TRUE, no.. = TRUE, full.names = FALSE))
+}
+
+# Wraps a single-file write with retry + landing verification (wb_write_landed()) -- `write_fn`
+# performs the write to `path` as a side effect; its return value is ignored, only whether it
+# throws and whether `path` actually shows a fresh mtime afterward.
+wb_write_verified <- function(write_fn, path, max_attempts = 3, retry_delay = 1) {
+  wb_retry(function() {
+    since <- Sys.time()
+    write_fn()
+    if (!wb_write_landed(path, since)) {
+      stop("write call reported success, but the file's modification time never advanced")
+    }
+    path
+  }, max_attempts = max_attempts, retry_delay = retry_delay, context = sprintf("writing '%s'", path))
 }
 
 wb_run_cmd <- function(cmd, args = character(0)) {
