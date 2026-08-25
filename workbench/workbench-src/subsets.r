@@ -126,8 +126,12 @@ wb_describe_subset <- function(name, s) {
 
 # Column-index -> value-index(es)-> name prompt sequence for one subset, reused by the "add a
 # new subset" menu action below. Returns NULL if cancelled at any point, otherwise
-# list(name=, filter_col=, filter_vals=).
-wb_prompt_new_subset <- function(state, annot, filter_cols) {
+# list(name=, filter_col=, filter_vals=). `known_names` is what counts as "already taken" for
+# the overwrite-confirmation below -- passed in explicitly (rather than reading
+# state$subsets directly) so a caller that's queuing writes rather than performing them
+# immediately can include names already queued-but-not-yet-written this session, not just
+# ones already on disk.
+wb_prompt_new_subset <- function(annot, filter_cols, known_names) {
   cat("Annotation columns:\n")
   for (i in seq_along(filter_cols)) cat(sprintf("  %2d: %s\n", i, filter_cols[i]))
   flush.console()
@@ -182,7 +186,7 @@ wb_prompt_new_subset <- function(state, annot, filter_cols) {
       cancel_msg = "Previous subset changes saved."
     )
     if (is.null(candidate)) break
-    if (candidate %in% names(state$subsets)) {
+    if (candidate %in% known_names) {
       if (wb_confirm(sprintf("A subset named '%s' already exists. Overwrite it?", candidate), cancel_msg = "Previous subset changes saved.")) { name <- candidate; break }
       # else: loop back and ask for a different name
     } else {
@@ -198,13 +202,25 @@ wb_prompt_new_subset <- function(state, annot, filter_cols) {
 # be removed -- beyond that it's treated like any other subset: no automatic re-checking or
 # rebuilding on every call, since the staleness-detection prompt below and the explicit
 # add/remove/regenerate menu already give full control over when anything actually gets rebuilt.
+#
+# All actual subset writing (including 'all') is deferred until after the interactive part
+# below is done -- GCT writing is slow, so there's no reason to pay that cost between every
+# prompt instead of once, in a single batch, right before this returns. `pending` tracks what
+# to write (keyed by name, so re-queuing the same name during this session just replaces its
+# entry rather than writing it twice); removal still happens immediately since unlink() is
+# cheap and there's no benefit to batching it.
 wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subsets")) {
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   filter_cols <- setdiff(colnames(annot), "Sample.ID")
 
+  pending <- list()
+  queue_write <- function(name, filter_col = NULL, filter_vals = NULL, force = FALSE) {
+    pending[[name]] <<- list(filter_col = filter_col, filter_vals = filter_vals, force = force)
+  }
+
   if (length(state$subsets) == 0) {
     wb_msg("INFO", "An 'all' subset (every sample) will always be created.")
-    state <- wb_write_subset(state, "all", out_root = out_root)
+    queue_write("all")
   }
 
   stale <- Filter(function(n) wb_subset_is_stale(state, n), names(state$subsets))
@@ -215,7 +231,7 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
       ), cancel_msg = "Previous subset changes saved.")) {
     for (n in stale) {
       s <- state$subsets[[n]]
-      state <- wb_write_subset(state, n, filter_col = s$filter_col, filter_vals = s$filter_vals, out_root = out_root, force = TRUE)
+      queue_write(n, filter_col = s$filter_col, filter_vals = s$filter_vals, force = TRUE)
     }
   }
 
@@ -223,6 +239,11 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
     if (length(state$subsets) > 0) {
       cat("\nExisting subsets:\n")
       for (n in names(state$subsets)) cat(wb_describe_subset(n, state$subsets[[n]]), "\n")
+      flush.console()
+    }
+    if (length(pending) > 0) {
+      cat("\nQueued for creation/regeneration (written once you're done here):\n")
+      for (n in names(pending)) cat(sprintf("  %s\n", n))
       flush.console()
     }
 
@@ -240,9 +261,9 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
     if (is.null(action)) break
 
     if (action == "1") {
-      spec <- wb_prompt_new_subset(state, annot, filter_cols)
-      if (is.null(spec)) { wb_msg("CANCELLED", "No subset created."); next }
-      state <- wb_write_subset(state, spec$name, filter_col = spec$filter_col, filter_vals = spec$filter_vals, out_root = out_root)
+      spec <- wb_prompt_new_subset(annot, filter_cols, union(names(state$subsets), names(pending)))
+      if (is.null(spec)) { wb_msg("CANCELLED", "No subset queued."); next }
+      queue_write(spec$name, filter_col = spec$filter_col, filter_vals = spec$filter_vals)
     } else if (action == "2") {
       removable <- setdiff(names(state$subsets), "all")
       if (length(removable) == 0) { wb_msg("WARNING", "Nothing to remove ('all' can't be removed)."); next }
@@ -263,15 +284,24 @@ wb_create_subset <- function(state, out_root = file.path(wb_session_dir(), "subs
                              target, state$subsets[[target]]$dir), cancel_msg = "Previous subset changes saved.")) {
         unlink(state$subsets[[target]]$dir, recursive = TRUE)
         state$subsets[[target]] <- NULL
+        pending[[target]] <- NULL # cancels a same-session regenerate/overwrite queued for it, if any
         wb_msg("INFO", sprintf("Removed subset '%s'.", target))
       }
     } else {
       if (length(state$subsets) == 0) { wb_msg("INFO", "No subsets to regenerate yet."); next }
-      wb_msg("INFO", sprintf("Regenerating %d subset(s): %s", length(state$subsets), paste(names(state$subsets), collapse = ", ")))
+      wb_msg("INFO", sprintf("Queued %d subset(s) for regeneration: %s", length(state$subsets), paste(names(state$subsets), collapse = ", ")))
       for (n in names(state$subsets)) {
         s <- state$subsets[[n]]
-        state <- wb_write_subset(state, n, filter_col = s$filter_col, filter_vals = s$filter_vals, out_root = out_root, force = TRUE)
+        queue_write(n, filter_col = s$filter_col, filter_vals = s$filter_vals, force = TRUE)
       }
+    }
+  }
+
+  if (length(pending) > 0) {
+    wb_msg("INFO", sprintf("Writing %d subset(s): %s", length(pending), paste(names(pending), collapse = ", ")))
+    for (n in names(pending)) {
+      p <- pending[[n]]
+      state <- wb_write_subset(state, n, filter_col = p$filter_col, filter_vals = p$filter_vals, out_root = out_root, force = p$force)
     }
   }
 
