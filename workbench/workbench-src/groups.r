@@ -92,7 +92,9 @@ wb_select_groups <- function(state, columns = NULL, max_categories = 10) {
   }
   flush.console()
 
-  wb_reset_colors(state, annot = annot)
+  # confirm = FALSE -- re-assigning colors here is the expected conclusion of having just
+  # picked new group columns, not a separate action that warrants its own y/n.
+  wb_reset_colors(state, annot = annot, confirm = FALSE)
 }
 
 wb_assign_colors <- function(annot, groups_cols) {
@@ -196,7 +198,19 @@ wb_show_colors <- function(state) {
   invisible(state$groups_colors)
 }
 
-wb_reset_colors <- function(state, annot = NULL) {
+# Prompts to confirm before overwriting -- resetting discards any values manually edited via
+# wb_edit_color() and replaces them with a freshly auto-assigned palette. Skipped
+# (confirm = FALSE) when called as the tail end of wb_select_groups(): re-assigning colors
+# there is the expected, unsurprising result of having just changed which columns are used as
+# groups, not a separate destructive action that needs its own confirmation. Also skipped
+# outright if there's nothing yet to discard (state$groups_colors is still empty).
+wb_reset_colors <- function(state, annot = NULL, confirm = TRUE) {
+  if (confirm && length(state$groups_colors) > 0 &&
+      !wb_confirm("This will discard any manually-edited colors and reassign fresh default colors for all groups. Continue?")) {
+    wb_msg("CANCELLED", "Colors left unchanged.")
+    wb_done()
+    return(invisible(state))
+  }
   if (is.null(annot)) annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')
   state$groups_colors <- wb_assign_colors(annot, state$groups_cols)
   wb_save_state(state)
