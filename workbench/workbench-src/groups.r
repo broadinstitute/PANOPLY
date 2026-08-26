@@ -425,8 +425,9 @@ wb_describe_sep_type_issue <- function(cmp) {
 # work and record it as a master-parameters.yaml override, rather than rewriting the GCT to
 # match the configured name. The uploaded data is left untouched either way. On failure --
 # the picker is skipped, OR a needed FASTA_sep_type fix (see offer_sep_type_override() below)
-# is declined -- sets state$toggles$run_clumpsptm FALSE directly rather than returning a bare
-# TRUE/FALSE, so every return path here is just "the (possibly updated) state".
+# is declined -- sets state$toggles$run_clumpsptm FALSE directly and skips recording
+# accession_number_colname entirely (the column was never fully validated), rather than
+# returning a bare TRUE/FALSE, so every return path here is just "the (possibly updated) state".
 wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accession_col, fasta_headers, fasta_sep_type) {
   gct <- cmapR::parse_gctx(gct_path)
   rdesc_names <- colnames(gct@rdesc)
@@ -435,23 +436,34 @@ wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accessi
   # If a column only clears the bar via the OTHER sep_type, that's a config problem independent
   # of which column gets used -- offer to fix it in master-parameters.yaml too, rather than
   # just warning about it, since Clumps-PTM's real mapping step will use whatever's configured.
-  offer_sep_type_override <- function(cmp) {
-    if (!cmp$other_looks_better) return(invisible(NULL))
+  # Always explains WHY before asking the y/n -- not after, and not only on decline -- so the
+  # user has the reasoning in hand before answering rather than being asked to fix something
+  # unexplained (and, previously, only finding out why if they said no).
+  #
+  # Returns TRUE if `current_col` is actually usable as-is (no sep_type problem, or the problem
+  # was just fixed) and FALSE if it isn't (fix declined) -- callers use this to decide whether
+  # to go on and record current_col as the accession-column default. Declining means the column
+  # was never fully validated, so nothing about it should be treated as confirmed.
+  offer_sep_type_override <- function(cmp, current_col) {
+    if (!cmp$other_looks_better) return(TRUE)
+    wb_msg("WARNING", sprintf(
+      "Accession column '%s' in %s data matches the provided FASTA under a different separator than configured. %s",
+      current_col, toupper(ome), wb_describe_sep_type_issue(cmp)
+    ))
     if (wb_confirm(sprintf(
       "Update panoply_clumps_ptm.mapping.FASTA_sep_type to '%s' in master-parameters.yaml to fix this?",
       cmp$other
     ))) {
       state <<- wb_set_param_override(state, c("panoply_clumps_ptm", "mapping", "FASTA_sep_type"), cmp$other)
       wb_msg("INFO", sprintf("FASTA_sep_type will be set to '%s' in master-parameters.yaml.", cmp$other))
+      TRUE
     } else {
       # Declining leaves FASTA_sep_type misconfigured -- Clumps-PTM's real mapping step will use
       # that (wrong) value regardless of which column was picked, so this can't be left as just a
       # warning the way other soft issues are.
-      wb_msg("WARNING", paste(
-        wb_describe_sep_type_issue(cmp),
-        "Clumps-PTM will not be run by default without this fixed."
-      ))
+      wb_msg("WARNING", "Clumps-PTM will not be run by default without this fixed.")
       state$toggles$run_clumpsptm <<- FALSE
+      FALSE
     }
   }
 
@@ -464,11 +476,7 @@ wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accessi
       cmp <- wb_compare_fasta_sep_types(vals, fasta_headers, fasta_sep_type)
       if (wb_accession_column_acceptable(cmp)) {
         if (cmp$other_looks_better) {
-          wb_msg("WARNING", sprintf(
-            "Accession column '%s' in %s data matches the provided FASTA (%d%%) under a different separator than configured.",
-            accession_col, toupper(ome), round(cmp$other_rate * 100)
-          ))
-          offer_sep_type_override(cmp)
+          offer_sep_type_override(cmp, accession_col)
         } else {
           wb_msg("INFO", sprintf(
             "Accession column '%s' detected and matches the provided FASTA (%d%%) in %s data.",
@@ -482,7 +490,7 @@ wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accessi
         round(cmp$sep_type_rate * 100), accession_col, toupper(ome), wb_describe_accession_mismatch(cmp)
       )
     }
-    wb_msg("WARNING", sprintf("%s Clumps-PTM's mapping step will likely fail.", problem))
+    wb_msg("WARNING", sprintf("%s Clumps-PTM's mapping step will likely fail with this column.", problem))
   } else {
     wb_msg("WARNING", sprintf("Accession column '%s' not found in %s data.", accession_col, toupper(ome)))
   }
@@ -506,9 +514,10 @@ wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accessi
     return(state)
   }
   # Accepted -- but if it only cleared the bar via the OTHER sep_type, offer that fix too,
-  # exactly as above.
+  # exactly as above. Declining means this column was never fully validated, so don't record
+  # or announce it as the accession-column default (the toggle is already off by this point).
   chosen_cmp <- wb_compare_fasta_sep_types(gct@rdesc[[col]], fasta_headers, fasta_sep_type)
-  offer_sep_type_override(chosen_cmp)
+  if (!offer_sep_type_override(chosen_cmp, col)) return(state)
 
   wb_msg("INFO", sprintf(
     "Using '%s' as the accession column (panoply_ptm_normalization.accession_number_colname) for %s data in master-parameters.yaml.",
@@ -553,20 +562,28 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
       stop(sprintf("'%s' is not an existing, resolvable .fasta/.fa file.", fasta_path))
     }
     state$typemap$clumpsFASTA <- wb_copy_into_session(resolved_fasta)
-  } else if (is.null(state$typemap$clumpsFASTA)) {
-    # Not already mapped via wb_load_and_map_inputs() either -- prompt for it.
+  } else if (is.null(state$typemap$clumpsFASTA) ||
+             !wb_confirm(sprintf("Use the existing reference FASTA at '%s'?", wb_display_path(state$typemap$clumpsFASTA)))) {
+    # Either nothing's mapped yet, or the user declined to keep what is -- a wrong FASTA picked
+    # at initial upload, or on an earlier run of this same validation, would otherwise never get
+    # a second look, since every later run of this step would just silently keep reusing it.
+    had_existing <- !is.null(state$typemap$clumpsFASTA)
     path <- wb_smart_readline(
       "Path to the reference FASTA file (.fasta/.fa, local or this project's s3://): ",
       valid = wb_validate_fasta_input
     )
     if (is.null(path)) {
-      wb_msg("WARNING", "No reference FASTA provided. Clumps-PTM will not be run.")
-      state$toggles$run_clumpsptm <- FALSE
-      return(wb_save_state(state))
+      if (!had_existing) {
+        wb_msg("WARNING", "No reference FASTA provided. Clumps-PTM will not be run.")
+        state$toggles$run_clumpsptm <- FALSE
+        return(wb_save_state(state))
+      }
+      wb_msg("INFO", "Keeping the existing reference FASTA.")
+    } else {
+      state$typemap$clumpsFASTA <- wb_copy_into_session(wb_resolve_user_path(path))
     }
-    state$typemap$clumpsFASTA <- wb_copy_into_session(wb_resolve_user_path(path))
   }
-  # else: state$typemap$clumpsFASTA was already mapped via wb_load_and_map_inputs() -- use it as-is.
+  # else: user confirmed the already-mapped reference FASTA -- use it as-is.
 
   params <- if (!is.null(state$typemap$parameters)) yaml::read_yaml(state$typemap$parameters) else wb_load_default_master_parameters(state$github_ref)
 
