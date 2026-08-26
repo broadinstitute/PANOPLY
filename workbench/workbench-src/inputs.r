@@ -413,7 +413,11 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
   invisible(gct_path)
 }
 
-wb_validate_flanking_sequence_column <- function(gct_path, params) {
+# If the configured flanking-sequence column doesn't check out, this records a
+# master-parameters.yaml override (panoply_preprocess_gct.seqwin_column) pointing at whichever
+# existing column DOES, rather than rewriting the GCT to match the configured name -- the
+# uploaded data is left untouched either way.
+wb_validate_flanking_sequence_column <- function(state, gct_path, params) {
   seqwin_default <- params$panoply_preprocess_gct$seqwin_column
   gct <- cmapR::parse_gctx(gct_path)
   rdesc_names <- colnames(gct@rdesc)
@@ -422,7 +426,7 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
   valid <- seqwin_default %in% rdesc_names && any(grepl(pattern, gct@rdesc[[seqwin_default]]))
   if (valid) {
     wb_msg("INFO", sprintf("Default flanking-sequence column '%s' detected and valid.", seqwin_default))
-    return(invisible(gct_path))
+    return(state)
   }
   wb_msg("WARNING", sprintf("Default flanking-sequence column '%s' missing or invalid.", seqwin_default))
   col <- wb_select_from_list(
@@ -434,12 +438,13 @@ wb_validate_flanking_sequence_column <- function(gct_path, params) {
   )
   if (is.null(col)) {
     wb_msg("WARNING", "Skipped flanking-sequence setup. PTM-SEA requires this column.")
-    return(invisible(gct_path))
+    return(state)
   }
-  gct@rdesc[[seqwin_default]] <- gct@rdesc[[col]]
-  wb_msg("INFO", sprintf("Using column '%s' as '%s'.", col, seqwin_default))
-  wb_write_gct_atomic(gct, gct_path)
-  invisible(gct_path)
+  wb_msg("INFO", sprintf(
+    "Using '%s' as the flanking-sequence column (panoply_preprocess_gct.seqwin_column) in master-parameters.yaml.",
+    col
+  ))
+  wb_set_param_override(state, c("panoply_preprocess_gct", "seqwin_column"), col)
 }
 
 wb_metab_compound_db_path <- function(github_ref = GITHUB_REF) {
@@ -472,7 +477,13 @@ wb_metab_compound_db_path <- function(github_ref = GITHUB_REF) {
   })
 }
 
-wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITHUB_REF) {
+# If the configured metabolite-ID column/type doesn't check out, this records
+# master-parameters.yaml overrides (panoply_metaboanalyst.meta_id_col and .meta_id_type)
+# pointing at whichever existing column/type DOES, rather than rewriting or converting IDs in
+# the GCT itself -- the uploaded data is left untouched either way. Choosing row IDs ("0")
+# overrides meta_id_col to NULL, matching master-parameters.yaml's own "use NULL for rid"
+# convention for that key (see wb_set_param_override()'s NULL handling).
+wb_validate_metabolite_id_column <- function(state, gct_path, params, github_ref = GITHUB_REF) {
   metab_id_col_default  <- params$panoply_metaboanalyst$meta_id_col
   metab_id_type_default <- params$panoply_metaboanalyst$meta_id_type
 
@@ -485,12 +496,12 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
                  metab_id_type_default, paste(names(compound_map), collapse = ", ")))
   }
 
-  valid <- metab_id_col_default %in% rdesc_names &&
+  valid <- isTRUE(metab_id_col_default %in% rdesc_names) &&
     any(!is.na(gct@rdesc[[metab_id_col_default]]) &
         gct@rdesc[[metab_id_col_default]] %in% compound_map[[metab_id_type_default]])
   if (valid) {
     wb_msg("INFO", sprintf("Default metabolite-ID column '%s' detected and valid.", metab_id_col_default))
-    return(invisible(gct_path))
+    return(state)
   }
   wb_msg("WARNING", sprintf("Default metabolite-ID column '%s' missing or invalid.", metab_id_col_default))
   wb_print_numbered_list("METABOLOME columns:", rdesc_names)
@@ -507,7 +518,7 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
     )
     if (is.null(col)) {
       wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
-      return(invisible(gct_path))
+      return(state)
     }
     if (identical(col, "0")) { ids <- gct@rid; col_label <- "rid" }
     else {
@@ -523,23 +534,19 @@ wb_validate_metabolite_id_column <- function(gct_path, params, github_ref = GITH
       )
       if (is.null(id_type)) {
         wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
-        return(invisible(gct_path))
+        return(state)
       }
     }
     if (!any(!is.na(ids) & ids %in% compound_map[[id_type]])) { wb_msg("WARNING", "No valid IDs found, try again."); next }
 
-    gct@rdesc[[metab_id_col_default]] <- if (identical(col, "0")) {
-      gct@rid
-    } else if (id_type != metab_id_type_default) {
-      compound_map[[metab_id_type_default]][match(ids, compound_map[[id_type]])]
-    } else {
-      ids
-    }
-    wb_msg("INFO", sprintf("Using column '%s' (%s) as '%s'.", col_label, id_type, metab_id_col_default))
-    wb_write_gct_atomic(gct, gct_path)
-    break
+    wb_msg("INFO", sprintf(
+      "Using '%s' (%s IDs) as the metabolite-ID column/type (panoply_metaboanalyst.meta_id_col/meta_id_type) in master-parameters.yaml.",
+      col_label, id_type
+    ))
+    state <- wb_set_param_override(state, c("panoply_metaboanalyst", "meta_id_col"), if (identical(col_label, "rid")) NULL else col)
+    state <- wb_set_param_override(state, c("panoply_metaboanalyst", "meta_id_type"), id_type)
+    return(state)
   }
-  invisible(gct_path)
 }
 
 wb_validate_inputs <- function(state) {
@@ -577,13 +584,13 @@ wb_select_preprocessing_options <- function(state) {
   state$toggles$run_ptmsea <- FALSE
   if (!is.null(state$typemap$phosphoproteome) && !is.null(state$typemap$ptmseaDB)) {
     state$toggles$run_ptmsea <- wb_confirm("Phosphoproteome data detected. Should PTM-SEA be run?")
-    if (state$toggles$run_ptmsea) wb_validate_flanking_sequence_column(state$typemap$phosphoproteome, params)
+    if (state$toggles$run_ptmsea) state <- wb_validate_flanking_sequence_column(state, state$typemap$phosphoproteome, params)
   }
 
   state$toggles$run_metab <- FALSE
   if (!is.null(state$typemap$metabolome)) {
     state$toggles$run_metab <- wb_confirm("Metabolomics data detected. Should MetaboAnalyst be run?")
-    if (state$toggles$run_metab) wb_validate_metabolite_id_column(state$typemap$metabolome, params, state$github_ref)
+    if (state$toggles$run_metab) state <- wb_validate_metabolite_id_column(state, state$typemap$metabolome, params, state$github_ref)
   }
 
   wb_save_state(state)

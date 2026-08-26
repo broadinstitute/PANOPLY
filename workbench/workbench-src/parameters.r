@@ -57,6 +57,10 @@ wb_build_master_parameters_yaml <- function(state, out_path = NULL, github_ref =
   overrides[["groups.colors"]]          <- state$groups_colors
 
   merged <- modifyList(defaults, overrides)
+  # Nested corrections recorded via wb_set_param_override() elsewhere (PTM-SEA's seqwin_column,
+  # Clumps-PTM's accession_number_colname/FASTA_sep_type, MetaboAnalyst's
+  # meta_id_col/meta_id_type, etc.) -- see config.r's "master-parameters.yaml overrides" section.
+  merged <- wb_apply_param_overrides(merged, state$param_overrides)
 
   dir.create(dirname(out_path), showWarnings = FALSE, recursive = TRUE)
   wb_write_verified(function() {

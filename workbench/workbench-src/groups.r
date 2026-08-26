@@ -32,19 +32,17 @@ wb_verify_group_validity <- function(annot, columns, max_categories) {
 
 # Clumps-PTM has no "treat as continuous" path -- clumps_diffexp.r just skips any annotation
 # whose unique-value count exceeds max_annot_levels outright, regardless of numeric-ness (see
-# `if (length(unique(annots[[annot_of_interest]])) > opt$max_annot_levels) next`). Filtering
-# here mirrors that exclusion locally, so a column that's certain to be skipped downstream
-# doesn't waste a same-cost Cromwell run finding that out. Each retained annotation multiplies
-# how many sub-value comparisons Clumps-PTM has to run, hence the cost framing below.
+# `if (length(unique(annots[[annot_of_interest]])) > opt$max_annot_levels) next`). Since the
+# user explicitly picked this column, though, excluding it outright rather than asking would
+# silently discard their choice -- warn about the cost implication and let them keep it anyway.
 wb_verify_clumpsptm_group_validity <- function(annot, columns, max_categories) {
   Filter(function(col) {
     n <- length(unique(annot[[col]]))
     if (n > max_categories) {
-      wb_msg("WARNING", sprintf(
-        "'%s' has %d unique values (> %d) -- excluded from Clumps-PTM annotations. Each additional subvalue increases Clumps-PTM's analysis cost.",
+      wb_confirm(sprintf(
+        "'%s' has %d unique values (> %d) -- each additional subvalue increases Clumps-PTM's analysis cost. Keep it anyway?",
         col, n, max_categories
       ))
-      FALSE
     } else TRUE
   }, columns)
 }
@@ -423,16 +421,31 @@ wb_describe_sep_type_issue <- function(cmp) {
 # Mirrors wb_validate_gene_id_column()'s shape: whether the configured accession column
 # (default 'id.description', from panoply_ptm_normalization.accession_number_colname) is
 # missing outright OR present-but-malformed (empty, or a low FASTA match rate under BOTH
-# possible FASTA_sep_type values), the fix is the same -- pick + validate + write an existing
-# column in its place, like the gene-ID/metabolite-ID fixups elsewhere. The one difference from
-# those: when overwriting a column that already had SOME content, that content is preserved
-# under a '<accession_col>.bak' column rather than discarded, since a low match rate doesn't
-# guarantee the original values were useless (a partial version/date mismatch, say) -- just
-# that they didn't clear the bar.
-wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession_col, fasta_headers, fasta_sep_type) {
+# possible FASTA_sep_type values), the fix is the same -- pick an existing column that DOES
+# work and record it as a master-parameters.yaml override, rather than rewriting the GCT to
+# match the configured name. The uploaded data is left untouched either way. On failure (user
+# skips), sets state$toggles$run_clumpsptm FALSE directly rather than returning a bare
+# TRUE/FALSE, so every return path here is just "the (possibly updated) state".
+wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accession_col, fasta_headers, fasta_sep_type) {
+  gct <- cmapR::parse_gctx(gct_path)
   rdesc_names <- colnames(gct@rdesc)
-  backup_col <- paste0(accession_col, ".bak")
   exists <- accession_col %in% rdesc_names
+
+  # If a column only clears the bar via the OTHER sep_type, that's a config problem independent
+  # of which column gets used -- offer to fix it in master-parameters.yaml too, rather than
+  # just warning about it, since Clumps-PTM's real mapping step will use whatever's configured.
+  offer_sep_type_override <- function(cmp) {
+    if (!cmp$other_looks_better) return(invisible(NULL))
+    if (wb_confirm(sprintf(
+      "Update panoply_clumps_ptm.mapping.FASTA_sep_type to '%s' in master-parameters.yaml to fix this?",
+      cmp$other
+    ))) {
+      state <<- wb_set_param_override(state, c("panoply_clumps_ptm", "mapping", "FASTA_sep_type"), cmp$other)
+      wb_msg("INFO", sprintf("FASTA_sep_type will be set to '%s' in master-parameters.yaml.", cmp$other))
+    } else {
+      wb_msg("WARNING", wb_describe_sep_type_issue(cmp))
+    }
+  }
 
   if (exists) {
     vals <- gct@rdesc[[accession_col]]
@@ -444,16 +457,17 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
       if (wb_accession_column_acceptable(cmp)) {
         if (cmp$other_looks_better) {
           wb_msg("WARNING", sprintf(
-            "Accession column '%s' in %s data matches the provided FASTA (%d%%) under a different separator than configured. %s",
-            accession_col, toupper(ome), round(cmp$other_rate * 100), wb_describe_sep_type_issue(cmp)
+            "Accession column '%s' in %s data matches the provided FASTA (%d%%) under a different separator than configured.",
+            accession_col, toupper(ome), round(cmp$other_rate * 100)
           ))
+          offer_sep_type_override(cmp)
         } else {
           wb_msg("INFO", sprintf(
             "Accession column '%s' detected and matches the provided FASTA (%d%%) in %s data.",
             accession_col, round(cmp$sep_type_rate * 100), toupper(ome)
           ))
         }
-        return(TRUE)
+        return(state)
       }
       problem <- sprintf(
         "Only %d%% of '%s' values in %s data matched an ID in the provided FASTA. %s",
@@ -467,7 +481,7 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
 
   col <- wb_select_from_list(
     sprintf("\n%s row-annotation columns:", toupper(ome)), rdesc_names,
-    sprintf("Column to use as '%s' for %s data -- name or number (or 'quit' to skip): ", accession_col, toupper(ome)),
+    sprintf("Column to use as the accession column for %s data (or 'quit' to skip): ", toupper(ome)),
     extra_valid = function(ch) {
       cmp <- wb_compare_fasta_sep_types(gct@rdesc[[ch]], fasta_headers, fasta_sep_type)
       if (!wb_accession_column_acceptable(cmp)) {
@@ -480,37 +494,19 @@ wb_validate_clumpsptm_accession_column <- function(gct, gct_path, ome, accession
   )
   if (is.null(col)) {
     wb_msg("WARNING", sprintf("Skipped accession-column setup for %s data. Clumps-PTM will not be run.", toupper(ome)))
-    return(FALSE)
+    state$toggles$run_clumpsptm <- FALSE
+    return(state)
   }
-  # Accepted -- but if it only cleared the bar via the OTHER sep_type, that's still worth a
-  # strong warning naming the fix, since it was accepted as a valid column, not as evidence the
-  # configured FASTA_sep_type is right.
+  # Accepted -- but if it only cleared the bar via the OTHER sep_type, offer that fix too,
+  # exactly as above.
   chosen_cmp <- wb_compare_fasta_sep_types(gct@rdesc[[col]], fasta_headers, fasta_sep_type)
-  if (chosen_cmp$other_looks_better) {
-    wb_msg("WARNING", wb_describe_sep_type_issue(chosen_cmp))
-  }
+  offer_sep_type_override(chosen_cmp)
 
-  if (exists) {
-    if (backup_col %in% rdesc_names) {
-      if (wb_confirm(sprintf(
-        "A backup column '%s' already exists -- keep it as-is? (declining overwrites it with the current '%s' values)",
-        backup_col, accession_col
-      ))) {
-        wb_msg("INFO", sprintf("Keeping existing backup column '%s'.", backup_col))
-      } else {
-        gct@rdesc[[backup_col]] <- gct@rdesc[[accession_col]]
-        wb_msg("INFO", sprintf("Overwrote backup column '%s' with the current '%s' values.", backup_col, accession_col))
-      }
-    } else {
-      gct@rdesc[[backup_col]] <- gct@rdesc[[accession_col]]
-      wb_msg("INFO", sprintf("Backed up existing '%s' values to '%s'.", accession_col, backup_col))
-    }
-  }
-
-  gct@rdesc[[accession_col]] <- gct@rdesc[[col]]
-  wb_msg("INFO", sprintf("Using column '%s' as '%s' for %s data.", col, accession_col, toupper(ome)))
-  wb_write_gct_atomic(gct, gct_path)
-  TRUE
+  wb_msg("INFO", sprintf(
+    "Using '%s' as the accession column (panoply_ptm_normalization.accession_number_colname) for %s data in master-parameters.yaml.",
+    col, toupper(ome)
+  ))
+  wb_set_param_override(state, c("panoply_ptm_normalization", "accession_number_colname"), col)
 }
 
 wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL) {
@@ -556,11 +552,8 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
   fasta_headers <- wb_fasta_header_sample(state$typemap$clumpsFASTA)
   for (ptm_type in intersect(ptm_types, names(state$typemap))) {
     gct_path <- state$typemap[[ptm_type]]
-    gct <- cmapR::parse_gctx(gct_path)
-    if (!wb_validate_clumpsptm_accession_column(gct, gct_path, ptm_type, accession_col, fasta_headers, fasta_sep_type)) {
-      state$toggles$run_clumpsptm <- FALSE
-      return(wb_save_state(state))
-    }
+    state <- wb_validate_clumpsptm_accession_column(state, gct_path, ptm_type, accession_col, fasta_headers, fasta_sep_type)
+    if (!state$toggles$run_clumpsptm) return(wb_save_state(state))
   }
 
   annot <- read.csv(state$typemap$annotation, stringsAsFactors = FALSE, quote = '"')

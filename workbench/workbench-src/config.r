@@ -100,6 +100,7 @@ wb_default_state <- function() {
     ),
     cosmo_params = list(run_cosmo = FALSE, sample_label = ""),
     job_id = NULL,
+    param_overrides = list(),
     subsets = list(),
     github_ref = GITHUB_REF,
     target_workflow = TARGET_WORKFLOW
@@ -355,6 +356,54 @@ wb_prompt_selection <- function(options, prompt, multi = FALSE, cancel_msg = "No
 wb_select_from_list <- function(header, options, prompt, multi = FALSE, cancel_msg = "No changes made.", extra_valid = NULL) {
   wb_print_numbered_list(header, options)
   wb_prompt_selection(options, prompt, multi = multi, cancel_msg = cancel_msg, extra_valid = extra_valid)
+}
+
+### ===
+### master-parameters.yaml overrides -- a single, standardized mechanism for "the uploaded data
+### is fine, the CONFIGURED name/type/value was just wrong" corrections (PTM-SEA's
+### seqwin_column, Clumps-PTM's accession_number_colname/FASTA_sep_type, MetaboAnalyst's
+### meta_id_col/meta_id_type, etc.), replacing the earlier per-module pattern of rewriting the
+### uploaded GCT in place to match the default. Overrides are recorded into `state` (there's no
+### master-parameters.yaml file on disk yet at the point most of these run -- Finalize
+### Parameters, which actually builds it, comes later in the notebook) and applied by
+### wb_build_master_parameters_yaml() at build time, the same way state$toggles/state$cosmo_params/
+### state$groups_cols already are.
+### ===
+
+# Records that master-parameters.yaml's nested key `path` (e.g.
+# c("panoply_preprocess_gct", "seqwin_column")) should be set to `value` when the YAML is next
+# built. `value = NULL` is a legitimate override (e.g. MetaboAnalyst's "use NULL for rid"
+# convention), not a no-op -- see wb_set_nested_yaml_value() for how that's preserved through to
+# the written file rather than silently deleting the key.
+wb_set_param_override <- function(state, path, value) {
+  state$param_overrides[[paste(path, collapse = ".")]] <- list(path = path, value = value)
+  state
+}
+
+# Sets a nested key (`path`, a character vector of keys from root to leaf) inside a
+# yaml-shaped nested list, creating intermediate levels as needed. Uses single-bracket
+# `x[key] <- list(value)` for the final assignment rather than `x[[key]] <- value` --
+# the latter DELETES the key entirely when value is NULL, instead of setting it to NULL, which
+# would silently discard an explicit "use NULL for rid"-style override.
+wb_set_nested_yaml_value <- function(x, path, value) {
+  if (length(path) == 1) {
+    x[path[1]] <- list(value)
+    return(x)
+  }
+  child <- if (path[1] %in% names(x)) x[[path[1]]] else list()
+  x[[path[1]]] <- wb_set_nested_yaml_value(child, path[-1], value)
+  x
+}
+
+# Applies every recorded state$param_overrides entry onto a yaml-shaped nested list (see
+# wb_set_param_override()). Order follows insertion order, so if two overrides ever target the
+# same path within one session, the later one wins -- consistent with how re-running any other
+# selection step in this notebook (groups, toggles, etc.) already overwrites earlier choices.
+wb_apply_param_overrides <- function(yaml_list, param_overrides) {
+  for (entry in param_overrides) {
+    yaml_list <- wb_set_nested_yaml_value(yaml_list, entry$path, entry$value)
+  }
+  yaml_list
 }
 
 ### ===
