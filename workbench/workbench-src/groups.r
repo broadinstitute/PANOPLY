@@ -517,6 +517,21 @@ wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accessi
   wb_set_param_override(state, c("panoply_ptm_normalization", "accession_number_colname"), col)
 }
 
+# ==========================================================================================
+# TEMPORARY WORKAROUND -- delete this function and its one call site (in
+# wb_select_clumpsptm_groups(), below) once the upstream PyMol API issue is fixed. Until then,
+# PyMol figure generation is broken, so it's forced off (panoply_clumps_ptm.postprocess.pymol_gen)
+# for every Manifold run instead of being left at its normal master-parameters.yaml default of
+# TRUE, which would just fail downstream in panoply_clumps_ptm_postprocess.
+# ==========================================================================================
+wb_disable_clumpsptm_pymol_gen <- function(state) {
+  wb_msg("WARNING", paste(
+    "PyMol figures cannot currently be generated due to a known API issue --",
+    "panoply_clumps_ptm.postprocess.pymol_gen will be set to FALSE in master-parameters.yaml for this run."
+  ))
+  wb_set_param_override(state, c("panoply_clumps_ptm", "postprocess", "pymol_gen"), FALSE)
+}
+
 wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL) {
   # panoply_clumps_ptm_workflow.wdl declares pSTY_gct/acK_gct/ubK_gct all optional ("must
   # include at least one") -- so any single PTM dataset is enough to offer Clumps-PTM.
@@ -595,5 +610,8 @@ wb_select_clumpsptm_groups <- function(state, columns = NULL, fasta_path = NULL)
 
   out_path <- file.path(dirname(state$typemap$groups %||% state$typemap$annotation), "groups-clumpsptm.csv")
   state$typemap$groups_clumpsptm <- wb_write_groups_file(annot, columns, out_path)
+
+  state <- wb_disable_clumpsptm_pymol_gen(state)  # TEMPORARY -- see function definition above.
+
   wb_save_state(state)
 }
