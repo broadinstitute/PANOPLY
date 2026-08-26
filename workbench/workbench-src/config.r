@@ -523,13 +523,23 @@ wb_smart_readline <- function(prompt, valid = NULL, allow_empty = FALSE, cancel_
   }
 }
 
-wb_confirm <- function(prompt, ...) {
+# `default`, if given (not NULL), lets the user press Enter to keep it rather than answering
+# y/n outright -- e.g. re-confirming a toggle that already has a current value (see
+# wb_select_workflow_toggles()'s ask_toggle(), wdl.r). Existing callers that don't pass it are
+# unaffected: allow_empty stays FALSE, so an empty answer is rejected exactly as before.
+wb_confirm <- function(prompt, default = NULL, ...) {
+  yn_hint <- if (is.null(default)) "y/n" else "y/n, or Enter to keep current"
   choice <- wb_smart_readline(
-    paste0(prompt, " (y/n): "),
-    valid = function(ch) if (tolower(ch) %in% c("y", "yes", "n", "no")) TRUE else "Please answer y or n (or 'quit' to cancel).",
+    sprintf("%s (%s): ", prompt, yn_hint),
+    allow_empty = !is.null(default),
+    valid = function(ch) {
+      if (!nzchar(ch)) return(TRUE)  # only reachable when allow_empty, i.e. a default was given
+      if (tolower(ch) %in% c("y", "yes", "n", "no")) TRUE else "Please answer y or n (or 'quit' to cancel)."
+    },
     ...
   )
   if (is.null(choice)) return(FALSE)  # quitting a y/n question is treated as declining
+  if (!nzchar(choice)) return(isTRUE(default))
   tolower(choice) %in% c("y", "yes")
 }
 

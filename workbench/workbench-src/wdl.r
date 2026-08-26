@@ -402,7 +402,7 @@ wb_select_workflow_toggles <- function(state, workflow_name = state$target_workf
   ask_toggle <- function(label, store_key) {
     current <- state$toggles[[store_key]]
     hint <- if (!is.null(current)) sprintf(" (currently %s)", toupper(as.character(current))) else ""
-    state$toggles[[store_key]] <<- wb_confirm(sprintf("Run %s%s?", label, hint))
+    state$toggles[[store_key]] <<- wb_confirm(sprintf("Run %s%s?", label, hint), default = current)
   }
 
   asked <- FALSE
