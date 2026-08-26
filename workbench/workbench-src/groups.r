@@ -423,8 +423,9 @@ wb_describe_sep_type_issue <- function(cmp) {
 # missing outright OR present-but-malformed (empty, or a low FASTA match rate under BOTH
 # possible FASTA_sep_type values), the fix is the same -- pick an existing column that DOES
 # work and record it as a master-parameters.yaml override, rather than rewriting the GCT to
-# match the configured name. The uploaded data is left untouched either way. On failure (user
-# skips), sets state$toggles$run_clumpsptm FALSE directly rather than returning a bare
+# match the configured name. The uploaded data is left untouched either way. On failure --
+# the picker is skipped, OR a needed FASTA_sep_type fix (see offer_sep_type_override() below)
+# is declined -- sets state$toggles$run_clumpsptm FALSE directly rather than returning a bare
 # TRUE/FALSE, so every return path here is just "the (possibly updated) state".
 wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accession_col, fasta_headers, fasta_sep_type) {
   gct <- cmapR::parse_gctx(gct_path)
@@ -443,7 +444,14 @@ wb_validate_clumpsptm_accession_column <- function(state, gct_path, ome, accessi
       state <<- wb_set_param_override(state, c("panoply_clumps_ptm", "mapping", "FASTA_sep_type"), cmp$other)
       wb_msg("INFO", sprintf("FASTA_sep_type will be set to '%s' in master-parameters.yaml.", cmp$other))
     } else {
-      wb_msg("WARNING", wb_describe_sep_type_issue(cmp))
+      # Declining leaves FASTA_sep_type misconfigured -- Clumps-PTM's real mapping step will use
+      # that (wrong) value regardless of which column was picked, so this can't be left as just a
+      # warning the way other soft issues are.
+      wb_msg("WARNING", paste(
+        wb_describe_sep_type_issue(cmp),
+        "Clumps-PTM will not be run by default without this fixed."
+      ))
+      state$toggles$run_clumpsptm <<- FALSE
     }
   }
 

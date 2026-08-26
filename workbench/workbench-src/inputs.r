@@ -416,7 +416,8 @@ wb_validate_gene_id_column <- function(gct, gct_path, ome, params) {
 # If the configured flanking-sequence column doesn't check out, this records a
 # master-parameters.yaml override (panoply_preprocess_gct.seqwin_column) pointing at whichever
 # existing column DOES, rather than rewriting the GCT to match the configured name -- the
-# uploaded data is left untouched either way.
+# uploaded data is left untouched either way. On failure (user skips), sets
+# state$toggles$run_ptmsea FALSE directly, since PTM-SEA can't run without this column.
 wb_validate_flanking_sequence_column <- function(state, gct_path, params) {
   seqwin_default <- params$panoply_preprocess_gct$seqwin_column
   gct <- cmapR::parse_gctx(gct_path)
@@ -437,7 +438,8 @@ wb_validate_flanking_sequence_column <- function(state, gct_path, params) {
     }
   )
   if (is.null(col)) {
-    wb_msg("WARNING", "Skipped flanking-sequence setup. PTM-SEA requires this column.")
+    wb_msg("WARNING", "Skipped flanking-sequence setup -- PTM-SEA will not be run by default without a valid flanking-sequence column.")
+    state$toggles$run_ptmsea <- FALSE
     return(state)
   }
   wb_msg("INFO", sprintf(
@@ -482,7 +484,9 @@ wb_metab_compound_db_path <- function(github_ref = GITHUB_REF) {
 # pointing at whichever existing column/type DOES, rather than rewriting or converting IDs in
 # the GCT itself -- the uploaded data is left untouched either way. Choosing row IDs ("0")
 # overrides meta_id_col to NULL, matching master-parameters.yaml's own "use NULL for rid"
-# convention for that key (see wb_set_param_override()'s NULL handling).
+# convention for that key (see wb_set_param_override()'s NULL handling). On failure (user
+# skips either the column or ID-type picker), sets state$toggles$run_metab FALSE directly,
+# since panoply_metaboanalyst can't run without both.
 wb_validate_metabolite_id_column <- function(state, gct_path, params, github_ref = GITHUB_REF) {
   metab_id_col_default  <- params$panoply_metaboanalyst$meta_id_col
   metab_id_type_default <- params$panoply_metaboanalyst$meta_id_type
@@ -517,7 +521,8 @@ wb_validate_metabolite_id_column <- function(state, gct_path, params, github_ref
       }
     )
     if (is.null(col)) {
-      wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
+      wb_msg("WARNING", "Skipped metabolite-ID setup -- MetaboAnalyst will not be run by default without a valid metabolite-ID column.")
+      state$toggles$run_metab <- FALSE
       return(state)
     }
     if (identical(col, "0")) { ids <- gct@rid; col_label <- "rid" }
@@ -533,7 +538,8 @@ wb_validate_metabolite_id_column <- function(state, gct_path, params, github_ref
         "ID type -- name or number: "
       )
       if (is.null(id_type)) {
-        wb_msg("WARNING", "Skipped metabolite-ID setup. panoply_metaboanalyst requires this column.")
+        wb_msg("WARNING", "Skipped metabolite-ID setup -- MetaboAnalyst will not be run by default without a valid metabolite-ID type.")
+        state$toggles$run_metab <- FALSE
         return(state)
       }
     }
