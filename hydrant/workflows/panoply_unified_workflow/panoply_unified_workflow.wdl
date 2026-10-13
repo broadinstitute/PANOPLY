@@ -38,7 +38,7 @@ workflow panoply_unified_workflow {
     String? run_ptmsea
     Boolean? run_clumps
     Boolean? run_metab
-    String run_scion # proteome + rna_data only, see below
+    Boolean run_scion #'true' or 'false' -- proteome + rna_data only, see below
 
     File groups_file
     File? groups_file_nmf

@@ -599,5 +599,13 @@ wb_select_preprocessing_options <- function(state) {
     if (state$toggles$run_metab) state <- wb_validate_metabolite_id_column(state, state$typemap$metabolome, params, state$github_ref)
   }
 
+  # SCION infers regulatory networks from paired proteome + RNA data, so it's only offered when
+  # both were mapped. run_scion is a required Boolean in panoply_unified_workflow with no WDL
+  # default, so it's always set explicitly here (FALSE when not applicable) rather than left unset.
+  state$toggles$run_scion <- FALSE
+  if (!is.null(state$typemap$proteome) && !is.null(state$typemap$rna)) {
+    state$toggles$run_scion <- wb_confirm("Proteome and RNA data detected. Should SCION network inference be run?")
+  }
+
   wb_save_state(state)
 }

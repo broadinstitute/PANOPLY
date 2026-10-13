@@ -31,7 +31,7 @@ workflow panoply_main {
     String run_cmap   # "true" or "false"
     String run_nmf = "true"
     String run_omicsev = "true"
-    String run_scion   # "true" or "false" -- only runs when ome_type == "proteome"
+    Boolean run_scion   # only runs when ome_type == "proteome"
 
     ## inputs
     File input_pome
@@ -123,7 +123,7 @@ workflow panoply_main {
     }
 
     ### SCION
-    if ( run_scion == "true" ){
+    if ( run_scion ){
       if ( ome_type == "proteome" ) {
         call scion_wdl.panoply_scion_workflow as scion {
           input:

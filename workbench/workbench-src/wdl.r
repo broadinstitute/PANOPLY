@@ -372,6 +372,7 @@ ROLE_TO_STATIC_CATEGORY <- c(geneset_db = "gseaDB", ptm_db = "ptmseaDB", fasta_r
 TOGGLE_ALIASES <- c(
   run_cmap = "run_cmap", run_mo_nmf = "run_mo_nmf", run_so_nmf = "run_so_nmf",
   run_ptmsea = "run_ptmsea", run_clumps = "run_clumpsptm", run_metab = "run_metab",
+  run_scion = "run_scion",
   normalizeProteomics = "normalize_proteomics", filterProteomics = "filter_proteomics"
 )
 
@@ -380,7 +381,7 @@ TOGGLE_ALIASES <- c(
 # version of a question that's already been answered conditionally (e.g. PTM-SEA is only ever
 # asked about if phosphoproteome data was actually mapped; asking again here, unconditionally,
 # for every workflow would be both redundant and nonsensical when that data isn't present).
-TOGGLES_HANDLED_ELSEWHERE <- c("normalize_proteomics", "filter_proteomics", "run_ptmsea", "run_metab", "run_clumpsptm")
+TOGGLES_HANDLED_ELSEWHERE <- c("normalize_proteomics", "filter_proteomics", "run_ptmsea", "run_metab", "run_clumpsptm", "run_scion")
 
 wb_map_semantic_role <- function(spec_name) {
   for (role in names(INPUT_ALIASES)) if (spec_name %in% INPUT_ALIASES[[role]]) return(role)

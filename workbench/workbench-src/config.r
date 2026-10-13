@@ -96,7 +96,7 @@ wb_default_state <- function() {
     toggles = list(
       normalize_proteomics = FALSE, filter_proteomics = FALSE,
       run_ptmsea = FALSE, run_metab = FALSE, run_clumpsptm = FALSE,
-      run_cmap = FALSE, run_mo_nmf = FALSE, run_so_nmf = TRUE
+      run_cmap = FALSE, run_mo_nmf = FALSE, run_so_nmf = TRUE, run_scion = FALSE
     ),
     cosmo_params = list(run_cosmo = FALSE, sample_label = ""),
     job_id = NULL,
