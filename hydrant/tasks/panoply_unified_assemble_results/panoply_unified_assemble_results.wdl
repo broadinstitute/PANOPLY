@@ -20,6 +20,7 @@ task panoply_unified_assemble_results {
     Array[File?] blacksheep_report
     Array[File?] cmap_output
     Array[File?] cmap_ssgsea_output
+    Array[File?] scion_output
 
     ## rna main
     File? ssgsea_rna_report
@@ -76,6 +77,12 @@ task panoply_unified_assemble_results {
     if [ ${sep='' select_all(cmap_ssgsea_output)} != '' ]; then
       mv ${sep=' ' select_all(cmap_ssgsea_output)} results/proteogenomics_analysis/proteome_cmap_analysis
       for filename in results/proteogenomics_analysis/proteome_cmap_analysis/*.tar;do tar -C results/proteogenomics_analysis/proteome_cmap_analysis -xvf $filename;rm $filename;done
+    fi
+
+    if [ ${sep='' select_all(scion_output)} != '' ]; then
+      mkdir results/proteogenomics_analysis/scion_network_inference
+      mv ${sep=' ' select_all(scion_output)} results/proteogenomics_analysis/scion_network_inference
+      for filename in results/proteogenomics_analysis/scion_network_inference/*.tar.gz;do tar -C results/proteogenomics_analysis/scion_network_inference -xzvf $filename;rm $filename;done
     fi
 
     # MAIN REPORTS

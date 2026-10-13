@@ -38,6 +38,7 @@ workflow panoply_unified_workflow {
     String? run_ptmsea
     Boolean? run_clumps
     Boolean? run_metab
+    String run_scion # proteome + rna_data only, see below
 
     File groups_file
     File? groups_file_nmf
@@ -47,6 +48,10 @@ workflow panoply_unified_workflow {
 
     File geneset_db
     File ptm_db
+
+    File? scion_tf_file #regulator/TF gene list; if omitted, falls back to the
+                        #generic TF_names_v_1.01.txt list bundled into the
+                        #panoply_scion Docker image
 
     # Normalize specific optional params:
     String? normalizeProteomics # "true" or "false"
@@ -114,6 +119,8 @@ workflow panoply_unified_workflow {
         ptm_db=ptm_db,
         run_cmap = "${run_cmap}",
         run_nmf = "false",
+        run_scion = run_scion,
+        scion_tf_file = scion_tf_file,
         input_cna=cna_data,
         input_rna=rna_data,
         groups_file=groups_file,
@@ -213,6 +220,7 @@ workflow panoply_unified_workflow {
       main_summary = pome.summary_and_ssgsea,
       cmap_output = pome.cmap_output,
       cmap_ssgsea_output = pome.cmap_ssgsea_output,
+      scion_output = pome.scion_output,
       norm_report = norm_filt.normalize_report,
       rna_corr_report = pome.rna_corr_report,
       cna_corr_report = pome.cna_corr_report,

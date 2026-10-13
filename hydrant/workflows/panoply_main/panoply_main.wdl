@@ -12,6 +12,7 @@ import "../../tasks/panoply_cna_setup/panoply_cna_setup.wdl" as cna_setup_wdl
 import "../../tasks/panoply_cna_correlation/panoply_cna_correlation.wdl" as cna_corr_wdl
 import "../../tasks/panoply_cna_correlation_report/panoply_cna_correlation_report.wdl" as cna_corr_report_wdl
 import "../../tasks/panoply_cmap_analysis/panoply_cmap_analysis.wdl" as cmap_wdl
+import "../../tasks/panoply_scion/panoply_scion.wdl" as scion_wdl
 ## Sample-QC
 import "../../tasks/panoply_sampleqc/panoply_sampleqc.wdl" as sampleqc_wdl
 import "../../tasks/panoply_sampleqc_report/panoply_sampleqc_report.wdl" as sampleqc_report_wdl
@@ -30,6 +31,7 @@ workflow panoply_main {
     String run_cmap   # "true" or "false"
     String run_nmf = "true"
     String run_omicsev = "true"
+    String run_scion   # "true" or "false" -- only runs when ome_type == "proteome"
 
     ## inputs
     File input_pome
@@ -46,16 +48,21 @@ workflow panoply_main {
 
     File? cna_corr_groupsFile # DO NOT use groups_file by default
 
+    ## scion inputs
+    # regulator/TF gene list; if omitted, falls back to the generic
+    # TF_names_v_1.01.txt list bundled into the panoply_scion Docker image
+    File? scion_tf_file
+
     ## cmap inputs
     Int cmap_n_permutations = 10
     File? geneset_db_cmap # optional override for CMAP geneset_db
 
-    ## Terra Inputs
+    ### clumpsptm Terra Inputs
     # File subset_list_file = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets-index.txt" ## terra path
     # File cmap_level5_data = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx" ## terra path
     # String subset_bucket = "gs://fc-de501ca1-0ae7-4270-ae76-6c99ea9a6d5b/cmap-data/cmap-data-subsets" ## terra path
 
-    ## Manifold Inputs
+    ## clumpsptm Manifold Inputs
     File subset_list_file = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/cmap-data-subsets-index.txt" ## manifold path
     File cmap_level5_data = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/annotated_GSE92742_Broad_LINCS_Level5_COMPZ_geneKDsubset_n36720x12328.gctx" ## manifold path
     String subset_bucket = "s3://manifold-ai-sc-broad-prod-platform-storage/research/projects/181/reference_files/cmap-data/cmap-data-subsets/" ## manifold path
@@ -114,6 +121,19 @@ workflow panoply_main {
         duplicate_gene_policy=duplicate_gene_policy,
         gene_id_col=gene_id_col
     }
+
+    ### SCION
+    if ( run_scion == "true" ){
+      if ( ome_type == "proteome" ) {
+        call scion_wdl.panoply_scion_workflow as scion {
+          input:
+            ome = ome_type,
+            pome_gct_file = input_pome,
+            mrna_gct_file = select_first([input_rna]),
+            TF_file = scion_tf_file
+        }
+      }
+    }
     
     ### COSMO
     call cosmo_wdl.panoply_cosmo_workflow {
@@ -137,7 +157,6 @@ workflow panoply_main {
           ome_type = ome_type
       }
     }
-
 
     ### Sample QC
     call sampleqc_wdl.panoply_sampleqc {
@@ -257,6 +276,7 @@ workflow panoply_main {
     File? cmap_ssgsea_output = run_cmap_analysis.ssgseaOutput
     File? rna_corr_report = panoply_rna_protein_correlation_report.report
     File? cna_corr_report = panoply_cna_correlation_report.report
+    File? scion_output = scion.results_tar
     File? omicsev_report = panoply_omicsev.report
     File? cosmo_report = panoply_cosmo_workflow.cosmo_report
     File? sample_qc_report = panoply_sampleqc_report.report
