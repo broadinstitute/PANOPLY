@@ -1,0 +1,125 @@
+# compare_results/folder_map.yaml
+#
+# Maps on-disk folder names - as panoply_unified_assemble_results happens to
+# lay them out in a unified run's results/ or reports/ tree - to the task
+# identifiers defined in task_rules.yaml. This is the ONLY file that should
+# need to change when the assemble step's folder layout changes; comparison
+# LOGIC lives entirely in task_rules.yaml and never needs to know about
+# folder names.
+#
+# Flat lookup by folder basename (comments group entries by where they live
+# in the real tree, purely for human orientation - the walker looks up a
+# name regardless of depth, so nesting here would only add risk of typos
+# silently breaking a match).
+#
+# Three entry shapes:
+#   <folder-name>: { uses: <task> }
+#     Dispatch this folder (its own files plus everything recursively
+#     beneath it) as ONE instance of <task>. This is what most entries need.
+#   <folder-name>: { each_child: <task> }
+#     Do NOT dispatch this folder itself - instead, treat each of its
+#     immediate child directories as its own separate instance of <task>,
+#     paired and reported independently. Use this when panoply_unified_
+#     assemble_results groups multiple real task-runs (e.g. one single-omic
+#     NMF run per ome) under one shared parent folder.
+#   <folder-name>: { group: {seed_from: <family>, seed_params: {...}}, children: {<family>: <uses-or-each_child entry>, ...} }
+#     For several SIBLING family folders that together represent the same
+#     set of task instances split by content type (e.g. so_nmf_results/
+#     so_nmf_figures/so_nmf_ssgsea all have one entry per omic, but aren't
+#     nested inside one another). Each family under `children:` is resolved
+#     exactly like a normal uses/each_child entry, then correlated across
+#     families BY POSITION (see dispatch_group in helpers.R for why that's
+#     safe here). For each correlated instance, `seed_params` is resolved
+#     ONCE against the `seed_from` family's member, and the resulting
+#     seed-match verdict is handed to EVERY family's dispatch for that
+#     instance - this is what lets a family with no seed-bearing file of
+#     its own (panoply_nmf_postprocess) still get seed-gated
+#     reproducibility, without reaching into a sibling family's folder.
+#
+# A folder name absent from this file entirely is a pass-through: the
+# walker just recurses into it looking for a mapped name deeper down (this
+# is how e.g. the dataset-prefixed "<dataset>-proteome-full-results/" ome
+# wrapper, or "nmf" itself, is handled - it's not a task, just a container).
+# Loose FILES sitting directly inside an unmapped folder fall through to a
+# generic size/content comparator (see compare.R), not a task-specific one.
+
+folder_map:
+
+  # --- proteogenomics_analysis / <dataset>-<ome>-full-results / <submodule> ---
+  # (the category and ome-wrapper levels are unmapped pass-throughs)
+
+  association: { uses: panoply_association }
+  blacksheep: { uses: panoply_blacksheep }
+  cna: { uses: panoply_cna_correlation }
+  cosmo-data: { uses: panoply_cosmo }
+  data: { uses: panoply_preprocess_gct }
+  filtered-data: { uses: panoply_filter }
+  harmonized-data: { uses: panoply_harmonize }
+  omicsev-data: { uses: panoply_omicsev }
+  rna: { uses: panoply_rna_protein_correlation }
+  sample-qc: { uses: panoply_sampleqc }
+  ssgsea_assoc: { uses: panoply_ssgsea }
+  ssgsea_ome: { uses: panoply_ssgsea }
+
+  # direct children of proteogenomics_analysis (siblings of the ome wrappers)
+  proteome_cmap_analysis: { uses: panoply_cmap_analysis }
+  summary_files: { uses: assemble_summary_files }
+  all_html_reports: { uses: assemble_html_reports } # also matches under rna_analysis/ - same identifier, reused
+
+  # --- nmf/{mo_nmf,so_nmf,sankey} (nmf itself is an unmapped pass-through) ---
+
+  # mo_nmf: single combined multi-omic run, so this group has exactly one
+  # correlated instance - degenerates to "resolve the seed once, apply it
+  # to both families" with no per-omic matching needed. Only results+figures
+  # are IN the group: they're the only two tasks whose rules actually use
+  # `reproducible:`; ssgsea/report don't, so routing them through the group
+  # would buy nothing (and each_child inside a group only pairs
+  # subdirectories, which mo_nmf_ssgsea has but the loose report .html files
+  # below don't - no reason to hit that mismatch for no benefit).
+  mo_nmf:
+    group:
+      seed_from: mo_nmf_results
+      seed_params: { file: "nmf_opt.Rdata", format: rdata, seed_keys: ["seed"] }
+    children:
+      mo_nmf_results: { uses: panoply_nmf }
+      mo_nmf_figures: { uses: panoply_nmf_postprocess }
+  mo_nmf_ssgsea: { uses: panoply_ssgsea } # top-level, not in the group - see above
+  # mo_nmf's own loose top-level .html reports (nmf + ssgsea report) are
+  # not claimed by the group (it only owns the 2 family folders above) or
+  # by mo_nmf_ssgsea - they fall through to the generic stray-file
+  # comparator, which already does the right thing (size-check) for two
+  # lone html files.
+
+  # so_nmf: 4 independent single-omic runs (cna/phospho/proteome/rna) live
+  # side by side under each family below - each_child treats every
+  # immediate child as its own instance (so per-omic best-K disagreement
+  # etc. is reported per-omic, not blended), and the group correlates the
+  # SAME omic's instance across so_nmf_results/so_nmf_figures by position so
+  # a seed match found via so_nmf_results applies to that omic's
+  # postprocess too. so_nmf_ssgsea/so_nmf_report/so_nmf_ssgsea_report are
+  # NOT in the group, same reasoning as mo_nmf above - their tasks don't use
+  # `reproducible:`, and so_nmf_report/so_nmf_ssgsea_report hold loose
+  # per-omic .html files rather than subdirectories, which each_child
+  # inside a group can't pair as instances anyway (plain each_child outside
+  # a group already falls through to a stray-file comparison for exactly
+  # this shape, which is what these two actually need).
+  so_nmf:
+    group:
+      seed_from: so_nmf_results
+      seed_params: { file: "nmf_opt.Rdata", format: rdata, seed_keys: ["seed"] }
+    children:
+      so_nmf_results: { each_child: panoply_nmf }
+      so_nmf_figures: { each_child: panoply_nmf_postprocess }
+  so_nmf_ssgsea: { each_child: panoply_ssgsea } # top-level, not in the group - see above
+  so_nmf_report: { each_child: panoply_nmf_report }
+  so_nmf_ssgsea_report: { each_child: panoply_ssgsea_report }
+
+  sankey: { uses: panoply_sankey }
+
+  # --- clumpsptm (matched at the category level itself - its result-folder
+  # name embeds both the dataset name and the grouping variable tested, so
+  # panoply_clumps_ptm's custom_module resolves the real subfolder itself) ---
+  clumpsptm: { uses: panoply_clumps_ptm }
+
+  # --- metaboanalyst ---
+  metaboanalyst: { uses: panoply_metaboanalyst }

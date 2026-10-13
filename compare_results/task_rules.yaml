@@ -1,0 +1,421 @@
+# compare_results/task_rules.yaml
+#
+# Comparison LOGIC, keyed by the WDL task (or, where noted, a synthetic
+# identifier for an assemble-step artifact with no single corresponding
+# task) that produced the output - NOT by where panoply_unified_assemble
+# happens to file it. See folder_map.yaml for the separate layer that maps
+# on-disk folder names (as they appear in a unified run's results/ tree) to
+# these task identifiers.
+#
+# Why split it this way: a task's own output shape (what files it writes,
+# whether they're stochastic, what its GCTs' rdesc/cdesc mean) is intrinsic
+# to the task - it doesn't change depending on whether panoply_unified_
+# assemble_results nests it three levels deep under a dataset-prefixed ome
+# wrapper, or a user runs the task standalone and hands its raw output
+# directory straight to compare.R. Keeping rules keyed by task means a
+# single module is exactly as easy to compare as a full pipeline run: point
+# compare.R at two raw task-output directories and pass --task <name> to
+# select the ruleset directly, bypassing folder_map.yaml entirely.
+#
+# Top level here is "workflow name" purely for human organization (grouping
+# related tasks together on the page) - it has NO effect on matching. All
+# task entries are flattened into one global name -> ruleset lookup when
+# this file loads; a task name used under two different workflow groups by
+# mistake is a config error (caught by validate_rules.R and by compare.R
+# itself at load time).
+#
+# Per-task schema (unchanged from before):
+#   wdl_task: panoply_X        # optional, for traceability - checked by
+#                              # validate_rules.R against the unified WDL.
+#                              # Usually redundant with the task's own key
+#                              # name; kept distinct for synthetic/composite
+#                              # identifiers that don't correspond to a real
+#                              # single task (see e.g. panoply_cmap_analysis
+#                              # below).
+#   normalize: [regex, ...]    # optional, task-scoped extra filename
+#                              # normalization patterns (merged with global)
+#   params:                    # optional - compared BEFORE results; if
+#     file: glob                # values differ (beyond ignore_keys), every
+#     format: rdata|yaml|json   # other result below for this task gets
+#     key: <Rdata object name>  # annotated as "may reflect a parameter
+#     seed_keys: [k, ...]       # change, not a defect" rather than a bug.
+#     ignore_keys: [k, ...]     # seed_keys additionally unlocks `reproducible:`
+#   strict: [glob, ...]        # the tightest comparison the pipeline can
+#                              #   realistically guarantee. For numeric
+#                              #   files (gct/csv/tsv/json/yaml/Rdata),
+#                              #   resolves to global.tolerance (a floor,
+#                              #   not eps; see its comment above). For
+#                              #   binary_presence files (pdf/png/html/
+#                              #   xlsx/etc), it's genuinely exact: 0 KB
+#                              #   size difference allowed - put these
+#                              #   under `threshold:` instead if any
+#                              #   incidental drift (job_id/timestamps
+#                              #   embedded in the file) is expected.
+#   threshold: [glob, ...]     # numeric-tolerance (or, for binary_presence
+#                              #   files, KB-size-tolerance) match -
+#                              #   stochastic/drift-prone files; an item may
+#                              #   also be a single-key map {glob: tol} to
+#                              #   set a tolerance explicitly - this always
+#                              #   wins outright, even below global.tolerance
+#                              #   / global.size_diff_kb
+#   custom:                    # dispatch to a named comparator function
+#     glob: fn_name              # (bare form, no args) or
+#     glob2: {fn: fn_name, args: {...}, tolerance: n}  # tolerance is optional,
+#                              # only meaningful to comparators that accept
+#                              # one (e.g. compare_binary_presence's KB
+#                              # size-diff allowance)
+#   reproducible:              # patterns promoted from `ignore` to a real
+#     mode: strict|threshold     # comparison ONLY when params.seed_keys
+#     files: [glob, ...]         # matched between the two runs
+#   ignore: [glob, ...]        # skip entirely, no report line
+#   custom_module: fn_name      # escape hatch: bypass generic file pairing
+#                              # entirely and hand the whole (dir1, dir2)
+#                              # pair to this function (see panoply_clumps_ptm)
+#
+# Every file encountered inside a dispatched task instance that isn't
+# covered by strict/threshold/custom/ignore is reported as INCOMPLETE_RULE -
+# loudly, on purpose, so the config's blind spots stay visible instead of
+# silently defaulting to "probably fine".
+
+global:
+  # This block is the source of truth for a real run - it overrides
+  # helpers.R's DEFAULT_TOLERANCE/DEFAULT_SIZE_DIFF_KB.
+  #
+  # `tolerance` is chosen because GCTs are rounded to ndigits=5 pipeline-wide,
+  # so we can expect rounding error in the 5th decimal place.
+  # Most CSV/TSV data is GCT-derived and inherits the same rounding noise,
+  # even though R's write.csv/write.table itself doesn't  round.
+  # `strict:`-classified files resolve to exactly this floor
+  tolerance: 2.0e-05
+  size_diff_kb: 1 # absolute file-size difference tolerated for *.pdf/*.png/etc.
+  # Stripped from filenames (for pairing) and from text-file contents (for
+  # `strict`/`threshold` text comparisons) before comparing - covers the
+  # env-leakage patterns confirmed in both a Terra/Cromwell and a
+  # Manifold/miniWDL run of the same dataset: absolute container paths with
+  # embedded run/workspace UUIDs, miniWDL call-cache digest tokens (which on
+  # Manifold also leak into ssGSEA signature_gct *filenames*, not just log
+  # text), bare UUIDs, and timestamp header lines.
+  normalize_patterns:
+    - '/mnt/workflow/[0-9a-f-]{36}/\S*'
+    - '/mnt/disks/cromwell_root/fc-[0-9a-f-]{36}/\S*'
+    - 'CACHE_DIGEST_[A-Za-z0-9_]+'
+    - '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+    - '## [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}'
+    - '[0-9]{4}-[0-9]{2}-[0-9]{2}[ T][0-9]{2}:[0-9]{2}:[0-9]{2}'
+  # Files found OUTSIDE any dispatched task instance (e.g. sitting directly
+  # at an ome-wrapper root like "<dataset>-proteome-full-results/") that
+  # should be silently skipped rather than generically compared - the
+  # whole-pipeline config dumps already ignored inside every task, for the
+  # same reason (duplicated everywhere, not task-specific, always differ
+  # across Terra/Manifold - see individual task `ignore:` comments).
+  stray_ignore:
+    - "config.r"
+    - "updated-master-parameter.yaml"
+    - "final_output_params.yaml"
+    - "RUN-LOG.txt"
+
+workflows:
+
+  # --- per-ome analysis chain (folder_map.yaml routes each ome-wrapper's
+  # submodules here; every task below is matched 1:1 with its own folder
+  # name today, so this group is a plain re-key, no content changes) ---
+
+  panoply_main_workflow:
+
+    panoply_association:
+      strict: ["*.cls"]
+      threshold: [{"*.csv": 1.0e-04}, {"*.pdf": 0.05}, {"*.png": 0.05}] # rdesc/cdesc carry real protein/clinical annotation - compared in full, not ignored
+      custom:
+        "*-*-analysis-model-results-fdr*.txt": { fn: compare_binary_presence, tolerance: 0.05 } # this will catch LARGE differences between model outputs-- but doesn't actually compare the results directly
+        "*.gct": { fn: compare_gct, args: { tolerance: 1.0e-04, cdesc_tolerance: 2.0e-04 } }
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["panoply_association"] } }
+      ignore:
+        - "config.r" # config script; mirrors updated-master-parameter.yaml
+        - "group*.csv" # ignore groups-file, since naming convention may not match
+        - "assoc-analysis.r" # analysis script; should not be compared
+
+    panoply_blacksheep:
+      strict: ["*.csv", "*.txt"]
+      threshold: ["*.pdf", "*.png"]
+
+    panoply_cna_correlation:
+      strict: ["*.txt", "*.tsv"]
+      threshold: # CSVs includes the multi-GB genome-wide correlation/pval matrices
+        - "*.csv"                          # everything else - global default (2.0e-05)
+        - "*.pdf"
+        - "*.png"
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["panoply_cna_analysis"] } }
+      ignore: ["config.r", "*.r"] # config.r mirrors updated-master-parameter.yaml
+
+    panoply_cosmo:
+      threshold: 
+        - {"method*?_folder/test_Model*?_result.csv": 1.0e-01} # we expect models to differ-- but not dramatically. this threshold will catch large differences.
+        - {"method*?_folder/cleaned_data*?.tsv": 2.0e-04}
+        - "*.csv"
+        - "*.png"
+        - "*.tsv"
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["cosmo.params"] } }
+
+    panoply_preprocess_gct:
+      strict: ["*.txt", "*.csv"]
+      threshold: ["*.gct"]
+
+    panoply_filter:
+      threshold: ["*.gct"]
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["filter.proteomics"] } }
+      ignore: ["config.r"] # mirrors updated-master-parameter.yaml
+
+    panoply_harmonize:
+      strict: ["*.csv"]
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["panoply_harmonize"] } }
+      ignore: ["config.r", "harmonize.r"] # config.r mirrors updated-master-parameter.yaml
+
+    panoply_omicsev:
+      strict:
+        - "do_function_prediction.txt"
+      threshold: 
+        - {"dataset/*-matrix.tsv": 1.0e-4}
+        - {"*-matrix/data/*-matrix-nobatch-heatmap*": 1}
+        - {"*.pdf": 0.1} # generally, use a stricter 0.1kb threshold
+        - {"*.png": 0.1} # generally, use a stricter 0.1kb threshold
+        - "*.tsv"
+        - "*.gct"
+        - "*.csv"
+        - "*.html"
+      custom:
+        "*filterPeaks*": { fn: compare_tsv } # extension-less but genuinely tab-delimited (gene ID -> filtered boolean)
+        "*.txt": { fn: compare_tsv } # tab-delimited, despite extension
+      ignore:
+        - "*.rda" # requires OmicsEV packages, difficult to compare
+        - "*.rds" # requires OmicsEV packages, difficult to compare
+        - "config-custom.r"
+        - "final_output_params.yaml"
+        - "*sessionInfo.txt" # R version/BLAS/package-version dump - always differs across environments, not a defect
+
+    panoply_rna_protein_correlation:
+      strict: ["*.csv", "*.tsv"]
+      threshold: 
+        - "*.gct"
+        - {"*.pdf": 1.0e-02}
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["panoply_rna_protein_correlation"] } }
+      ignore: ["config.r", "*.r"] # config.r mirrors updated-master-parameter.yaml
+
+    panoply_sampleqc:
+      threshold: ["*.gct", "*.pdf"] # GCT 1.2 format, boilerplate NAME/Description header only - safe as a bare numeric matrix
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["panoply_sample_qc"] } }
+      ignore: ["config.r", "sample-qc.r"] # config.r mirrors updated-master-parameter.yaml
+
+  # --- ssGSEA: one shared ruleset used wherever ssGSEA runs - directly on
+  # the per-ome/per-contrast data (ssgsea_assoc/ssgsea_ome folders) AND on
+  # NMF factor matrices (mo_nmf_ssgsea directly, so_nmf_ssgsea per-omic) ---
+
+  panoply_ssgsea_workflow:
+
+    panoply_ssgsea:
+      strict: ["*.txt"] # parameters.txt / ssgsea.log.txt - env-leakage stripped via global normalize_patterns
+      threshold:
+        # ssGSSEA is stochastic; we expect minor differences between scores & statistics
+        - {"*.gct": 1.0e-03}
+      custom:
+        "*combined|pvalues|scores.gct":
+          fn: compare_gct
+          args:
+            tolerance: 1.0e-01
+            rdesc_set_cols: "^Signature\\.set\\.overlap\\.(?!percent)"
+        "*contrast*.gct": # when ssGSEA is run on panoply_association contrasts, the following columns require special comparison
+          fn: compare_gct
+          args:
+            tolerance: 5.0e-04
+            rdesc_tolerance: 2.0e-02 # give a fair bit of flexibility for P.values (2.0e-03) and Limma Scores (2.0e-2)
+            rdesc_ignore_cols: "AveExpr"
+            rdesc_numeric_delim_cols: "^(AveExpr|P\\.Value|adj\\.P\\.Val|limma\\.score)$"
+      ignore:
+        - "*.log.txt"
+        # CONFIRMED LIKELY BUG (flagged separately, see task_0976a5e0): on
+        # Manifold these per-gene-set files are named by an internal cache
+        # digest instead of the gene-set name, and silently lose data on
+        # dimension ties. Not deep-comparable by filename until that's fixed;
+        # revisit with content-based (GCT `id` field) matching afterward.
+        - "signature_gct/*"
+        - "*/signature_gct/*"
+        # Leftover split input tar chunks ("<dataset>.tar.gz-N.tar", N=1..6)
+        # sitting unextracted alongside the real per-contrast outputs, only
+        # ever seen under ssgsea_assoc - a WDL scatter/gather artifact that
+        # was never cleaned up rather than meaningful output. Harmless to
+        # look for this pattern in every panoply_ssgsea instance even where
+        # it never occurs (so_nmf/mo_nmf's ssgsea folders, ssgsea_ome).
+        - "*.tar"
+
+    panoply_ssgsea_report:
+      custom:
+        "*.html": { fn: compare_binary_presence, tolerance: 0.8 }
+
+  # --- NMF: split to mirror the real task boundaries (panoply_nmf_workflow
+  # calls panoply_nmf, then panoply_nmf_postprocess, then panoply_nmf_report
+  # as distinct steps) rather than one blended "nmf output" ruleset. See
+  # folder_map.yaml for how mo_nmf/so_nmf's differently-shaped folders both
+  # route into these same three tasks. ---
+
+  panoply_nmf_workflow:
+
+    panoply_nmf:
+      # Raw factorization output: the seed lives here (nmf_opt.Rdata). When
+      # dispatched standalone (--task panoply_nmf, or no group context),
+      # this is the only place seed-gated reproducibility can work. When
+      # dispatched as part of mo_nmf/so_nmf's `group:` (see folder_map.yaml),
+      # the seed check below still runs here but its verdict is also handed
+      # to the sibling panoply_nmf_postprocess instance for that same
+      # omic - see dispatch_group() in helpers.R.
+      params:
+        file: "nmf_opt.Rdata"
+        format: rdata
+        # seed: differs every run (defaults to Sys.time() unless pinned) -
+        # UNLESS the user pinned it explicitly for both runs, in which case
+        # `seed_keys` below unlocks the `reproducible:` block: with an
+        # identical seed, NMF is deterministic and these files should match
+        # exactly (modulo env leakage), not just "similar".
+        # output_prefix: derived from the dataset name, not a real config choice.
+        # ome_gcts_string/yaml_file: absolute input paths - env-leakage, not config.
+        seed_keys: ["seed"]
+        ignore_keys: ["seed", "output_prefix", "ome_gcts_string", "yaml_file"]
+      strict: ["*.txt"]
+      reproducible:
+        mode: threshold
+        files:
+          - "*_combined_n*.gct"
+          - "*_combinedNonNegative_n*.gct"
+          - "nmf_res.Rdata"
+      ignore:
+        # With DIFFERENT seeds (the common case - see `reproducible:` above
+        # for the same-seed path), the raw combined factorization output is
+        # seed-sensitive by construction, so a naive numeric-tolerance diff
+        # would spuriously FAIL every time.
+        - "*_combined_n*.gct"
+        - "*_combinedNonNegative_n*.gct"
+        - "nmf_res.Rdata"
+
+    panoply_nmf_postprocess:
+      # Cluster/factor assignments, driver-feature selection, and plots
+      # derived from the raw factorization. The H/W factor-basis matrices
+      # physically live in this task's output (not panoply_nmf's), so
+      # they're compared HERE - this task has no seed-bearing file of its
+      # own, so `reproducible:` below only ever activates via a GROUP
+      # dispatch (see folder_map.yaml's mo_nmf/so_nmf `group:` entries),
+      # which resolves the seed once from the sibling panoply_nmf instance
+      # and hands the verdict down. A standalone --task
+      # panoply_nmf_postprocess comparison (no group context) always sees
+      # reproducible=FALSE, same as if this block didn't exist.
+      custom:
+        # Cluster/factor LABELS are an arbitrary permutation of a stable
+        # partition (confirmed empirically via clusterMembership.tsv joins) -
+        # compare via best label-alignment, never raw label equality. This
+        # applies regardless of reproducible: label numbering is arbitrary
+        # by construction, not just under different seeds.
+        "*_clusterMembership.tsv": { fn: compare_cluster_membership, args: { agree_threshold: 0.9, warn_threshold: 0.75 } }
+        "nmf_postprocess_opt.Rdata": { fn: compare_rdata_object, args: { ignore_keys: ["output_prefix"] } } # catches best-K (rank_top) disagreement directly
+      strict: ["*.txt", "*.csv"]
+      threshold: ["*.xlsx", "*.pdf", "*.png"]
+      reproducible:
+        mode: threshold
+        files:
+          - "*_H_n*.gct"
+          - "*_W_n*.gct"
+          - "*_W_rowNorm*.gct"
+          - "*_driverFeatures_expression_*.gct"
+      ignore:
+        # With DIFFERENT seeds (the common case absent an explicit group
+        # seed match - see `reproducible:` above), these are seed-sensitive
+        # by construction (components can permute AND sign-flip across
+        # runs), so a naive numeric-tolerance diff would spuriously FAIL
+        # every time. A proper same-seed-agnostic comparator would solve a
+        # best-matching assignment across factors (like
+        # compare_cluster_membership does for sample labels) before
+        # comparing values - worth building if this ever needs to be
+        # compared without a matching seed.
+        - "*_H_n*.gct"
+        - "*_W_n*.gct"
+        - "*_W_rowNorm*.gct"
+        - "*_driverFeatures_expression_*.gct"
+        - "*_hm.concat.Rdata" # not seed-reproducible even when the factorization is - a derived concat/plot cache, left ignored either way
+
+    panoply_nmf_report:
+      custom:
+        "*.html": { fn: compare_binary_presence, tolerance: 0.8 }
+
+  panoply_sankey_workflow:
+
+    panoply_sankey:
+      strict: ["*.txt"]
+      threshold: ["*.html", "*.pdf"]
+
+  # --- clumpsptm (custom_module escape hatch - its result-folder name
+  # embeds both the dataset name AND the grouping variable tested, which
+  # vary too much for generic pairing) ---
+
+  panoply_clumps_ptm_workflow:
+
+    panoply_clumps_ptm:
+      custom_module: compare_clumpsptm_module
+
+  # --- cmap: composite step, no single panoply_cmap_analysis task exists;
+  # the real constituent tasks are panoply_cmap_input/_annotate/
+  # _connectivity/_ssgsea. Kept as one synthetic identifier for now rather
+  # than decomposed further - a future improvement, not a blocker. ---
+
+  panoply_cmap_analysis_workflow:
+
+    panoply_cmap_analysis:
+      wdl_task: false # synthetic identifier, see note above - no single real task to point at
+      strict: ["*.txt", "*.gmt", "*.tsv"]
+      threshold: ["*.gct", "*.csv", "*.pdf", "*.png"] # includes ~1089 static-named LINCS permutation/subset-score GCTs and the huge cna correlation matrices nested here
+      custom:
+        # check for module-specific parameters that may have been updated
+        "updated-master-parameter.yaml": { fn: compare_structured, args: { only_keys: ["panoply_cmap_analysis"] } }
+      ignore:
+        - "config.r" # mirrors updated-master-parameter.yaml
+        - "cmap-config-custom.r"
+        - "RUN-LOG.txt"
+        - "*.r" # cna-analysis-setup.r, cna-analysis.r, generate-cna-plots.r, harmonize.r, rna-seq*.r, sample-qc.r - scripts, not output
+
+  # --- assemble-step artifacts: not real tasks, so these use descriptive
+  # (not panoply_-shaped) identifiers on purpose - see folder_map.yaml. ---
+
+  panoply_unified_assemble_results:
+
+    assemble_summary_files:
+      wdl_task: false # synthetic identifier - assemble-step artifact, no corresponding task
+      threshold: ["*.gct", "*.csv", "*.txt", "*.pdf", "*.png"]
+      ignore:
+        - "*/signature_gct/*" # same known issue as panoply_ssgsea above (this is a curated copy of that content)
+        - "*.tar" # same leftover split-tar-chunk artifact as panoply_ssgsea above
+
+    assemble_html_reports:
+      wdl_task: false # synthetic identifier - assemble-step artifact, no corresponding task
+      custom:
+        "*.html": { fn: compare_binary_presence, tolerance: 0.8 }
+
+  panoply_metaboanalyst_workflow:
+
+    # Not exercised by the Tutorial dataset (empty in both runs today), but
+    # a rule is still declared so validate_rules.R doesn't flag it as
+    # missing. NOTE: this task underwent a genuine, intentional
+    # computational rework (new pathway DBs/filters) inherited from an
+    # unrelated dev-branch merge, NOT from the Terra->Manifold port - large
+    # diffs here are expected and should not be read as a port regression.
+    panoply_metaboanalyst:
+      strict: ["*.txt", "*.csv"]
+      threshold: ["*.gct"]
+      ignore: ["config.r", "updated-master-parameter.yaml", "*.qs"]

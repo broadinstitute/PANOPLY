@@ -28,3 +28,6 @@ workbench/.panoply-session.yaml
 # here to avoid duplicating the same large files across three locations.
 panda/panda-src/defaults/
 workbench/workbench-src/defaults/
+
+# ignore compare_results/ .txt files
+compare*.txt
