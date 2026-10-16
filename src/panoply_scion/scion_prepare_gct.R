@@ -105,3 +105,43 @@ prepare_scion_matrix <- function(gct_file, role = c("target", "reg"), gene_id_co
   rownames(mat) <- new_names[!dup]
   as.data.frame(mat)
 }
+
+#' Restricts the target and regulator matrices to their shared samples, in the
+#' same order.
+#'
+#' SCION does not align samples itself: it row-binds the two matrices for
+#' clustering and then pairs them purely by column POSITION when inferring the
+#' network (never by sample ID). So a sample present in only one matrix makes
+#' clustering fail outright, and -- worse -- the same samples in a different
+#' order are silently paired with the wrong partners. PANOPLY's other
+#' multi-omic modules avoid this by working from panoply_harmonize's output,
+#' which keeps only the shared samples; this task is handed the original
+#' (unharmonized) RNA and proteome GCTs, so it has to do the same itself.
+#'
+#' @param target_mat,reg_mat data frames/matrices with samples as columns (as
+#'   returned by prepare_scion_matrix()).
+#' @return list(target =, reg =): both restricted to the samples they share,
+#'   with identical column order (the regulator matrix's original order).
+align_scion_samples <- function(target_mat, reg_mat) {
+  shared <- intersect(colnames(reg_mat), colnames(target_mat))
+  if (length(shared) == 0) {
+    stop("The target and regulator matrices have no sample IDs in common. ",
+         "Target (e.g.): ", paste(utils::head(colnames(target_mat), 3), collapse = ", "),
+         "; regulator (e.g.): ", paste(utils::head(colnames(reg_mat), 3), collapse = ", "), ".")
+  }
+
+  report_dropped <- function(label, ids) {
+    dropped <- setdiff(ids, shared)
+    if (length(dropped) > 0) {
+      message(length(dropped), " of ", length(ids), " ", label, " samples are not in the other ",
+              "dataset and were dropped (", paste(utils::head(dropped, 5), collapse = ", "),
+              if (length(dropped) > 5) ", ..." else "", ").")
+    }
+  }
+  report_dropped("target", colnames(target_mat))
+  report_dropped("regulator", colnames(reg_mat))
+  message("Using ", length(shared), " samples shared by the target and regulator data.")
+
+  list(target = target_mat[, shared, drop = FALSE],
+       reg = reg_mat[, shared, drop = FALSE])
+}

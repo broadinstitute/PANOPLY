@@ -79,6 +79,11 @@ if (is_ptm && !is.null(opt$reg_genes_file)) {
   reg_genes_file_for_run_scion <- NULL
 }
 
+# SCION pairs samples by column position, not ID -- see align_scion_samples().
+aligned <- align_scion_samples(target_mat, reg_mat)
+target_mat <- aligned$target
+reg_mat <- aligned$reg
+
 target_tsv <- file.path(opt$out_dir, "target_prepared.tsv")
 reg_tsv <- file.path(opt$out_dir, "reg_prepared.tsv")
 utils::write.table(target_mat, target_tsv, sep = "\t", col.names = NA, quote = FALSE)
