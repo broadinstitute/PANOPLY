@@ -176,7 +176,7 @@ task panoply_scion_run_real {
   }
 
   runtime {
-    container : "broadcptacdev/panoply_scion:latest"
+    container : "broadcptacdev/panoply_scion:test"
     memory : "~{memory}GB"
     disks : "local-disk ~{disk_space} SSD"
     cpu : num_cores
