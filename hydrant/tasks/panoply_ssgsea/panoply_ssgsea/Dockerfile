@@ -17,15 +17,11 @@ WORKDIR $wd
 #   optparse (command-line parsing), remotes (install_github), tidyverse
 RUN install2.r --error --skipinstalled -n $(nproc) optparse remotes tidyverse
 
-# cmapR (reads the GCT inputs) and ComplexHeatmap from Bioconductor v3.23
-# These are installed as prebuilt Linux binaries from Posit Package Manager, using the same
-# snapshot date as the base image's CRAN repository, so no system libraries are needed.
+# cmapR (reads the GCT inputs) and ComplexHeatmap
+# These are installed as prebuilt Linux binaries from Posit Package Manager
+# with dependencies pulled both from frozen BioConductor and CRAN repositories
 RUN Rscript -e 'options(Ncpus = parallel::detectCores()); \
-      bioc <- gsub("cran", "bioconductor", getOption("repos")["CRAN"]); \
-      repos <- c(BioCsoft = paste0(bioc, "/packages/3.23/bioc"), \
-	BioCann = paste0(bioc, "/packages/3.23/data/annotation"), \
-	getOption("repos")); \
-      install.packages(c("cmapR", "ComplexHeatmap"), repos = repos); \
+      install.packages(c("cmapR", "ComplexHeatmap"), repos = c(getOption("repos"), "https://p3m.dev/bioconductor/__linux__/noble/2026-06-23/packages/3.23/bioc")); \
       stopifnot(requireNamespace("cmapR", quietly = TRUE), requireNamespace("ComplexHeatmap", quietly = TRUE))' # stop if packages didn't build
 
 ## install ssGSEA3.0 from GitHub (all of its dependencies are installed above or come from CRAN)
