@@ -11,7 +11,9 @@ task panoply_ssgsea {
 		File yaml_file
 		String output_prefix='results-ssgsea'
 
-		## ssGSEA / PTM-SEA parameters below	
+		## ssGSEA / PTM-SEA parameters below
+		## Defaults are read from the 'panoply_ssgsea' section of yaml_file;
+		## any parameter set here overrides the yaml value.
 		String? sample_norm_type
 		String? correl_type
 		String? statistic
@@ -32,8 +34,20 @@ task panoply_ssgsea {
 	command {
 		set -euo pipefail
 		
-		# run ssgsea/ptm-sea
-		/home/pgdac/ssgsea-cli.R -i ${input_ds} -y ${yaml_file} -d ${gene_set_database} -o ${select_first([output_prefix, "NA"])} -n ${select_first([sample_norm_type, "NA"])} -w ${select_first([weight, "NA"])} -c ${select_first([correl_type, "NA"])} -t ${select_first([statistic, "NA"])} -s ${select_first([output_score_type, "NA"])} -p ${select_first([nperm, "NA"])} -m ${select_first([min_overlap, "NA"])} ${"-q " + tolerate_min_overlap_err} -g ${select_first([global_fdr, "NA"])} -z /home/pgdac
+		# run ssGSEA3 / PTM-SEA
+		# (parameters that are not set are omitted, so ssgsea3-cli.R takes them from yaml_file)
+		Rscript /home/pgdac/src/ssgsea3-cli.R \
+			--input ${input_ds} --db ${gene_set_database} --yaml ${yaml_file} \
+			--output_prefix ${output_prefix} \
+			${"--sample_norm_type " + sample_norm_type} \
+			${"--correl_type " + correl_type} \
+			${"--statistic " + statistic} \
+			${"--output_score_type " + output_score_type} \
+			${"--weight " + weight} \
+			${"--min_overlap " + min_overlap} \
+			${"--nperm " + nperm} \
+			${"--global_fdr " + global_fdr} \
+			${"--tolerate_min_overlap_err " + tolerate_min_overlap_err}
 
 
 		## tar results
