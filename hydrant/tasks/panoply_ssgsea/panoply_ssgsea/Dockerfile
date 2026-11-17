@@ -13,24 +13,24 @@ WORKDIR $wd
 # built from rocker/r-ver instead. Whenever you have time to fully revamp the panoply_common
 # docker, this image can also be rebased...
 
-# System libraries
-#   zlib1g-dev:		headers to compile cmapR's Bioconductor dependencies (Rhdf5lib, XVector)
-RUN apt-get update \
-	&& apt-get install -y --no-install-recommends zlib1g-dev \
-	&& rm -rf /var/lib/apt/lists/*
-
 # additional CRAN packages needed:
-#   optparse (command-line parsing), remotes (install_github),
-#   BiocManager (Bioconductor repository URLs), tidyverse
-RUN install2.r --error --skipinstalled -n $(nproc) optparse remotes BiocManager tidyverse \
-    && rm -rf /tmp/downloaded_packages
+#   optparse (command-line parsing), remotes (install_github), tidyverse
+RUN install2.r --error --skipinstalled -n $(nproc) optparse remotes tidyverse
 
-# cmapR (reads the GCT inputs) from Bioconductor, pinned to repository v3.23 for stability
+# cmapR (reads the GCT inputs) and ComplexHeatmap from Bioconductor v3.23
+# These are installed as prebuilt Linux binaries from Posit Package Manager, using the same
+# snapshot date as the base image's CRAN repository, so no system libraries are needed.
 RUN Rscript -e 'options(Ncpus = parallel::detectCores()); \
-      Sys.setenv(MAKEFLAGS = paste0("-j", parallel::detectCores())); \
-      install.packages(c("cmapR", "ComplexHeatmap"), repos = BiocManager::repositories(version = "3.23"))' \
-    && rm -rf /tmp/downloaded_packages /tmp/Rtmp*
+      bioc <- gsub("cran", "bioconductor", getOption("repos")["CRAN"]); \
+      repos <- c(BioCsoft = paste0(bioc, "/packages/3.23/bioc"), \
+	BioCann = paste0(bioc, "/packages/3.23/data/annotation"), \
+	getOption("repos")); \
+      install.packages(c("cmapR", "ComplexHeatmap"), repos = repos); \
+      stopifnot(requireNamespace("cmapR", quietly = TRUE), requireNamespace("ComplexHeatmap", quietly = TRUE))' # stop if packages didn't build
 
+## install ssGSEA3.0 from GitHub (all of its dependencies are installed above or come from CRAN)
+RUN Rscript -e 'remotes::install_github("broadinstitute/ssGSEA3.0", build_vignettes = FALSE); \
+      stopifnot(requireNamespace("ssGSEA3", quietly = TRUE))' # stop if packages didn't build
 
-## install ssGSEA scripts from GitHub
-RUN Rscript -e 'remotes::install_github("broadinstitute/ssGSEA3.0", build_vignettes = FALSE)'  
+## cleanup files from package installs
+RUN rm -rf /tmp/downloaded_packages /tmp/Rtmp*
