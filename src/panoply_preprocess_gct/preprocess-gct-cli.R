@@ -52,8 +52,11 @@ as_flag <- function(x) {
 ## ---- merge parameters: YAML provides defaults, command line overrides ----
 yml <- list()
 if (!is.null(opt$yaml)) {
-  yml <- read_yaml(opt$yaml)[["panoply_preprocess_gct"]]
+  yml.all <- read_yaml(opt$yaml)
+  yml <- yml.all[["panoply_preprocess_gct"]]
   if (is.null(yml)) stop("No 'panoply_preprocess_gct' section found in ", opt$yaml)
+  ## 'organism' is a project-wide setting: use global_parameters$organism unless set in this section
+  if (is.null(yml$organism)) yml$organism <- yml.all$global_parameters$organism
 }
 yml <- yml[names(yml) %in% names(params)]
 cli <- Filter(Negate(is.null), opt[names(params)])
