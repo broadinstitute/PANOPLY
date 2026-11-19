@@ -10,12 +10,15 @@ task panoply_preprocess_gct {
 		File yaml_file
 		String output_prefix='input-ssgsea'
 
-	    ## parameters to create gene-centric or single-site-centric 
+	    ## parameters to create gene-centric or single-site-centric
 	    ## GCT files for ssGSEA / PTM-SEA
+	    ## Defaults are read from the 'panoply_preprocess_gct' section of yaml_file;
+	    ## any parameter set here overrides the yaml value.
 		String? level
 	 	String? id_type
 		String? id_type_out
 		String? acc_type
+		String? organism # human, mouse, rat or zebrafish; required to map RefSeq / gene symbols to UniProt
 		String? seqwin_col
 		String? gene_col
 		Boolean? humanize_gene
@@ -35,11 +38,26 @@ task panoply_preprocess_gct {
 	command {
 		set -euo pipefail
 		
-		# prepare GCT file
-		/home/pgdac/src/preprocessGCT.R -i ${input_ds} -y ${yaml_file} -l ${select_first([level, "NA"])} -t ${select_first([id_type, "NA"])} -o ${select_first([id_type_out, "NA"])} -a ${select_first([acc_type, "NA"])} -s ${select_first([seqwin_col, "NA"])} --gene_symbol_column ${select_first([gene_col, "NA"])} -k ${select_first([humanize_gene, "NA"])}  -v ${select_first([SGT_col, "NA"])} -d ${select_first([loc, "NA"])} -m ${select_first([mode, "NA"])} -r "${select_first([mod_res, "NA"])}" -p '${select_first([mod_type, "NA"])}' -u TRUE -z /home/pgdac/src
+		# prepare GCT file with ssGSEA3::preprocessGCT
+		# (parameters that are not set are omitted, so preprocess-gct-cli.R takes them from yaml_file)
+		Rscript /home/pgdac/src/preprocess-gct-cli.R \
+			--input ${input_ds} --yaml ${yaml_file} \
+			${"--level " + level} \
+			${"--id_type " + id_type} \
+			${"--id_type_out " + id_type_out} \
+			${"--acc_type_in " + acc_type} \
+			${"--organism " + organism} \
+			${"--seqwin_column '" + seqwin_col + "'"} \
+			${"--gene_symbol_column '" + gene_col + "'"} \
+			${"--humanize_gene_names " + humanize_gene} \
+			${"--sgt_column '" + SGT_col + "'"} \
+			${"--localized " + loc} \
+			${"--mode " + mode} \
+			${"--residue '" + mod_res + "'"} \
+			${"--ptm " + mod_type}
 
 		mkdir file_output
-		mv `cat fn.out` file_output/ # move the output file from preprocessGCR.R into a folder
+		mv `cat fn.out` file_output/ # move the output file from preprocess-gct-cli.R into a folder
 	}
 
 	output {
@@ -48,7 +66,7 @@ task panoply_preprocess_gct {
 	}
 
 	runtime {
-		docker : "broadcptacdev/panoply_preprocess_gct:latest"
+		docker : "broadcptacdev/panoply_preprocess_gct:test"
 		memory : select_first ([memory, 8]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " HDD"
 		cpu : select_first ([num_threads, 8]) + ""
