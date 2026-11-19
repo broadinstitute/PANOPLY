@@ -1,5 +1,6 @@
 ---
-output: 
+title: "`r params$title`"
+output:
   html_document:
     toc: true
     toc_depth: 3
@@ -20,26 +21,18 @@ params:
 
 ---
 
----
-title: `r params$title`
----
-
 ## Overview
 
 This document provides a high-level summary of the ```panoply_ssgsea``` module which performs single sample Gene Set Enrichment analysis (ssGSEA) on each column of the input data matrix. For more information about the module please visit the [PANOPLY Wiki page](https://github.com/broadinstitute/PANOPLY/wiki/Data-Analysis-Modules%3A-panoply_ssgsea). 
 
 ```{r echo=F, warning=F, message=F}
 options(knitr.table.format = 'pipe', stringsAsFactors=F)
-library(pacman)
-p_load(plotly)
-p_load(dplyr)
-p_load(kableExtra)
+library(kableExtra)
 
 
 ## ##############################
 ## inport parameters
 label = params$label
-label.rmd = params$label.rmd
 fdr = params$fdr
 top_n = params$top_n
 param = params$param
@@ -70,7 +63,7 @@ The heatmap in **Figure `r fig_count`** depicts normalized enrichment scores (NE
 
 ***
 
-```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Normalized enrichment scores (NES) of gene sets across columns of the input data matrix. Asterisks indicate gene sets with FDR < ', fdr,'. Shown are up to ', top_n,' most significant gene sets per column.'), echo=FALSE}
+```{r, include=TRUE, fig.align='left', fig.cap=paste0('**Figure ', fig_count,'**: Normalized enrichment scores (NES) of gene sets across columns of the input data matrix. Asterisks indicate gene sets with FDR < ', fdr,'. Shown are up to ', top_n,' most significant gene sets with positive and up to ', top_n,' with negative scores.'), echo=FALSE}
 knitr::include_graphics(fn.png)
 ```
 

@@ -11,10 +11,11 @@ task panoply_ssgsea_report {
     String label
 
     # Heatmap Parameters
+    # Defaults are read from the 'panoply_ssgsea_report' section of cfg_yaml;
+    # any parameter set here overrides the yaml value.
     Float? fdr
     Int? top_n
     Boolean? cluster_rows
-    String? ser_meth
     Boolean? split_by_prefix
 
     File? geneset_groups_file
@@ -27,12 +28,14 @@ task panoply_ssgsea_report {
 
   command {
     set -euo pipefail
-    Rscript /home/pgdac/src/ssgsea-renderRMD.R -t ${tarball} -l ${label} \
-      ${"-g " + geneset_groups_file} \
-      ${if defined(split_by_prefix) then "-s ${if select_first([split_by_prefix]) then 'TRUE' else 'FALSE'}" else ""} \
-      ${"-f " + fdr} ${"-n " + top_n} \
-      ${if defined(cluster_rows) then "-c ${if select_first([cluster_rows]) then 'TRUE' else 'FALSE'}" else ""} ${"-m " + ser_meth} \
-      -y ${cfg_yaml} -z /home/pgdac/src/
+    # (parameters that are not set are omitted, so ssgsea-renderRMD.R takes them from cfg_yaml)
+    Rscript /home/pgdac/src/ssgsea-renderRMD.R \
+      --tarball ${tarball} --label ${label} --yaml ${cfg_yaml} \
+      ${"--fdr " + fdr} \
+      ${"--top_n " + top_n} \
+      ${"--cluster_rows " + cluster_rows} \
+      ${"--split_by_prefix " + split_by_prefix} \
+      ${"--geneset_groups_file " + geneset_groups_file}
   }
 
   output {

@@ -1,24 +1,20 @@
-FROM broadcptacdev/panoply_rmd_report:latest
+FROM broadcptacdev/panoply_ssgsea:latest
 
 LABEL maintainer="proteogenomics@broadinstitute.org"
-LABEL description="Docker for generating Rmarkdown reports for different PGDAC modules."
+LABEL description="Docker for generating the Rmarkdown report of the panoply_ssgsea module."
 
-ENV wd /home/pgdac/
+# Packages for rendering the Rmarkdown report of the panoply_ssgsea_report module
+#   pandoc: required by rmarkdown to convert reports to HTML
+#   kableExtra: formatted tables in the report (rmarkdown and knitr are installed with tidyverse)
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends pandoc \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& install2.r --error --skipinstalled -n $(nproc) kableExtra
 
+## cleanup files from package installs
+RUN rm -rf /tmp/downloaded_packages /tmp/Rtmp*
+
+## Copy SRC Files into Docker
+ENV wd=/home/pgdac/
 COPY . $wd
 WORKDIR $wd
-
-
-# the following packages are already installed in panoply_rmd_report
-# RUN R -e "pacman::p_install('pheatmap')"
-# RUN R -e "pacman::p_install('ggpubr')"
-# RUN R -e "pacman::p_install('ggrepel')"
-# RUN R -e "pacman::p_install('RColorBrewer')"
-# RUN R -e "pacman::p_install('caTools')"
-# RUN R -e "pacman::p_install('TSP')"
-# RUN R -e "pacman::p_install('seriation')"
-
-
-
-
-

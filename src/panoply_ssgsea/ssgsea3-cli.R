@@ -84,5 +84,8 @@ res <- tryCatch(do.call(ssGSEA3, args), error = function(e) {
   stop(e)
 })
 
+## save the full result object, so downstream modules (e.g. panoply_ssgsea_report) can plot from it
+if (!is.null(res)) saveRDS(res, paste0(val$output_prefix, "-result.rds"))
+
 ## declare whether a tolerated min-overlap error occurred (read by the WDL)
 writeLines(as.character(is.null(res)), "geneset_overlap_below_min.txt")

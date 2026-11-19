@@ -56,7 +56,7 @@ task panoply_ssgsea {
 		cp ${input_ds} .
 
 		# create regex to locate relevant outputs to tar
-		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^${basename(input_ds)}$|^.*.log.txt$|^.*parameters.txt$"
+		result_regexpr="^signature_gct/.*.gct$|^${output_prefix}.*.gct$|^${output_prefix}-result.rds$|^${basename(input_ds)}$|^.*.log.txt$|^.*parameters.txt$"
 		find * -regextype posix-extended -regex $result_regexpr -print0 | tar -czvf ${output_prefix}.tar.gz --null -T -
 		}
 
