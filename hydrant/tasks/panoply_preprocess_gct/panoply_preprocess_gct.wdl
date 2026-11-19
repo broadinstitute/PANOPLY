@@ -66,7 +66,7 @@ task panoply_preprocess_gct {
 	}
 
 	runtime {
-		docker : "broadcptacdev/panoply_preprocess_gct:test"
+		docker : "broadcptacdev/panoply_preprocess_gct:latest"
 		memory : select_first ([memory, 8]) + "GB"
 		disks : "local-disk " + select_first ([disk_space, 10]) + " HDD"
 		cpu : select_first ([num_threads, 8]) + ""
